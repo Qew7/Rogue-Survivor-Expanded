@@ -10,6 +10,13 @@ RUN chmod +x /usr/local/bin/csc && ruby /build.rb \
     && MONO_IOMAP=all xbuild RogueSurvivor.Linux.csproj /p:Configuration=Release \
        /p:CscToolPath=/usr/local/bin /p:CscToolExe=csc /verbosity:minimal
 
+FROM build AS test
+COPY tests/*.cs /src/tests/
+COPY tests/layout.rb /src/tests/layout.rb
+RUN mcs -r:System.Drawing -out:/src/tests/UnitTests.exe /src/tests/*.cs \
+    && MONO_PATH=/src/WRogue/bin/Release mono /src/tests/UnitTests.exe \
+    && ROGUE_PROJECT_ROOT=/src ruby /src/tests/layout.rb
+
 FROM debian:bookworm-slim
 RUN apt-get update && apt-get install -y --no-install-recommends \
     mono-runtime libmono-system-windows-forms4.0-cil \

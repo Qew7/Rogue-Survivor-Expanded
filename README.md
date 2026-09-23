@@ -40,3 +40,28 @@ VNC port is not exposed. All browser tabs control the same game session.
 This setup was previously checked on macOS ARM64 with Docker Desktop, including
 game startup, input, saving, and loading. A separate Linux host and AMD64 build
 have not yet been checked.
+
+## Working on the large game classes
+
+`RogueGame`, `BaseAI`, `Rules`, `BaseTownGenerator`, and `GameItems` are split into
+partial classes by responsibility. Start in each class's main `.cs` file for
+shared state, then open the named parts for actions, rules, AI behaviors, town
+locations, or item models. All parts are listed explicitly in
+`WRogue/RogueSurvivor.csproj` for the original Windows build and the generated
+Linux build. Every C# source file is kept at or below 1500 lines; the test stage
+checks this limit and project entries.
+
+Run the regression checks after changing these classes:
+
+```sh
+docker build --target test .
+bash tests/e2e.sh
+```
+
+The unit suites cover message formatting, view coordinates, AI perception and
+item interest, distances, town block geometry, and item grammar. The end-to-end
+script starts an isolated game container and checks startup, configuration,
+HTTP, and the VNC WebSocket handshake. It removes its test volume afterward.
+These checks do not exercise a full playthrough. `.editorconfig` records the
+whitespace rules for new edits; `ruby tests/layout.rb` checks file sizes and
+project entries without Docker.
