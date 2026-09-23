@@ -28,6 +28,8 @@ namespace djack.RogueSurvivor.Engine
         {
             // HP.
             actor.HitPoints -= dmg;
+            if (CancelMouseMoveOnDamage(actor, dmg))
+                AddMessage(new Message("Mouse movement stopped: you took damage.", m_Session.WorldTime.TurnCounter, Color.Red));
 
             // Stamina.
             if (actor.Model.Abilities.CanTire)

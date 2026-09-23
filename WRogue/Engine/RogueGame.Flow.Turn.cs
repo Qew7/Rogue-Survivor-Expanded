@@ -176,6 +176,8 @@ namespace djack.RogueSurvivor.Engine
                                     {
                                         DoVomit(a);
                                         a.HitPoints -= Rules.INFECTION_LEVEL_4_BLEED_HP;
+                                        if (CancelMouseMoveOnDamage(a, Rules.INFECTION_LEVEL_4_BLEED_HP))
+                                            AddMessage(new Message("Mouse movement stopped: you took damage.", m_Session.WorldTime.TurnCounter, Color.Red));
                                         if (isVisible)
                                         {
                                             if (isPlayer) ClearMessages();

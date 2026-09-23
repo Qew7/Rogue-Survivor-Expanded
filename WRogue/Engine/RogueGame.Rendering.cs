@@ -174,6 +174,7 @@ namespace djack.RogueSurvivor.Engine
                 foreach (Overlay o in m_Overlays)
                     o.Draw(m_UI);
                 Monitor.Exit(m_Overlays);
+                DrawMouseMovePreview();
 
                 // DEV STATS
 #if DEBUG

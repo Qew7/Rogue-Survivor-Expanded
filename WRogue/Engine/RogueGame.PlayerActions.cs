@@ -31,6 +31,8 @@ namespace djack.RogueSurvivor.Engine
             UpdatePlayerFOV(player);    // make sure LOS is up to date.
             m_Player = player;      // remember player.
             ComputeViewRect(player.Location.Position);
+            m_MouseMoveHover = null;
+            m_MouseMovePreview = null;
 
             // Update survival scoring.
             m_Session.Scoring.TurnsSurvived = m_Session.WorldTime.TurnCounter;
@@ -63,6 +65,9 @@ namespace djack.RogueSurvivor.Engine
                 }
             }
             #endregion
+
+            if (ContinueMouseMove(player))
+                return;
 
             /////////////////////////////////////////////////
             // Loop until the player has made a valid choice
@@ -147,7 +152,8 @@ namespace djack.RogueSurvivor.Engine
 
                 // 2. Get input.
                 // Peek keyboard & mouse until we got an event.
-                m_UI.UI_PeekKey();  // consume keys to avoid repeats.
+                if (m_MouseMoveInterruptedKey == null)
+                    m_UI.UI_PeekKey();  // consume keys to avoid repeats.
                 bool inputLoop = true;
                 bool hasKey = false;
                 KeyEventArgs inKey;
@@ -156,7 +162,8 @@ namespace djack.RogueSurvivor.Engine
                 MouseButtons? mouseButtons = null;
                 do
                 {
-                    inKey = m_UI.UI_PeekKey();
+                    inKey = m_MouseMoveInterruptedKey ?? m_UI.UI_PeekKey();
+                    m_MouseMoveInterruptedKey = null;
                     if (inKey != null)
                     {
                         hasKey = true;
@@ -232,6 +239,10 @@ namespace djack.RogueSurvivor.Engine
 
                             case PlayerCommand.MESSAGE_LOG:
                                 HandleMessageLog();
+                                break;
+
+                            case PlayerCommand.MOUSE_MOVE_MODE:
+                                ToggleMouseMoveMode();
                                 break;
 
                             // alpha10.1 moved sim thread responsability out to DoLoadGame
@@ -622,6 +633,8 @@ namespace djack.RogueSurvivor.Engine
                     // Handle mouse
                     ////////////////
                     #region
+                    if (m_IsMouseMoveMode && HandleMouseMove(player, mousePos, mouseButtons, out loop))
+                        continue;
                     // Look?
                     bool isLooking = HandleMouseLook(mousePos);
                     if (isLooking)

@@ -13,7 +13,7 @@ RUN chmod +x /usr/local/bin/csc && ruby /build.rb \
 FROM build AS test
 COPY tests/*.cs /src/tests/
 COPY tests/layout.rb /src/tests/layout.rb
-RUN mcs -r:System.Drawing -out:/src/tests/UnitTests.exe /src/tests/*.cs \
+RUN mcs -r:System.Drawing -r:System.Windows.Forms -out:/src/tests/UnitTests.exe /src/tests/*.cs \
     && MONO_PATH=/src/WRogue/bin/Release mono /src/tests/UnitTests.exe \
     && ROGUE_PROJECT_ROOT=/src ruby /src/tests/layout.rb
 

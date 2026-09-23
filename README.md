@@ -2,6 +2,17 @@ This is the latest version of roguedjack's game Rogue Survivor, I would have jus
 
 I plan on expanding this game for fun to learn C#.
 
+## New Features
+
+### Mouse movement
+
+During play, press **M** to turn mouse movement on or off. When it is on,
+hover over a visible map tile to see the route arrow and step count, then
+left-click to walk there. The route avoids blocked tiles and stops if the
+way becomes blocked or the player takes damage while walking. Click an adjacent
+enemy or object to perform the same bump action as a directional movement key;
+an orange arrow marks such targets. Shift+M still opens the message log.
+
 ## Run on macOS or Linux
 
 Install Docker with Compose, then run from this repository's root:

@@ -5,6 +5,7 @@ class Program
     static void Main()
     {
         GameTests.Run();
+        MouseMoveTests.Run();
         AITests.Run();
         RulesTests.Run();
         GenerationTests.Run();

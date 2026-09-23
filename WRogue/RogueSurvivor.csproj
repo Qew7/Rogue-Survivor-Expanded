@@ -287,6 +287,8 @@
     <Compile Include="Engine\RogueGame.Flow.Menus.cs" />
     <Compile Include="Engine\RogueGame.Flow.Turn.cs" />
     <Compile Include="Engine\RogueGame.PlayerActions.cs" />
+    <Compile Include="Engine\RogueGame.MouseMove.cs" />
+    <Compile Include="Engine\MouseMovePath.cs" />
     <Compile Include="Engine\RogueGame.PlayerActions.Items.cs" />
     <Compile Include="Engine\RogueGame.PlayerActions.Combat.cs" />
     <Compile Include="Engine\RogueGame.PlayerActions.Movement.cs" />
