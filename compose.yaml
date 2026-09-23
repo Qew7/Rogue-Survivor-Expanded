@@ -1,0 +1,12 @@
+services:
+  game:
+    build: .
+    ports:
+      - "127.0.0.1:${ROGUE_PORT:-6080}:6080"
+    volumes:
+      - game-data:/opt/game/Config
+    shm_size: 256mb
+    stop_grace_period: 15s
+
+volumes:
+  game-data:
