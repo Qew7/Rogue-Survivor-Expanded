@@ -28,8 +28,8 @@ for attempt in {1..60}; do
 done
 [[ "$status" == healthy ]]
 
-curl --fail --silent --show-error "http://127.0.0.1:$port/" | rg -q 'vnc.html'
-docker compose -p "$project" logs game | rg -q 'loading images done'
+curl --fail --silent --show-error "http://127.0.0.1:$port/" | grep -F 'vnc.html' >/dev/null
+docker compose -p "$project" logs game | grep -F 'loading images done' >/dev/null
 docker compose -p "$project" exec -T game test -s /opt/game/Config/setup.dat
 
 python3 - "$port" <<'PY'
