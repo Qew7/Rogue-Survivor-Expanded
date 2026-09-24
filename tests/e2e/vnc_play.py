@@ -144,22 +144,34 @@ with socket.create_connection(("127.0.0.1", 5900), timeout=10) as vnc:
 
     time.sleep(1)  # Let the play loop begin reading input after its ready log.
     key(vnc, ord("m"))  # Mouse movement mode.
-    for x, y in ((400, 400), (400, 360), (360, 400), (440, 400),
-                 (360, 360), (440, 360), (400, 440), (336, 336)):
-        click(vnc, x, y, 4)
-        if "mouse context menu opened" in open(log).read():
-            break
-        time.sleep(0.2)
-    else:
-        raise RuntimeError("Right-click did not open the context menu")
-    matches = re.findall(
-        r"mouse context menu opened: target=(-?\d+),(-?\d+) player=(-?\d+),(-?\d+) actions=(\d+)",
-        open(log).read(),
+    menu_pattern = re.compile(
+        r"mouse context menu opened: target=(-?\d+),(-?\d+) player=(-?\d+),(-?\d+) actions=(\d+)"
     )
-    assert matches, "Right-click did not open the context menu"
-    assert int(matches[-1][-1]) > 0, "Context menu has no actions"
-    key(vnc, enter)  # Execute the first available action.
-    wait_for_log(log, "mouse context action:")
+    positions = ((400, 360), (400, 380), (420, 360), (420, 380),
+                 (380, 360), (380, 380), (400, 400), (420, 400),
+                 (360, 360), (360, 380), (440, 360), (440, 380))
+    player_menu = None
+    for x, y in positions:
+        before = len(menu_pattern.findall(open(log).read()))
+        click(vnc, x, y, 4)
+        deadline = time.monotonic() + 2
+        matches = menu_pattern.findall(open(log).read())
+        while len(matches) == before and time.monotonic() < deadline:
+            time.sleep(0.1)
+            matches = menu_pattern.findall(open(log).read())
+        if len(matches) == before:
+            continue
+        target_x, target_y, player_x, player_y, count = map(int, matches[-1])
+        if (target_x, target_y) == (player_x, player_y):
+            player_menu = count
+            break
+        key(vnc, 0xFF1B)  # Close actions for another tile.
+    if player_menu is None:
+        raise RuntimeError("Could not open the context menu on the player tile")
+    for _ in range(player_menu - 1):
+        key(vnc, down)  # Wait is the last action on the player tile.
+    key(vnc, enter)
+    wait_for_log(log, "mouse context action: Wait")
 
     # Shift+S saves the real world graph, then Shift+L loads it again.
     shift = 0xFFE1
