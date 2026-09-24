@@ -172,6 +172,7 @@ namespace djack.RogueSurvivor.Engine
                 // overlays
                 m_Overlays.Draw(m_UI);
                 DrawMouseMovePreview();
+                DrawMouseContextMenu();
 
                 // DEV STATS
 #if DEBUG

@@ -163,6 +163,8 @@ namespace djack.RogueSurvivor.Engine
                 // 3. Handle input
                 if (hasKey)
                 {
+                    if (HandleMouseContextKey(player, inKey.KeyCode, out loop))
+                        continue;
                     //////////////
                     // Handle key
                     //////////////
@@ -611,6 +613,8 @@ namespace djack.RogueSurvivor.Engine
                     // Handle mouse
                     ////////////////
                     #region
+                    if (HandleMouseContextMenu(player, mousePos, mouseButtons, out loop))
+                        continue;
                     if (m_IsMouseMoveMode && HandleMouseMove(player, mousePos, mouseButtons, out loop))
                         continue;
                     // Look?

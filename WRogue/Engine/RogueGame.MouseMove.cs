@@ -24,9 +24,10 @@ namespace djack.RogueSurvivor.Engine
             m_MouseMovePreview = null;
             m_MouseMoveSteps = null;
             m_MouseMoveCanBump = false;
+            CloseMouseContextMenu();
             ClearOverlays();
             AddMessage(new Message(m_IsMouseMoveMode ?
-                "Mouse movement ON: point and left-click; M to turn off." :
+                "Mouse movement ON: left-click to move, right-click for actions; M to turn off." :
                 "Mouse movement OFF.", m_Session.WorldTime.TurnCounter, Color.Yellow));
         }
 
@@ -176,7 +177,7 @@ namespace djack.RogueSurvivor.Engine
             if (!m_IsMouseMoveMode || m_Player == null)
                 return;
 
-            m_UI.UI_DrawStringBold(Color.Yellow, "MOUSE MOVE  [M: off]", 6, 5);
+            m_UI.UI_DrawStringBold(Color.Yellow, "MOUSE MOVE  [M: off, RMB: actions]", 6, 5);
             if (m_MouseMoveSteps == null && !m_MouseMoveHover.HasValue)
                 return;
 
@@ -185,6 +186,19 @@ namespace djack.RogueSurvivor.Engine
                 m_MouseMoveSteps[m_MouseMoveSteps.Count - 1] : m_MouseMoveHover.Value;
             if (path == null || path.Count == 0)
             {
+                Map map = m_Player.Location.Map;
+                if (!map.IsInBounds(goal) && map.GetExitAt(goal) != null)
+                {
+                    string label = m_Rules.IsAdjacent(m_Player.Location.Position, goal)
+                        ? "Right-click: leave district" : "Stand beside exit";
+                    DrawMouseMoveLabel(goal, label, Color.Yellow);
+                    return;
+                }
+                if (goal == m_Player.Location.Position && map.GetExitAt(goal) != null)
+                {
+                    DrawMouseMoveLabel(goal, "Right-click: use exit", Color.Yellow);
+                    return;
+                }
                 if (m_MouseMoveCanBump)
                 {
                     Point bumpFrom = TileCenter(m_Player.Location.Position);

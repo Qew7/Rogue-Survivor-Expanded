@@ -249,6 +249,7 @@
     <Compile Include="Engine\MessageManager.cs" />
     <Compile Include="Engine\RogueGame.cs" />
     <Compile Include="Engine\ModCatalog.cs" />
+    <Compile Include="Engine\MouseContextMenu.cs" />
     <Compile Include="Engine\RogueGame.Advisor.cs" />
     <Compile Include="Engine\RogueGame.Events.cs" />
     <Compile Include="Engine\RogueGame.Combat.cs" />

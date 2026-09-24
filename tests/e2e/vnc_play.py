@@ -1,6 +1,7 @@
 """Drive a short game through the local VNC server in the test container."""
 
 import os
+import re
 import socket
 import struct
 import time
@@ -21,6 +22,13 @@ def key(sock, symbol):
         sock.sendall(struct.pack(">BBHI", 4, pressed, 0, symbol))
         time.sleep(0.04)
     time.sleep(0.2)
+
+
+def click(sock, x, y, button=1):
+    sock.sendall(struct.pack(">BBHH", 5, button, x, y))
+    time.sleep(0.06)
+    sock.sendall(struct.pack(">BBHH", 5, 0, x, y))
+    time.sleep(0.3)
 
 
 def wait_for(path, seconds):
@@ -96,6 +104,26 @@ with socket.create_connection(("127.0.0.1", 5900), timeout=10) as vnc:
     else:
         tail = open(log).read().splitlines()[-12:] if os.path.exists(log) else []
         raise RuntimeError("World generation or welcome screens did not finish: " + repr(tail))
+
+    key(vnc, ord("m"))  # Mouse movement mode.
+    click(vnc, 336, 336, 4)
+    matches = re.findall(
+        r"mouse context menu opened: target=(-?\d+),(-?\d+) player=(-?\d+),(-?\d+) actions=(\d+)",
+        open(log).read(),
+    )
+    assert matches, "Right-click did not open the context menu"
+    target_x, target_y, player_x, player_y, _ = map(int, matches[-1])
+    key(vnc, 0xFF1B)  # Close the menu before targeting the player tile.
+    player_screen_x = 336 + (player_x - target_x) * 32
+    player_screen_y = 336 + (player_y - target_y) * 32
+    click(vnc, player_screen_x, player_screen_y, 4)
+    matches = re.findall(
+        r"mouse context menu opened: target=(-?\d+),(-?\d+) player=(-?\d+),(-?\d+) actions=(\d+)",
+        open(log).read(),
+    )
+    _, _, _, _, action_count = map(int, matches[-1])
+    click(vnc, player_screen_x + 14, player_screen_y + action_count * 22 + 11)
+    assert "mouse context action: Wait" in open(log).read()
 
     # Shift+S saves the real world graph, then Shift+L loads it again.
     shift = 0xFFE1
