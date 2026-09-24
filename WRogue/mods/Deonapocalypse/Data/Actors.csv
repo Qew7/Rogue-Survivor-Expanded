@@ -1,0 +1,28 @@
+ID,NAME,PLURAL,SPD,HP,STA,ATK,DMG,DEF,PRO_HIT,PRO_SHOT,FOV,AUDIO,SMELL,SCORE,FLAVOR
+_FIRST,rat,rats,100,10,30,16,4,6,0,0,6,0,30,10,These little rodents were the main carriers of the virus.
+UNDEAD_RED_EYED_SKELETON,toxic rat,toxic rats,150,12,60,18,6,8,0,0,6,0,30,20,This rat has a strange tint and glows from the inside.
+UNDEAD_RED_SKELETON,crawler,crawlers,200,20,60,20,8,10,0,0,6,0,30,40,A writhing mass of tentacles coming out of a little body
+UNDEAD_ZOMBIE,walking corpse,walking corpse,50,80,60,20,10,10,0,0,4,8,40,15,A half-rotten corpse resurrected by the virus.
+UNDEAD_DARK_EYED_ZOMBIE,zombie shamber,zombie shamblers,50,100,60,24,12,14,0,0,5,10,60,30,A dead man resurrected by the virus.
+UNDEAD_DARK_ZOMBIE,zombie mutant,zombie mutant,50,120,60,28,14,16,0,0,6,14,80,60,A dead man resurrected by the virus. Strange appendages retract from its limbs.
+UNDEAD_ZOMBIE_MASTER,zombie screamer,zombie screamers,50,100,60,20,10,16,0,0,7,14,100,100,This zombie in a straightjacket alerts all nearby undead with its screams.
+UNDEAD_ZOMBIE_LORD,zombie abomination,zombie abominations,60,120,70,24,10,16,0,0,7,14,100,200,This zombie has wires and tubes sticking out of its body. Who could do this to a man?
+UNDEAD_ZOMBIE_PRINCE,zombie cyborg,zombie cyborgs,70,180,80,28,16,16,0,0,8,16,100,400,This zombie has various devices and appendages grafted into its flesh. Who could do this to a man?
+UNDEAD_MALE_ZOMBIFIED,zombie,zombie,66,60,60,20,10,16,0,0,6,14,80,40,A survivor who succumbed to the infection.
+UNDEAD_FEMALE_ZOMBIFIED,zombie,zombie,66,60,60,20,8,18,0,0,6,14,80,40,A survivor who succumbed to the infection.
+UNDEAD_MALE_NEOPHYTE,zombie hulk,zombie hulks,95,90,60,20,20,10,2,2,7,16,80,80,A big muscled zombie.
+UNDEAD_FEMALE_NEOPHYTE,twisted,twisted,105,70,80,25,15,25,0,0,7,16,80,80,A former zombified human which developed agility and grew little tentacles from its head.
+UNDEAD_MALE_DISCIPLE,zombie behemoth,zombie behemoth,105,200,60,20,20,24,5,5,7,18,80,160,A hulking monstrosity bulging with muscles.
+UNDEAD_FEMALE_DISCIPLE,corrupted,corrupted,125,100,80,30,18,26,0,0,7,18,80,160,A former zombified human which developed great agility and grew weird appendages.
+UNDEAD_RAT_ZOMBIE,zombie rat,zombie rats,100,6,99,12,4,4,0,0,2,0,100,5,A large rodent which was affected by the virus.
+MALE_CIVILIAN,man,men,100,30,60,20,10,20,0,0,9,14,0,0,Still alive?
+FEMALE_CIVILIAN,woman,women,100,28,60,20,8,22,0,0,9,14,0,0,Still alive?
+CHAR_GUARD,CHAR guard,CHAR guards,100,30,60,20,10,20,0,0,9,14,0,100,A standing guard of the CHAR corp.
+ARMY_NATIONAL_GUARD,national guard,national guards,105,30,60,20,10,20,0,0,9,14,0,0,An organized resistance.
+BIKER_MAN,biker,bikers,100,30,60,20,10,20,0,0,9,14,0,50,A hardened individual who will try to survive at all costs.
+POLICEMAN,policeman,policemen,105,30,60,20,10,20,0,0,9,14,0,0,A remainder of the former security force.
+GANGSTA_MAN,gangster,gangsters,100,30,60,20,10,20,0,0,9,14,0,60,The dregs of the society.
+BLACKOPS_MAN,death squad,death squad,100,30,60,20,10,20,0,0,8,14,0,80,"If there's no man, there's no problem."
+SEWERS_THING,Sewers thing,Sewers Things,33,400,99,28,12,8,0,0,5,10,50,300,An octopus-like creature with multiple tentacles and large teeth.
+JASON_MYERS,crazed man,crazed men,120,30,60,20,10,20,0,0,8,16,0,150,(insert drug induced insanities)
+FERAL_DOG,feral dog,feral dogs,100,15,90,30,10,15,0,0,8,16,100,0,GRRRR

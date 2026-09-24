@@ -1,0 +1,11 @@
+ID,NAME,PLURAL,ATK,RAPID1,RAPID2,DMG,RANGE,MAXAMMO,FLAVOR
+RANGED_ARMY_PISTOL,beretta M9,berettas M9,24,12,6,24,6,15,Bang bang!
+RANGED_ARMY_RIFLE,m4 assault rifle,m4 assault rifles,30,15,7,40,8,10,Aim. Shoot. Kill.
+RANGED_HUNTING_CROSSBOW,hunting crossbow,hunting crossbows,20,10,5,16,5,20,Aim between the eyes.
+RANGED_HUNTING_RIFLE,winchester 9422,winchesters 9422,30,15,10,24,8,15,Good hunting!
+RANGED_PISTOL,glock 17,glocks 17,20,18,16,20,6,17,Bang!
+RANGED_KOLT_REVOLVER,desert eagle,desert eagles,20,10,5,24,6,7,Loud and powerful.
+RANGED_PRECISION_RIFLE,precision rifle,precision rifles,60,10,5,20,8,2,Precise death.
+RANGED_SHOTGUN,20ga shotgun,20ga shotguns,60,40,15,40,3,5,Devastating at close range.
+UNIQUE_SANTAMAN_SHOTGUN,coach gun,coach guns,60,40,15,30,6,2,"Shoot 'em, lads!"
+UNIQUE_HANS_VON_HANZ_PISTOL,.22 Magnum West,.22 Magnum West,40,30,20,22,6,14,Feuer!

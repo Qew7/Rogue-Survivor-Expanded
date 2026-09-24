@@ -33,6 +33,10 @@ namespace djack.RogueSurvivor.Engine
             // first run inits.
             InitDirectories();
 
+            Logger.WriteLine(Logger.Stage.INIT_GFX, "loading images...");
+            GameImages.LoadResources(m_UI);
+            Logger.WriteLine(Logger.Stage.INIT_GFX, "loading images done");
+
             // load data.
             LoadData();
 
@@ -202,11 +206,12 @@ namespace djack.RogueSurvivor.Engine
                 isLoadEnabled ?  "Load Game" : "(Load Game)",   // 1
                 "Redefine keys",                                // 2
                 "Options",                                      // 3
-                "Game Manual",                                  // 4
-                "All Hints",                                    // 5
-                "Hi Scores",                                    // 6
-                "Credits",                                      // 7
-                "Quit Game" };                                  // 8
+                "Mods",                                         // 4
+                "Game Manual",                                  // 5
+                "All Hints",                                    // 6
+                "Hi Scores",                                    // 7
+                "Credits",                                      // 8
+                "Quit Game" };                                  // 9
             int selected = 0;
             do
             {
@@ -298,22 +303,43 @@ namespace djack.RogueSurvivor.Engine
                                     break;
 
                                 case 4:
-                                    HandleHelpMode();
+                                    ModInfo[] previousMods = ModCatalog.Selected;
+                                    if (HandleModSelection())
+                                    {
+                                        try { ReloadModResources(); }
+                                        catch (Exception error)
+                                        {
+                                            Logger.WriteLine(Logger.Stage.RUN_MAIN,
+                                                "mod loading failed: " + error);
+                                            ModCatalog.Select(previousMods);
+                                            ReloadModResources();
+                                            m_UI.UI_Clear(Color.Black);
+                                            m_UI.UI_DrawStringBold(Color.Red,
+                                                "Could not load mods: " + error.Message, 0, 0);
+                                            DrawFootnote(Color.White, "press ENTER");
+                                            m_UI.UI_Repaint();
+                                            WaitEnter();
+                                        }
+                                    }
                                     break;
 
                                 case 5:
-                                    HandleHintsScreen();
+                                    HandleHelpMode();
                                     break;
 
                                 case 6:
-                                    HandleHiScores(true);
+                                    HandleHintsScreen();
                                     break;
 
                                 case 7:
-                                    HandleCredits();
+                                    HandleHiScores(true);
                                     break;
 
                                 case 8:
+                                    HandleCredits();
+                                    break;
+
+                                case 9:
                                     m_IsGameRunning = false;
                                     loop = false;
                                     break;

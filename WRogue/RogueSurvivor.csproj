@@ -92,6 +92,7 @@
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
     <Reference Include="System.Runtime.Serialization.Formatters.Soap" />
+    <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.Xml.Linq">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
@@ -247,6 +248,7 @@
     <Compile Include="Engine\MapGenerator.cs" />
     <Compile Include="Engine\MessageManager.cs" />
     <Compile Include="Engine\RogueGame.cs" />
+    <Compile Include="Engine\ModCatalog.cs" />
     <Compile Include="Engine\RogueGame.Advisor.cs" />
     <Compile Include="Engine\RogueGame.Events.cs" />
     <Compile Include="Engine\RogueGame.Combat.cs" />
@@ -255,6 +257,7 @@
     <Compile Include="Engine\RogueGame.Simulation.cs" />
     <Compile Include="Engine\RogueGame.Story.cs" />
     <Compile Include="Engine\RogueGame.Flow.cs" />
+    <Compile Include="Engine\RogueGame.Flow.Mods.cs" />
     <Compile Include="Engine\RogueGame.Flow.CharacterCreation.cs" />
     <Compile Include="Engine\RogueGame.Flow.ReferenceScreens.cs" />
     <Compile Include="Engine\RogueGame.Flow.Menus.cs" />
@@ -1835,7 +1838,11 @@
       <Install>true</Install>
     </BootstrapperPackage>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Content Include="mods\**\*.*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

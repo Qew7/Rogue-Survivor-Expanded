@@ -47,7 +47,7 @@ with socket.create_connection(("127.0.0.1", 5900), timeout=10) as vnc:
     # frame before choosing a character, since initialization time varies.
     vnc.sendall(struct.pack(">BBHH", 5, 1, 500, 300))
     vnc.sendall(struct.pack(">BBHH", 5, 0, 500, 300))
-    enter, down = 0xFF0D, 0xFF54
+    enter, down, up = 0xFF0D, 0xFF54, 0xFF52
     log = "/opt/game/Config/log.txt"
     deadline = time.monotonic() + 30
     while time.monotonic() < deadline:
@@ -64,6 +64,25 @@ with socket.create_connection(("127.0.0.1", 5900), timeout=10) as vnc:
         time.sleep(0.2)
     else:
         raise RuntimeError("Main menu did not appear")
+    for _ in range(4):
+        key(vnc, down)
+    key(vnc, enter)  # Mods in the main menu.
+    assert "mod selection ready" in open(log).read()
+    key(vnc, 0x20)  # Enable Auxiliary.
+    key(vnc, down)
+    key(vnc, 0x20)  # Enable Deonapocalypse.
+    key(vnc, 0xFF51)  # Move Deonapocalypse above Auxiliary.
+    key(vnc, enter)
+    assert "selected mods: Deonapocalypse, Auxiliary" in open(log).read()
+    deadline = time.monotonic() + 30
+    while time.monotonic() < deadline:
+        if "reloading mod resources done" in open(log).read():
+            break
+        time.sleep(0.2)
+    else:
+        raise RuntimeError("Selected mod resources were not loaded")
+    for _ in range(4):
+        key(vnc, up)
     for symbol in (enter, enter, down, enter, down, enter, down, enter, ord("y")):
         key(vnc, symbol)
 

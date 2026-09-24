@@ -66,12 +66,6 @@ namespace djack.RogueSurvivor
             Logger.WriteLine(Logger.Stage.INIT_MAIN, "creating main form done.");
         }
 
-        void LoadResources()
-        {
-            Logger.WriteLine(Logger.Stage.INIT_GFX, "loading images...");
-            GameImages.LoadResources(this);
-            Logger.WriteLine(Logger.Stage.INIT_GFX, "loading images done");
-        }
         #endregion
 
         #region Form overloads
@@ -92,7 +86,6 @@ namespace djack.RogueSurvivor
         {
             base.OnShown(e);
 
-            LoadResources();
             m_Game.Run();
         }
 

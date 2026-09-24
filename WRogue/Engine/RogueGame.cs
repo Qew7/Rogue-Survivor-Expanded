@@ -1179,7 +1179,7 @@ namespace djack.RogueSurvivor.Engine
 
         static string DataFile(string name)
         {
-            return Path.Combine("Resources", "Data", name);
+            return ModCatalog.Resolve("Data", name);
         }
 
         void LoadDataItems()

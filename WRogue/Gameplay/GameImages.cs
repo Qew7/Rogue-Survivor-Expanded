@@ -489,7 +489,6 @@ namespace djack.RogueSurvivor.Gameplay
         #endregion
 
         #region Static fields
-        const string FOLDER = @"Resources\Images\";
         static readonly Dictionary<string, Image> s_Images = new Dictionary<string, Image>();
         static readonly Dictionary<string, Image> s_GrayLevelImages = new Dictionary<string, Image>();
         #endregion
@@ -497,6 +496,11 @@ namespace djack.RogueSurvivor.Gameplay
         #region Loading resources
         public static void LoadResources(IRogueUI ui)
         {
+            foreach (Image image in s_Images.Values) image.Dispose();
+            foreach (Image image in s_GrayLevelImages.Values) image.Dispose();
+            s_Images.Clear();
+            s_GrayLevelImages.Clear();
+
             #region Icons
             Notify(ui, "icons...");
             Load(ACTIVITY_CHASING);
@@ -981,7 +985,7 @@ namespace djack.RogueSurvivor.Gameplay
 
         static void Load(string id)
         {
-            string file = (FOLDER + id + ".png").Replace('\\', System.IO.Path.DirectorySeparatorChar);
+            string file = ModCatalog.Resolve("Images", id + ".png");
             try
             {
                 Bitmap img = new Bitmap(file);

@@ -12,7 +12,10 @@ PY
 )"
 export ROGUE_PORT="$port"
 
-cleanup() { docker compose -p "$project" down -v >/dev/null; }
+cleanup() {
+    if [[ "$?" -ne 0 ]]; then docker compose -p "$project" logs --tail=80 game >&2 || true; fi
+    docker compose -p "$project" down -v >/dev/null
+}
 trap cleanup EXIT
 
 docker compose -p "$project" up --build -d
@@ -29,8 +32,9 @@ done
 [[ "$status" == healthy ]]
 
 curl --fail --silent --show-error "http://127.0.0.1:$port/" | grep -F 'vnc.html' >/dev/null
-docker compose -p "$project" logs game | grep -F 'loading images done' >/dev/null
 docker compose -p "$project" exec -T game test -s /opt/game/Config/setup.dat
+# Add a second, empty mod before the first-run confirmation opens mod selection.
+docker compose -p "$project" exec -T -u root game mkdir /opt/game/mods/Auxiliary
 
 python3 - "$port" <<'PY'
 import socket
@@ -54,3 +58,4 @@ print('Game startup, configuration, HTTP and VNC WebSocket checks passed')
 PY
 
 docker compose -p "$project" exec -T game python3 - < tests/e2e/vnc_play.py
+docker compose -p "$project" logs game | grep -F 'loading images done' >/dev/null

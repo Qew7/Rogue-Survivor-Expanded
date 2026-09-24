@@ -4,6 +4,21 @@ I plan on expanding this game for fun to learn C#.
 
 ## New Features
 
+### Mods
+
+Open **Mods** from the main menu. Press **Space** to enable mods from
+`WRogue/mods/`, **Left/Right** to move an enabled mod up or down in priority,
+then **Enter** to apply or **Esc** to cancel. The
+top enabled mod wins when several mods provide the same file; missing files
+fall through to lower priority mods, then to the original game. With no mods
+enabled, the original game starts. Each mod can override files under `Data/`
+and `Images/`. Optional `authors.json` supports `author` and `website`
+as single strings, or `authors` and `websites` as arrays of strings, plus
+`description`. Authors and sites may be omitted. The bundled Deonapocalypse
+mod demonstrates this layout.
+For Windows and Docker builds, the mod folders are copied beside the game as
+`mods/`.
+
 ### Mouse movement
 
 During play, press **M** to turn mouse movement on or off. When it is on,

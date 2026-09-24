@@ -25,7 +25,8 @@ ENTRYPOINT ["mono", "/src/tests/UnitTests.exe"]
 FROM debian:bookworm-slim
 RUN apt-get update && apt-get install -y --no-install-recommends \
     mono-runtime libmono-system-windows-forms4.0-cil \
-    libmono-system-runtime-serialization-formatters-soap4.0-cil libgdiplus \
+    libmono-system-runtime-serialization-formatters-soap4.0-cil \
+    libmono-system-runtime-serialization4.0-cil libgdiplus \
     xvfb x11vnc x11-utils openbox novnc websockify fonts-dejavu-core \
     curl tini \
     && rm -rf /var/lib/apt/lists/* \
