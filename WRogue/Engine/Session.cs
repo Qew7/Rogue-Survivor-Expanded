@@ -421,6 +421,8 @@ namespace djack.RogueSurvivor.Engine
 
         [NonSerialized]
         static Session s_TheSession;
+        [NonSerialized]
+        ModStamp[] m_Mods;
         #endregion
 
         #region Properties
@@ -437,10 +439,18 @@ namespace djack.RogueSurvivor.Engine
             }
         }
 
+        internal static void Restore(Session session) { s_TheSession = session; }
+
         public GameMode GameMode
         {
             get { return m_GameMode; }
             set { m_GameMode = value; }
+        }
+
+        public ModStamp[] Mods
+        {
+            get { return m_Mods ?? new ModStamp[0]; }
+            set { m_Mods = value ?? new ModStamp[0]; }
         }
 
         public int Seed { get; set; }
@@ -629,7 +639,7 @@ namespace djack.RogueSurvivor.Engine
 
             Logger.WriteLine(Logger.Stage.RUN_MAIN, "saving session...");
 
-            BinarySaveStore.Save(filepath, session);
+            BinarySaveStore.Save(filepath, session, session.Mods);
 
             Logger.WriteLine(Logger.Stage.RUN_MAIN, "saving session... done!");
         }
@@ -645,18 +655,21 @@ namespace djack.RogueSurvivor.Engine
 
             Logger.WriteLine(Logger.Stage.RUN_MAIN, "loading session...");
 
+            Session previous = s_TheSession;
             try
             {
+                ModStamp[] mods;
                 s_TheSession = (Session)BinarySaveStore.Load(filepath, delegate(object loaded)
                 {
                     ((Session)loaded).ReconstructAuxiliaryFields();
-                });
+                }, out mods);
+                s_TheSession.Mods = mods;
             }
             catch (Exception e)
             {
                 Logger.WriteLine(Logger.Stage.RUN_MAIN, "failed to load session (no save game?).");
                 Logger.WriteLine(Logger.Stage.RUN_MAIN, String.Format("load exception : {0}.", e.ToString()));
-                s_TheSession = null;
+                s_TheSession = previous;
                 return false;
             }
 

@@ -27,7 +27,14 @@ static class SaveStoreTests
 
             Save(path, "first new save");
             Check.Equal("first new save", Load(path), "versioned save reads");
-            Check.Equal((byte)2, File.ReadAllBytes(path)[4], "new payload has graph format version");
+            Check.Equal((byte)3, File.ReadAllBytes(path)[4], "new payload has mod manifest and graph");
+            byte[] versionThree = File.ReadAllBytes(path);
+            byte[] versionTwo = new byte[versionThree.Length - 4];
+            Array.Copy(versionThree, versionTwo, 5);
+            versionTwo[4] = 2;
+            Array.Copy(versionThree, 9, versionTwo, 5, versionThree.Length - 9);
+            File.WriteAllBytes(path, versionTwo);
+            Check.Equal("first new save", Load(path), "previous graph version still loads");
             Save(path, "second new save");
             Check.Equal("second new save", Load(path), "replacement reads");
             byte[] damaged = File.ReadAllBytes(path);

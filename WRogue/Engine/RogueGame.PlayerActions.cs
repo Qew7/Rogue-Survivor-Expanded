@@ -228,13 +228,15 @@ namespace djack.RogueSurvivor.Engine
                             // alpha10.1 moved sim thread responsability out to DoLoadGame
                             case PlayerCommand.LOAD_GAME:
                                 // load.
-                                HandleLoadGame();
-                                // refresh player local variable!!
-                                player = m_Player;
-                                // stop looping.
-                                loop = false;
-                                // stop the update loop!
-                                m_HasLoadedGame = true;
+                                if (HandleLoadGame())
+                                {
+                                    // refresh player local variable!!
+                                    player = m_Player;
+                                    // stop looping.
+                                    loop = false;
+                                    // stop the update loop!
+                                    m_HasLoadedGame = true;
+                                }
                                 break;
                             // alpha10.1 moved sim thread responsability out to DoSaveGame
                             case PlayerCommand.SAVE_GAME:

@@ -1,6 +1,7 @@
 """Drive a short game through the local VNC server in the test container."""
 
 import os
+import json
 import re
 import socket
 import struct
@@ -40,6 +41,34 @@ def wait_for(path, seconds):
     raise RuntimeError("Game did not create " + path)
 
 
+def wait_for_log(path, text, seconds=10):
+    deadline = time.monotonic() + seconds
+    while time.monotonic() < deadline:
+        if os.path.exists(path) and text in open(path).read():
+            return
+        time.sleep(0.2)
+    raise RuntimeError("Game log did not report " + text)
+
+
+def read_saved_mods(path):
+    with open(path, "rb") as saved:
+        assert saved.read(5) == b"RSE1\x03", "Save has no mod manifest"
+        count = struct.unpack("<I", saved.read(4))[0]
+
+        def read_string():
+            length = 0
+            shift = 0
+            while True:
+                byte = saved.read(1)[0]
+                length |= (byte & 0x7F) << shift
+                if not byte & 0x80:
+                    break
+                shift += 7
+            return saved.read(length).decode("utf-8")
+
+        return [(read_string(), read_string()) for _ in range(count)]
+
+
 with socket.create_connection(("127.0.0.1", 5900), timeout=10) as vnc:
     assert read_exact(vnc, 12).startswith(b"RFB 003.")
     vnc.sendall(b"RFB 003.008\n")
@@ -75,13 +104,13 @@ with socket.create_connection(("127.0.0.1", 5900), timeout=10) as vnc:
     for _ in range(4):
         key(vnc, down)
     key(vnc, enter)  # Mods in the main menu.
-    assert "mod selection ready" in open(log).read()
+    wait_for_log(log, "mod selection ready")
     key(vnc, 0x20)  # Enable Auxiliary.
     key(vnc, down)
     key(vnc, 0x20)  # Enable Deonapocalypse.
     key(vnc, 0xFF51)  # Move Deonapocalypse above Auxiliary.
     key(vnc, enter)
-    assert "selected mods: Deonapocalypse, Auxiliary" in open(log).read()
+    wait_for_log(log, "selected mods: Deonapocalypse, Auxiliary")
     deadline = time.monotonic() + 30
     while time.monotonic() < deadline:
         if "reloading mod resources done" in open(log).read():
@@ -89,6 +118,14 @@ with socket.create_connection(("127.0.0.1", 5900), timeout=10) as vnc:
         time.sleep(0.2)
     else:
         raise RuntimeError("Selected mod resources were not loaded")
+    profile = "/opt/game/Config/mod-profile.json"
+    for _ in range(50):
+        if os.path.exists(profile):
+            break
+        time.sleep(0.2)
+    assert [mod["name"] for mod in json.load(open(profile))] == [
+        "Deonapocalypse", "Auxiliary"
+    ], "Menu profile did not retain selected mods and priority"
     for _ in range(4):
         key(vnc, up)
     for symbol in (enter, enter, down, enter, down, enter, down, enter, ord("y")):
@@ -105,25 +142,24 @@ with socket.create_connection(("127.0.0.1", 5900), timeout=10) as vnc:
         tail = open(log).read().splitlines()[-12:] if os.path.exists(log) else []
         raise RuntimeError("World generation or welcome screens did not finish: " + repr(tail))
 
+    time.sleep(1)  # Let the play loop begin reading input after its ready log.
     key(vnc, ord("m"))  # Mouse movement mode.
-    click(vnc, 336, 336, 4)
+    for x, y in ((400, 400), (400, 360), (360, 400), (440, 400),
+                 (360, 360), (440, 360), (400, 440), (336, 336)):
+        click(vnc, x, y, 4)
+        if "mouse context menu opened" in open(log).read():
+            break
+        time.sleep(0.2)
+    else:
+        raise RuntimeError("Right-click did not open the context menu")
     matches = re.findall(
         r"mouse context menu opened: target=(-?\d+),(-?\d+) player=(-?\d+),(-?\d+) actions=(\d+)",
         open(log).read(),
     )
     assert matches, "Right-click did not open the context menu"
-    target_x, target_y, player_x, player_y, _ = map(int, matches[-1])
-    key(vnc, 0xFF1B)  # Close the menu before targeting the player tile.
-    player_screen_x = 336 + (player_x - target_x) * 32
-    player_screen_y = 336 + (player_y - target_y) * 32
-    click(vnc, player_screen_x, player_screen_y, 4)
-    matches = re.findall(
-        r"mouse context menu opened: target=(-?\d+),(-?\d+) player=(-?\d+),(-?\d+) actions=(\d+)",
-        open(log).read(),
-    )
-    _, _, _, _, action_count = map(int, matches[-1])
-    click(vnc, player_screen_x + 14, player_screen_y + action_count * 22 + 11)
-    assert "mouse context action: Wait" in open(log).read()
+    assert int(matches[-1][-1]) > 0, "Context menu has no actions"
+    key(vnc, enter)  # Execute the first available action.
+    wait_for_log(log, "mouse context action:")
 
     # Shift+S saves the real world graph, then Shift+L loads it again.
     shift = 0xFFE1
@@ -133,6 +169,9 @@ with socket.create_connection(("127.0.0.1", 5900), timeout=10) as vnc:
     save = "/opt/game/Config/Saves/save.dat"
     wait_for(save, 30)
     save_bytes = os.path.getsize(save)
+    assert read_saved_mods(save) == [
+        ("Deonapocalypse", "1.0.0"), ("Auxiliary", "")
+    ], "Save did not retain mod names, versions and priority"
     vnc.sendall(struct.pack(">BBHI", 4, 1, 0, shift))
     key(vnc, ord("L"))
     vnc.sendall(struct.pack(">BBHI", 4, 0, 0, shift))

@@ -21,6 +21,17 @@ namespace djack.RogueSurvivor.Engine
         public string[] Websites { get; set; }
         [DataMember(Name = "description")]
         public string Description { get; set; }
+        [DataMember(Name = "version")]
+        public string Version { get; set; }
+        [DataMember(Name = "game_version")]
+        public string GameVersion { get; set; }
+
+        public bool SupportsCurrentGame
+        {
+            get { return String.IsNullOrWhiteSpace(GameVersion) ||
+                String.Equals(GameVersion.Trim(), SetupConfig.GAME_VERSION,
+                    StringComparison.OrdinalIgnoreCase); }
+        }
 
         public string[] GetAuthors() { return Values(Authors, Author); }
         public string[] GetWebsites() { return Values(Websites, Website); }
@@ -34,6 +45,58 @@ namespace djack.RogueSurvivor.Engine
             if (values.Count == 0 && !String.IsNullOrWhiteSpace(single))
                 values.Add(single.Trim());
             return values.ToArray();
+        }
+    }
+
+    // Stable identity stored in saves; paths are deliberately machine-specific and omitted.
+    [DataContract]
+    class ModStamp
+    {
+        [DataMember(Name = "name")]
+        public string Name { get; set; }
+        [DataMember(Name = "version")]
+        public string Version { get; set; }
+    }
+
+    // The menu's default profile is independent of the temporary set used by a save.
+    static class ModProfileStore
+    {
+        public static ModInfo[] Load(string path, ModInfo[] available)
+        {
+            if (!File.Exists(path)) return new ModInfo[0];
+            try
+            {
+                using (FileStream stream = File.OpenRead(path))
+                {
+                    ModStamp[] stamps = (ModStamp[])new DataContractJsonSerializer(
+                        typeof(ModStamp[])).ReadObject(stream);
+                    List<ModInfo> chosen = new List<ModInfo>();
+                    foreach (ModStamp stamp in stamps)
+                    {
+                        ModInfo mod = Array.Find(available, candidate =>
+                            String.Equals(candidate.Name, stamp.Name,
+                                StringComparison.OrdinalIgnoreCase));
+                        if (mod != null && mod.SupportsCurrentGame && !chosen.Contains(mod))
+                            chosen.Add(mod);
+                    }
+                    return chosen.ToArray();
+                }
+            }
+            catch (Exception) { return new ModInfo[0]; }
+        }
+
+        public static void Save(string path, ModInfo[] selected)
+        {
+            string temporary = path + ".tmp";
+            try
+            {
+                using (FileStream stream = File.Create(temporary))
+                    new DataContractJsonSerializer(typeof(ModStamp[])).WriteObject(stream,
+                        ModCatalog.Stamps(selected));
+                if (File.Exists(path)) File.Replace(temporary, path, null);
+                else File.Move(temporary, path);
+            }
+            finally { if (File.Exists(temporary)) File.Delete(temporary); }
         }
     }
 
@@ -67,6 +130,8 @@ namespace djack.RogueSurvivor.Engine
                             mod.Website = details.Website;
                             mod.Websites = details.Websites;
                             mod.Description = details.Description;
+                            mod.Version = details.Version;
+                            mod.GameVersion = details.GameVersion;
                         }
                     }
                     catch (Exception)
@@ -84,6 +149,35 @@ namespace djack.RogueSurvivor.Engine
         public static void Select(params ModInfo[] mods)
         {
             selected = mods == null ? new ModInfo[0] : (ModInfo[])mods.Clone();
+        }
+
+        public static ModStamp[] Stamps(ModInfo[] mods)
+        {
+            ModStamp[] stamps = new ModStamp[mods.Length];
+            for (int i = 0; i < mods.Length; i++)
+                stamps[i] = new ModStamp { Name = mods[i].Name,
+                    Version = mods[i].Version ?? String.Empty };
+            return stamps;
+        }
+
+        public static ModInfo[] Match(ModStamp[] stamps, ModInfo[] available,
+            out ModStamp[] missing)
+        {
+            List<ModInfo> found = new List<ModInfo>();
+            List<ModStamp> absent = new List<ModStamp>();
+            foreach (ModStamp stamp in stamps)
+            {
+                ModInfo mod = Array.Find(available, candidate =>
+                    String.Equals(candidate.Name, stamp.Name, StringComparison.OrdinalIgnoreCase) &&
+                    candidate.SupportsCurrentGame &&
+                    (String.IsNullOrEmpty(stamp.Version) ||
+                     String.Equals(candidate.Version ?? String.Empty, stamp.Version,
+                         StringComparison.OrdinalIgnoreCase)));
+                if (mod == null) absent.Add(stamp);
+                else found.Add(mod);
+            }
+            missing = absent.ToArray();
+            return found.ToArray();
         }
 
         public static string Resolve(string category, string relativeName)
@@ -134,6 +228,11 @@ namespace djack.RogueSurvivor.Engine
                 enabledCount--;
                 mods.Add(mod);
                 return mods.Count - 1;
+            }
+            if (!mod.SupportsCurrentGame)
+            {
+                mods.Insert(index, mod);
+                return index;
             }
             mods.Insert(enabledCount, mod);
             return enabledCount++;

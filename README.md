@@ -42,7 +42,13 @@ and Esc to cancel. Higher-priority mods override files from lower-priority mods.
 
 Put each mod in its own folder under `WRogue/mods`. A mod can replace files in
 `Data/` and `Images/`; an optional `authors.json` can provide a description and
-one or more authors and websites. `Deonapocalypse` is included as an example.
+one or more authors and websites, plus `version` and `game_version`.
+The `game_version` value must match this game's version to enable the mod.
+`Deonapocalypse` is included as an example. The selected set is remembered for
+new games. Loading a save automatically uses its recorded mods and priority;
+returning to the menu restores the previous selection. Missing mods fall back
+to original files when the save can still be read; otherwise the game reports
+the required mod and version.
 
 ## Develop and test
 

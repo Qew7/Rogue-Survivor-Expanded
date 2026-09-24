@@ -63,9 +63,9 @@ namespace djack.RogueSurvivor.Engine
             m_Session.NextAutoSaveTime = m_Session.WorldTime.TurnCounter + WorldTime.TURNS_PER_HOUR * s_Options.AutoSavePeriodInHours;
         }
 
-        void HandleLoadGame()
+        bool HandleLoadGame()
         {
-            DoLoadGame(GetUserSave());
+            return DoLoadGame(GetUserSave());
         }
 
         // alpha10.1 messages modified for autosave
@@ -92,7 +92,7 @@ namespace djack.RogueSurvivor.Engine
         }
 
         // alpha10.1 start & stop sim thread here instead of caller
-        void DoLoadGame(string saveName)
+        bool DoLoadGame(string saveName)
         {
             StopSimThread(false); // alpha10.1
 
@@ -101,12 +101,16 @@ namespace djack.RogueSurvivor.Engine
             RedrawPlayScreen();
             m_UI.UI_Repaint();
 
-            if (!LoadGame(saveName))
+            bool loaded = LoadGame(saveName);
+            if (!loaded)
             {
-                AddMessage(new Message("LOADING FAILED, NO GAME SAVED OR VERSION NOT COMPATIBLE.", m_Session.WorldTime.TurnCounter, Color.Red));
+                AddMessage(new Message(m_LastModLoadNotice ??
+                    "LOADING FAILED, NO GAME SAVED OR VERSION NOT COMPATIBLE.",
+                    m_Session.WorldTime.TurnCounter, Color.Red));
             }
 
             StartSimThread();  // alpha10.1
+            return loaded;
         }
 
         void DeleteSavedGame(string saveName)
@@ -121,17 +125,65 @@ namespace djack.RogueSurvivor.Engine
 
         bool LoadGame(string saveName)
         {
-            // load session object.
+            m_LastModLoadNotice = null;
+            Session previousSession = m_Session;
+            ModInfo[] previous = ModCatalog.Selected;
+            ModInfo[] available = ModCatalog.Discover("mods");
+            ModStamp[] required;
+            try { required = BinarySaveStore.ReadMods(saveName); }
+            catch (Exception) { required = new ModStamp[0]; }
+            ModStamp[] unavailable;
+            ModInfo[] chosen = ModCatalog.Match(required, available, out unavailable);
+            try { SwitchModResources(chosen); }
+            catch (Exception error)
+            {
+                SwitchModResources(previous);
+                m_LastModLoadNotice = "Cannot load saved mods: " + error.Message;
+                return false;
+            }
+
+            // Reconstruct the world with its own definitions already active.
             bool loaded = Session.Load(saveName, Session.SaveFormat.FORMAT_BIN);
             if (!loaded)
+            {
+                SwitchModResources(previous);
+                if (unavailable.Length > 0)
+                    m_LastModLoadNotice = "Cannot load save. Required mod: " +
+                        MissingModsText(unavailable);
                 return false;
+            }
+            // A damaged primary save may have loaded its backup instead.
+            chosen = ModCatalog.Match(Session.Get.Mods, available, out unavailable);
+            try
+            {
+                SwitchModResources(chosen);
+                if (unavailable.Length > 0)
+                    ModSaveValidator.Validate(Session.Get);
+            }
+            catch (Exception error)
+            {
+                SwitchModResources(previous);
+                Session.Restore(previousSession);
+                m_LastModLoadNotice = unavailable.Length > 0
+                    ? "Cannot load save. Required mod: " + MissingModsText(unavailable)
+                    : "Cannot load saved mods: " + error.Message;
+                return false;
+            }
             m_Session = Session.Get;
+            m_Session.Mods = ModCatalog.Stamps(chosen);
             m_Rules = new Rules(m_Session.GameDiceRoller);
 
             RefreshPlayer();
 
             AddMessage(new Message("LOADING DONE.", m_Session.WorldTime.TurnCounter, Color.Yellow));
             AddMessage(new Message("Welcome back to Rogue Survivor!", m_Session.WorldTime.TurnCounter, Color.LightGreen));
+            if (unavailable.Length > 0)
+            {
+                AddMessage(new Message("Missing mods: " + MissingModsText(unavailable),
+                    m_Session.WorldTime.TurnCounter, Color.Yellow));
+                AddMessage(new Message("Original definitions are active; saving removes missing mods from this save.",
+                    m_Session.WorldTime.TurnCounter, Color.Yellow));
+            }
             RedrawPlayScreen();
             m_UI.UI_Repaint();
 

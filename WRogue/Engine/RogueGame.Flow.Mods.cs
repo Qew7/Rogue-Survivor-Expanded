@@ -8,6 +8,38 @@ namespace djack.RogueSurvivor.Engine
 {
     partial class RogueGame
     {
+        ModInfo[] m_MenuMods = new ModInfo[0];
+        string m_LastModLoadNotice;
+
+        void RestoreMenuMods()
+        {
+            SwitchModResources(m_MenuMods);
+        }
+
+        void SwitchModResources(ModInfo[] mods)
+        {
+            if (SameMods(ModCatalog.Selected, mods)) return;
+            ModCatalog.Select(mods);
+            ReloadModResources();
+        }
+
+        static bool SameMods(ModInfo[] first, ModInfo[] second)
+        {
+            if (first.Length != second.Length) return false;
+            for (int i = 0; i < first.Length; i++)
+                if (!String.Equals(first[i].DirectoryPath, second[i].DirectoryPath,
+                    StringComparison.OrdinalIgnoreCase)) return false;
+            return true;
+        }
+
+        static string MissingModsText(ModStamp[] missing)
+        {
+            string[] names = Array.ConvertAll(missing, mod => mod.Name +
+                (String.IsNullOrEmpty(mod.Version) ? " (version unspecified)" :
+                    " version " + mod.Version));
+            return String.Join(", ", names);
+        }
+
         void ReloadModResources()
         {
             Logger.WriteLine(Logger.Stage.INIT_GFX, "reloading mod resources...");
@@ -44,7 +76,8 @@ namespace djack.RogueSurvivor.Engine
                         int modIndex = pageStart + index;
                         entries[index] = mods.IsEnabled(modIndex)
                             ? String.Format("[x] {0}. {1}", modIndex + 1, mods[modIndex].Name)
-                            : "[ ] " + mods[modIndex].Name;
+                            : "[ ] " + mods[modIndex].Name +
+                                (mods[modIndex].SupportsCurrentGame ? "" : " (incompatible game version)");
                     }
                     DrawMenuOrOptions(selected - pageStart, Color.White, entries,
                         Color.LightGray, null, 0, ref y);
@@ -57,6 +90,13 @@ namespace djack.RogueSurvivor.Engine
                 if (mods.Count > 0)
                 {
                     ModInfo mod = mods[selected];
+                    if (!String.IsNullOrEmpty(mod.Version) || !String.IsNullOrEmpty(mod.GameVersion))
+                    {
+                        m_UI.UI_DrawString(Color.LightGray,
+                            "Version: " + (mod.Version ?? "unspecified") +
+                            "  Game: " + (mod.GameVersion ?? "unspecified"), 0, y);
+                        y += BOLD_LINE_SPACING;
+                    }
                     string[] authors = mod.GetAuthors();
                     if (authors.Length > 0)
                     {
@@ -99,6 +139,7 @@ namespace djack.RogueSurvivor.Engine
                         if (unchanged) return false;
                     }
                     ModCatalog.Select(chosen);
+                    m_MenuMods = ModCatalog.Selected;
                     ModInfo[] active = ModCatalog.Selected;
                     string[] names = Array.ConvertAll(active, mod => mod.Name);
                     Logger.WriteLine(Logger.Stage.RUN_MAIN,

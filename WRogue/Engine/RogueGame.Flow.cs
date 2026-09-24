@@ -32,13 +32,30 @@ namespace djack.RogueSurvivor.Engine
         {
             // first run inits.
             InitDirectories();
+            string modProfilePath = Path.Combine(GetUserBasePath(), "mod-profile.json");
+            m_MenuMods = ModProfileStore.Load(modProfilePath,
+                ModCatalog.Discover("mods"));
+            ModCatalog.Select(m_MenuMods);
 
             Logger.WriteLine(Logger.Stage.INIT_GFX, "loading images...");
-            GameImages.LoadResources(m_UI);
+            try
+            {
+                GameImages.LoadResources(m_UI);
+                LoadData();
+            }
+            catch (Exception error)
+            {
+                if (m_MenuMods.Length == 0) throw;
+                Logger.WriteLine(Logger.Stage.INIT_GFX,
+                    "saved mod profile failed to load; using original resources: " + error);
+                m_MenuMods = new ModInfo[0];
+                ModCatalog.Select(m_MenuMods);
+                GameImages.LoadResources(m_UI);
+                LoadData();
+                try { ModProfileStore.Save(modProfilePath, m_MenuMods); }
+                catch (Exception) { /* The game can still start with original resources. */ }
+            }
             Logger.WriteLine(Logger.Stage.INIT_GFX, "loading images done");
-
-            // load data.
-            LoadData();
 
             // load options.
             LoadOptions();
@@ -152,6 +169,8 @@ namespace djack.RogueSurvivor.Engine
                 if (m_Session.WorldTime.TurnCounter % BGMUSIC_UPDATE_TURNS == 0)
                     UpdateBgMusic();
             }
+            if (m_IsGameRunning)
+                RestoreMenuMods();
         }
 
         void InitDirectories()
@@ -286,11 +305,21 @@ namespace djack.RogueSurvivor.Engine
                                     gy += 2 * BOLD_LINE_SPACING;
                                     m_UI.UI_DrawStringBold(Color.Yellow, "Loading game, please wait...", gx, gy);
                                     m_UI.UI_Repaint();
-                                    LoadGame(GetUserSave());
-                                    loop = false;
-                                    // alpha10
-                                    if (s_Options.IsSimON && s_Options.SimThread)
-                                        StartSimThread();
+                                    if (LoadGame(GetUserSave()))
+                                    {
+                                        loop = false;
+                                        if (s_Options.IsSimON && s_Options.SimThread)
+                                            StartSimThread();
+                                    }
+                                    else
+                                    {
+                                        m_UI.UI_Clear(Color.Black);
+                                        m_UI.UI_DrawStringBold(Color.Red,
+                                            m_LastModLoadNotice ?? "Could not load saved game.", 0, 0);
+                                        DrawFootnote(Color.White, "press ENTER");
+                                        m_UI.UI_Repaint();
+                                        WaitEnter();
+                                    }
                                     break;
 
                                 case 2:
@@ -306,12 +335,19 @@ namespace djack.RogueSurvivor.Engine
                                     ModInfo[] previousMods = ModCatalog.Selected;
                                     if (HandleModSelection())
                                     {
-                                        try { ReloadModResources(); }
+                                        try
+                                        {
+                                            ReloadModResources();
+                                            ModProfileStore.Save(
+                                                Path.Combine(GetUserBasePath(), "mod-profile.json"),
+                                                m_MenuMods);
+                                        }
                                         catch (Exception error)
                                         {
                                             Logger.WriteLine(Logger.Stage.RUN_MAIN,
                                                 "mod loading failed: " + error);
                                             ModCatalog.Select(previousMods);
+                                            m_MenuMods = previousMods;
                                             ReloadModResources();
                                             m_UI.UI_Clear(Color.Black);
                                             m_UI.UI_DrawStringBold(Color.Red,
@@ -363,6 +399,7 @@ namespace djack.RogueSurvivor.Engine
 
             // generate world.
             GenerateWorld(true, s_Options.CitySize);
+            m_Session.Mods = ModCatalog.Stamps(ModCatalog.Selected);
 
             // scoring : hello there.
             m_Session.Scoring.AddVisit(m_Session.WorldTime.TurnCounter, m_Player.Location.Map);
