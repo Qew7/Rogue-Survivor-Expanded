@@ -34,6 +34,12 @@ right-click the exit marker (or your character while standing next to the edge)
 and choose **Leave district** to travel to the neighboring district without a
 numpad. Shift+M shows the mouse control help in the game log.
 
+When an action asks for a direction (push, pull, barricade, build, give, trade,
+and similar actions), click an adjacent tile. Click your character for actions
+that can target yourself, or right-click to cancel. Direction keys and Escape
+still work. While aiming a grenade, hover over a tile to preview the target and
+left-click to throw; you can still aim with direction keys and throw with F.
+
 ### Mods
 
 Open **Mods** from the main menu to enable multiple mods and set their priority.

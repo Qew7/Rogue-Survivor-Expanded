@@ -650,15 +650,33 @@ namespace djack.RogueSurvivor.Engine
                 RedrawPlayScreen();
 
                 // 2. Get input.
-                KeyEventArgs key = m_UI.UI_WaitKey();
-                PlayerCommand command = InputTranslator.KeyToCommand(key);
+                KeyEventArgs key;
+                Point mousePos;
+                MouseButtons? mouseButtons;
+                WaitKeyOrMouse(out key, out mousePos, out mouseButtons);
+                bool throwRequested = key != null && key.KeyCode == Keys.F;
+                if (key == null)
+                {
+                    Point? mouseTarget = GrenadeTargetFromMouse(MouseToMap(mousePos),
+                        map, m_MapViewRect, player.Location.Position, maxThrowDist);
+                    if (mouseTarget.HasValue)
+                    {
+                        targetThrow = mouseTarget.Value;
+                        if (mouseButtons == MouseButtons.Left)
+                        {
+                            LoT.Clear();
+                            canThrowAtTarget = m_Rules.CanActorThrowTo(player, targetThrow, LoT, out reason);
+                            throwRequested = true;
+                        }
+                    }
+                }
 
                 // 3. Handle input
-                if (key.KeyCode == Keys.Escape)// command == PlayerCommand.EXIT_OR_CANCEL)
+                if ((key != null && key.KeyCode == Keys.Escape) || mouseButtons == MouseButtons.Right)
                 {
                     loop = false;
                 }
-                else if (key.KeyCode == Keys.F) // do throw.
+                else if (throwRequested) // do throw.
                 {
                     if (canThrowAtTarget)
                     {
@@ -693,15 +711,15 @@ namespace djack.RogueSurvivor.Engine
                         AddMessage(MakeErrorMessage(String.Format("Can't throw there : {0}.", reason)));
                     }
                 }
-                else
+                else if (key != null)
                 {
                     // direction?
-                    Direction dir = CommandToDirection(command);
+                    Direction dir = CommandToDirection(InputTranslator.KeyToCommand(key));
                     if (dir != null)
                     {
-                        Point pos = targetThrow + dir;
-                        if (map.IsInBounds(pos) && m_Rules.GridDistance(player.Location.Position, pos) <= maxThrowDist)
-                            targetThrow = pos;
+                        Point? next = GrenadeTargetFromDirection(targetThrow, dir, map,
+                            player.Location.Position, maxThrowDist);
+                        if (next.HasValue) targetThrow = next.Value;
                     }
                 }
             }
@@ -712,6 +730,25 @@ namespace djack.RogueSurvivor.Engine
 
             // return if we did an action.
             return actionDone;
+        }
+
+        internal static Point? GrenadeTargetFromMouse(Point target, Map map,
+            Rectangle view, Point origin, int maxDistance)
+        {
+            if (!view.Contains(target) || !map.IsInBounds(target) ||
+                Math.Max(Math.Abs(target.X - origin.X), Math.Abs(target.Y - origin.Y)) > maxDistance)
+                return null;
+            return target;
+        }
+
+        internal static Point? GrenadeTargetFromDirection(Point current, Direction direction,
+            Map map, Point origin, int maxDistance)
+        {
+            Point target = current + direction;
+            if (!map.IsInBounds(target) ||
+                Math.Max(Math.Abs(target.X - origin.X), Math.Abs(target.Y - origin.Y)) > maxDistance)
+                return null;
+            return target;
         }
 
         bool HandlePlayerSleep(Actor player)

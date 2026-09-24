@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
 using djack.RogueSurvivor.Engine;
@@ -6,11 +7,16 @@ using djack.RogueSurvivor.Engine;
 // UI calls are inert in headless scenario setup; unexpected input fails fast.
 sealed class ScenarioUI : IRogueUI
 {
+    readonly Queue<KeyEventArgs> keys = new Queue<KeyEventArgs>();
+    readonly Queue<MouseButtons?> buttons = new Queue<MouseButtons?>();
+    public Point MousePosition { get; set; }
+    public void QueueKey(Keys key) { keys.Enqueue(null); keys.Enqueue(new KeyEventArgs(key)); }
+    public void QueueClick(MouseButtons button) { buttons.Enqueue(button); }
     public KeyEventArgs UI_WaitKey() { throw new InvalidOperationException("Scenario requested keyboard input"); }
-    public KeyEventArgs UI_PeekKey() { return null; }
+    public KeyEventArgs UI_PeekKey() { return keys.Count == 0 ? null : keys.Dequeue(); }
     public void UI_PostKey(KeyEventArgs e) { }
-    public Point UI_GetMousePosition() { return Point.Empty; }
-    public MouseButtons? UI_PeekMouseButtons() { return null; }
+    public Point UI_GetMousePosition() { return MousePosition; }
+    public MouseButtons? UI_PeekMouseButtons() { return buttons.Count == 0 ? null : buttons.Dequeue(); }
     public void UI_PostMouseButtons(MouseButtons buttons) { }
     public void UI_SetCursor(Cursor cursor) { }
     public void UI_Wait(int msecs) { }

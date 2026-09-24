@@ -1001,14 +1001,33 @@ namespace djack.RogueSurvivor.Engine
         {
             for (; ; )
             {
-                KeyEventArgs inKey = m_UI.UI_WaitKey();
-                PlayerCommand command = InputTranslator.KeyToCommand(inKey);
-                if (inKey.KeyCode == Keys.Escape)// command == PlayerCommand.EXIT_OR_CANCEL)
-                    return null;
-                Direction dir = CommandToDirection(command);
-                if (dir != null)
-                    return dir;
+                KeyEventArgs key;
+                Point mousePos;
+                MouseButtons? buttons;
+                WaitKeyOrMouse(out key, out mousePos, out buttons);
+                if (key != null)
+                {
+                    if (key.KeyCode == Keys.Escape) return null;
+                    Direction keyboardDirection = CommandToDirection(InputTranslator.KeyToCommand(key));
+                    if (keyboardDirection != null) return keyboardDirection;
+                }
+                else if (m_Player != null)
+                {
+                    if (buttons == MouseButtons.Right) return null;
+                    Direction mouseDirection = DirectionFromMouseTarget(m_Player.Location.Position,
+                        MouseToMap(mousePos), m_MapViewRect, buttons);
+                    if (mouseDirection != null) return mouseDirection;
+                }
             }
+        }
+
+        internal static Direction DirectionFromMouseTarget(Point origin, Point target,
+            Rectangle view, MouseButtons? buttons)
+        {
+            if (buttons != MouseButtons.Left || !view.Contains(target)) return null;
+            Point offset = new Point(target.X - origin.X, target.Y - origin.Y);
+            if (offset.X == 0 && offset.Y == 0) return Direction.NEUTRAL;
+            return Direction.FromVector(offset);
         }
 
         void WaitEnter()
