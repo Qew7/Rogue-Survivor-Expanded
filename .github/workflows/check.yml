@@ -9,9 +9,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Build and run unit tests
+      - name: Build and run unit tests and gameplay scenarios
         run: docker build --target test .
-      - name: Start game and check noVNC
+      - name: Run game startup, VNC, save and load test
         run: bash tests/e2e.sh
   windows:
     runs-on: windows-latest

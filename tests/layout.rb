@@ -11,7 +11,21 @@ unless oversized.empty?
   abort "C# source exceeds 1500 lines: #{oversized.map { |p| p.delete_prefix(root + '/') }.join(', ')}"
 end
 
-test_files = Dir.glob(File.join(root, 'tests', '*.cs'))
+test_files = Dir.glob(File.join(root, 'tests', '**', '*.cs'))
+allowed_test_dirs = %w[unit integration scenarios support]
+misplaced_tests = test_files.reject do |path|
+  relative = path.delete_prefix(File.join(root, 'tests') + '/')
+  relative == 'Program.cs' || allowed_test_dirs.include?(relative.split('/').first)
+end
+abort "Misplaced C# tests: #{misplaced_tests.join(', ')}" unless misplaced_tests.empty?
+case_root = File.join(root, 'tests', 'scenarios', 'cases')
+case_files = Dir.glob(File.join(case_root, '**', '*Scenario.cs'))
+other_case_files = Dir.glob(File.join(case_root, '**', '*.cs')) - case_files
+abort "Misnamed scenario files: #{other_case_files.join(', ')}" unless other_case_files.empty?
+multi_case_files = case_files.reject do |path|
+  File.read(path).scan(/(?:ScenarioRunner\.Add|SkillScenario\.Register)\(/).length == 1
+end
+abort "Expected one scenario per file: #{multi_case_files.join(', ')}" unless multi_case_files.empty?
 large_tests = test_files.select { |path| File.foreach(path).count > 150 }
 unless large_tests.empty?
   abort "C# test exceeds 150 lines: #{large_tests.map { |p| File.basename(p) }.join(', ')}"
@@ -47,4 +61,4 @@ abort "Stale source exceptions: #{stale_exceptions.join(', ')}" unless stale_exc
   abort "Implicit #{catalog} IDs: #{without_number.join(', ')}" unless without_number.empty?
 end
 
-puts "Layout checks passed: #{sources.length} source files, #{test_files.length} unit test files"
+puts "Layout checks passed: #{sources.length} source files, #{test_files.length} C# test files"

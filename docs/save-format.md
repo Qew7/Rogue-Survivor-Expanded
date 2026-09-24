@@ -15,7 +15,7 @@ name, so missing fields keep defaults and unknown fields are ignored. Shared
 references and cycles retain their identity. The reader accepts serializable
 game types and a restricted set of framework values and collections.
 
-When changing a saved class, add a migration test to `tests/` and run both
+When changing a saved class, add a migration test to `tests/unit/` and run both
 `docker build --target test .` and `bash tests/e2e.sh`. The end-to-end test
 creates a real world, saves it, loads it, and reaches the game screen again.
 Renaming a private field loses its old value unless the reader is taught to

@@ -9,12 +9,18 @@ RUN chmod +x /usr/local/bin/csc && ruby /build.rb \
     && xbuild RogueSurvivor.Portable.csproj /p:Configuration=Release \
        /p:CscToolPath=/usr/local/bin /p:CscToolExe=csc /verbosity:minimal
 
-FROM build AS test
-COPY tests/*.cs /src/tests/
-COPY tests/layout.rb /src/tests/layout.rb
-RUN mcs -r:System.Drawing -r:System.Windows.Forms -r:/src/WRogue/bin/Release/RogueSurvivor.exe -out:/src/tests/UnitTests.exe /src/tests/*.cs \
-    && MONO_PATH=/src/WRogue/bin/Release mono /src/tests/UnitTests.exe \
+FROM build AS test-build
+COPY tests/ /src/tests/
+RUN find /src/tests -name '*.cs' -print0 | xargs -0 mcs -r:System.Drawing -r:System.Windows.Forms \
+    -r:/src/WRogue/bin/Release/RogueSurvivor.exe -out:/src/tests/UnitTests.exe
+
+FROM test-build AS test
+RUN MONO_PATH=/src/WRogue/bin/Release mono /src/tests/UnitTests.exe \
     && ROGUE_PROJECT_ROOT=/src ruby /src/tests/layout.rb
+
+FROM test-build AS scenarios
+ENV MONO_PATH=/src/WRogue/bin/Release
+ENTRYPOINT ["mono", "/src/tests/UnitTests.exe"]
 
 FROM debian:bookworm-slim
 RUN apt-get update && apt-get install -y --no-install-recommends \

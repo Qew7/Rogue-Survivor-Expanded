@@ -83,6 +83,24 @@ docker build --target test .
 bash tests/e2e.sh
 ```
 
+For a fast, named game situation, run `sh tests/scenario.sh --list` and then
+`sh tests/scenario.sh movement/wall` (or `--all`). Scenarios use fixed seeds,
+exercise game actions without the UI, and show the map when an assertion fails.
+See [the scenario guide](docs/gameplay-scenarios.md) for adding player, NPC,
+and map cases. The suite has a separate scenario for every skill and covers
+combat, factions, followers, doors, items, survival, weather, generation, and
+map exits and saving.
+Test sources are grouped in `tests/unit`, `tests/integration`, and
+`tests/scenarios`; each gameplay scenario has its own file in
+`tests/scenarios/cases`, grouped by game system. Living and undead skills have
+separate directories. Shared helpers live in `tests/support`, and the VNC
+driver is in `tests/e2e`. The commands above remain the entry points.
+
+Project-specific agent skills for adding skills, weather, factions, actors,
+items, objects, AI behavior, locations, actions, combat rules, survival rules,
+and world events live in `.agents/skills/`. `AGENTS.md` points agents to these
+workflows and the required scenario tests.
+
 The unit suites cover rules, AI, generation, stable content IDs, command
 bindings, input, movement, and save and load behavior. The end-to-end script
 starts an isolated game container, creates a character through VNC, saves and
