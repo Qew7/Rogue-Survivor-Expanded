@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text;
 using System.IO;
 using System.Runtime.Serialization;
-using System.Runtime.Serialization.Formatters.Binary;
 using System.Runtime.Serialization.Formatters.Soap;
 using System.Drawing;
 using System.Xml;
@@ -417,6 +416,9 @@ namespace djack.RogueSurvivor.Engine
         int m_NextAutoSaveTime;
         #endregion
 
+        [OptionalField]
+        DiceRoller m_GameDiceRoller;
+
         [NonSerialized]
         static Session s_TheSession;
         #endregion
@@ -442,6 +444,15 @@ namespace djack.RogueSurvivor.Engine
         }
 
         public int Seed { get; set; }
+        public DiceRoller GameDiceRoller
+        {
+            get
+            {
+                if (m_GameDiceRoller == null)
+                    m_GameDiceRoller = new DiceRoller(Seed);
+                return m_GameDiceRoller;
+            }
+        }
         public WorldTime WorldTime { get { return m_WorldTime; } }
         public int LastTurnPlayerActed { get; set; }
 
@@ -519,6 +530,7 @@ namespace djack.RogueSurvivor.Engine
         public void Reset()
         {
             this.Seed = (int)DateTime.UtcNow.TimeOfDay.Ticks;
+            m_GameDiceRoller = new DiceRoller(Seed);
             m_CurrentMap = null;
             m_Scoring = new Scoring();
             m_World = null;
@@ -617,13 +629,7 @@ namespace djack.RogueSurvivor.Engine
 
             Logger.WriteLine(Logger.Stage.RUN_MAIN, "saving session...");
 
-            IFormatter formatter = CreateFormatter();
-            using (Stream stream = CreateStream(filepath, true))
-            {
-                formatter.Serialize(stream, session);
-                stream.Flush();
-                stream.Close();
-            }
+            BinarySaveStore.Save(filepath, session);
 
             Logger.WriteLine(Logger.Stage.RUN_MAIN, "saving session... done!");
         }
@@ -641,16 +647,10 @@ namespace djack.RogueSurvivor.Engine
 
             try
             {
-                // deserialize.
-                IFormatter formatter = CreateFormatter();
-                using (Stream stream = CreateStream(filepath, false))
+                s_TheSession = (Session)BinarySaveStore.Load(filepath, delegate(object loaded)
                 {
-                    s_TheSession = (Session)formatter.Deserialize(stream);
-                    stream.Close();
-                }
-
-                // reconstruct auxiliary fields.
-                s_TheSession.ReconstructAuxiliaryFields();
+                    ((Session)loaded).ReconstructAuxiliaryFields();
+                });
             }
             catch (Exception e)
             {
@@ -804,11 +804,6 @@ namespace djack.RogueSurvivor.Engine
             Logger.WriteLine(Logger.Stage.RUN_MAIN, "deleting saved game... done!");
 
             return hasDeleted;
-        }
-
-        static IFormatter CreateFormatter()
-        {
-            return new BinaryFormatter();
         }
 
         static IFormatter CreateSoapFormatter()

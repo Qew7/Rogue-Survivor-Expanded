@@ -330,7 +330,7 @@ namespace djack.RogueSurvivor.Gameplay.Generators
             : base(game)
         {
             m_Params = parameters;
-            m_DiceRoller = new DiceRoller();
+            m_DiceRoller = new DiceRoller(game.Session.Seed);
         }
 
 

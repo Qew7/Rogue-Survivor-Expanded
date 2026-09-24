@@ -28,9 +28,21 @@ compiler and Linux packages; later launches can use `docker compose up -d`.
 
 The container builds the bundled `WRogue` sources with Mono and displays the
 game through noVNC. Docker chooses the host architecture automatically. The
-Linux build uses GDI+ and has no sound. The original Windows project and source
-files are not changed: `docker/build.rb` creates a Linux project inside the
-Docker build and `docker/prepare.rb` applies the compatibility edits there.
+portable build uses GDI+ and has no sound. `docker/build.rb` creates a portable
+project from the original project; platform differences live behind `PORTABLE`
+compile conditions in the shared sources. File paths use the host platform's
+separators; the build does not rewrite C# sources or require `MONO_IOMAP`.
+
+The Windows project builds on .NET Framework 4.8 with GDI+ and no sound. Its
+DirectX and SFML binaries were absent from the repository, so the supported
+Windows build uses the same renderer as the container. CI compiles the Windows
+project and runs the Linux game and test suite.
+
+On Windows with Visual Studio's .NET Framework 4.8 build tools, build
+`RogueSurvivor.sln` in `Release|Any CPU` and run
+`bin/Release/RogueSurvivor.exe` from the `WRogue` directory so relative
+resource paths resolve. The old Config setup utility is excluded from the
+solution because the portable build selects GDI+ automatically.
 
 Save in the game with Shift+S before stopping the container. Saves, settings,
 and logs are kept in the Docker volume `game-data`, which survives rebuilds and
@@ -60,7 +72,9 @@ shared state, then open the named parts for actions, rules, AI behaviors, town
 locations, or item models. All parts are listed explicitly in
 `WRogue/RogueSurvivor.csproj` for the original Windows build and the generated
 Linux build. Every C# source file is kept at or below 1500 lines; the test stage
-checks this limit and project entries.
+checks this limit and project entries. Player input, manual navigation,
+overlays, and background simulation have separate components with focused
+tests; `RogueGame` coordinates them.
 
 Run the regression checks after changing these classes:
 
@@ -69,10 +83,19 @@ docker build --target test .
 bash tests/e2e.sh
 ```
 
-The unit suites cover message formatting, view coordinates, AI perception and
-item interest, distances, town block geometry, and item grammar. The end-to-end
-script starts an isolated game container and checks startup, configuration,
-HTTP, and the VNC WebSocket handshake. It removes its test volume afterward.
-These checks do not exercise a full playthrough. `.editorconfig` records the
-whitespace rules for new edits; `ruby tests/layout.rb` checks file sizes and
-project entries without Docker.
+The unit suites cover rules, AI, generation, stable content IDs, command
+bindings, input, movement, and save and load behavior. The end-to-end script
+starts an isolated game container, creates a character through VNC, saves and
+loads the game, and checks the browser endpoint. It removes its test volume
+afterward. GitHub Actions runs both commands on pushes and pull requests.
+`.editorconfig` records whitespace rules; `ruby tests/layout.rb` checks file
+sizes, project entries, and explicit content IDs without Docker.
+
+Binary saves have a version marker and an automatically retained `.bak` copy.
+New saves use a compressed object graph format that preserves cycles and shared
+references. Existing unmarked saves and version 1 saves still load through the
+legacy `BinaryFormatter` reader, then migrate when saved again. The new format
+records private field names, so changes to serialized classes still need a
+compatibility test; see [the format notes](docs/save-format.md). The simulation
+worker stops cooperatively before save and load; deterministic random state is
+kept in the saved session.

@@ -170,10 +170,7 @@ namespace djack.RogueSurvivor.Engine
                     DrawActorSkillTable(m_Player, RIGHTPANEL_TEXT_X, SKILLTABLE_Y);
 
                 // overlays
-                Monitor.Enter(m_Overlays);
-                foreach (Overlay o in m_Overlays)
-                    o.Draw(m_UI);
-                Monitor.Exit(m_Overlays);
+                m_Overlays.Draw(m_UI);
                 DrawMouseMovePreview();
 
                 // DEV STATS
@@ -248,38 +245,23 @@ namespace djack.RogueSurvivor.Engine
         #region Overlays
         void AddOverlay(Overlay o)
         {
-            lock (m_Overlays)  // alpha10
-            {
-                m_Overlays.Add(o);
-            }
+            m_Overlays.Add(o);
         }
 
         void ClearOverlays()
         {
-            lock (m_Overlays)  // alpha10
-            {
-                m_Overlays.Clear();
-            }
+            m_Overlays.Clear();
         }
 
         void RemoveOverlay(Overlay o)
         {
-            lock (m_Overlays)  // alpha10
-            {
-                m_Overlays.Remove(o);
-            }
+            m_Overlays.Remove(o);
         }
 
         // alpha10
         bool HasOverlay(Overlay o)
         {
-            bool hasIt = false;
-            lock (m_Overlays)
-            {
-                if (m_Overlays.Contains(o))
-                    hasIt = true;
-            }
-            return hasIt;
+            return m_Overlays.Contains(o);
         }
         #endregion
 

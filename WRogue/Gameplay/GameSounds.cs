@@ -2,12 +2,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.IO;
 
 namespace djack.RogueSurvivor.Gameplay
 {
     static class GameSounds
     {
-        static readonly string PATH = @"Resources\Sfx\";
+        static readonly string PATH = Path.Combine("Resources", "Sfx") + Path.DirectorySeparatorChar;
 
         public static readonly string UNDEAD_EAT = "undead eat";
         public static readonly string UNDEAD_EAT_FILE = PATH + "sfx - undead eat";

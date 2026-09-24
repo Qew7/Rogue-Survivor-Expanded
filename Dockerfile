@@ -4,16 +4,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends mono-devel ruby
 WORKDIR /src/WRogue
 COPY WRogue/ ./
 COPY docker/build.rb /build.rb
-COPY docker/prepare.rb /prepare.rb
 COPY docker/csc /usr/local/bin/csc
 RUN chmod +x /usr/local/bin/csc && ruby /build.rb \
-    && MONO_IOMAP=all xbuild RogueSurvivor.Linux.csproj /p:Configuration=Release \
+    && xbuild RogueSurvivor.Portable.csproj /p:Configuration=Release \
        /p:CscToolPath=/usr/local/bin /p:CscToolExe=csc /verbosity:minimal
 
 FROM build AS test
 COPY tests/*.cs /src/tests/
 COPY tests/layout.rb /src/tests/layout.rb
-RUN mcs -r:System.Drawing -r:System.Windows.Forms -out:/src/tests/UnitTests.exe /src/tests/*.cs \
+RUN mcs -r:System.Drawing -r:System.Windows.Forms -r:/src/WRogue/bin/Release/RogueSurvivor.exe -out:/src/tests/UnitTests.exe /src/tests/*.cs \
     && MONO_PATH=/src/WRogue/bin/Release mono /src/tests/UnitTests.exe \
     && ROGUE_PROJECT_ROOT=/src ruby /src/tests/layout.rb
 
@@ -31,7 +30,7 @@ COPY docker/entrypoint.sh /usr/local/bin/start-game
 COPY docker/index.html /usr/share/novnc/index.html
 RUN chmod +x /usr/local/bin/start-game \
     && mkdir -p /opt/game/Config && chown player:player /opt/game/Config
-ENV DISPLAY=:99 MONO_IOMAP=all
+ENV DISPLAY=:99
 USER player
 EXPOSE 6080
 HEALTHCHECK --interval=15s --timeout=3s --start-period=30s \

@@ -16,30 +16,30 @@ namespace djack.RogueSurvivor.Gameplay
         {
             _FIRST = 0,
 
-            UNDEF = _FIRST,
+            UNDEF = 0,
 
-            FLOOR_ASPHALT,
-            FLOOR_CONCRETE,
-            FLOOR_GRASS,
-            FLOOR_OFFICE,
-            FLOOR_PLANKS,
-            FLOOR_SEWER_WATER,
-            FLOOR_TILES,
-            FLOOR_WALKWAY,
+            FLOOR_ASPHALT = 1,
+            FLOOR_CONCRETE = 2,
+            FLOOR_GRASS = 3,
+            FLOOR_OFFICE = 4,
+            FLOOR_PLANKS = 5,
+            FLOOR_SEWER_WATER = 6,
+            FLOOR_TILES = 7,
+            FLOOR_WALKWAY = 8,
 
-            ROAD_ASPHALT_EW,
-            ROAD_ASPHALT_NS,
-            RAIL_EW,
+            ROAD_ASPHALT_EW = 9,
+            ROAD_ASPHALT_NS = 10,
+            RAIL_EW = 11,
 
-            WALL_BRICK,
-            WALL_CHAR_OFFICE,
-            WALL_HOSPITAL,
-            WALL_POLICE_STATION,
-            WALL_SEWER,
-            WALL_STONE,
-            WALL_SUBWAY,
+            WALL_BRICK = 12,
+            WALL_CHAR_OFFICE = 13,
+            WALL_HOSPITAL = 14,
+            WALL_POLICE_STATION = 15,
+            WALL_SEWER = 16,
+            WALL_STONE = 17,
+            WALL_SUBWAY = 18,
 
-            _COUNT
+            _COUNT = 19
         }
         #endregion
 

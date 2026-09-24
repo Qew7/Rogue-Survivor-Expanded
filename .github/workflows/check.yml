@@ -1,0 +1,22 @@
+name: Check
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  game:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and run unit tests
+        run: docker build --target test .
+      - name: Start game and check noVNC
+        run: bash tests/e2e.sh
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: microsoft/setup-msbuild@v3
+      - name: Build Windows game
+        run: msbuild RogueSurvivor.sln /p:Configuration=Release '/p:Platform=Any CPU' /verbosity:minimal

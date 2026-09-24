@@ -41,10 +41,12 @@
             Logger.WriteLine(Logger.Stage.INIT_MAIN, "creating GameCanvas...");
             switch (SetupConfig.Video)
             {
+#if !PORTABLE
                 case SetupConfig.eVideo.VIDEO_MANAGED_DIRECTX:
                     Logger.WriteLine(Logger.Stage.INIT_MAIN, "DXGameCanvas implementation...");
                     this.m_GameCanvas = new djack.RogueSurvivor.UI.DXGameCanvas();
                     break;
+#endif
                 default:
                     Logger.WriteLine(Logger.Stage.INIT_MAIN, "GDIPlusGameCanvas implementation...");
                     this.m_GameCanvas = new djack.RogueSurvivor.UI.GDIPlusGameCanvas();
@@ -90,4 +92,3 @@
 
     }
 }
-

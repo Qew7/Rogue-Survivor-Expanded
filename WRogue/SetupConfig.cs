@@ -34,7 +34,7 @@ namespace djack.RogueSurvivor
         {
             get
             {
-                return Environment.CurrentDirectory + @"\Config\";
+                return Path.Combine(Environment.CurrentDirectory, "Config") + Path.DirectorySeparatorChar;
             }
         }
 
@@ -42,7 +42,7 @@ namespace djack.RogueSurvivor
         {
             get
             {
-                return DirPath + @"\setup.dat";
+                return Path.Combine(DirPath, "setup.dat");
             }
         }
 
@@ -57,6 +57,12 @@ namespace djack.RogueSurvivor
 
         public static void Load()
         {
+#if PORTABLE
+            Directory.CreateDirectory(DirPath);
+            Video = eVideo.VIDEO_GDI_PLUS;
+            Sound = eSound.SOUND_NOSOUND;
+            Save();
+#else
             if (File.Exists(FilePath))
             {
                 using (StreamReader sr = File.OpenText(FilePath))
@@ -75,6 +81,7 @@ namespace djack.RogueSurvivor
 
                 Save();
             }
+#endif
         }
 
         public static string toString(eVideo v)

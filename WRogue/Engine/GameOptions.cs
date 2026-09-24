@@ -2,9 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.IO;
-using System.Runtime.Serialization;
-using System.Runtime.Serialization.Formatters.Binary;
 
 namespace djack.RogueSurvivor.Engine
 {
@@ -893,12 +890,7 @@ namespace djack.RogueSurvivor.Engine
 
             Logger.WriteLine(Logger.Stage.RUN_MAIN, "saving options...");
 
-            IFormatter formatter = CreateFormatter();
-            Stream stream = CreateStream(filepath, true);
-
-            formatter.Serialize(stream, options);
-            stream.Flush();
-            stream.Close();
+            BinarySaveStore.Save(filepath, options);
 
             Logger.WriteLine(Logger.Stage.RUN_MAIN, "saving options... done!");
         }
@@ -917,11 +909,7 @@ namespace djack.RogueSurvivor.Engine
             GameOptions options;
             try
             {
-                IFormatter formatter = CreateFormatter();
-                Stream stream = CreateStream(filepath, false);
-
-                options = (GameOptions)formatter.Deserialize(stream);
-                stream.Close();
+                options = BinarySaveStore.Load<GameOptions>(filepath);
             }
             catch (Exception e)
             {
@@ -936,18 +924,6 @@ namespace djack.RogueSurvivor.Engine
             return options;
         }
 
-        static IFormatter CreateFormatter()
-        {
-            return new BinaryFormatter();
-        }
-
-        static Stream CreateStream(string saveFileName, bool save)
-        {
-            return new FileStream(saveFileName,
-                save ? FileMode.Create : FileMode.Open,
-                save ? FileAccess.Write : FileAccess.Read,
-                FileShare.None);
-        }
         #endregion
     }
 }

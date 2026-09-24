@@ -186,6 +186,7 @@ namespace djack.RogueSurvivor.Engine
                 gy += BOLD_LINE_SPACING;
                 DrawFootnote(Color.White, "press ENTER");
                 m_UI.UI_Repaint();
+                Logger.WriteLine(Logger.Stage.RUN_MAIN, "directory setup ready for confirmation");
                 WaitEnter();
             }
         }
@@ -193,6 +194,7 @@ namespace djack.RogueSurvivor.Engine
         void HandleMainMenu()
         {
             bool loop = true;
+            bool menuReadyLogged = false;
             bool isLoadEnabled = File.Exists(GetUserSave());
 
             string[] menuEntries = new string[] {
@@ -243,6 +245,11 @@ namespace djack.RogueSurvivor.Engine
 
                 // repaint.
                 m_UI.UI_Repaint();
+                if (!menuReadyLogged)
+                {
+                    Logger.WriteLine(Logger.Stage.RUN_MAIN, "main menu ready");
+                    menuReadyLogged = true;
+                }
 
                 // get menu action.
                 KeyEventArgs key = m_UI.UI_WaitKey();
@@ -392,6 +399,7 @@ namespace djack.RogueSurvivor.Engine
             // start simulation thread.
             StopSimThread(false);  // alpha10 stop-start
             StartSimThread();
+            Logger.WriteLine(Logger.Stage.RUN_MAIN, "new game ready");
         }
 
         /// <summary>

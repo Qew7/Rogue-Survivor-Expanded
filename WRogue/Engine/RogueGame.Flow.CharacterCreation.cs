@@ -26,12 +26,12 @@ namespace djack.RogueSurvivor.Engine
         #region Character creation
         bool HandleNewCharacter()
         {
-            DiceRoller roller = new DiceRoller();
-
             /////////////////
             // Reset session
             /////////////////
             m_Session.Reset();
+            m_Rules = new Rules(m_Session.GameDiceRoller);
+            DiceRoller roller = m_Session.GameDiceRoller;
 
             ///////////////
             // Game Mode //

@@ -449,200 +449,6 @@ namespace djack.RogueSurvivor.Engine
         #endregion
 
         #region Types
-        #region Overlays
-        abstract class Overlay
-        {
-            public abstract void Draw(IRogueUI ui);
-        }
-
-        class OverlayImage : Overlay
-        {
-            public Point ScreenPosition { get; set; }
-            public string ImageID { get; set; }
-
-            public OverlayImage(Point screenPosition, string imageID)
-            {
-                this.ScreenPosition = screenPosition;
-                this.ImageID = imageID;
-            }
-
-            public override void Draw(IRogueUI ui)
-            {
-                ui.UI_DrawImage(ImageID, ScreenPosition.X, ScreenPosition.Y);
-            }
-        }
-
-        class OverlayTransparentImage : Overlay
-        {
-            public float Alpha { get; set; }
-            public Point ScreenPosition { get; set; }
-            public string ImageID { get; set; }
-
-            public OverlayTransparentImage(float alpha, Point screenPosition, string imageID)
-            {
-                this.Alpha = alpha;
-                this.ScreenPosition = screenPosition;
-                this.ImageID = imageID;
-            }
-
-            public override void Draw(IRogueUI ui)
-            {
-                ui.UI_DrawTransparentImage(Alpha, ImageID, ScreenPosition.X, ScreenPosition.Y);
-            }
-        }
-
-        class OverlayText : Overlay
-        {
-            public Point ScreenPosition { get; set; }
-            public string Text { get; set; }
-            public Color Color { get; set; }
-            public Color? ShadowColor { get; set; }
-
-            public OverlayText(Point screenPosition, Color color, string text)
-                : this(screenPosition, color, text, null)
-            {
-            }
-
-            public OverlayText(Point screenPosition, Color color, string text, Color? shadowColor)
-            {
-                this.ScreenPosition = screenPosition;
-                this.Color = color;
-                this.ShadowColor = shadowColor;
-                this.Text = text;
-            }
-
-            public override void Draw(IRogueUI ui)
-            {
-                if (ShadowColor.HasValue)
-                    ui.UI_DrawString(ShadowColor.Value, Text, ScreenPosition.X + 1, ScreenPosition.Y + 1);
-                ui.UI_DrawString(Color, Text, ScreenPosition.X, ScreenPosition.Y);
-            }
-        }
-
-        class OverlayLine : Overlay
-        {
-            public Point ScreenFrom { get; set; }
-            public Point ScreenTo { get; set; }
-            public Color Color { get; set; }
-
-            public OverlayLine(Point screenFrom, Color color, Point screenTo)
-            {
-                ScreenFrom = screenFrom;
-                ScreenTo = screenTo;
-                Color = color;
-            }
-
-            public override void Draw(IRogueUI ui)
-            {
-                ui.UI_DrawLine(Color, ScreenFrom.X, ScreenFrom.Y, ScreenTo.X, ScreenTo.Y);
-            }
-        }
-
-        class OverlayRect : Overlay
-        {
-            public Rectangle Rectangle { get; set; }
-            public Color Color { get; set; }
-
-            public OverlayRect(Color color, Rectangle rect)
-            {
-                this.Rectangle = rect;
-                this.Color = color;
-            }
-
-            public override void Draw(IRogueUI ui)
-            {
-                ui.UI_DrawRect(this.Color, this.Rectangle);
-            }
-        }
-
-        class OverlayPopup : Overlay
-        {
-            public Point ScreenPosition { get; set; }
-            public Color TextColor { get; set; }
-            public Color BoxBorderColor { get; set; }
-            public Color BoxFillColor { get; set; }
-            public string[] Lines { get; set; }
-
-            /// <summary>
-            ///
-            /// </summary>
-            /// <param name="lines">can be null if want to set text property later</param>
-            /// <param name="textColor"></param>
-            /// <param name="boxBorderColor"></param>
-            /// <param name="boxFillColor"></param>
-            /// <param name="screenPos"></param>
-            public OverlayPopup(string[] lines, Color textColor, Color boxBorderColor, Color boxFillColor, Point screenPos)
-            {
-                this.ScreenPosition = screenPos;
-                this.TextColor = textColor;
-                this.BoxBorderColor = boxBorderColor;
-                this.BoxFillColor = boxFillColor;
-                this.Lines = lines;
-            }
-
-            public override void Draw(IRogueUI ui)
-            {
-                ui.UI_DrawPopup(Lines, TextColor, BoxBorderColor, BoxFillColor, ScreenPosition.X, ScreenPosition.Y);
-            }
-        }
-
-        // alpha10
-
-        class OverlayPopupTitle : Overlay
-        {
-            public Point ScreenPosition { get; set; }
-            public string Title { get; set; }
-            public Color TitleColor { get; set; }
-            public string[] Lines { get; set; }
-            public Color TextColor { get; set; }
-            public Color BoxBorderColor { get; set; }
-            public Color BoxFillColor { get; set; }
-
-            public OverlayPopupTitle(string title, Color titleColor, string[] lines, Color textColor, Color boxBorderColor, Color boxFillColor, Point screenPos)
-            {
-                this.ScreenPosition = screenPos;
-                this.Title = title;
-                this.TitleColor = titleColor;
-                this.TextColor = textColor;
-                this.BoxBorderColor = boxBorderColor;
-                this.BoxFillColor = boxFillColor;
-                this.Lines = lines;
-            }
-
-            public override void Draw(IRogueUI ui)
-            {
-                ui.UI_DrawPopupTitle(Title, TitleColor, Lines, TextColor, BoxBorderColor, BoxFillColor, ScreenPosition.X, ScreenPosition.Y);
-            }
-        }
-
-        class OverlayPopupTitleColors : Overlay
-        {
-            public Point ScreenPosition { get; set; }
-            public string Title { get; set; }
-            public Color TitleColor { get; set; }
-            public string[] Lines { get; set; }
-            public Color[] Colors { get; set; }
-            public Color BoxBorderColor { get; set; }
-            public Color BoxFillColor { get; set; }
-
-            public OverlayPopupTitleColors(string title, Color titleColor, string[] lines, Color[] colors, Color boxBorderColor, Color boxFillColor, Point screenPos)
-            {
-                this.ScreenPosition = screenPos;
-                this.Title = title;
-                this.TitleColor = titleColor;
-                this.Colors = colors;
-                this.BoxBorderColor = boxBorderColor;
-                this.BoxFillColor = boxFillColor;
-                this.Lines = lines;
-            }
-
-            public override void Draw(IRogueUI ui)
-            {
-                ui.UI_DrawPopupTitleColors(Title, TitleColor, Lines, Colors, BoxBorderColor, BoxFillColor, ScreenPosition.X, ScreenPosition.Y);
-            }
-        }
-        #endregion
-
         #region Character generation
         struct CharGen
         {
@@ -673,7 +479,7 @@ namespace djack.RogueSurvivor.Engine
         MessageManager m_MessageManager;
         bool m_IsGameRunning = true;
         bool m_HasLoadedGame = false;
-        List<Overlay> m_Overlays = new List<Overlay>();
+        readonly OverlayCollection m_Overlays = new OverlayCollection();
         Actor m_Player;
         HashSet<Point> m_PlayerFOV = new HashSet<Point>();
         Rectangle m_MapViewRect;
@@ -691,8 +497,7 @@ namespace djack.RogueSurvivor.Engine
 
         CharGen m_CharGen;
 
-        TextFile m_Manual;
-        int m_ManualLine;
+        ManualNavigator m_Manual;
 
         GameFactions m_GameFactions;
         GameActors m_GameActors;
@@ -703,12 +508,7 @@ namespace djack.RogueSurvivor.Engine
         bool m_IsPlayerLongWaitForcedStop;
         WorldTime m_PlayerLongWaitEnd;
 
-        // alpha10 new sim thread management
-        //Object m_SimMutex = new Object();  // alpha10 obsolete
-        Thread m_SimThread;
-        readonly Object m_SimStateLock = new Object(); // alpha10 lock when reading sim thread state flags
-        bool m_SimThreadDoRun;  // alpha10 sim thread state: set by main thread to false to ask sim thread to stop.
-        bool m_SimThreadIsWorking;  // alpha10 sim thread state: set by sim thread to false when has exited loop.
+        DistrictSimulationWorker m_SimWorker;
         #endregion
 
         #region Properties
@@ -788,12 +588,14 @@ namespace djack.RogueSurvivor.Engine
             Logger.WriteLine(Logger.Stage.INIT_MAIN, "creating MusicManager");
             switch (SetupConfig.Sound)
             {
+#if !PORTABLE
                 case SetupConfig.eSound.SOUND_MANAGED_DIRECTX:
                     m_MusicManager = new MDXSoundManager();
                     break;
                 case SetupConfig.eSound.SOUND_SFML:
                     m_MusicManager = new SFMLSoundManager();
                     break;
+#endif
                 default:
                     m_MusicManager = new NullSoundManager();
                     break;
@@ -804,7 +606,7 @@ namespace djack.RogueSurvivor.Engine
 
             m_Session = Session.Get;
             Logger.WriteLine(Logger.Stage.INIT_MAIN, "creating Rules");
-            m_Rules = new Rules(new DiceRoller(m_Session.Seed));
+            m_Rules = new Rules(m_Session.GameDiceRoller);
 
             BaseTownGenerator.Parameters genParams = BaseTownGenerator.DEFAULT_PARAMS;
             genParams.MapWidth = genParams.MapHeight = 100;
@@ -1372,25 +1174,30 @@ namespace djack.RogueSurvivor.Engine
 
         void LoadDataActors()
         {
-            m_GameActors.LoadFromCSV(m_UI, @"Resources\Data\Actors.csv");
+            m_GameActors.LoadFromCSV(m_UI, DataFile("Actors.csv"));
+        }
+
+        static string DataFile(string name)
+        {
+            return Path.Combine("Resources", "Data", name);
         }
 
         void LoadDataItems()
         {
             // load all data.
-            m_GameItems.LoadMedicineFromCSV(m_UI, @"Resources\Data\Items_Medicine.csv");
-            m_GameItems.LoadFoodFromCSV(m_UI, @"Resources\Data\Items_Food.csv");
-            m_GameItems.LoadMeleeWeaponsFromCSV(m_UI, @"Resources\Data\Items_MeleeWeapons.csv");
-            m_GameItems.LoadRangedWeaponsFromCSV(m_UI, @"Resources\Data\Items_RangedWeapons.csv");
-            m_GameItems.LoadExplosivesFromCSV(m_UI, @"Resources\Data\Items_Explosives.csv");
-            m_GameItems.LoadBarricadingMaterialFromCSV(m_UI, @"Resources\Data\Items_Barricading.csv");
-            m_GameItems.LoadArmorsFromCSV(m_UI, @"Resources\Data\Items_Armors.csv");
-            m_GameItems.LoadTrackersFromCSV(m_UI, @"Resources\Data\Items_Trackers.csv");
-            m_GameItems.LoadSpraypaintsFromCSV(m_UI, @"Resources\Data\Items_Spraypaints.csv");
-            m_GameItems.LoadLightsFromCSV(m_UI, @"Resources\Data\Items_Lights.csv");
-            m_GameItems.LoadScentspraysFromCSV(m_UI, @"Resources\Data\Items_Scentsprays.csv");
-            m_GameItems.LoadTrapsFromCSV(m_UI, @"Resources\Data\Items_Traps.csv");
-            m_GameItems.LoadEntertainmentFromCSV(m_UI, @"Resources\Data\Items_Entertainment.csv");
+            m_GameItems.LoadMedicineFromCSV(m_UI, DataFile("Items_Medicine.csv"));
+            m_GameItems.LoadFoodFromCSV(m_UI, DataFile("Items_Food.csv"));
+            m_GameItems.LoadMeleeWeaponsFromCSV(m_UI, DataFile("Items_MeleeWeapons.csv"));
+            m_GameItems.LoadRangedWeaponsFromCSV(m_UI, DataFile("Items_RangedWeapons.csv"));
+            m_GameItems.LoadExplosivesFromCSV(m_UI, DataFile("Items_Explosives.csv"));
+            m_GameItems.LoadBarricadingMaterialFromCSV(m_UI, DataFile("Items_Barricading.csv"));
+            m_GameItems.LoadArmorsFromCSV(m_UI, DataFile("Items_Armors.csv"));
+            m_GameItems.LoadTrackersFromCSV(m_UI, DataFile("Items_Trackers.csv"));
+            m_GameItems.LoadSpraypaintsFromCSV(m_UI, DataFile("Items_Spraypaints.csv"));
+            m_GameItems.LoadLightsFromCSV(m_UI, DataFile("Items_Lights.csv"));
+            m_GameItems.LoadScentspraysFromCSV(m_UI, DataFile("Items_Scentsprays.csv"));
+            m_GameItems.LoadTrapsFromCSV(m_UI, DataFile("Items_Traps.csv"));
+            m_GameItems.LoadEntertainmentFromCSV(m_UI, DataFile("Items_Entertainment.csv"));
 
             // create.
             m_GameItems.CreateModels();
@@ -1398,7 +1205,7 @@ namespace djack.RogueSurvivor.Engine
 
         void LoadDataSkills()
         {
-            Skills.LoadSkillsFromCSV(m_UI, @"Resources\Data\Skills.csv");
+            Skills.LoadSkillsFromCSV(m_UI, DataFile("Skills.csv"));
         }
         #endregion
 

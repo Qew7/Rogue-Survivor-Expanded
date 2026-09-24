@@ -981,7 +981,7 @@ namespace djack.RogueSurvivor.Gameplay
 
         static void Load(string id)
         {
-            string file = FOLDER + id + ".png";
+            string file = (FOLDER + id + ".png").Replace('\\', System.IO.Path.DirectorySeparatorChar);
             try
             {
                 Bitmap img = new Bitmap(file);
@@ -1045,4 +1045,3 @@ namespace djack.RogueSurvivor.Gameplay
         #endregion
     }
 }
-

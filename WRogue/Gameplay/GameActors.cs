@@ -16,51 +16,51 @@ namespace djack.RogueSurvivor.Gameplay
         #region IDs
         public enum IDs
         {
-            _FIRST,
+            _FIRST = 0,
 
-            UNDEAD_SKELETON = _FIRST,
-            UNDEAD_RED_EYED_SKELETON,
-            UNDEAD_RED_SKELETON,                
+            UNDEAD_SKELETON = 0,
+            UNDEAD_RED_EYED_SKELETON = 1,
+            UNDEAD_RED_SKELETON = 2,
 
-            UNDEAD_ZOMBIE,
-            UNDEAD_DARK_EYED_ZOMBIE,
-            UNDEAD_DARK_ZOMBIE,
+            UNDEAD_ZOMBIE = 3,
+            UNDEAD_DARK_EYED_ZOMBIE = 4,
+            UNDEAD_DARK_ZOMBIE = 5,
 
-            UNDEAD_ZOMBIE_MASTER,
-            UNDEAD_ZOMBIE_LORD,
-            UNDEAD_ZOMBIE_PRINCE,
+            UNDEAD_ZOMBIE_MASTER = 6,
+            UNDEAD_ZOMBIE_LORD = 7,
+            UNDEAD_ZOMBIE_PRINCE = 8,
 
-            UNDEAD_MALE_ZOMBIFIED,
-            UNDEAD_FEMALE_ZOMBIFIED,
-            UNDEAD_MALE_NEOPHYTE,
-            UNDEAD_FEMALE_NEOPHYTE,
-            UNDEAD_MALE_DISCIPLE,
-            UNDEAD_FEMALE_DISCIPLE,
+            UNDEAD_MALE_ZOMBIFIED = 9,
+            UNDEAD_FEMALE_ZOMBIFIED = 10,
+            UNDEAD_MALE_NEOPHYTE = 11,
+            UNDEAD_FEMALE_NEOPHYTE = 12,
+            UNDEAD_MALE_DISCIPLE = 13,
+            UNDEAD_FEMALE_DISCIPLE = 14,
 
-            UNDEAD_RAT_ZOMBIE,
+            UNDEAD_RAT_ZOMBIE = 15,
 
-            UNDEAD_ZOMBIE_BRUTE,
+            UNDEAD_ZOMBIE_BRUTE = 16,
 
-            MALE_CIVILIAN,
-            FEMALE_CIVILIAN,
-            FERAL_DOG,
+            MALE_CIVILIAN = 17,
+            FEMALE_CIVILIAN = 18,
+            FERAL_DOG = 19,
 
-            CHAR_GUARD,
+            CHAR_GUARD = 20,
 
-            ARMY_NATIONAL_GUARD,
+            ARMY_NATIONAL_GUARD = 21,
 
-            BIKER_MAN,
+            BIKER_MAN = 22,
 
-            POLICEMAN,
+            POLICEMAN = 23,
 
-            GANGSTA_MAN,
+            GANGSTA_MAN = 24,
 
-            BLACKOPS_MAN,
+            BLACKOPS_MAN = 25,
 
-            SEWERS_THING,
-            JASON_MYERS,
+            SEWERS_THING = 26,
+            JASON_MYERS = 27,
 
-            _COUNT
+            _COUNT = 28
         }
         #endregion
 

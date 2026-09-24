@@ -52,3 +52,5 @@ with socket.create_connection(('127.0.0.1', int(sys.argv[1])), timeout=5) as soc
         raise SystemExit('VNC WebSocket handshake failed: ' + repr(response))
 print('Game startup, configuration, HTTP and VNC WebSocket checks passed')
 PY
+
+docker compose -p "$project" exec -T game python3 - < tests/vnc_play.py

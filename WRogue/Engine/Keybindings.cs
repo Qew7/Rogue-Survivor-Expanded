@@ -3,9 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
-using System.IO;
-using System.Runtime.Serialization;
-using System.Runtime.Serialization.Formatters.Binary;
 
 namespace djack.RogueSurvivor.Engine
 {
@@ -164,12 +161,7 @@ namespace djack.RogueSurvivor.Engine
 
             Logger.WriteLine(Logger.Stage.RUN_MAIN, "saving keybindings...");
 
-            IFormatter formatter = CreateFormatter();
-            Stream stream = CreateStream(filepath, true);
-
-            formatter.Serialize(stream, kb);
-            stream.Flush();
-            stream.Close();
+            BinarySaveStore.Save(filepath, kb);
 
             Logger.WriteLine(Logger.Stage.RUN_MAIN, "saving keybindings... done!");
         }
@@ -186,11 +178,7 @@ namespace djack.RogueSurvivor.Engine
 
             try
             {
-                IFormatter formatter = CreateFormatter();
-                Stream stream = CreateStream(filepath, false);
-
-                kb = (Keybindings)formatter.Deserialize(stream);
-                stream.Close();
+                kb = BinarySaveStore.Load<Keybindings>(filepath);
                 if (kb.Get(PlayerCommand.MOUSE_MOVE_MODE) == Keys.None && kb.Get(Keys.M) == PlayerCommand.NONE)
                     kb.Set(PlayerCommand.MOUSE_MOVE_MODE, Keys.M);
             }
@@ -207,18 +195,6 @@ namespace djack.RogueSurvivor.Engine
             return kb;
         }
 
-        static IFormatter CreateFormatter()
-        {
-            return new BinaryFormatter();
-        }
-
-        static Stream CreateStream(string saveName, bool save)
-        {
-            return new FileStream(saveName,
-                save ? FileMode.Create : FileMode.Open,
-                save ? FileAccess.Write : FileAccess.Read,
-                FileShare.None);
-        }
         #endregion
     }
 }

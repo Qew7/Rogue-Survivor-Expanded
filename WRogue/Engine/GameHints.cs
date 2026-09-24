@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Runtime.Serialization;
-using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 
 namespace djack.RogueSurvivor.Engine
@@ -55,12 +52,7 @@ namespace djack.RogueSurvivor.Engine
 
             Logger.WriteLine(Logger.Stage.RUN_MAIN, "saving hints...");
 
-            IFormatter formatter = CreateFormatter();
-            Stream stream = CreateStream(filepath, true);
-
-            formatter.Serialize(stream, hints);
-            stream.Flush();
-            stream.Close();
+            BinarySaveStore.Save(filepath, hints);
 
             Logger.WriteLine(Logger.Stage.RUN_MAIN, "saving hints... done!");
         }
@@ -79,11 +71,7 @@ namespace djack.RogueSurvivor.Engine
             GameHintsStatus hints;
             try
             {
-                IFormatter formatter = CreateFormatter();
-                Stream stream = CreateStream(filepath, false);
-
-                hints = (GameHintsStatus)formatter.Deserialize(stream);
-                stream.Close();
+                hints = BinarySaveStore.Load<GameHintsStatus>(filepath);
             }
             catch (Exception e)
             {
@@ -94,22 +82,10 @@ namespace djack.RogueSurvivor.Engine
                 hints.ResetAllHints();
             }
 
-            Logger.WriteLine(Logger.Stage.RUN_MAIN, "loading options... done!");
+            Logger.WriteLine(Logger.Stage.RUN_MAIN, "loading hints... done!");
             return hints;
         }
 
-        static IFormatter CreateFormatter()
-        {
-            return new BinaryFormatter();
-        }
-
-        static Stream CreateStream(string saveFileName, bool save)
-        {
-            return new FileStream(saveFileName,
-                save ? FileMode.Create : FileMode.Open,
-                save ? FileAccess.Write : FileAccess.Read,
-                FileShare.None);
-        }
         #endregion
     }
 }

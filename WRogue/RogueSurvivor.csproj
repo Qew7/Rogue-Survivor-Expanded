@@ -10,7 +10,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>djack.RogueSurvivor</RootNamespace>
     <AssemblyName>RogueSurvivor</AssemblyName>
-    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <StartupObject>djack.RogueSurvivor.Program</StartupObject>
     <ManifestCertificateThumbprint>FEE48166C5B004BB2E5F7DA54BA8BF0CA148007C</ManifestCertificateThumbprint>
@@ -51,7 +51,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;PORTABLE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <UseVSHostingProcess>false</UseVSHostingProcess>
@@ -60,7 +60,7 @@
     <DebugType>none</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
+    <DefineConstants>TRACE;PORTABLE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <UseVSHostingProcess>false</UseVSHostingProcess>
@@ -69,7 +69,7 @@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <OutputPath>bin\x86\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;PORTABLE</DefineConstants>
     <DebugType>full</DebugType>
     <PlatformTarget>x86</PlatformTarget>
     <UseVSHostingProcess>false</UseVSHostingProcess>
@@ -79,8 +79,7 @@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
     <OutputPath>bin\x86\Release\</OutputPath>
-    <DefineConstants>
-    </DefineConstants>
+    <DefineConstants>TRACE;PORTABLE</DefineConstants>
     <Optimize>true</Optimize>
     <PlatformTarget>x86</PlatformTarget>
     <UseVSHostingProcess>false</UseVSHostingProcess>
@@ -88,31 +87,6 @@
   </PropertyGroup>
   <PropertyGroup />
   <ItemGroup>
-    <Reference Include="Microsoft.DirectX, Version=1.0.2902.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>libs\mdx\Microsoft.DirectX.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.DirectX.AudioVideoPlayback, Version=1.0.2902.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>libs\mdx\Microsoft.DirectX.AudioVideoPlayback.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.DirectX.Direct3D, Version=1.0.2902.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>libs\mdx\Microsoft.DirectX.Direct3D.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.DirectX.Direct3DX, Version=1.0.2911.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>libs\mdx\Microsoft.DirectX.Direct3DX.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.VisualC" />
-    <Reference Include="sfmlnet-audio, Version=0.0.0.0, Culture=neutral, processorArchitecture=x86">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>libs\sfml\Release\sfmlnet-audio.dll</HintPath>
-    </Reference>
-    <Reference Include="sfmlnet-window, Version=0.0.0.0, Culture=neutral, processorArchitecture=x86">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>libs\sfml\Release\sfmlnet-window.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
@@ -272,7 +246,6 @@
     <Compile Include="Engine\LOS.cs" />
     <Compile Include="Engine\MapGenerator.cs" />
     <Compile Include="Engine\MessageManager.cs" />
-    <Compile Include="Engine\MDXSoundManager.cs" />
     <Compile Include="Engine\RogueGame.cs" />
     <Compile Include="Engine\RogueGame.Advisor.cs" />
     <Compile Include="Engine\RogueGame.Events.cs" />
@@ -308,7 +281,14 @@
     <Compile Include="Engine\Rules.Combat.cs" />
     <Compile Include="Engine\Rules.Actors.cs" />
     <Compile Include="Engine\PlayerCommand.cs" />
-    <Compile Include="Engine\SFMLSoundManager.cs" />
+    <Compile Include="Engine\PlayerCommandCatalog.cs" />
+    <Compile Include="Engine\PlayerInputReader.cs" />
+    <Compile Include="Engine\BinarySaveStore.cs" />
+    <Compile Include="Engine\ObjectGraphStore.cs" />
+    <Compile Include="Engine\DistrictSimulationWorker.cs" />
+    <Compile Include="Engine\OverlayCollection.cs" />
+    <Compile Include="Engine\Overlays.cs" />
+    <Compile Include="Engine\ManualNavigator.cs" />
     <Compile Include="Engine\Tasks\TaskRemoveDecoration.cs" />
     <Compile Include="Engine\TextFile.cs" />
     <Compile Include="Gameplay\AI\FeralDogAI.cs" />
@@ -364,12 +344,6 @@
     <Compile Include="Engine\GameOptions.cs" />
     <Compile Include="PointExtensions.cs" />
     <Compile Include="SetupConfig.cs" />
-    <Compile Include="UI\DXGameCanvas.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Include="UI\DXGameCanvas.designer.cs">
-      <DependentUpon>DXGameCanvas.cs</DependentUpon>
-    </Compile>
     <Compile Include="RogueForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -380,9 +354,6 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <EmbeddedResource Include="Bugreport.resx">
       <DependentUpon>Bugreport.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="UI\DXGameCanvas.resx">
-      <DependentUpon>DXGameCanvas.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="RogueForm.resx">
       <DependentUpon>RogueForm.cs</DependentUpon>
@@ -544,31 +515,7 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="csfml-audio.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="csfml-window.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
     <Content Include="IconPNG.ico">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="libsndfile-1.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Microsoft.DirectX.AudioVideoPlayback.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Microsoft.DirectX.Direct3D.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Microsoft.DirectX.Direct3DX.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Microsoft.DirectX.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="openal32.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Resources\Data\dummy.txt">
@@ -1898,16 +1845,4 @@
   <Target Name="AfterBuild">
   </Target>
   -->
-  <PropertyGroup>
-    <PostBuildEvent>if "$(ConfigurationName)" == "Release" (
-echo COPY TO FINAL RELEASE
-
-xcopy "$(TargetDir)*" "$(SolutionDir)Final Release\Rogue Survivor alpha 10.1\" /s /e /y
-
-copy "$(SolutionDir)Setup\bin\x86\Release\RSConfig*.*" "$(SolutionDir)Final Release\Rogue Survivor alpha 10.1\" /y
-
-copy "$(SolutionDir)\Docs\readme.txt" "$(SolutionDir)Final Release\Rogue Survivor alpha 10.1\" /y
-copy "$(SolutionDir)\Docs\readme_alpha10_1.txt" "$(SolutionDir)Final Release\Rogue Survivor alpha 10.1\" /y
-)</PostBuildEvent>
-  </PropertyGroup>
 </Project>

@@ -9,13 +9,15 @@ namespace djack.RogueSurvivor.Engine
     class DiceRoller
     {
         #region Fields
-        Random m_Rng;
+        uint m_State;
         #endregion
 
         #region Init
         public DiceRoller(int seed)
         {            
-            m_Rng = new Random(seed);
+            m_State = (uint)seed;
+            if (m_State == 0)
+                m_State = 0x9e3779b9;
         }
 
         /// <summary>
@@ -39,26 +41,32 @@ namespace djack.RogueSurvivor.Engine
             // sanity check, fixes crashes.
             if (max <= min) return min;
 
-            // roll it baby.
-            int r;
-            lock (m_Rng) // thread safe, Random is supposed to be thread safe but apparently not...
+            lock (this)
             {
-                r = m_Rng.Next(min, max);
+                ulong range = (ulong)((long)max - min);
+                ulong limit = 0x100000000UL - (0x100000000UL % range);
+                uint value;
+                do { value = NextUInt(); } while ((ulong)value >= limit);
+                return (int)(min + (long)((ulong)value % range));
             }
-            // FIX awfull bug, in some very rare cases .NET Random returns max instead of max-1 (wtf?!)
-            if (r >= max) r = max - 1;
-
-            return r;
         }
 
         public float RollFloat()
         {
-            float r;
-            lock (m_Rng) // thread safe, Random is supposed to be thread safe but apparently not...
+            lock (this)
             {
-                r = (float)m_Rng.NextDouble();
+                return (NextUInt() >> 8) / 16777216f;
             }
-            return r;
+        }
+
+        uint NextUInt()
+        {
+            uint value = m_State;
+            value ^= value << 13;
+            value ^= value >> 17;
+            value ^= value << 5;
+            m_State = value;
+            return value;
         }
 
         /// <summary>

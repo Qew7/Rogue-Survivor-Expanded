@@ -32,9 +32,8 @@ namespace djack.RogueSurvivor.Engine
             gy += BOLD_LINE_SPACING;
             m_UI.UI_Repaint();
 
-            m_Manual = new TextFile();
-            m_ManualLine = 0;
-            if (!m_Manual.Load(GetUserManualFilePath()))
+            TextFile manual = new TextFile();
+            if (!manual.Load(GetUserManualFilePath()))
             {
                 // error.
                 m_UI.UI_DrawStringBold(Color.Red, "Error while loading the manual.", 0, gy);
@@ -46,14 +45,14 @@ namespace djack.RogueSurvivor.Engine
                 WaitEnter();
 
                 // delete manual.
-                m_Manual = null;
                 return;
             }
 
             m_UI.UI_DrawStringBold(Color.White, "Parsing game manual...", 0, gy);
             gy += BOLD_LINE_SPACING;
             m_UI.UI_Repaint();
-            m_Manual.FormatLines(TEXTFILE_CHARS_PER_LINE);
+            manual.FormatLines(TEXTFILE_CHARS_PER_LINE);
+            m_Manual = new ManualNavigator(manual.FormatedLines);
 
             m_UI.UI_Clear(Color.Black);
             m_UI.UI_DrawStringBold(Color.White, "Game manual... done!", 0, gy);

@@ -2,12 +2,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.IO;
 
 namespace djack.RogueSurvivor.Gameplay
 {
     static class GameMusics
     {
-        static readonly string PATH = @"Resources\Music\";
+        static readonly string PATH = Path.Combine("Resources", "Music") + Path.DirectorySeparatorChar;
 
         public static readonly string ARMY = "army";
         public static readonly string ARMY_FILE = PATH + "RS - Army";

@@ -2,9 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.IO;
-using System.Runtime.Serialization;
-using System.Runtime.Serialization.Formatters.Binary;
 
 using djack.RogueSurvivor.Data;
 
@@ -137,12 +134,7 @@ namespace djack.RogueSurvivor.Engine
 
             Logger.WriteLine(Logger.Stage.RUN_MAIN, "saving hiscore table...");
 
-            IFormatter formatter = CreateFormatter();
-            Stream stream = CreateStream(filepath, true);
-
-            formatter.Serialize(stream, table);
-            stream.Flush();
-            stream.Close();
+            BinarySaveStore.Save(filepath, table);
 
             Logger.WriteLine(Logger.Stage.RUN_MAIN, "saving hiscore table... done!");
         }
@@ -161,11 +153,7 @@ namespace djack.RogueSurvivor.Engine
             HiScoreTable table;
             try
             {
-                IFormatter formatter = CreateFormatter();
-                Stream stream = CreateStream(filepath, false);
-
-                table = (HiScoreTable)formatter.Deserialize(stream);
-                stream.Close();
+                table = BinarySaveStore.Load<HiScoreTable>(filepath);
             }
             catch (Exception e)
             {
@@ -179,18 +167,6 @@ namespace djack.RogueSurvivor.Engine
             return table;
         }
 
-        static IFormatter CreateFormatter()
-        {
-            return new BinaryFormatter();
-        }
-
-        static Stream CreateStream(string saveFileName, bool save)
-        {
-            return new FileStream(saveFileName,
-                save ? FileMode.Create : FileMode.Open,
-                save ? FileAccess.Write : FileAccess.Read,
-                FileShare.None);
-        }
         #endregion
     }
 }

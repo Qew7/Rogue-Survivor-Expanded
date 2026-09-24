@@ -42,6 +42,7 @@ namespace djack.RogueSurvivor
                 }
                 catch (Exception e)
                 {
+                    Logger.WriteLine(Logger.Stage.RUN_MAIN, e.ToString());
                     using (Bugreport report = new Bugreport(e))
                     {
                         report.ShowDialog();

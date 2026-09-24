@@ -87,7 +87,7 @@ namespace djack.RogueSurvivor
 
         static string LogFilePath()
         {
-            return SetupConfig.DirPath + @"\log.txt";
+            return Path.Combine(SetupConfig.DirPath, "log.txt");
         }
 
         static string StageToString(Stage s)

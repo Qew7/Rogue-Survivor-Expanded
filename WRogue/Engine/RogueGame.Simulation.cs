@@ -252,6 +252,8 @@ namespace djack.RogueSurvivor.Engine
             for (int dx = xmin; dx <= xmax; dx++)
                 for (int dy = ymin; dy <= ymax; dy++)
                 {
+                    if (m_SimWorker != null && m_SimWorker.StopRequestedOnWorkerThread)
+                        return hadToSim;
                     // don't sim same district!
                     if (dx == d.WorldPosition.X && dy == d.WorldPosition.Y)
                         continue;
@@ -276,135 +278,28 @@ namespace djack.RogueSurvivor.Engine
         }
         #endregion
         #region Simulation Thread
-        // alpha10 obsolete, we do it "manually" in some places
-        //void RestartSimThread()
-        //{
-        //    StopSimThread();
-        //    StartSimThread();
-        //}
-
         void StartSimThread()
         {
             if (s_Options.IsSimON && s_Options.SimThread)
             {
-                Logger.WriteLine(Logger.Stage.RUN_MAIN, "starting sim...");
-
-                if (m_SimThread == null)
+                if (m_SimWorker == null)
                 {
-                    Logger.WriteLine(Logger.Stage.RUN_MAIN, "...allocating sim thread");
-                    m_SimThread = new Thread(new ThreadStart(SimThreadProc));
-                    m_SimThread.Name = "Simulation Thread";
+                    District playerDistrict = m_Player.Location.Map.District;
+                    m_SimWorker = new DistrictSimulationWorker(delegate
+                    {
+                        if (m_Player != null) SimulateNearbyDistricts(playerDistrict);
+                    });
                 }
-                else
-                {
-                    Logger.WriteLine(Logger.Stage.RUN_MAIN, "...sim thread already allocated");
-                }
-
-                Logger.WriteLine(Logger.Stage.RUN_MAIN, "...sim thread start.");
-                lock (m_SimStateLock) { m_SimThreadDoRun = true; }; // alpha10
-                m_SimThread.Start();
+                m_SimWorker.Start();
             }
         }
 
-        // alpha10 StopSimThread is now blocking until the sim thread has actually stopped
-        // allowed to abort when ending a game or dying because of weird bug in release build where the sim thread
-        // doesnt want to stop when dying as undead and we have to abort it(!)
-        /// <summary>
-        ///
-        /// </summary>
-        /// <param name="abort">true to stop the thread by aborting, false to stop it cleanly (recommended)</param>
+        // Keep the old parameter for callers; every exit now stops cooperatively.
         void StopSimThread(bool abort)
         {
-            Logger.WriteLine(Logger.Stage.RUN_MAIN, "stopping & clearing sim thread...");
-
-            if (m_SimThread != null)
-            {
-                // abort thread if asked to otherwise stop it cleanly
-                if (abort)
-                {
-                    Logger.WriteLine(Logger.Stage.RUN_MAIN, "...aborting sim thread");
-                    try
-                    {
-                        m_SimThread.Abort();
-                    }
-                    catch (Exception e)
-                    {
-                        Logger.WriteLine(Logger.Stage.RUN_MAIN, "...exception when aborting (ignored) " + e.Message);
-                    }
-                    m_SimThread = null;
-                    m_SimThreadDoRun = false;
-                }
-                else
-                {
-                    // try to stop cleanly
-                    Logger.WriteLine(Logger.Stage.RUN_MAIN, "...telling sim thread to stop");
-                    lock (m_SimStateLock) { m_SimThreadDoRun = false; };
-                    Logger.WriteLine(Logger.Stage.RUN_MAIN, "...sim thread told to stop");
-                    for (; ; )
-                    {
-                        Logger.WriteLine(Logger.Stage.RUN_MAIN, "...waiting for sim thread to stop");
-                        Thread.Sleep(10);
-                        bool stopped = false;
-                        lock (m_SimStateLock) { stopped = !m_SimThreadIsWorking; }
-                        if (!stopped && !m_SimThread.IsAlive)
-                        {
-                            Logger.WriteLine(Logger.Stage.RUN_MAIN, "...sim thread is not alive and did not stop properly, consider it stopped");
-                            stopped = true;
-                        }
-                        if (stopped)
-                            break;
-                    }
-                    Logger.WriteLine(Logger.Stage.RUN_MAIN, "...sim thread has stopped");
-                    m_SimThread = null;
-                }
-            }
-
-            Logger.WriteLine(Logger.Stage.RUN_MAIN, "stopping & clearing sim thread done!");
-        }
-
-        void SimThreadProc()
-        {
-            Logger.WriteLine(Logger.Stage.RUN_MAIN, "sim thread: starting loop");
-
-            District playerDistrict = m_Player.Location.Map.District;  // alpha10
-
-            lock (m_SimStateLock) { m_SimThreadIsWorking = true; }  // alpha10
-
-            for (; ; )  // alpha10
-            //while (true)
-            {
-                //Console.Out.WriteLine("sim thread loop");
-                // alpha10
-                bool stop = false;
-                lock (m_SimStateLock) { stop = !m_SimThreadDoRun; }
-                if (stop)
-                    break;
-
-                Thread.Sleep(10);
-                //Monitor.Enter(m_SimMutex); // alpha10 obsolete
-                try
-                {
-                    if (m_Player != null)
-                    {
-                        SimulateNearbyDistricts(playerDistrict);
-                    }
-                }
-                catch (Exception e)
-                {
-                    Logger.WriteLine(Logger.Stage.RUN_MAIN, "sim thread: exception while running sim thread!");
-                    Logger.WriteLine(Logger.Stage.RUN_MAIN, "sim thread: " + e.Message);
-                    // stop sim thread, better than crashing i guess...
-                    break;
-                }
-                //finally
-                //{
-                //    Monitor.Exit(m_SimMutex); // alpha10 obsolete
-                //}
-            }
-
-            Logger.WriteLine(Logger.Stage.RUN_MAIN, "sim thread: told to stop, stoping work");
-            lock (m_SimStateLock) { m_SimThreadIsWorking = false; }
-            Logger.WriteLine(Logger.Stage.RUN_MAIN, "sim thread: working stopped");
+            if (m_SimWorker == null) return;
+            m_SimWorker.Stop();
+            m_SimWorker = null;
         }
         #endregion
     }

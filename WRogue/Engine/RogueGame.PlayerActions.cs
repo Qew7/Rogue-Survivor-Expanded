@@ -27,6 +27,7 @@ namespace djack.RogueSurvivor.Engine
 
         void HandlePlayerActor(Actor player)
         {
+            PlayerInputReader inputReader = new PlayerInputReader(new UiPlayerInputSource(m_UI));
             // Upkeep.
             UpdatePlayerFOV(player);    // make sure LOS is up to date.
             m_Player = player;      // remember player.
@@ -151,35 +152,12 @@ namespace djack.RogueSurvivor.Engine
                 RedrawPlayScreen();
 
                 // 2. Get input.
-                // Peek keyboard & mouse until we got an event.
-                if (m_MouseMoveInterruptedKey == null)
-                    m_UI.UI_PeekKey();  // consume keys to avoid repeats.
-                bool inputLoop = true;
-                bool hasKey = false;
-                KeyEventArgs inKey;
-                Point prevMousePos = m_UI.UI_GetMousePosition();
-                Point mousePos = new Point(-1, -1);
-                MouseButtons? mouseButtons = null;
-                do
-                {
-                    inKey = m_MouseMoveInterruptedKey ?? m_UI.UI_PeekKey();
-                    m_MouseMoveInterruptedKey = null;
-                    if (inKey != null)
-                    {
-                        hasKey = true;
-                        inputLoop = false;
-                    }
-                    else
-                    {
-                        mousePos = m_UI.UI_GetMousePosition();
-                        mouseButtons = m_UI.UI_PeekMouseButtons();
-                        if (mousePos != prevMousePos || mouseButtons != null)
-                        {
-                            inputLoop = false;
-                        }
-                    }
-                }
-                while (inputLoop);
+                PlayerInputEvent input = inputReader.Read(m_MouseMoveInterruptedKey);
+                m_MouseMoveInterruptedKey = null;
+                bool hasKey = input.Key != null;
+                KeyEventArgs inKey = input.Key;
+                Point mousePos = input.MousePosition;
+                MouseButtons? mouseButtons = input.MouseButtons;
 
 
                 // 3. Handle input
@@ -777,7 +755,7 @@ namespace djack.RogueSurvivor.Engine
             }
 
             bool loop = true;
-            List<string> lines = m_Manual.FormatedLines;
+            IList<string> lines = m_Manual.Lines;
             do
             {
                 // draw header.
@@ -791,8 +769,8 @@ namespace djack.RogueSurvivor.Engine
                 gy += BOLD_LINE_SPACING;
 
                 // draw manual.
-                int iLine = m_ManualLine;
-                do
+                int iLine = m_Manual.Line;
+                while (iLine < lines.Count && gy < CANVAS_HEIGHT - 2 * BOLD_LINE_SPACING)
                 {
                     // ignore commands
                     bool ignore = (lines[iLine] == "<SECTION>");
@@ -804,7 +782,6 @@ namespace djack.RogueSurvivor.Engine
                     }
                     ++iLine;
                 }
-                while (iLine < lines.Count && gy < CANVAS_HEIGHT - 2 * BOLD_LINE_SPACING);
 
                 // draw foot.
                 m_UI.UI_DrawStringBold(Color.White, "---------+---------+---------+---------+---------+---------+---------+---------+---------+---------+---------+---------+", 0, gy);
@@ -817,59 +794,10 @@ namespace djack.RogueSurvivor.Engine
                 KeyEventArgs key = m_UI.UI_WaitKey();
                 int choice = KeyToChoiceNumber(key.KeyCode);
 
-                if (choice >= 0)
-                {
-                    if (choice == 0)
-                    {
-                        m_ManualLine = 0;
-                    }
-                    else
-                    {
-                        // jump to Nth section.
-                        int prevLine = m_ManualLine;
-                        int sectionCount = 0;
-                        m_ManualLine = 0;
-                        while (sectionCount < choice && m_ManualLine < lines.Count)
-                        {
-                            if (lines[m_ManualLine] == "<SECTION>")
-                            {
-                                ++sectionCount;
-                            }
-                            ++m_ManualLine;
-                        }
-
-                        // if section not found, don't move.
-                        if (m_ManualLine >= lines.Count)
-                        {
-                            m_ManualLine = prevLine;
-                        }
-                    }
-                }
+                if (choice < 0 && key.KeyCode == Keys.Escape)
+                    loop = false;
                 else
-                {
-                    switch (key.KeyCode)
-                    {
-                        case Keys.Escape:
-                            loop = false;
-                            break;
-
-                        case Keys.Up:
-                            --m_ManualLine;
-                            break;
-                        case Keys.Down:
-                            ++m_ManualLine;
-                            break;
-                        case Keys.PageUp:
-                            m_ManualLine -= TEXTFILE_LINES_PER_PAGE;
-                            break;
-                        case Keys.PageDown:
-                            m_ManualLine += TEXTFILE_LINES_PER_PAGE;
-                            break;
-                    }
-                }
-
-                if (m_ManualLine < 0) m_ManualLine = 0;
-                if (m_ManualLine + TEXTFILE_LINES_PER_PAGE >= lines.Count) m_ManualLine = Math.Max(0, lines.Count - TEXTFILE_LINES_PER_PAGE);
+                    m_Manual.Move(key.KeyCode, choice, TEXTFILE_LINES_PER_PAGE);
             }
             while (loop);
         }

@@ -126,7 +126,7 @@ namespace djack.RogueSurvivor.Engine
             if (!loaded)
                 return false;
             m_Session = Session.Get;
-            m_Rules = new Rules(new DiceRoller(m_Session.Seed));
+            m_Rules = new Rules(m_Session.GameDiceRoller);
 
             RefreshPlayer();
 
@@ -137,6 +137,7 @@ namespace djack.RogueSurvivor.Engine
 
             // Log ;/
             m_Session.Scoring.AddEvent(m_Session.WorldTime.TurnCounter, "<Loaded game>");
+            Logger.WriteLine(Logger.Stage.RUN_MAIN, "game load ready");
 
             return true;
         }
@@ -229,7 +230,7 @@ namespace djack.RogueSurvivor.Engine
 
         public static string GetUserSavesPath()
         {
-            return GetUserBasePath() + @"Saves\";
+            return Path.Combine(GetUserBasePath(), "Saves") + Path.DirectorySeparatorChar;
         }
 
         public static string GetUserSave()
@@ -239,12 +240,12 @@ namespace djack.RogueSurvivor.Engine
 
         public static string GetUserDocsPath()
         {
-            return GetUserBasePath() + @"Docs\";
+            return Path.Combine(GetUserBasePath(), "Docs") + Path.DirectorySeparatorChar;
         }
 
         public static string GetUserGraveyardPath()
         {
-            return GetUserBasePath() + @"Graveyard\";
+            return Path.Combine(GetUserBasePath(), "Graveyard") + Path.DirectorySeparatorChar;
         }
 
         /// <summary>
@@ -274,7 +275,7 @@ namespace djack.RogueSurvivor.Engine
 
         public static string GetUserConfigPath()
         {
-            return GetUserBasePath() + @"Config\";
+            return Path.Combine(GetUserBasePath(), "Config") + Path.DirectorySeparatorChar;
         }
 
         public static string GetUserOptionsFilePath()
@@ -284,7 +285,7 @@ namespace djack.RogueSurvivor.Engine
 
         public static string GetUserScreenshotsPath()
         {
-            return GetUserBasePath() + @"Screenshots\";
+            return Path.Combine(GetUserBasePath(), "Screenshots") + Path.DirectorySeparatorChar;
         }
 
         /// <summary>
@@ -338,7 +339,7 @@ namespace djack.RogueSurvivor.Engine
 
         bool CheckCopyOfManual()
         {
-            string src_path = @"Resources\Manual\";
+            string src_path = Path.Combine("Resources", "Manual") + Path.DirectorySeparatorChar;
             string dst_path = GetUserDocsPath();
             string filename = "RS Manual.txt";
 
