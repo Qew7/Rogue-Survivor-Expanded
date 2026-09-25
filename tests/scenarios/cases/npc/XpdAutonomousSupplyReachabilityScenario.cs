@@ -20,6 +20,10 @@ static class XpdAutonomousSupplyReachabilityScenario
                 world.Game.GameFactions.TheCivilians, "collector", false, false, 0);
             collector.Controller = new CivilianAI();
             world.Map.PlaceActorAt(collector, new Point(2, 2));
+            Actor follower = new Actor(world.Game.GameActors.MaleCivilian,
+                world.Game.GameFactions.TheCivilians, "follower", false, false, 0);
+            world.Map.PlaceActorAt(follower, new Point(0, 4));
+            collector.AddFollower(follower);
             XpdBase home = new XpdBase(collector, new[] {
                 new Point(1, 1), new Point(2, 1), new Point(2, 2) });
             home.SetFoodRoom(new Rectangle(1, 1, 1, 1));

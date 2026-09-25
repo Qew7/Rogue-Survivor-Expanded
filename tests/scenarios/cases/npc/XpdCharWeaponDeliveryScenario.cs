@@ -20,6 +20,10 @@ static class XpdCharWeaponDeliveryScenario
                 world.Game.GameFactions.TheCHARCorporation, "guard", false, false, 0);
             guard.Controller = new CHARGuardAI();
             world.Map.PlaceActorAt(guard, new Point(2, 2));
+            Actor follower = new Actor(world.Game.GameActors.MaleCivilian,
+                world.Game.GameFactions.TheCHARCorporation, "follower", false, false, 0);
+            world.Map.PlaceActorAt(follower, new Point(0, 4));
+            guard.AddFollower(follower);
             XpdBase home = new XpdBase(guard, new[] {
                 new Point(1, 1), new Point(2, 1), new Point(2, 2) });
             home.SetWeaponRoom(new Rectangle(1, 1, 1, 1));

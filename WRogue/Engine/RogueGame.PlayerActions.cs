@@ -1153,6 +1153,7 @@ namespace djack.RogueSurvivor.Engine
         void HandleAiActor(Actor aiActor)
         {
             if (m_Session.GamePreset.Bases && !aiActor.HasLeader &&
+                aiActor.CountFollowers > 0 &&
                 !aiActor.Model.Abilities.IsUndead &&
                 aiActor.Location.Map.XpdBaseAt(aiActor.Location.Position) == null &&
                 aiActor.Location.Map.GetTileAt(aiActor.Location.Position).IsInside &&

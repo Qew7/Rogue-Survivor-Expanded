@@ -1289,6 +1289,10 @@ namespace djack.RogueSurvivor.Data
 
         public void ReconstructAuxiliaryFields()
         {
+            // Earlier saves could contain leaderless faction claims. They no longer
+            // have an owner and must not block the territory permanently.
+            if (m_XpdBases != null)
+                m_XpdBases.RemoveAll(baseClaim => baseClaim == null || baseClaim.GroupLeader == null);
             ///////////////////////////////
             // Reconstruct auxiliary fields
             ///////////////////////////////

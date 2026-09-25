@@ -16,6 +16,12 @@ namespace djack.RogueSurvivor.Engine
                 reason = "Bases are disabled in this game preset.";
                 return false;
             }
+            if (actor == null || (!actor.IsPlayer &&
+                (actor.HasLeader || actor.CountFollowers == 0)))
+            {
+                reason = "Only a player or a group leader with followers may claim a base.";
+                return false;
+            }
             List<Point> cells = XpdBasePlanner.Preview(actor.Location.Map, actor, m_Rules, out reason);
             if (cells == null) return false;
             XpdBase linkedBase = FindLinkedXpdBase(actor, actor.Location.Map, cells);

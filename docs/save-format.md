@@ -33,9 +33,13 @@ references and cycles retain their identity. The reader accepts serializable
 game types and a restricted set of framework values and collections.
 
 Armed traps placed by base owners can retain a reference to their `XpdBase`.
-This lets faction members cross those traps safely after a save and load.
+This lets the base leader and their followers cross those traps safely after a save and load.
 Older saves have no trap base reference and continue using the trap owner's
 existing group safety rule.
+
+Older saves may contain bases assigned to an entire faction without a group
+leader. Such claims are released when the map is loaded; group-owned claims
+remain intact.
 
 Ground items may store the actor who last dropped them. This keeps an actor's
 own item from being treated as stolen when picked up on a foreign base, even

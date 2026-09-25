@@ -4,7 +4,7 @@ using System.Drawing;
 
 namespace djack.RogueSurvivor.Data
 {
-    // XPD territory belongs to a leader's group, or to an ordinary NPC faction.
+    // XPD territory belongs to the claimant's leader and direct followers.
     [Serializable]
     class XpdBase
     {
@@ -32,8 +32,7 @@ namespace djack.RogueSurvivor.Data
         {
             if (claimant == null || claimant.Model.Abilities.IsUndead)
                 throw new ArgumentException("A living actor must claim the base");
-            m_GroupLeader = claimant.HasLeader ? claimant.Leader :
-                claimant.IsPlayer || claimant.CountFollowers > 0 ? claimant : null;
+            m_GroupLeader = claimant.HasLeader ? claimant.Leader : claimant;
             m_Faction = claimant.Faction;
             if (linkedBase != null && !linkedBase.Owns(claimant))
                 throw new ArgumentException("Actor does not own linked base");
@@ -45,10 +44,8 @@ namespace djack.RogueSurvivor.Data
         public bool Owns(Actor actor)
         {
             if (actor == null || actor.Model.Abilities.IsUndead) return false;
-            if (m_GroupLeader != null)
-                return actor == m_GroupLeader || actor.Leader == m_GroupLeader;
-            return actor.Faction == m_Faction && !actor.IsPlayer &&
-                !(actor.HasLeader && actor.Leader.IsPlayer);
+            return m_GroupLeader != null &&
+                (actor == m_GroupLeader || actor.Leader == m_GroupLeader);
         }
 
         public bool Contains(Point point) { return m_Cells.Contains(point); }

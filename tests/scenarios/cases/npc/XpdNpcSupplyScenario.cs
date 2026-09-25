@@ -18,6 +18,10 @@ static class XpdNpcSupplyScenario
                 world.Game.GameFactions.TheCivilians, "collector", false, false, 0);
             collector.Controller = new CivilianAI();
             world.Map.PlaceActorAt(collector, new Point(2, 2));
+            Actor follower = new Actor(world.Game.GameActors.MaleCivilian,
+                world.Game.GameFactions.TheCivilians, "follower", false, false, 0);
+            world.Map.PlaceActorAt(follower, new Point(0, 4));
+            collector.AddFollower(follower);
             XpdBase home = new XpdBase(collector,
                 new[] { new Point(1, 1), new Point(2, 1), new Point(1, 2), new Point(2, 2) });
             home.SetFoodRoom(new Rectangle(1, 1, 1, 1));
@@ -35,7 +39,7 @@ static class XpdNpcSupplyScenario
             }
             Check.Equal(true, world.Map.GetItemsAt(new Point(1, 1)) != null &&
                 world.Map.GetItemsAt(new Point(1, 1)).Contains(loot),
-                "uncommanded NPC brings food into faction storage");
+                "uncommanded NPC brings food into group storage");
             Check.Equal(null, ai.Order, "autonomous supply trip ends");
 
             world.Map.LocalTime.TurnCounter = 28; // x + y = 2; no new trip without outside loot.

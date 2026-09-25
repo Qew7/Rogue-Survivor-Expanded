@@ -29,16 +29,22 @@ static class XpdBaseLeaderDeathScenario
             world.Map.AddXpdBase(claim);
             Actor unrelated = new Actor(world.Game.GameActors.MaleCivilian,
                 world.Game.GameFactions.TheCivilians, "unrelated", false, false, 0);
-            XpdBase factionBase = new XpdBase(unrelated, new[] { new Point(3, 1) });
-            world.Map.AddXpdBase(factionBase);
+            Actor unrelatedFollower = new Actor(world.Game.GameActors.MaleCivilian,
+                world.Game.GameFactions.TheCivilians, "other follower", false, false, 0);
+            unrelated.AddFollower(unrelatedFollower);
+            XpdBase otherBase = new XpdBase(unrelated, new[] { new Point(3, 1) });
+            world.Map.AddXpdBase(otherBase);
             Check.Equal(true, claim.Owns(follower), "group owns base before leader death");
 
             world.Game.KillActor(null, leader, "scenario", false);
             Check.Equal(null, world.Map.XpdBaseAt(new Point(1, 1)),
                 "leader death releases claimed territory");
-            Check.Equal(true, world.Map.XpdBaseAt(new Point(3, 1)) == factionBase,
-                "unrelated faction base remains claimed");
+            Check.Equal(true, world.Map.XpdBaseAt(new Point(3, 1)) == otherBase,
+                "unrelated group base remains claimed");
             Check.Equal(false, follower.HasLeader, "follower is no longer led by dead actor");
+            Actor newFollower = new Actor(world.Game.GameActors.MaleCivilian,
+                world.Game.GameFactions.TheCivilians, "new follower", false, false, 0);
+            follower.AddFollower(newFollower);
             world.Map.AddXpdBase(new XpdBase(follower, new[] { new Point(1, 1) }));
             Check.Equal(true, world.Map.XpdBaseAt(new Point(1, 1)) != null,
                 "released territory can be claimed again");

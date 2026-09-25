@@ -22,6 +22,10 @@ static class XpdBaseTrapScenario
                 world.Game.GameFactions.TheCivilians, "guard", false, false, 0);
             guard.Controller = new CivilianAI();
             world.Map.PlaceActorAt(guard, new Point(2, 2));
+            Actor ally = new Actor(world.Game.GameActors.MaleCivilian,
+                world.Game.GameFactions.TheCivilians, "ally", false, false, 0);
+            world.Map.PlaceActorAt(ally, new Point(4, 4));
+            guard.AddFollower(ally);
             XpdBase home = new XpdBase(guard, new[] { new Point(2, 2) });
             world.Map.AddXpdBase(home);
             Check.Equal(true, guard.Inventory.AddAll(new ItemTrap(world.Game.GameItems.BARBED_WIRE)),
@@ -37,10 +41,12 @@ static class XpdBaseTrapScenario
                 "NPC sets an armed trap on base boundary");
             Check.Equal(true, world.Game.Rules.IsSafeFromTrap(placed, guard),
                 "trap owner is safe");
-            Actor ally = new Actor(world.Game.GameActors.MaleCivilian,
-                world.Game.GameFactions.TheCivilians, "ally", false, false, 0);
             Check.Equal(true, world.Game.Rules.IsSafeFromTrap(placed, ally),
-                "faction base ally is safe");
+                "group follower is safe");
+            Actor otherCivilian = new Actor(world.Game.GameActors.MaleCivilian,
+                world.Game.GameFactions.TheCivilians, "other", false, false, 0);
+            Check.Equal(false, world.Game.Rules.IsSafeFromTrap(placed, otherCivilian),
+                "same-faction outsider can trigger trap");
             Check.Equal(false, world.Game.Rules.IsSafeFromTrap(placed, spectator),
                 "outsider can trigger trap");
 
