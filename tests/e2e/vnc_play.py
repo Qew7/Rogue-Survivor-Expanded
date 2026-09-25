@@ -198,19 +198,23 @@ with socket.create_connection(("127.0.0.1", 5900), timeout=10) as vnc:
     key(vnc, ord("S"))
     vnc.sendall(struct.pack(">BBHI", 4, 0, 0, shift))
     save = "/opt/game/Config/Saves/save.dat"
+    wait_for_log(log, "saving session... done!", 30)
     wait_for(save, 30)
     save_bytes = os.path.getsize(save)
     assert read_saved_mods(save) == ("0.1.1", [
         ("Deonapocalypse", "1.0.0"), ("Auxiliary", "")
     ]), "Save did not retain game version, mods and priority"
-    vnc.sendall(struct.pack(">BBHI", 4, 1, 0, shift))
-    key(vnc, ord("L"))
-    vnc.sendall(struct.pack(">BBHI", 4, 0, 0, shift))
     deadline = time.monotonic() + 30
     while time.monotonic() < deadline:
         if "game load ready" in open(log).read():
             break
-        time.sleep(0.5)
+        vnc.sendall(struct.pack(">BBHI", 4, 1, 0, shift))
+        key(vnc, ord("L"))
+        vnc.sendall(struct.pack(">BBHI", 4, 0, 0, shift))
+        for _ in range(6):
+            if "game load ready" in open(log).read():
+                break
+            time.sleep(0.5)
     else:
         raise RuntimeError("Saved game did not load: " + repr(open(log).read().splitlines()[-18:]))
 
