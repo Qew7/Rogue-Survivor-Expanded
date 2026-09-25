@@ -5,6 +5,7 @@ using djack.RogueSurvivor.Engine;
 using djack.RogueSurvivor.Engine.Actions;
 using djack.RogueSurvivor.Engine.AI;
 using djack.RogueSurvivor.Engine.Items;
+using djack.RogueSurvivor.Gameplay.AI.Tools;
 
 namespace djack.RogueSurvivor.Gameplay.AI
 {
@@ -78,13 +79,38 @@ namespace djack.RogueSurvivor.Gameplay.AI
             if (baseClaim == null || !baseClaim.Owns(m_Actor)) return null;
             Location supply;
             Item item;
-            if (!XpdSupplyRoutes.FindSupply(home.Map, home.Map.District, out supply, out item))
+            if (!TryFindReachableXpdSupply(game, home.Map.District, out supply, out item))
                 return null;
             SetOrder(new ActorOrder(ActorTasks.SCAVENGE_SUPPLIES, home));
             ActorAction action = ExecuteOrder(game, Order, percepts, exploration);
             if (action != null) return action;
             SetOrder(null);
             return null;
+        }
+
+        bool TryFindReachableXpdSupply(RogueGame game, District home,
+            out Location supply, out Item item)
+        {
+            while (XpdSupplyRoutes.FindSupply(m_Actor.Location.Map, home,
+                candidate => !IsItemTaboo(candidate), out supply, out item))
+            {
+                Point destination;
+                if (supply.Map == m_Actor.Location.Map)
+                    destination = supply.Position;
+                else
+                {
+                    Exit exit = XpdSupplyRoutes.NextExit(m_Actor.Location.Map, supply.Map, home);
+                    Point? exitPoint = m_Actor.Location.Map.GetExitPos(exit);
+                    if (exitPoint == null) { MarkItemAsTaboo(item); continue; }
+                    destination = exitPoint.Value;
+                }
+                if (CanReachSimple(game, destination,
+                    RouteFinder.SpecialActions.DOORS | RouteFinder.SpecialActions.JUMP)) return true;
+                MarkItemAsTaboo(item);
+            }
+            supply = default(Location);
+            item = null;
+            return false;
         }
 
         ActorAction ExecuteScavengeSupplies(RogueGame game, ActorOrder order)
@@ -150,8 +176,7 @@ namespace djack.RogueSurvivor.Gameplay.AI
                 if (m_Actor.Inventory.IsFull) return null;
                 Location supply;
                 Item item;
-                while (XpdSupplyRoutes.FindSupply(m_Actor.Location.Map, home.District,
-                    candidate => !IsItemTaboo(candidate), out supply, out item))
+                while (TryFindReachableXpdSupply(game, home.District, out supply, out item))
                 {
                     ActorAction approach = GoTo(game, supply);
                     if (approach != null) return approach;

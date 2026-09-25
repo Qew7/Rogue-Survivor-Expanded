@@ -12,6 +12,8 @@ namespace djack.RogueSurvivor.Data
         int  m_ModelID;
         int  m_Quantity;
         DollPart m_EquipedPart;
+        // Lets an actor reclaim an item it just left on somebody else's base.
+        Actor m_LastDroppedBy;
         #endregion
 
         #region Properties
@@ -96,6 +98,7 @@ namespace djack.RogueSurvivor.Data
             get;
             set;
         }
+        public Actor LastDroppedBy { get { return m_LastDroppedBy; } set { m_LastDroppedBy = value; } }
         #endregion
 
         #region Init
@@ -108,7 +111,11 @@ namespace djack.RogueSurvivor.Data
         #endregion
 
         #region Pre-save
-        public virtual void OptimizeBeforeSaving() { }
+        public virtual void OptimizeBeforeSaving()
+        {
+            if (m_LastDroppedBy != null && m_LastDroppedBy.IsDead)
+                m_LastDroppedBy = null;
+        }
         #endregion
     }
 }

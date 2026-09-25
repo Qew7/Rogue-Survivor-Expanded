@@ -338,7 +338,8 @@ namespace djack.RogueSurvivor.Engine
                     foreach (Assembly loaded in AppDomain.CurrentDomain.GetAssemblies())
                         if (loaded.GetName().Name == requested.Name &&
                             (requested.Name == "mscorlib" || requested.Name == "System" ||
-                             requested.Name == "System.Core" || requested.Name == "System.Drawing"))
+                             requested.Name == "System.Core" || requested.Name == "System.Drawing" ||
+                             requested.Name == "System.Windows.Forms"))
                             return loaded;
                     return null;
                 },

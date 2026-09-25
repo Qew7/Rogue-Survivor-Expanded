@@ -182,6 +182,9 @@ namespace djack.RogueSurvivor.Engine
                 kb = BinarySaveStore.Load<Keybindings>(filepath);
                 if (kb.Get(PlayerCommand.MOUSE_MOVE_MODE) == Keys.None && kb.Get(Keys.M) == PlayerCommand.NONE)
                     kb.Set(PlayerCommand.MOUSE_MOVE_MODE, Keys.M);
+                if (kb.Get(PlayerCommand.XPD_BASE) == Keys.None &&
+                    kb.Get(Keys.B | Keys.Control) == PlayerCommand.NONE)
+                    kb.Set(PlayerCommand.XPD_BASE, Keys.B | Keys.Control);
             }
             catch (Exception e)
             {

@@ -385,7 +385,7 @@ namespace djack.RogueSurvivor.Engine
             DoTakeItem(actor, position, it);
         }
 
-        public void DoTakeItem(Actor actor, Point position, Item it)
+        public void DoTakeItem(Actor actor, Point position, Item it, bool noticeTheft = true)
         {
             Map map = actor.Location.Map;
             Inventory ground = map.GetItemsAt(position);
@@ -414,7 +414,8 @@ namespace djack.RogueSurvivor.Engine
                     map.RemoveItemAt(it, position);
             }
 
-            if (quantityAdded > 0 && baseClaim != null && !baseClaim.Owns(actor))
+            if (quantityAdded > 0 && noticeTheft && baseClaim != null &&
+                !baseClaim.Owns(actor) && it.LastDroppedBy != actor)
                 NoticeXpdBaseTheft(actor, baseClaim, position);
 
             // message
@@ -475,7 +476,7 @@ namespace djack.RogueSurvivor.Engine
 
             // transfer item : drop then take (solves problem of partial quantities transfer).
             DropItem(actor, gift);
-            DoTakeItem(target, actor.Location.Position, gift);
+            DoTakeItem(target, actor.Location.Position, gift, false);
 
             // message.
             if (IsVisibleToPlayer(actor) || IsVisibleToPlayer(target))
@@ -682,6 +683,8 @@ namespace djack.RogueSurvivor.Engine
             // remove from inventory.
             actor.Inventory.RemoveAllQuantity(it);
 
+            it.LastDroppedBy = actor;
+
             // add to ground.
             actor.Location.Map.DropItemAt(it, actor.Location.Position);
 
@@ -694,6 +697,8 @@ namespace djack.RogueSurvivor.Engine
             // remove one quantity from inventory.
             if (--it.Quantity <= 0)
                 actor.Inventory.RemoveAllQuantity(it);
+
+            clone.LastDroppedBy = actor;
 
             // add to ground.
             actor.Location.Map.DropItemAt(clone, actor.Location.Position);

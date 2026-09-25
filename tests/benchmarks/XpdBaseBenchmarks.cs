@@ -2,6 +2,7 @@ using System;
 using System.Drawing;
 using djack.RogueSurvivor.Data;
 using djack.RogueSurvivor.Engine;
+using djack.RogueSurvivor.Engine.Items;
 
 static class XpdBaseBenchmarks
 {
@@ -26,6 +27,13 @@ static class XpdBaseBenchmarks
                 throw new InvalidOperationException("Base benchmark fixture: " + reason);
             PerformanceBenchmarks.Measure("base preview " + size + "x" + size, 100, () =>
                 XpdBasePlanner.Preview(world.Map, claimant, world.Game.Rules, out reason));
+
+            world.Map.DropItemAt(new ItemFood(world.Game.GameItems.GROCERIES),
+                new Point(size - 3, size - 3));
+            Location supply;
+            Item item;
+            PerformanceBenchmarks.Measure("sparse supply " + size + "x" + size, 100, () =>
+                XpdSupplyRoutes.FindSupply(world.Map, world.Map.District, out supply, out item));
         }
     }
 }

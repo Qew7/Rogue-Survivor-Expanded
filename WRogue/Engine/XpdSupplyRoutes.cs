@@ -55,22 +55,20 @@ namespace djack.RogueSurvivor.Engine
             while (queue.Count > 0)
             {
                 Map map = queue.Dequeue();
-                for (int y = 0; y < map.Height; y++)
-                    for (int x = 0; x < map.Width; x++)
-                    {
-                        Point point = new Point(x, y);
-                        if (map.XpdBaseAt(point) != null || !map.IsWalkable(x, y)) continue;
-                        Inventory inventory = map.GetItemsAt(point);
-                        if (inventory == null) continue;
-                        foreach (Item candidate in inventory.Items)
-                            if ((candidate is ItemFood || candidate is ItemWeapon) &&
-                                (accept == null || accept(candidate)))
-                            {
-                                location = new Location(map, point);
-                                item = candidate;
-                                return true;
-                            }
-                    }
+                foreach (Inventory inventory in map.GroundInventories)
+                {
+                    Point? position = map.GetGroundInventoryPosition(inventory);
+                    if (position == null || !map.IsWalkable(position.Value) ||
+                        map.XpdBaseAt(position.Value) != null) continue;
+                    foreach (Item candidate in inventory.Items)
+                        if ((candidate is ItemFood || candidate is ItemWeapon) &&
+                            (accept == null || accept(candidate)))
+                        {
+                            location = new Location(map, position.Value);
+                            item = candidate;
+                            return true;
+                        }
+                }
                 foreach (Exit exit in map.Exits)
                     if (exit.IsAnAIExit && exit.ToMap != null && InRange(home, exit.ToMap) && seen.Add(exit.ToMap))
                         queue.Enqueue(exit.ToMap);
