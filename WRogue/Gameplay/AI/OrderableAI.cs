@@ -42,6 +42,7 @@ namespace djack.RogueSurvivor.Gameplay.AI
             m_ReportStage = 0;
             m_XpdSupplyStage = 0;
             m_XpdLoot = null;
+            m_XpdFoodOnly = false;
         }
 
         protected ActorAction ExecuteOrder(RogueGame game, ActorOrder order, List<Percept> percepts, ExplorationData exploration)

@@ -42,6 +42,7 @@ class Program
         RandomStateTests.Run();
         SaveStoreTests.Run();
         SaveGameVersionTests.Run();
+        XpdFoodOrderMigrationTests.Run();
         HintsSaveTests.Run();
         InputReaderTests.Run();
         SimulationWorkerTests.Run();

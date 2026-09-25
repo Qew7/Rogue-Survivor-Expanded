@@ -14,6 +14,7 @@ namespace djack.RogueSurvivor.Gameplay.AI
         // 0: provision food, 1: provision weapon, 2: collect, 3: return.
         int m_XpdSupplyStage;
         Item m_XpdLoot;
+        bool m_XpdFoodOnly;
         protected bool IsReturningXpdLoot
         {
             get { return Order != null && Order.Task == ActorTasks.SCAVENGE_SUPPLIES &&
@@ -70,29 +71,99 @@ namespace djack.RogueSurvivor.Gameplay.AI
             System.Collections.Generic.List<Percept> percepts, ExplorationData exploration)
         {
             if (!Session.Get.GamePreset.Bases || m_Actor.IsPlayer ||
-                (m_Actor.Leader != null && m_Actor.Leader.IsPlayer) ||
-                m_Actor.Inventory == null || m_Actor.Inventory.IsFull) return null;
+                m_Actor.HasLeader || m_Actor.Inventory == null) return null;
             Location home = m_Actor.Location;
             if ((home.Map.LocalTime.TurnCounter + home.Position.X + home.Position.Y) % 30 != 0)
                 return null;
             XpdBase baseClaim = home.Map.XpdBaseAt(home.Position);
             if (baseClaim == null || !baseClaim.Owns(m_Actor)) return null;
+            if (!NeedsXpdFood(game, baseClaim)) return null;
             Location supply;
             Item item;
-            if (!TryFindReachableXpdSupply(game, home.Map.District, out supply, out item))
+            if (!TryFindReachableXpdSupply(game, home.Map.District, true,
+                out supply, out item))
                 return null;
+            if (m_Actor.CountFollowers > 0)
+            {
+                foreach (Actor follower in m_Actor.Followers)
+                {
+                    OrderableAI ai = follower.Controller as OrderableAI;
+                    if (ai != null && ai.Order != null &&
+                        ai.Order.Task == ActorTasks.SCAVENGE_SUPPLIES) return null;
+                }
+                foreach (Actor follower in m_Actor.Followers)
+                {
+                    OrderableAI ai = follower.Controller as OrderableAI;
+                    if (ai == null || ai.Order != null || follower.IsDead ||
+                        follower.Inventory == null || follower.Inventory.IsFull ||
+                        follower.Location.Map != home.Map ||
+                        home.Map.XpdBaseAt(follower.Location.Position) == null ||
+                        !home.Map.XpdBaseAt(follower.Location.Position).IsPartOf(baseClaim)) continue;
+                    ai.SetOrder(new ActorOrder(ActorTasks.SCAVENGE_SUPPLIES, home));
+                    ai.m_XpdFoodOnly = true;
+                    return null;
+                }
+            }
+            if (m_Actor.Inventory.IsFull) return null;
             SetOrder(new ActorOrder(ActorTasks.SCAVENGE_SUPPLIES, home));
+            m_XpdFoodOnly = true;
             ActorAction action = ExecuteOrder(game, Order, percepts, exploration);
             if (action != null) return action;
             SetOrder(null);
             return null;
         }
 
-        bool TryFindReachableXpdSupply(RogueGame game, District home,
+        // Two days of food for every living group member, measured in the same
+        // nutrition points consumed by the hunger rule (one point per turn).
+        bool NeedsXpdFood(RogueGame game, XpdBase baseClaim)
+        {
+            Actor leader = baseClaim.GroupLeader;
+            if (leader == null || leader.IsDead) return false;
+            int eaters = leader.Model.Abilities.HasToEat ? 1 : 0;
+            long nutrition = XpdInventoryNutrition(game, leader.Inventory,
+                leader.Location.Map.LocalTime.TurnCounter);
+            if (leader.CountFollowers > 0)
+                foreach (Actor follower in leader.Followers)
+                {
+                    if (follower.IsDead) continue;
+                    if (follower.Model.Abilities.HasToEat) eaters++;
+                    nutrition += XpdInventoryNutrition(game, follower.Inventory,
+                        follower.Location.Map.LocalTime.TurnCounter);
+                }
+            if (eaters == 0) return false;
+            District district = m_Actor.Location.Map.District;
+            if (district != null)
+                foreach (Map map in district.Maps)
+                    foreach (XpdBase section in map.XpdBases)
+                        if (section.IsPartOf(baseClaim))
+                            foreach (Point point in section.Cells)
+                                nutrition += XpdInventoryNutrition(game, map.GetItemsAt(point),
+                                    map.LocalTime.TurnCounter);
+            else
+                foreach (Point point in baseClaim.Cells)
+                    nutrition += XpdInventoryNutrition(game,
+                        m_Actor.Location.Map.GetItemsAt(point),
+                        m_Actor.Location.Map.LocalTime.TurnCounter);
+            return nutrition < (long)eaters * 2 * WorldTime.TURNS_PER_DAY;
+        }
+
+        static long XpdInventoryNutrition(RogueGame game, Inventory inventory, int turn)
+        {
+            if (inventory == null) return 0;
+            long total = 0;
+            foreach (Item item in inventory.Items)
+                if (item is ItemFood)
+                    total += (long)game.Rules.FoodItemNutrition((ItemFood)item,
+                        turn + 2 * WorldTime.TURNS_PER_DAY) * item.Quantity;
+            return total;
+        }
+
+        bool TryFindReachableXpdSupply(RogueGame game, District home, bool foodOnly,
             out Location supply, out Item item)
         {
             while (XpdSupplyRoutes.FindSupply(m_Actor.Location.Map, home,
-                candidate => !IsItemTaboo(candidate), out supply, out item))
+                candidate => (!foodOnly || candidate is ItemFood) &&
+                    !IsItemTaboo(candidate), out supply, out item))
             {
                 Point destination;
                 if (supply.Map == m_Actor.Location.Map)
@@ -176,7 +247,8 @@ namespace djack.RogueSurvivor.Gameplay.AI
                 if (m_Actor.Inventory.IsFull) return null;
                 Location supply;
                 Item item;
-                while (TryFindReachableXpdSupply(game, home.District, out supply, out item))
+                while (TryFindReachableXpdSupply(game, home.District, m_XpdFoodOnly,
+                    out supply, out item))
                 {
                     ActorAction approach = GoTo(game, supply);
                     if (approach != null) return approach;

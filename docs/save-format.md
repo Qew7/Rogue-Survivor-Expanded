@@ -46,6 +46,10 @@ own item from being treated as stolen when picked up on a foreign base, even
 after loading. Older saves have no dropper reference and retain the previous
 ground-item behavior.
 
+NPC supply orders store whether a leader sent the follower specifically for
+food. This keeps an active food trip focused on food after loading. Orders
+from older saves retain their previous food-and-weapon behavior.
+
 When changing a saved class, add a migration test to `tests/unit/` and run both
 `docker build --target test .` and `bash tests/e2e.sh`. The end-to-end test
 creates a real world, saves it, loads it, and reaches the game screen again.
