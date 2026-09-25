@@ -79,6 +79,7 @@ namespace djack.RogueSurvivor.Gameplay.AI.Tools
         #region Fields
         readonly BaseAI m_AI;
         LinkedList<Node> m_Nodes;
+        readonly Dictionary<Point, Node> m_NodesByPosition;
         #endregion
 
         #region Properties
@@ -97,6 +98,7 @@ namespace djack.RogueSurvivor.Gameplay.AI.Tools
         {
             m_AI = ai;
             m_Nodes = new LinkedList<Node>();
+            m_NodesByPosition = new Dictionary<Point, Node>();
         }
         #endregion
 
@@ -136,7 +138,10 @@ namespace djack.RogueSurvivor.Gameplay.AI.Tools
             // search similar to A*...
             // expect we don't care about accumulated path cost as we want only to check reachability
             m_Nodes.Clear();
-            m_Nodes.AddFirst(new Node() { IsVisited = false, Pos = start, DistToGoal = distanceFn(start, dest) });
+            m_NodesByPosition.Clear();
+            Node startNode = new Node() { IsVisited = false, Pos = start, DistToGoal = distanceFn(start, dest) };
+            m_Nodes.AddFirst(startNode);
+            m_NodesByPosition.Add(start, startNode);
             for (;;)
             {
                 // get most promising node, nodes are sorted by their distance to goal, similar to A*
@@ -184,6 +189,7 @@ namespace djack.RogueSurvivor.Gameplay.AI.Tools
                     {
                         // new one to explore
                         adjNode = new Node() { IsVisited = false, Pos = adj, DistToGoal = adjDistToGoal };
+                        m_NodesByPosition.Add(adj, adjNode);
                         exploreIt = true;
                     }
                     else
@@ -225,10 +231,8 @@ namespace djack.RogueSurvivor.Gameplay.AI.Tools
         /// <returns>null if no node there</returns>
         Node GetNode(Point at)
         {
-            foreach (Node n in m_Nodes)
-                if (n.Pos == at)
-                    return n;
-            return null;
+            Node node;
+            return m_NodesByPosition.TryGetValue(at, out node) ? node : null;
         }
 
         /// <summary>

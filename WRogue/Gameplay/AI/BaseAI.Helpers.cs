@@ -193,10 +193,10 @@ namespace djack.RogueSurvivor.Gameplay.AI
                 return null;
             }
 
-            // Find valid choices and best value.
+            // Keep only current best candidates while evaluating each choice once.
             bool hasValue = false;
             float bestValue = 0;    // irrevelant for 1st value, use flag hasValue instead.
-            List<ChoiceEval<_T_>> validChoices = new List<ChoiceEval<_T_>>(listOfChoices.Count);
+            List<_T_> candidates = new List<_T_>();
             for (int i = 0; i < listOfChoices.Count; i++)
             {
                 if (!isChoiceValidFn(listOfChoices[i]))
@@ -206,49 +206,30 @@ namespace djack.RogueSurvivor.Gameplay.AI
                 if (float.IsNaN(value_i))
                     continue;
 
-                validChoices.Add(new ChoiceEval<_T_>(listOfChoices[i], value_i));
-
                 if (!hasValue || isBetterEvalThanFn(value_i, bestValue))
                 {
+                    if (!hasValue || value_i != bestValue) candidates.Clear();
                     hasValue = true;
                     bestValue = value_i;
                 }
+                if (value_i == bestValue)
+                    candidates.Add(listOfChoices[i]);
             }
-
-            /*Console.Out.WriteLine("Evals {");
-            for (int j = 0; j < validChoices.Count; j++)
-            {
-                Console.Out.WriteLine("  {0}", validChoices[j].ToString());
-            }
-            Console.Out.WriteLine("}");*/
 
             // Degenerate cases.
-            if (validChoices.Count == 0)
+            if (candidates.Count == 0)
             {
                 //Console.Out.WriteLine("no valid choice!");
                 return null;
             }
-            if (validChoices.Count == 1)
+            if (candidates.Count == 1)
             {
-                return validChoices[0];
+                return new ChoiceEval<_T_>(candidates[0], bestValue);
             }
-
-            // Keep all the candidates that have the best value.
-            List<ChoiceEval<_T_>> candidates = new List<ChoiceEval<_T_>>(validChoices.Count);
-            for (int i = 0; i < validChoices.Count; i++)
-                if (validChoices[i].Value == bestValue)
-                    candidates.Add(validChoices[i]);
-
-            /*Console.Out.WriteLine("Candidates {");
-            for (int j = 0; j < candidates.Count; j++)
-            {
-                Console.Out.WriteLine("  {0}", candidates[j].ToString());
-            }
-            Console.Out.WriteLine("}");*/
 
             // Of all the candidates randomly choose one.
             int iChoice = game.Rules.Roll(0, candidates.Count);
-            return candidates[iChoice];
+            return new ChoiceEval<_T_>(candidates[iChoice], bestValue);
         }
 
         // alpha10 evalChoiceFn now also accepts data param from isChoiceValidFn; eg: an action
@@ -267,10 +248,10 @@ namespace djack.RogueSurvivor.Gameplay.AI
                 return null;
             }
 
-            // Find valid choices and best value.
+            // Keep only current best candidates while evaluating each choice once.
             bool hasValue = false;
             float bestValue = 0;    // irrevelant for 1st value, use flag hasValue instead.
-            List<ChoiceEval<_DATA_>> validChoices = new List<ChoiceEval<_DATA_>>(listOfChoices.Count);
+            List<_DATA_> candidates = new List<_DATA_>();
             for (int i = 0; i < listOfChoices.Count; i++)
             {
                 _DATA_ choiceData = isChoiceValidFn(listOfChoices[i]);
@@ -282,53 +263,30 @@ namespace djack.RogueSurvivor.Gameplay.AI
                 if (float.IsNaN(value_i))
                     continue;
 
-                validChoices.Add(new ChoiceEval<_DATA_>(choiceData, value_i));
-
                 if (!hasValue || isBetterEvalThanFn(value_i, bestValue))
                 {
+                    if (!hasValue || value_i != bestValue) candidates.Clear();
                     hasValue = true;
                     bestValue = value_i;
                 }
+                if (value_i == bestValue)
+                    candidates.Add(choiceData);
             }
-
-            /*Console.Out.WriteLine("Evals {");
-            for (int j = 0; j < validChoices.Count; j++)
-            {
-                Console.Out.WriteLine("  {0}", validChoices[j].ToString());
-            }
-            Console.Out.WriteLine("}");*/
 
             // Degenerate cases.
-            if (validChoices.Count == 0)
+            if (candidates.Count == 0)
             {
                 //Console.Out.WriteLine("no valid choice!");
                 return null;
             }
-            if (validChoices.Count == 1)
+            if (candidates.Count == 1)
             {
-                return validChoices[0];
+                return new ChoiceEval<_DATA_>(candidates[0], bestValue);
             }
-
-            // Keep all the candidates that have the best value.
-            List<ChoiceEval<_DATA_>> candidates = new List<ChoiceEval<_DATA_>>(validChoices.Count);
-            for (int i = 0; i < validChoices.Count; i++)
-                if (validChoices[i].Value == bestValue)
-                    candidates.Add(validChoices[i]);
-
-            // TEST: if no best value, nope.
-            if (candidates.Count == 0)
-                return null;
-
-            /*Console.Out.WriteLine("Candidates {");
-            for (int j = 0; j < candidates.Count; j++)
-            {
-                Console.Out.WriteLine("  {0}", candidates[j].ToString());
-            }
-            Console.Out.WriteLine("}");*/
 
             // Of all the candidates randomly choose one.
             int iChoice = game.Rules.Roll(0, candidates.Count);
-            return candidates[iChoice];
+            return new ChoiceEval<_DATA_>(candidates[iChoice], bestValue);
         }
         #endregion
 

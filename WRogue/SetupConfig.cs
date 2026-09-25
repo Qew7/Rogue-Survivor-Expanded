@@ -8,7 +8,7 @@ namespace djack.RogueSurvivor
 {
     public static class SetupConfig
     {
-        public const string GAME_VERSION = "alpha 10.1";
+        public const string GAME_VERSION = "0.1.0";
 
         public enum eVideo
         {

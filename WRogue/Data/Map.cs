@@ -92,7 +92,13 @@ namespace djack.RogueSurvivor.Data
         List<Inventory> m_aux_GroundItemsList;
 
         [NonSerialized]
+        Dictionary<Inventory, Point> m_aux_GroundItemsPosition;
+
+        [NonSerialized]
         Dictionary<Point, List<Corpse>> m_aux_CorpsesByPosition;
+
+        [NonSerialized]
+        HashSet<Corpse> m_aux_CorpsesSet;
 
         // scent hash
         [NonSerialized]
@@ -265,9 +271,11 @@ namespace djack.RogueSurvivor.Data
 
             m_GroundItemsByPosition = new Dictionary<Point, Inventory>(5);
             m_aux_GroundItemsList = new List<Inventory>(5);
+            m_aux_GroundItemsPosition = new Dictionary<Inventory, Point>(5);
 
             m_CorpsesList = new List<Corpse>(5);
             m_aux_CorpsesByPosition = new Dictionary<Point, List<Corpse>>(5);
+            m_aux_CorpsesSet = new HashSet<Corpse>();
 
             m_Scents = new List<OdorScent>(128);
             m_aux_ScentsByPosition = new Dictionary<Point, List<OdorScent>>(128);
@@ -364,10 +372,18 @@ namespace djack.RogueSurvivor.Data
 
         public bool HasAnExitIn(Rectangle rect)
         {
-            for (int x = rect.Left; x < rect.Right; x++)
-                for (int y = rect.Top; y < rect.Bottom; y++)
-                    if (GetExitAt(x, y) != null)
-                        return true;
+            if (rect.Width <= 0 || rect.Height <= 0) return false;
+            if ((long)rect.Width * rect.Height <= m_Exits.Count)
+            {
+                for (int x = rect.Left; x < rect.Right; x++)
+                    for (int y = rect.Top; y < rect.Bottom; y++)
+                        if (GetExitAt(x, y) != null)
+                            return true;
+                return false;
+            }
+            foreach (KeyValuePair<Point, Exit> exit in m_Exits)
+                if (exit.Value != null && rect.Contains(exit.Key))
+                    return true;
             return false;
         }
 
@@ -609,13 +625,9 @@ namespace djack.RogueSurvivor.Data
 
         public Point? GetGroundInventoryPosition(Inventory groundInv)
         {
-            foreach (KeyValuePair<Point,Inventory> pair in m_GroundItemsByPosition)
-            {
-                if (pair.Value == groundInv)
-                    return pair.Key;
-            }
-
-            return null;
+            Point position;
+            return groundInv != null && m_aux_GroundItemsPosition.TryGetValue(groundInv, out position)
+                ? (Point?)position : null;
         }
 
         public void DropItemAt(Item it, Point position)
@@ -631,6 +643,7 @@ namespace djack.RogueSurvivor.Data
                 invThere = new Inventory(GROUND_INVENTORY_SLOTS);
                 m_aux_GroundItemsList.Add(invThere);
                 m_GroundItemsByPosition.Add(position, invThere);
+                m_aux_GroundItemsPosition.Add(invThere, position);
                 invThere.AddAll(it);
             }
             else
@@ -683,6 +696,7 @@ namespace djack.RogueSurvivor.Data
             {
                 m_GroundItemsByPosition.Remove(position);
                 m_aux_GroundItemsList.Remove(invThere);
+                m_aux_GroundItemsPosition.Remove(invThere);
                 invThere = null;
             }
         }
@@ -698,6 +712,7 @@ namespace djack.RogueSurvivor.Data
             if (invThere == null) return;
             m_GroundItemsByPosition.Remove(position);
             m_aux_GroundItemsList.Remove(invThere);
+            m_aux_GroundItemsPosition.Remove(invThere);
         }
         #endregion
 
@@ -717,16 +732,17 @@ namespace djack.RogueSurvivor.Data
 
         public bool HasCorpse(Corpse c)
         {
-            return m_CorpsesList.Contains(c);
+            return m_aux_CorpsesSet.Contains(c);
         }
 
         public void AddCorpseAt(Corpse c, Point p)
         {
-            if (m_CorpsesList.Contains(c))
+            if (m_aux_CorpsesSet.Contains(c))
                 throw new ArgumentException("corpse already in this map");
 
             c.Position = p;
             m_CorpsesList.Add(c);
+            m_aux_CorpsesSet.Add(c);
             InsertCorpseAtPos(c);
 
             // make sure the dead actor follows!
@@ -735,7 +751,7 @@ namespace djack.RogueSurvivor.Data
 
         public void MoveCorpseTo(Corpse c, Point newPos)
         {
-            if (!m_CorpsesList.Contains(c))
+            if (!m_aux_CorpsesSet.Contains(c))
                 throw new ArgumentException("corpse not in this map");
 
             RemoveCorpseFromPos(c);
@@ -748,10 +764,11 @@ namespace djack.RogueSurvivor.Data
 
         public void RemoveCorpse(Corpse c)
         {
-            if (!m_CorpsesList.Contains(c))
+            if (!m_aux_CorpsesSet.Contains(c))
                 throw new ArgumentException("corpse not in this map");
 
             m_CorpsesList.Remove(c);
+            m_aux_CorpsesSet.Remove(c);
             RemoveCorpseFromPos(c);
         }
 
@@ -829,9 +846,8 @@ namespace djack.RogueSurvivor.Data
 
         void AddNewScent(OdorScent scent)
         {
-            // list
-            if (!m_Scents.Contains(scent))
-                m_Scents.Add(scent);
+            // Callers already checked the position/odor index for an existing scent.
+            m_Scents.Add(scent);
 
             // hash
             List<OdorScent> scentsThere;
@@ -1246,8 +1262,12 @@ namespace djack.RogueSurvivor.Data
                 m_aux_ActorsByPosition.Add(a.Location.Position, a);
 
             m_aux_GroundItemsList = new List<Inventory>();
-            foreach (Inventory inv in m_GroundItemsByPosition.Values)
-                m_aux_GroundItemsList.Add(inv);
+            m_aux_GroundItemsPosition = new Dictionary<Inventory, Point>();
+            foreach (KeyValuePair<Point, Inventory> pair in m_GroundItemsByPosition)
+            {
+                m_aux_GroundItemsList.Add(pair.Value);
+                m_aux_GroundItemsPosition.Add(pair.Value, pair.Key);
+            }
 
             m_aux_MapObjectsByPosition = new Dictionary<Point, MapObject>();
             foreach (MapObject obj in m_MapObjectsList)
@@ -1267,8 +1287,10 @@ namespace djack.RogueSurvivor.Data
             }
 
             m_aux_CorpsesByPosition = new Dictionary<Point, List<Corpse>>();
+            m_aux_CorpsesSet = new HashSet<Corpse>();
             foreach (Corpse corpse in m_CorpsesList)
             {
+                m_aux_CorpsesSet.Add(corpse);
                 List<Corpse> listHere;
                 if (m_aux_CorpsesByPosition.TryGetValue(corpse.Position, out listHere))
                     listHere.Add(corpse);

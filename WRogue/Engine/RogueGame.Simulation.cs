@@ -287,7 +287,10 @@ namespace djack.RogueSurvivor.Engine
                     District playerDistrict = m_Player.Location.Map.District;
                     m_SimWorker = new DistrictSimulationWorker(delegate
                     {
-                        if (m_Player != null) SimulateNearbyDistricts(playerDistrict);
+                        while (m_Player != null && SimulateNearbyDistricts(playerDistrict))
+                        {
+                            if (m_SimWorker.StopRequestedOnWorkerThread) break;
+                        }
                     });
                 }
                 m_SimWorker.Start();

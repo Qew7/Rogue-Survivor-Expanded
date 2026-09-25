@@ -33,5 +33,23 @@ static class SimulationWorkerTests
         Check.Equal(true, entered.WaitOne(2000), "worker can restart");
         worker.Stop();
         Check.Equal(2, calls, "restart runs one simulation pass");
+
+        int idleCalls = 0;
+        ManualResetEvent firstPass = new ManualResetEvent(false);
+        ManualResetEvent secondPass = new ManualResetEvent(false);
+        DistrictSimulationWorker idle = new DistrictSimulationWorker(delegate
+        {
+            if (Interlocked.Increment(ref idleCalls) == 2) secondPass.Set();
+            firstPass.Set();
+        });
+        idle.Start();
+        Check.Equal(true, firstPass.WaitOne(2000), "idle worker runs initial pass");
+        Thread.Sleep(100);
+        Check.Equal(1, idleCalls, "idle worker does not poll");
+        idle.NotifyWork();
+        Check.Equal(true, secondPass.WaitOne(2000), "new work wakes worker");
+        Thread.Sleep(50);
+        Check.Equal(2, idleCalls, "new work wakes worker once");
+        idle.Stop();
     }
 }

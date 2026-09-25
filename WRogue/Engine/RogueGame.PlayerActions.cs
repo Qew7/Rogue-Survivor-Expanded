@@ -27,7 +27,6 @@ namespace djack.RogueSurvivor.Engine
 
         void HandlePlayerActor(Actor player)
         {
-            PlayerInputReader inputReader = new PlayerInputReader(new UiPlayerInputSource(m_UI));
             // Upkeep.
             UpdatePlayerFOV(player);    // make sure LOS is up to date.
             m_Player = player;      // remember player.
@@ -152,7 +151,7 @@ namespace djack.RogueSurvivor.Engine
                 RedrawPlayScreen();
 
                 // 2. Get input.
-                PlayerInputEvent input = inputReader.Read(m_MouseMoveInterruptedKey);
+                PlayerInputEvent input = m_InputReader.Read(m_MouseMoveInterruptedKey);
                 m_MouseMoveInterruptedKey = null;
                 bool hasKey = input.Key != null;
                 KeyEventArgs inKey = input.Key;

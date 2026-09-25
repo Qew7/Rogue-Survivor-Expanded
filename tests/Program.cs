@@ -6,6 +6,11 @@ class Program
     {
         ScenarioRunner.RegisterAll();
         SkillScenario.AssertCoverage();
+        if (args.Length == 1 && args[0] == "--bench")
+        {
+            PerformanceBenchmarks.Run();
+            return 0;
+        }
         if (args.Length == 1)
         {
             if (args[0] == "--list") { ScenarioRunner.List(); return 0; }
@@ -26,9 +31,14 @@ class Program
         CommandCatalogTests.Run();
         RandomStateTests.Run();
         SaveStoreTests.Run();
+        SaveGameVersionTests.Run();
         HintsSaveTests.Run();
         InputReaderTests.Run();
         SimulationWorkerTests.Run();
+        GDIPlusCanvasResourceTests.Run();
+        GameImagesGrayLevelTests.Run();
+        GameImagesRealAssetTests.Run();
+        OverlayCollectionTests.Run();
         ManualNavigatorTests.Run();
         MovementScenarioTests.Run();
         if (ScenarioRunner.Run("--all") != 0) return 1;

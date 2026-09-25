@@ -833,68 +833,56 @@ namespace djack.RogueSurvivor.Engine
                 m_UI.UI_ClearMinimap(Color.Black);
             }
 
-            // set visited tiles color.
-            #region
-            if (s_Options.IsMinimapOn)
+            // Scan visited tiles once for both minimap colors and player tags.
+            List<KeyValuePair<Point, string>> playerTags = s_Options.ShowPlayerTagsOnMinimap
+                ? new List<KeyValuePair<Point, string>>() : null;
+            if (s_Options.IsMinimapOn || playerTags != null)
             {
-                Point pt = new Point();
                 for (int x = 0; x < map.Width; x++)
                 {
-                    pt.X = x;
                     for (int y = 0; y < map.Height; y++)
                     {
-                        pt.Y = y;
                         Tile tile = map.GetTileAt(x, y);
-                        if (tile.IsVisited)
+                        if (!tile.IsVisited) continue;
+                        Point position = new Point(x, y);
+                        if (s_Options.IsMinimapOn)
                         {
-                            // exits override tile color.
-                            if (map.GetExitAt(pt) != null)
-                                m_UI.UI_SetMinimapColor(x, y, Color.HotPink);
-                            else
-                                m_UI.UI_SetMinimapColor(x, y, tile.Model.MinimapColor);
+                            Color color = map.GetExitAt(position) != null
+                                ? Color.HotPink : tile.Model.MinimapColor;
+                            m_UI.UI_SetMinimapColor(x, y, color);
                         }
+                        if (playerTags == null) continue;
+                        string image = null;
+                        if (tile.HasDecoration(GameImages.DECO_PLAYER_TAG1))
+                            image = GameImages.MINI_PLAYER_TAG1;
+                        else if (tile.HasDecoration(GameImages.DECO_PLAYER_TAG2))
+                            image = GameImages.MINI_PLAYER_TAG2;
+                        else if (tile.HasDecoration(GameImages.DECO_PLAYER_TAG3))
+                            image = GameImages.MINI_PLAYER_TAG3;
+                        else if (tile.HasDecoration(GameImages.DECO_PLAYER_TAG4))
+                            image = GameImages.MINI_PLAYER_TAG4;
+                        if (image != null)
+                            playerTags.Add(new KeyValuePair<Point, string>(position, image));
                     }
                 }
             }
-            #endregion
 
-            // show minimap.
             if (s_Options.IsMinimapOn)
-            {
                 m_UI.UI_DrawMinimap(MINIMAP_X, MINIMAP_Y);
-            }
 
-            // show view rect.
-            m_UI.UI_DrawRect(Color.White, new Rectangle(MINIMAP_X + m_MapViewRect.Left * MINITILE_SIZE, MINIMAP_Y + m_MapViewRect.Top * MINITILE_SIZE, m_MapViewRect.Width * MINITILE_SIZE, m_MapViewRect.Height * MINITILE_SIZE));
+            m_UI.UI_DrawRect(Color.White, new Rectangle(MINIMAP_X + m_MapViewRect.Left * MINITILE_SIZE,
+                MINIMAP_Y + m_MapViewRect.Top * MINITILE_SIZE,
+                m_MapViewRect.Width * MINITILE_SIZE, m_MapViewRect.Height * MINITILE_SIZE));
 
-            // show player tags.
-            #region
-            if (s_Options.ShowPlayerTagsOnMinimap)
+            if (playerTags != null)
             {
-                for (int x = 0; x < map.Width; x++)
-                    for (int y = 0; y < map.Height; y++)
-                    {
-                        Tile tile = map.GetTileAt(x, y);
-                        if (tile.IsVisited)
-                        {
-                            string minitag = null;
-                            if (tile.HasDecoration(GameImages.DECO_PLAYER_TAG1))
-                                minitag = GameImages.MINI_PLAYER_TAG1;
-                            else if (tile.HasDecoration(GameImages.DECO_PLAYER_TAG2))
-                                minitag = GameImages.MINI_PLAYER_TAG2;
-                            else if (tile.HasDecoration(GameImages.DECO_PLAYER_TAG3))
-                                minitag = GameImages.MINI_PLAYER_TAG3;
-                            else if (tile.HasDecoration(GameImages.DECO_PLAYER_TAG4))
-                                minitag = GameImages.MINI_PLAYER_TAG4;
-                            if (minitag != null)
-                            {
-                                Point pos = new Point(MINIMAP_X + x * MINITILE_SIZE, MINIMAP_Y + y * MINITILE_SIZE);
-                                m_UI.UI_DrawImage(minitag, pos.X - MINI_TRACKER_OFFSET, pos.Y - MINI_TRACKER_OFFSET);
-                            }
-                        }
-                    }
+                foreach (KeyValuePair<Point, string> tag in playerTags)
+                {
+                    int x = MINIMAP_X + tag.Key.X * MINITILE_SIZE - MINI_TRACKER_OFFSET;
+                    int y = MINIMAP_Y + tag.Key.Y * MINITILE_SIZE - MINI_TRACKER_OFFSET;
+                    m_UI.UI_DrawImage(tag.Value, x, y);
+                }
             }
-            #endregion
 
             // show player & tracked actors.
             // add tracked targets images out of player fov on the map.

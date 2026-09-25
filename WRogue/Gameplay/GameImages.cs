@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Drawing;
+using System.Drawing.Imaging;
+using System.Runtime.InteropServices;
 
 using djack.RogueSurvivor.Engine;
 
@@ -1006,6 +1008,66 @@ namespace djack.RogueSurvivor.Gameplay
         static Image MakeGrayLevel(Bitmap img)
         {
             Bitmap grayed = new Bitmap(img);
+
+            if (img.PixelFormat == PixelFormat.Format32bppArgb &&
+                grayed.PixelFormat == PixelFormat.Format32bppArgb)
+            {
+                Rectangle bounds = new Rectangle(0, 0, img.Width, img.Height);
+                BitmapData source = img.LockBits(bounds, ImageLockMode.ReadOnly,
+                    PixelFormat.Format32bppArgb);
+                BitmapData target = null;
+                List<Point> translucent = null;
+                bool processed = false;
+                try
+                {
+                    target = grayed.LockBits(bounds, ImageLockMode.WriteOnly,
+                        PixelFormat.Format32bppArgb);
+                    if (source.Stride > 0 && target.Stride > 0)
+                    {
+                        byte[] input = new byte[source.Stride * img.Height];
+                        byte[] output = new byte[target.Stride * img.Height];
+                        Marshal.Copy(source.Scan0, input, 0, input.Length);
+                        for (int y = 0; y < img.Height; y++)
+                            for (int x = 0; x < img.Width; x++)
+                            {
+                                int from = y * source.Stride + 4 * x;
+                                int to = y * target.Stride + 4 * x;
+                                if (input[from + 3] != 255)
+                                {
+                                    if (translucent == null) translucent = new List<Point>();
+                                    translucent.Add(new Point(x, y));
+                                    continue;
+                                }
+                                Color color = Color.FromArgb(input[from + 3],
+                                    input[from + 2], input[from + 1], input[from]);
+                                byte gray = (byte)(255 * GRAYLEVEL_DIM_FACTOR * color.GetBrightness());
+                                output[to] = gray;
+                                output[to + 1] = gray;
+                                output[to + 2] = gray;
+                                output[to + 3] = input[from + 3];
+                            }
+                        Marshal.Copy(output, 0, target.Scan0, output.Length);
+                        processed = true;
+                    }
+                }
+                finally
+                {
+                    if (target != null) grayed.UnlockBits(target);
+                    img.UnlockBits(source);
+                }
+                if (processed)
+                {
+                    if (translucent != null)
+                        foreach (Point point in translucent)
+                        {
+                            Color color = img.GetPixel(point.X, point.Y);
+                            int gray = (int)(255 * GRAYLEVEL_DIM_FACTOR * color.GetBrightness());
+                            grayed.SetPixel(point.X, point.Y,
+                                Color.FromArgb(color.A, gray, gray, gray));
+                        }
+                    return grayed;
+                }
+            }
 
             for(int x = 0; x < grayed.Width; x++)
                 for (int y = 0; y < grayed.Height; y++)

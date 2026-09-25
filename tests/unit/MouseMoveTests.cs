@@ -33,6 +33,10 @@ static class MouseMoveTests
             point => point != new Point(1, 1)), "blocked goal");
         Check.Equal(null, Find(new Point(0, 0), new Point(5, 0), board, clear), "outside view");
         Check.Equal(0, Find(new Point(1, 1), new Point(1, 1), board, clear).Count, "same tile");
+        Rectangle shifted = new Rectangle(-4, -4, 9, 9);
+        List<Point> shiftedRoute = Find(new Point(-3, -3), new Point(3, 2), shifted, clear);
+        Check.Equal(new Point(3, 2), shiftedRoute[shiftedRoute.Count - 1],
+            "path indexing respects offset view bounds");
 
         // A fully enclosed target must remain unreachable even with diagonal movement.
         Check.Equal(null, Find(new Point(0, 0), new Point(4, 4), board,

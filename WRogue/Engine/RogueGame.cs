@@ -473,6 +473,7 @@ namespace djack.RogueSurvivor.Engine
 
         #region Fields
         readonly IRogueUI m_UI;
+        readonly PlayerInputReader m_InputReader;
         Rules m_Rules;
         Session m_Session;
         HiScoreTable m_HiScoreTable;
@@ -584,6 +585,7 @@ namespace djack.RogueSurvivor.Engine
             Logger.WriteLine(Logger.Stage.INIT_MAIN, "RogueGame()");
 
             m_UI = UI;
+            m_InputReader = new PlayerInputReader(new UiPlayerInputSource(UI));
 
             Logger.WriteLine(Logger.Stage.INIT_MAIN, "creating MusicManager");
             switch (SetupConfig.Sound)

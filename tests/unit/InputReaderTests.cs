@@ -43,5 +43,13 @@ static class InputReaderTests
         click.Buttons.Enqueue(MouseButtons.Left);
         PlayerInputEvent pressed = new PlayerInputReader(click).Read(null);
         Check.Equal(MouseButtons.Left, pressed.MouseButtons, "click delivered without movement");
+
+        FakeSource repeated = new FakeSource();
+        repeated.Keys.Enqueue(new KeyEventArgs(Keys.M));
+        repeated.Keys.Enqueue(new KeyEventArgs(Keys.NumPad6));
+        repeated.Positions.Enqueue(new Point(4, 4));
+        PlayerInputEvent next = new PlayerInputReader(repeated).Read(null);
+        Check.Equal(Keys.NumPad6, next.Key.KeyCode,
+            "modal input drops one repeated key and accepts the next one");
     }
 }

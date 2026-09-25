@@ -52,8 +52,7 @@ def wait_for_log(path, text, seconds=10):
 
 def read_saved_mods(path):
     with open(path, "rb") as saved:
-        assert saved.read(5) == b"RSE1\x03", "Save has no mod manifest"
-        count = struct.unpack("<I", saved.read(4))[0]
+        assert saved.read(5) == b"RSE1\x04", "Save has no game version and mod manifest"
 
         def read_string():
             length = 0
@@ -66,7 +65,9 @@ def read_saved_mods(path):
                 shift += 7
             return saved.read(length).decode("utf-8")
 
-        return [(read_string(), read_string()) for _ in range(count)]
+        game_version = read_string()
+        count = struct.unpack("<I", saved.read(4))[0]
+        return game_version, [(read_string(), read_string()) for _ in range(count)]
 
 
 with socket.create_connection(("127.0.0.1", 5900), timeout=10) as vnc:
@@ -181,9 +182,9 @@ with socket.create_connection(("127.0.0.1", 5900), timeout=10) as vnc:
     save = "/opt/game/Config/Saves/save.dat"
     wait_for(save, 30)
     save_bytes = os.path.getsize(save)
-    assert read_saved_mods(save) == [
+    assert read_saved_mods(save) == ("0.1.0", [
         ("Deonapocalypse", "1.0.0"), ("Auxiliary", "")
-    ], "Save did not retain mod names, versions and priority"
+    ]), "Save did not retain game version, mods and priority"
     vnc.sendall(struct.pack(">BBHI", 4, 1, 0, shift))
     key(vnc, ord("L"))
     vnc.sendall(struct.pack(">BBHI", 4, 0, 0, shift))

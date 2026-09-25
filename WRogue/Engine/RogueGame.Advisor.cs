@@ -966,31 +966,10 @@ namespace djack.RogueSurvivor.Engine
         #region Input helpers
         void WaitKeyOrMouse(out KeyEventArgs key, out Point mousePos, out MouseButtons? mouseButtons)
         {
-            // Peek keyboard & mouse until we got an event.
-            m_UI.UI_PeekKey();  // consume keys to avoid repeats.
-            KeyEventArgs inKey;
-            Point prevMousePos = m_UI.UI_GetMousePosition();
-            mousePos = new Point(-1, -1);
-            mouseButtons = null;
-            for (; ; )
-            {
-                inKey = m_UI.UI_PeekKey();
-                if (inKey != null)
-                {
-                    key = inKey;
-                    return;
-                }
-                else
-                {
-                    mousePos = m_UI.UI_GetMousePosition();
-                    mouseButtons = m_UI.UI_PeekMouseButtons();
-                    if (mousePos != prevMousePos || mouseButtons != null)
-                    {
-                        key = null;
-                        return;
-                    }
-                }
-            }
+            PlayerInputEvent input = m_InputReader.Read(null);
+            key = input.Key;
+            mousePos = input.MousePosition;
+            mouseButtons = input.MouseButtons;
         }
 
         /// <summary>

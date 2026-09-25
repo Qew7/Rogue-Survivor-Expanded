@@ -131,6 +131,11 @@ namespace djack.RogueSurvivor.Engine
             ModInfo[] available = ModCatalog.Discover("mods");
             ModStamp[] required;
             try { required = BinarySaveStore.ReadMods(saveName); }
+            catch (IOException error)
+            {
+                m_LastModLoadNotice = error.Message;
+                return false;
+            }
             catch (Exception) { required = new ModStamp[0]; }
             ModStamp[] unavailable;
             ModInfo[] chosen = ModCatalog.Match(required, available, out unavailable);

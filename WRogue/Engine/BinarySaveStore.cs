@@ -9,7 +9,14 @@ namespace djack.RogueSurvivor.Engine
     static class BinarySaveStore
     {
         static readonly byte[] Magic = { (byte)'R', (byte)'S', (byte)'E', (byte)'1' };
-        const byte Version = 3;
+        const byte Version = 4;
+
+        sealed class IncompatibleGameVersionException : IOException
+        {
+            public IncompatibleGameVersionException(string version) : base(
+                "Save requires Rogue Survivor Expanded " + version +
+                "; current game is " + SetupConfig.GAME_VERSION + ".") { }
+        }
 
         public static void Save(string path, object value)
         {
@@ -27,6 +34,7 @@ namespace djack.RogueSurvivor.Engine
                 {
                     stream.Write(Magic, 0, Magic.Length);
                     stream.WriteByte(Version);
+                    new BinaryWriter(stream).Write(SetupConfig.GAME_VERSION);
                     WriteMods(stream, mods ?? new ModStamp[0]);
                     using (GZipStream compressed = new GZipStream(stream, CompressionMode.Compress, true))
                         ObjectGraphStore.Write(compressed, value);
@@ -56,8 +64,9 @@ namespace djack.RogueSurvivor.Engine
             {
                 return Read(path, validate, out mods);
             }
-            catch (Exception)
+            catch (Exception error)
             {
+                if (error is IncompatibleGameVersionException) throw;
                 if (!File.Exists(path + ".bak")) throw;
                 return Read(path + ".bak", validate, out mods);
             }
@@ -75,8 +84,9 @@ namespace djack.RogueSurvivor.Engine
         public static ModStamp[] ReadMods(string path)
         {
             try { return ReadModsFile(path); }
-            catch (Exception)
+            catch (Exception error)
             {
+                if (error is IncompatibleGameVersionException) throw;
                 if (!File.Exists(path + ".bak")) throw;
                 return ReadModsFile(path + ".bak");
             }
@@ -93,9 +103,21 @@ namespace djack.RogueSurvivor.Engine
                     if (header[i] != Magic[i]) return new ModStamp[0];
                 int version = stream.ReadByte();
                 if (version == 1 || version == 2) return new ModStamp[0];
-                if (version != Version) throw new InvalidDataException("Unsupported save version: " + version);
+                if (version != 3 && version != Version)
+                    throw new InvalidDataException("Unsupported save version: " + version);
+                if (version == Version) CheckGameVersion(stream);
                 return ReadMods(stream);
             }
+        }
+
+        static void CheckGameVersion(Stream stream)
+        {
+            string savedVersion = new BinaryReader(stream).ReadString();
+            if (savedVersion.Length == 0 || savedVersion.Length > 128)
+                throw new InvalidDataException("Invalid saved game version.");
+            if (!String.Equals(savedVersion, SetupConfig.GAME_VERSION,
+                StringComparison.Ordinal))
+                throw new IncompatibleGameVersionException(savedVersion);
         }
 
         static void WriteMods(Stream stream, ModStamp[] mods)
@@ -140,14 +162,15 @@ namespace djack.RogueSurvivor.Engine
                 if (marked)
                 {
                     version = stream.ReadByte();
-                    if (version != 1 && version != 2 && version != Version)
+                    if (version != 1 && version != 2 && version != 3 && version != Version)
                         throw new InvalidDataException("Unsupported save version: " + version);
+                    if (version == Version) CheckGameVersion(stream);
                 }
                 else
                     stream.Position = 0;
-                mods = version == Version ? ReadMods(stream) : new ModStamp[0];
+                mods = version >= 3 ? ReadMods(stream) : new ModStamp[0];
                 object value;
-                if (version == 2 || version == Version)
+                if (version >= 2)
                 {
                     using (GZipStream compressed = new GZipStream(stream, CompressionMode.Decompress, true))
                         value = ObjectGraphStore.Read(compressed);

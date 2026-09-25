@@ -12,7 +12,7 @@ unless oversized.empty?
 end
 
 test_files = Dir.glob(File.join(root, 'tests', '**', '*.cs'))
-allowed_test_dirs = %w[unit integration scenarios support]
+allowed_test_dirs = %w[unit integration scenarios support benchmarks]
 misplaced_tests = test_files.reject do |path|
   relative = path.delete_prefix(File.join(root, 'tests') + '/')
   relative == 'Program.cs' || allowed_test_dirs.include?(relative.split('/').first)
@@ -59,6 +59,16 @@ abort "Stale source exceptions: #{stale_exceptions.join(', ')}" unless stale_exc
   entries = body.lines.filter_map { |line| line[/^\s*([A-Z][A-Z_0-9]*)\s*(?:=\s*\d+)?\s*,?\s*$/, 1] }
   without_number = entries.reject { |entry| body.match?(/^\s*#{Regexp.escape(entry)}\s*=\s*\d+\s*,?\s*$/) }
   abort "Implicit #{catalog} IDs: #{without_number.join(', ')}" unless without_number.empty?
+end
+
+images = File.read(File.join(source_root, 'Gameplay', 'GameImages.cs'),
+                   encoding: 'bom|utf-8').scrub
+image_ids = images.scan(/public const string ([A-Z0-9_]+)\s*=/).flatten
+loaded_ids = images.scan(/\bLoad\(([A-Z0-9_]+)\)/).flatten
+missing_images = image_ids - loaded_ids
+duplicate_images = loaded_ids.tally.select { |_id, count| count != 1 }.keys
+unless missing_images.empty? && duplicate_images.empty?
+  abort "Image registry mismatch: missing #{missing_images.join(', ')}; duplicate #{duplicate_images.join(', ')}"
 end
 
 puts "Layout checks passed: #{sources.length} source files, #{test_files.length} C# test files"

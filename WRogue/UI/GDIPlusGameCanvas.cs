@@ -207,6 +207,11 @@ namespace djack.RogueSurvivor.UI
         public void Clear(Color clearColor)
         {
             m_ClearColor = clearColor;
+            foreach (IGfx gfx in m_Gfxs)
+            {
+                IDisposable disposable = gfx as IDisposable;
+                if (disposable != null) disposable.Dispose();
+            }
             m_Gfxs.Clear();
 
             m_NeedRedraw = true;
@@ -256,7 +261,7 @@ namespace djack.RogueSurvivor.UI
 
         public void AddString(Font font, Color color, string text, int gx, int gy)
         {
-            m_Gfxs.Add(new GfxString(color, font, text, gx, gy));
+            m_Gfxs.Add(new GfxString(GetBrush(color), font, text, gx, gy));
             m_NeedRedraw = true;
         }
 
@@ -279,15 +284,19 @@ namespace djack.RogueSurvivor.UI
 
         public void AddFilledRect(Color color, Rectangle rect)
         {
+            m_Gfxs.Add(new GfxFilledRect(GetBrush(color), rect));
+            m_NeedRedraw = true;
+        }
+
+        private Brush GetBrush(Color color)
+        {
             Brush brush;
             if (!m_BrushesCache.TryGetValue(color, out brush))
             {
                 brush = new SolidBrush(color);
                 m_BrushesCache.Add(color, brush);
             }
-
-            m_Gfxs.Add(new GfxFilledRect(brush, rect));
-            m_NeedRedraw = true;
+            return brush;
         }
 
         public void ClearMinimap(Color color)
@@ -348,7 +357,14 @@ namespace djack.RogueSurvivor.UI
 
         public void DisposeUnmanagedResources()
         {
-            // nothing to do.
+            Clear(Color.Empty);
+            foreach (Brush brush in m_BrushesCache.Values) brush.Dispose();
+            m_BrushesCache.Clear();
+            foreach (Pen pen in m_PensCache.Values) pen.Dispose();
+            m_PensCache.Clear();
+            m_RenderGraphics.Dispose();
+            m_RenderImage.Dispose();
+            m_MinimapBitmap.Dispose();
         }        
         #endregion
 
@@ -372,7 +388,7 @@ namespace djack.RogueSurvivor.UI
             }
         }
 
-        class GfxImageTransform : IGfx
+        class GfxImageTransform : IGfx, IDisposable
         {
             readonly Image m_Img;
             readonly Matrix m_Matrix;
@@ -391,16 +407,19 @@ namespace djack.RogueSurvivor.UI
 
             public void Draw(Graphics g)
             {
-                Matrix prevMatrix = g.Transform;
-                Matrix m = prevMatrix.Clone();
-                m.Multiply(m_Matrix);
-                g.Transform = m;
-                g.DrawImageUnscaled(m_Img, m_X, m_Y);
-                g.Transform = prevMatrix;
+                GraphicsState state = g.Save();
+                try
+                {
+                    g.MultiplyTransform(m_Matrix);
+                    g.DrawImageUnscaled(m_Img, m_X, m_Y);
+                }
+                finally { g.Restore(state); }
             }
+
+            public void Dispose() { m_Matrix.Dispose(); }
         }
 
-        class GfxTransparentImage : IGfx
+        class GfxTransparentImage : IGfx, IDisposable
         {
             readonly Image m_Img;
             readonly int m_X;
@@ -432,6 +451,8 @@ namespace djack.RogueSurvivor.UI
             {
                 g.DrawImage(m_Img, new Rectangle(m_X, m_Y, m_Img.Width, m_Img.Height), 0, 0, m_Img.Width, m_Img.Height, GraphicsUnit.Pixel, m_ImgAttributes);
             }
+
+            public void Dispose() { m_ImgAttributes.Dispose(); }
         }
 
         class GfxLine : IGfx
@@ -457,21 +478,19 @@ namespace djack.RogueSurvivor.UI
 
         class GfxString : IGfx
         {
-            readonly Color m_Color;
             readonly Font m_Font;
             readonly string m_Text;
             readonly int m_X;
             readonly int m_Y;
             readonly Brush m_Brush;
 
-            public GfxString(Color color, Font font, string text, int x, int y)
+            public GfxString(Brush brush, Font font, string text, int x, int y)
             {
-                m_Color = color;
                 m_Font = font;
                 m_Text = text;
                 m_X = x;
                 m_Y = y;
-                m_Brush = new SolidBrush(color);
+                m_Brush = brush;
             }
 
             public void Draw(Graphics g)

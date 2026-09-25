@@ -617,6 +617,9 @@ namespace djack.RogueSurvivor.Engine
                     SimulateNearbyDistricts(district);
                 }
                 #endregion
+
+                if (district == m_Session.CurrentMap.District && m_SimWorker != null)
+                    m_SimWorker.NotifyWork();
             }  // end lock district
         }
 

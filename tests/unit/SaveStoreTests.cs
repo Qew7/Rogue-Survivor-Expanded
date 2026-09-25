@@ -27,8 +27,14 @@ static class SaveStoreTests
 
             Save(path, "first new save");
             Check.Equal("first new save", Load(path), "versioned save reads");
-            Check.Equal((byte)3, File.ReadAllBytes(path)[4], "new payload has mod manifest and graph");
-            byte[] versionThree = File.ReadAllBytes(path);
+            Check.Equal((byte)4, File.ReadAllBytes(path)[4], "new payload has game version and mods");
+            byte[] versionFour = File.ReadAllBytes(path);
+            byte[] versionThree = new byte[versionFour.Length - 6];
+            Array.Copy(versionFour, versionThree, 5);
+            versionThree[4] = 3;
+            Array.Copy(versionFour, 11, versionThree, 5, versionFour.Length - 11);
+            File.WriteAllBytes(path, versionThree);
+            Check.Equal("first new save", Load(path), "previous mod manifest version still loads");
             byte[] versionTwo = new byte[versionThree.Length - 4];
             Array.Copy(versionThree, versionTwo, 5);
             versionTwo[4] = 2;

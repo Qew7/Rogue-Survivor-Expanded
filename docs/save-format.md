@@ -1,14 +1,20 @@
 # Save format
 
 `BinarySaveStore` writes every binary save atomically and keeps the previous
-file as `<name>.bak`. It recognizes four payloads:
+file as `<name>.bak`. It recognizes five payloads:
 
 | Header | Payload | Reader |
 | --- | --- | --- |
 | None | Original BinaryFormatter stream | Legacy migration only |
 | `RSE1` + byte `1` | BinaryFormatter stream | Legacy migration only |
 | `RSE1` + byte `2` | GZip compressed object graph | Previous writer and current reader |
-| `RSE1` + byte `3` | Ordered mod names and versions, then GZip graph | Current writer and reader |
+| `RSE1` + byte `3` | Ordered mod names and versions, then GZip graph | Previous writer and current reader |
+| `RSE1` + byte `4` | Expanded game version, ordered mod names and versions, then GZip graph | Current writer and reader |
+
+Version 4 saves record the exact Rogue Survivor Expanded version (`0.1.0` at
+this release). A save with another game version is rejected before loading its
+mod list or object graph; the error shows the saved and running versions. Older
+formats have no game version and remain readable for migration.
 
 The mod list is outside the graph so a failed load can still report which mod
 and version the save needs. Older saves have no recorded mod list. Loading a
@@ -33,5 +39,5 @@ map the old name. Renaming or removing a type needs an explicit type alias in
 `ObjectGraphStore`.
 
 The legacy `BinaryFormatter` reader remains solely for existing local saves.
-After loading one, saving again writes version 2. Do not load legacy files
+After loading one, saving again writes version 4. Do not load legacy files
 obtained from untrusted sources.

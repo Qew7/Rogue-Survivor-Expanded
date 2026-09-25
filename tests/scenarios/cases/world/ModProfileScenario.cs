@@ -13,7 +13,7 @@ static class ModProfileScenario
                 ModInfo[] available = ModCatalog.Discover("mods");
                 Check.Equal(true, available.Length > 0, "sample mod available");
                 Check.Equal("1.0.0", available[0].Version, "mod version loaded");
-                Check.Equal("alpha 10.1", available[0].GameVersion,
+                Check.Equal("0.1.0", available[0].GameVersion,
                     "supported game version loaded");
                 Check.Equal(true, available[0].SupportsCurrentGame,
                     "bundled mod supports this game version");

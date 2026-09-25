@@ -24,29 +24,43 @@ namespace djack.RogueSurvivor.Engine
             if (!canEnter(goal))
                 return null;
 
-            Queue<Point> frontier = new Queue<Point>();
-            Dictionary<Point, Point> previous = new Dictionary<Point, Point>();
-            frontier.Enqueue(start);
-            previous[start] = start;
+            // The search is confined to the visible rectangle, so dense arrays avoid
+            // hashing every explored tile during mouse hover.
+            int width = bounds.Width;
+            int capacity = width * bounds.Height;
+            int[] frontier = new int[capacity];
+            int[] previous = new int[capacity]; // parent index + 1; zero means unseen.
+            int head = 0;
+            int tail = 0;
+            int startIndex = (start.Y - bounds.Top) * width + start.X - bounds.Left;
+            int goalIndex = (goal.Y - bounds.Top) * width + goal.X - bounds.Left;
+            frontier[tail++] = startIndex;
+            previous[startIndex] = startIndex + 1;
 
-            while (frontier.Count > 0)
+            while (head < tail)
             {
-                Point current = frontier.Dequeue();
+                int currentIndex = frontier[head++];
+                Point current = new Point(bounds.Left + currentIndex % width,
+                    bounds.Top + currentIndex / width);
                 foreach (Point offset in Neighbors)
                 {
                     Point next = new Point(current.X + offset.X, current.Y + offset.Y);
-                    if (!bounds.Contains(next) || previous.ContainsKey(next) || !canEnter(next))
+                    if (!bounds.Contains(next))
                         continue;
-                    previous[next] = current;
-                    if (next == goal)
+                    int nextIndex = (next.Y - bounds.Top) * width + next.X - bounds.Left;
+                    if (previous[nextIndex] != 0 || !canEnter(next))
+                        continue;
+                    previous[nextIndex] = currentIndex + 1;
+                    if (nextIndex == goalIndex)
                     {
                         List<Point> path = new List<Point>();
-                        for (Point step = goal; step != start; step = previous[step])
-                            path.Add(step);
+                        for (int step = goalIndex; step != startIndex; step = previous[step] - 1)
+                            path.Add(new Point(bounds.Left + step % width,
+                                bounds.Top + step / width));
                         path.Reverse();
                         return path;
                     }
-                    frontier.Enqueue(next);
+                    frontier[tail++] = nextIndex;
                 }
             }
             return null;

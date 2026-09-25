@@ -257,38 +257,6 @@ namespace djack.RogueSurvivor.Engine
         #endregion
 
         #region Computing FOV
-        static bool FOVSub(Location fromLocation, Point toPosition, int maxRange, ref HashSet<Point> visibleSet)
-        {
-#if false
-            return CanTraceViewLine(fromLocation, toPosition, maxRange);
-#endif
-
-            // Asymetric bresenham : use the fact we are tracing FROM to TO to addvisible tiles on the fly.
-            // Pros: fixed "holes" in fov : if you can see a tile you can see everything in its line too.
-            // Cons: rare cases of asymetry in FOV : i can see you, but you can't see me.
-            Map map = fromLocation.Map;
-            HashSet<Point> visibleSetRef = visibleSet;  // necessary to have a local variable in lambda call.
-            Point goal = toPosition;
-
-            return AsymetricBresenhamTrace(maxRange,
-                map,
-                fromLocation.Position.X, fromLocation.Position.Y,
-                toPosition.X, toPosition.Y,
-                null,
-                (x, y) =>
-                {
-                    bool viewThrough =
-                        (x == goal.X && y == goal.Y) ? true :
-                        map.IsTransparent(x, y) ? true :
-                        false;
-
-                    if (viewThrough)
-                        visibleSetRef.Add(new Point(x, y));
-
-                    return viewThrough;
-                });
-        }
-
         public static HashSet<Point> ComputeFOVFor(Rules rules, Actor actor, WorldTime time, Weather weather)
         {
             Location fromLocation = actor.Location;
@@ -308,6 +276,14 @@ namespace djack.RogueSurvivor.Engine
             map.TrimToBounds(ref xmax, ref ymax);
             Point to = new Point();
             List<Point> wallsToFix = new List<Point>();
+            Point traceGoal = Point.Empty;
+            Func<int, int, bool> trace = (x, y) =>
+            {
+                bool viewThrough = (x == traceGoal.X && y == traceGoal.Y) ||
+                    map.IsTransparent(x, y);
+                if (viewThrough) visibleSet.Add(new Point(x, y));
+                return viewThrough;
+            };
 
             // 1st pass : trace line and remember walls that are not visible for 2nd pass.
             for (int x = xmin; x <= xmax; x++)
@@ -326,7 +302,9 @@ namespace djack.RogueSurvivor.Engine
                         continue;
 
                     // Trace line.
-                    if(!FOVSub(fromLocation, to, maxRange, ref visibleSet))
+                    traceGoal = to;
+                    if(!AsymetricBresenhamTrace(maxRange, map,
+                        from.X, from.Y, to.X, to.Y, null, trace))
                     {                        
                         // if its a wall (in FoV terms), remember.
                         bool isFovWall = false;
