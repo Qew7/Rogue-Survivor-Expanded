@@ -76,7 +76,7 @@ namespace djack.RogueSurvivor.Gameplay.AI
             m_Actor.IsRunning = false;
 
             // 0. Equip best item
-            ActorAction bestEquip = BehaviorEquipBestItems(game, false, true);
+            ActorAction bestEquip = IsReturningXpdLoot ? null : BehaviorEquipBestItems(game, false, true);
             if (bestEquip != null)
             {
                 return bestEquip;

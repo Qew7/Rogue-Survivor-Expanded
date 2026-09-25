@@ -58,6 +58,7 @@ namespace djack.RogueSurvivor.Engine
             Set(PlayerCommand.MARK_ENEMIES_MODE, Keys.E | Keys.Control);
             Set(PlayerCommand.MESSAGE_LOG, Keys.M | Keys.Shift);
             Set(PlayerCommand.MOUSE_MOVE_MODE, Keys.M);
+            Set(PlayerCommand.XPD_BASE, Keys.B | Keys.Control);
             Set(PlayerCommand.MOVE_E, Keys.NumPad6);
             Set(PlayerCommand.MOVE_N, Keys.NumPad8);
             Set(PlayerCommand.MOVE_NE, Keys.NumPad9);

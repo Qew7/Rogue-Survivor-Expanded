@@ -66,6 +66,7 @@ namespace djack.RogueSurvivor.Engine
         ITEM_SLOT_7,
         ITEM_SLOT_8,
         ITEM_SLOT_9,
-        MOUSE_MOVE_MODE
+        MOUSE_MOVE_MODE,
+        XPD_BASE
     }
 }

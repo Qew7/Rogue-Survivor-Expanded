@@ -16,7 +16,7 @@ namespace djack.RogueSurvivor.Gameplay.AI
     /// Base class for AIs that can follow orders and is notified of raid events.
     /// </summary>
     [Serializable]
-    abstract class OrderableAI : BaseAI
+    abstract partial class OrderableAI : BaseAI
     {
         #region Fields
         protected Percept m_LastEnemySaw;
@@ -40,6 +40,8 @@ namespace djack.RogueSurvivor.Gameplay.AI
             // reset order states.
             m_ReachedPatrolPoint = false;
             m_ReportStage = 0;
+            m_XpdSupplyStage = 0;
+            m_XpdLoot = null;
         }
 
         protected ActorAction ExecuteOrder(RogueGame game, ActorOrder order, List<Percept> percepts, ExplorationData exploration)
@@ -73,6 +75,8 @@ namespace djack.RogueSurvivor.Gameplay.AI
                     return ExecuteToggleFollow(game);
                 case ActorTasks.WHERE_ARE_YOU:
                     return ExecuteReportPosition(game);
+                case ActorTasks.SCAVENGE_SUPPLIES:
+                    return ExecuteScavengeSupplies(game, order);
 
                 default:
                     throw new NotImplementedException("order task not handled");

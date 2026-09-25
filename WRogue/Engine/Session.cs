@@ -18,7 +18,8 @@ namespace djack.RogueSurvivor.Engine
     {
         GM_STANDARD,
         GM_CORPSES_INFECTION,
-        GM_VINTAGE
+        GM_VINTAGE,
+        GM_XPD
     }
 
     [Serializable]
@@ -852,6 +853,7 @@ namespace djack.RogueSurvivor.Engine
                 case GameMode.GM_STANDARD: return "STD - Standard Game";
                 case GameMode.GM_CORPSES_INFECTION: return "C&I - Corpses & Infection";
                 case GameMode.GM_VINTAGE: return "VTG - Vintage Zombies";
+                case GameMode.GM_XPD: return "XPD - Expanded";
                 default: throw new Exception("unhandled game mode");
             }
         }
@@ -863,6 +865,7 @@ namespace djack.RogueSurvivor.Engine
                 case GameMode.GM_STANDARD: return "STD";
                 case GameMode.GM_CORPSES_INFECTION: return "C&I";
                 case GameMode.GM_VINTAGE: return "VTG";
+                case GameMode.GM_XPD: return "XPD";
                 default: throw new Exception("unhandled game mode");
             }
         }

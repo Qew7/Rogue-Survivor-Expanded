@@ -92,13 +92,15 @@ namespace djack.RogueSurvivor.Engine
             {
                 Session.DescGameMode(GameMode.GM_STANDARD),
                 Session.DescGameMode(GameMode.GM_CORPSES_INFECTION),
-                Session.DescGameMode(GameMode.GM_VINTAGE)
+                Session.DescGameMode(GameMode.GM_VINTAGE),
+                Session.DescGameMode(GameMode.GM_XPD)
             };
             string[] descs = new string[]
             {
                 "Rogue Survivor standard game.",
                 "Don't get a cold. Keep an eye on your deceased diseased friends.",
-                "The classic zombies next door."
+                "The classic zombies next door.",
+                "Expanded game with claimable bases and supply expeditions."
             };
 
             bool loop = true;
@@ -167,6 +169,13 @@ namespace djack.RogueSurvivor.Engine
                             "Remember to set them back ON again when you play other modes!"
                         };
                         break;
+                    case 3:
+                        descMode = new string[] {
+                            "Expanded gameplay based on Corpses & Infection.",
+                            "Claim enclosed bases, assign food and weapon rooms,",
+                            "and send followers on supply expeditions."
+                        };
+                        break;
                 }
                 foreach (String str in descMode)
                 {
@@ -221,6 +230,12 @@ namespace djack.RogueSurvivor.Engine
                                     s_Options.SkeletonsUpgrade = false;
                                     ApplyOptions(false);
 
+                                    choiceDone = true;
+                                    loop = false;
+                                    break;
+
+                                case 3: // expanded
+                                    m_Session.GameMode = GameMode.GM_XPD;
                                     choiceDone = true;
                                     loop = false;
                                     break;

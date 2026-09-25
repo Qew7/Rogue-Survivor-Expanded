@@ -69,6 +69,7 @@ namespace djack.RogueSurvivor.Engine
             new Entry(PlayerCommand.USE_EXIT, "Use Exit"),
             new Entry(PlayerCommand.USE_SPRAY, "Use Spray"),
             new Entry(PlayerCommand.MOUSE_MOVE_MODE, "Mouse movement"),
+            new Entry(PlayerCommand.XPD_BASE, "XPD base"),
             new Entry(PlayerCommand.EAT_CORPSE, "Eat corpse"),
             new Entry(PlayerCommand.REVIVE_CORPSE, "Revive corpse"),
         };

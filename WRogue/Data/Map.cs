@@ -64,6 +64,7 @@ namespace djack.RogueSurvivor.Data
         Dictionary<Point, Exit> m_Exits;
 
         List<Zone> m_Zones;
+        List<XpdBase> m_XpdBases;
 
         List<Actor> m_ActorsList;
         int m_iCheckNextActorIndex;
@@ -203,6 +204,32 @@ namespace djack.RogueSurvivor.Data
             get { return m_MapObjectsList; }
         }
 
+        public IEnumerable<XpdBase> XpdBases
+        {
+            get
+            {
+                if (m_XpdBases == null) m_XpdBases = new List<XpdBase>();
+                return m_XpdBases;
+            }
+        }
+
+        public XpdBase XpdBaseAt(Point point)
+        {
+            foreach (XpdBase baseClaim in XpdBases)
+                if (baseClaim.Contains(point)) return baseClaim;
+            return null;
+        }
+
+        public void AddXpdBase(XpdBase baseClaim)
+        {
+            if (baseClaim == null) throw new ArgumentNullException("baseClaim");
+            if (m_XpdBases == null) m_XpdBases = new List<XpdBase>();
+            foreach (Point cell in baseClaim.Cells)
+                if (!IsInBounds(cell) || XpdBaseAt(cell) != null)
+                    throw new InvalidOperationException("Base overlaps another base or the map edge");
+            m_XpdBases.Add(baseClaim);
+        }
+
         public IEnumerable<Inventory> GroundInventories
         {
             get { return m_aux_GroundItemsList; }
@@ -262,6 +289,7 @@ namespace djack.RogueSurvivor.Data
             m_Exits = new Dictionary<Point, Exit>();
 
             m_Zones = new List<Zone>(5);
+            m_XpdBases = new List<XpdBase>();
 
             m_aux_ActorsByPosition = new Dictionary<Point, Actor>(5);
             m_ActorsList = new List<Actor>(5);
@@ -1241,6 +1269,8 @@ namespace djack.RogueSurvivor.Data
             m_Tiles = (Tile[,])info.GetValue("m_Tiles", typeof(Tile[,]));
             m_Exits = (Dictionary<Point, Exit>)info.GetValue("m_Exits", typeof(Dictionary<Point, Exit>));
             m_Zones = (List<Zone>)info.GetValue("m_Zones", typeof(List<Zone>));
+            try { m_XpdBases = (List<XpdBase>)info.GetValue("m_XpdBases", typeof(List<XpdBase>)); }
+            catch (SerializationException) { m_XpdBases = new List<XpdBase>(); }
             m_ActorsList = (List<Actor>)info.GetValue("m_ActorsList", typeof(List<Actor>));
             m_MapObjectsList = (List<MapObject>)info.GetValue("m_MapObjectsList", typeof(List<MapObject>));
             m_GroundItemsByPosition = (Dictionary<Point, Inventory>)info.GetValue("m_GroundItemsByPosition", typeof(Dictionary<Point, Inventory>));
@@ -1314,6 +1344,7 @@ namespace djack.RogueSurvivor.Data
             info.AddValue("m_Tiles", m_Tiles);
             info.AddValue("m_Exits", m_Exits);
             info.AddValue("m_Zones", m_Zones);
+            info.AddValue("m_XpdBases", m_XpdBases);
             info.AddValue("m_ActorsList", m_ActorsList);
             info.AddValue("m_MapObjectsList", m_MapObjectsList);
             info.AddValue("m_GroundItemsByPosition", m_GroundItemsByPosition);

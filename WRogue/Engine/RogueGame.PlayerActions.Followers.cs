@@ -264,6 +264,8 @@ namespace djack.RogueSurvivor.Engine
                 AddMessage(new Message("3. Barricade (max)...    7. Build small fort.    B. Sleep now.", m_Session.WorldTime.TurnCounter, Color.LightGreen));
                 AddMessage(new Message(String.Format("4. Guard...              8. Build large fort.    C. {0} following me.   ", startStopFollow), m_Session.WorldTime.TurnCounter, Color.LightGreen));
                 AddMessage(new Message("5. Patrol...             9. Report events.       D. Where are you?", m_Session.WorldTime.TurnCounter, Color.LightGreen));
+                if (m_Session.GameMode == GameMode.GM_XPD)
+                    AddMessage(new Message("E. Scavenge supplies for base.", m_Session.WorldTime.TurnCounter, Color.LightGreen));
                 RedrawPlayScreen();
 
                 // 2. Get input.
@@ -391,6 +393,14 @@ namespace djack.RogueSurvivor.Engine
 
                         case Keys.D: // where are ou?
                             if (HandlePlayerOrderFollowerToReportPosition(player, follower))
+                            {
+                                loop = false;
+                                actionDone = true;
+                            }
+                            break;
+
+                        case Keys.E:
+                            if (HandlePlayerOrderFollowerToScavenge(player, follower))
                             {
                                 loop = false;
                                 actionDone = true;
@@ -857,6 +867,19 @@ namespace djack.RogueSurvivor.Engine
             DoGiveOrderTo(player, follower, new ActorOrder(ActorTasks.WHERE_ARE_YOU, follower.Location));
 
             // done.
+            return true;
+        }
+
+        bool HandlePlayerOrderFollowerToScavenge(Actor player, Actor follower)
+        {
+            if (m_Session.GameMode != GameMode.GM_XPD) return false;
+            XpdBase baseClaim = player.Location.Map.XpdBaseAt(player.Location.Position);
+            if (baseClaim == null || !baseClaim.Owns(player) || !baseClaim.Owns(follower))
+            {
+                AddMessage(MakeErrorMessage("Stand in your XPD base to order scavenging."));
+                return false;
+            }
+            DoGiveOrderTo(player, follower, new ActorOrder(ActorTasks.SCAVENGE_SUPPLIES, player.Location));
             return true;
         }
 
