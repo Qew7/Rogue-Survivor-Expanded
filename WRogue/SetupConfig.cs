@@ -8,7 +8,19 @@ namespace djack.RogueSurvivor
 {
     public static class SetupConfig
     {
-        public const string GAME_VERSION = "0.1.0";
+        public const string GAME_VERSION = "0.1.1";
+
+        public static bool SupportsGameVersion(string version)
+        {
+            Version required;
+            Version current;
+            if (!Version.TryParse(version, out required) ||
+                !Version.TryParse(GAME_VERSION, out current)) return false;
+            return required.Major == current.Major &&
+                required.Minor == current.Minor &&
+                required.Build >= 0 && required.Revision == -1 &&
+                required.Build <= current.Build;
+        }
 
         public enum eVideo
         {

@@ -55,6 +55,8 @@ static class PerformanceBenchmarks
             () => world.Map.GetZonesAt(20, 20));
         Measure("zone name 300 zones", 100000,
             () => world.Map.HasZonePartiallyNamedAt(new Point(20, 20), "benchmark"));
+        Measure("absent zone name 300 zones", 100000,
+            () => world.Map.HasZonePartiallyNamedAt(new Point(20, 20), "patient room"));
 
         Measure("scent insert 1600 tiles", 1, () =>
         {
@@ -90,6 +92,7 @@ static class PerformanceBenchmarks
         });
         Measure("presave 40x40 map", 100, () => world.Map.OptimizeBeforeSaving());
         GraphicsAndWorldBenchmarks.Run(world, player);
+        AIAndGenerationBenchmarks.Run();
     }
 
     public static void Measure(string name, int iterations, Action action)

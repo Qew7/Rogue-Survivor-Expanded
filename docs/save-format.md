@@ -11,9 +11,10 @@ file as `<name>.bak`. It recognizes five payloads:
 | `RSE1` + byte `3` | Ordered mod names and versions, then GZip graph | Previous writer and current reader |
 | `RSE1` + byte `4` | Expanded game version, ordered mod names and versions, then GZip graph | Current writer and reader |
 
-Version 4 saves record the exact Rogue Survivor Expanded version (`0.1.0` at
-this release). A save with another game version is rejected before loading its
-mod list or object graph; the error shows the saved and running versions. Older
+Version 4 saves record the Rogue Survivor Expanded version (`0.1.1` at
+this release). Saves from the same `0.1` series through this patch are accepted;
+other versions are rejected before loading their mod list or object graph. The
+error shows the saved and running versions. Older
 formats have no game version and remain readable for migration.
 
 The mod list is outside the graph so a failed load can still report which mod

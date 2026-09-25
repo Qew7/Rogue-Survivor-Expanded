@@ -294,7 +294,9 @@ namespace djack.RogueSurvivor.Engine
                     to.Y = y;
 
                     // Distance check.
-                    if (rules.LOSDistance(from, to) > maxRange)
+                    int dx = x - from.X;
+                    int dy = y - from.Y;
+                    if (0.75f * (dx * dx + dy * dy) > maxRange * maxRange)
                         continue;
 
                     // If we already know tile is visible, pass.

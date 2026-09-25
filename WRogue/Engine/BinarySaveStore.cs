@@ -115,8 +115,7 @@ namespace djack.RogueSurvivor.Engine
             string savedVersion = new BinaryReader(stream).ReadString();
             if (savedVersion.Length == 0 || savedVersion.Length > 128)
                 throw new InvalidDataException("Invalid saved game version.");
-            if (!String.Equals(savedVersion, SetupConfig.GAME_VERSION,
-                StringComparison.Ordinal))
+            if (!SetupConfig.SupportsGameVersion(savedVersion))
                 throw new IncompatibleGameVersionException(savedVersion);
         }
 

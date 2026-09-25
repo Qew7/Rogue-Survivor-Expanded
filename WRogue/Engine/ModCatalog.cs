@@ -29,8 +29,7 @@ namespace djack.RogueSurvivor.Engine
         public bool SupportsCurrentGame
         {
             get { return String.IsNullOrWhiteSpace(GameVersion) ||
-                String.Equals(GameVersion.Trim(), SetupConfig.GAME_VERSION,
-                    StringComparison.OrdinalIgnoreCase); }
+                SetupConfig.SupportsGameVersion(GameVersion.Trim()); }
         }
 
         public string[] GetAuthors() { return Values(Authors, Author); }

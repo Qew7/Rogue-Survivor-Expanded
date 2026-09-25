@@ -2,7 +2,7 @@
 
 An expanded version of roguedjack's Rogue Survivor, based on the source from
 [Tranquill6](https://github.com/Tranquill6).
-Current Expanded version: **0.1.0** (based on Rogue Survivor Alpha 10.1).
+Current Expanded version: **0.1.1** (based on Rogue Survivor Alpha 10.1).
 
 ## Play on macOS or Linux
 
@@ -50,14 +50,12 @@ and Esc to cancel. Higher-priority mods override files from lower-priority mods.
 Put each mod in its own folder under `WRogue/mods`. A mod can replace files in
 `Data/` and `Images/`; an optional `authors.json` can provide a description and
 one or more authors and websites, plus `version` and `game_version`.
-The `game_version` value must match the Expanded version (`0.1.0`) to enable
-the mod.
-`Deonapocalypse` is included as an example. The selected set is remembered for
+The `game_version` value must name this version (`0.1.1`) or an earlier patch
+in the `0.1` series to enable the mod. `Deonapocalypse` is included as an example. The selected set is remembered for
 new games. Loading a save automatically uses its recorded mods and priority;
 returning to the menu restores the previous selection. Missing mods fall back
 to original files when the save can still be read; otherwise the game reports
-the required mod and version.
-New saves also record the Expanded version and reject incompatible versions
+the required mod and version. New saves also record the Expanded version and reject incompatible versions
 with a message showing both version numbers.
 
 ## Develop and test
@@ -66,12 +64,13 @@ with a message showing both version numbers.
 docker build --target test .
 bash tests/e2e.sh
 sh tests/scenario.sh --list
+sh tests/scenario.sh --bench-ai
 ```
 
 Gameplay scenarios and how to run one are documented in
 [docs/gameplay-scenarios.md](docs/gameplay-scenarios.md). See
-[docs/performance.md](docs/performance.md) for reproducible microbenchmarks,
-[optimizations.md](optimizations.md) for completed optimizations,
+[optimizations.md](optimizations.md) for a summary of completed changes and
+[docs/performance.md](docs/performance.md) for their measurements,
 [AGENTS.md](AGENTS.md) for contributor guidance and
 [docs/save-format.md](docs/save-format.md) for save compatibility. GitHub
 Actions runs the automated checks.

@@ -182,7 +182,7 @@ with socket.create_connection(("127.0.0.1", 5900), timeout=10) as vnc:
     save = "/opt/game/Config/Saves/save.dat"
     wait_for(save, 30)
     save_bytes = os.path.getsize(save)
-    assert read_saved_mods(save) == ("0.1.0", [
+    assert read_saved_mods(save) == ("0.1.1", [
         ("Deonapocalypse", "1.0.0"), ("Auxiliary", "")
     ]), "Save did not retain game version, mods and priority"
     vnc.sendall(struct.pack(">BBHI", 4, 1, 0, shift))
