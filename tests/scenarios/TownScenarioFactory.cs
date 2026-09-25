@@ -21,6 +21,8 @@ static class TownScenarioFactory
         typeof(Session).GetField("s_TheSession", BindingFlags.Static | BindingFlags.NonPublic)
             .SetValue(null, null);
         Session.Get.Seed = seed;
+        typeof(Session).GetField("m_GameDiceRoller", BindingFlags.Instance | BindingFlags.NonPublic)
+            .SetValue(Session.Get, new DiceRoller(seed));
         Session.Get.NextAutoSaveTime = int.MaxValue;
         foreach (PropertyInfo property in typeof(UniqueMaps).GetProperties())
             if (property.PropertyType == typeof(UniqueMap))
