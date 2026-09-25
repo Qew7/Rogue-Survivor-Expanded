@@ -264,7 +264,7 @@ namespace djack.RogueSurvivor.Engine
                 AddMessage(new Message("3. Barricade (max)...    7. Build small fort.    B. Sleep now.", m_Session.WorldTime.TurnCounter, Color.LightGreen));
                 AddMessage(new Message(String.Format("4. Guard...              8. Build large fort.    C. {0} following me.   ", startStopFollow), m_Session.WorldTime.TurnCounter, Color.LightGreen));
                 AddMessage(new Message("5. Patrol...             9. Report events.       D. Where are you?", m_Session.WorldTime.TurnCounter, Color.LightGreen));
-                if (m_Session.GameMode == GameMode.GM_XPD)
+                if (m_Session.GamePreset.Bases)
                     AddMessage(new Message("E. Scavenge supplies for base.", m_Session.WorldTime.TurnCounter, Color.LightGreen));
                 RedrawPlayScreen();
 
@@ -872,7 +872,7 @@ namespace djack.RogueSurvivor.Engine
 
         bool HandlePlayerOrderFollowerToScavenge(Actor player, Actor follower)
         {
-            if (m_Session.GameMode != GameMode.GM_XPD) return false;
+            if (!m_Session.GamePreset.Bases) return false;
             XpdBase baseClaim = player.Location.Map.XpdBaseAt(player.Location.Position);
             if (baseClaim == null || !baseClaim.Owns(player) || !baseClaim.Owns(follower))
             {

@@ -58,6 +58,34 @@ to original files when the save can still be read; otherwise the game reports
 the required mod and version. New saves also record the Expanded version and reject incompatible versions
 with a message showing both version numbers.
 
+### Configurable game presets
+
+New games open the configuration screen with Standard settings. Adjust zombie types, infection,
+corpses, evolution, bases, survival thresholds, and decay. **Other gameplay
+options** opens the existing settings for population, spawn rates, events, and
+other rules. **Load preset** offers **Standard**, **Corpses & Infection**,
+**Vintage**, **Expanded**, and your saved configurations. The options screen
+shows the loaded values. In the preset list, move with Up/Down and page through
+the option preview with Left/Right. **Save as preset** stores a named configuration for
+future games. On the configuration screen, hover over a setting or select it with
+Up/Down to read its description. Page Up/Down move between pages of settings;
+Left/Right change the selected value.
+The chosen rules and settings are stored with the game save. Older saves keep
+their original mode rules.
+
+The **Expanded** preset enables claimable bases. Stand inside an enclosed
+building and press **Ctrl+B** to preview its boundaries; press **Y** to claim
+it. Hostile actors and undead block their rooms. Fortified passages can connect
+clear buildings into one base. Living NPC groups and factions can claim bases;
+the player and followers share ownership.
+
+In your base, stand in a room and press **Ctrl+B**, then **F** to assign food
+storage or **W** to assign weapon storage. In the follower order menu, press
+**E** to send a follower for supplies. They take needed provisions from storage,
+search their district and neighboring districts through map exits, and return
+found food and weapons to the assigned rooms. Enable **Claimable bases** in
+any preset to use these mechanics.
+
 ## Develop and test
 
 ```sh

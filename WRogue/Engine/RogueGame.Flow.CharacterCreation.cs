@@ -31,13 +31,14 @@ namespace djack.RogueSurvivor.Engine
             /////////////////
             m_Session.Reset();
             m_Rules = new Rules(m_Session.GameDiceRoller);
-            DiceRoller roller = m_Session.GameDiceRoller;
 
             ///////////////
             // Game Mode //
             ///////////////
             if (!HandleNewGameMode())
                 return false;
+            m_Rules = new Rules(m_Session.GameDiceRoller);
+            DiceRoller roller = m_Session.GameDiceRoller;
 
             ////////////////////////
             // Choose living/undead
@@ -88,167 +89,7 @@ namespace djack.RogueSurvivor.Engine
 
         bool HandleNewGameMode()
         {
-            string[] menuEntries = new string[]
-            {
-                Session.DescGameMode(GameMode.GM_STANDARD),
-                Session.DescGameMode(GameMode.GM_CORPSES_INFECTION),
-                Session.DescGameMode(GameMode.GM_VINTAGE),
-                Session.DescGameMode(GameMode.GM_XPD)
-            };
-            string[] descs = new string[]
-            {
-                "Rogue Survivor standard game.",
-                "Don't get a cold. Keep an eye on your deceased diseased friends.",
-                "The classic zombies next door.",
-                "Expanded game with claimable bases and supply expeditions."
-            };
-
-            bool loop = true;
-            bool choiceDone = false;
-            int selected = 0;
-            do
-            {
-                // display.
-                m_UI.UI_Clear(Color.Black);
-                int gx, gy;
-                gx = gy = 0;
-                m_UI.UI_DrawStringBold(Color.Yellow, "New Game - Choose Game Mode", gx, gy);
-                gy += 2 * BOLD_LINE_SPACING;
-                DrawMenuOrOptions(selected, Color.White, menuEntries, Color.LightGray, descs, gx, ref gy);
-                gy += 2 * BOLD_LINE_SPACING;
-
-                string[] descMode = { };
-                switch (selected)
-                {
-                    case 0:
-                        descMode = new string[] {
-                            "This is the standard game setting.",
-                            "Recommended for beginners.",
-                            "- All the kinds of undeads.",
-                            "- Undeads can evolve to stronger forms.",
-                            "- Livings can zombify instantly when dead.",
-                            "- No infection.",
-                            "- No corpses."
-                        };
-                        break;
-                    case 1:
-                        descMode = new string[] {
-                            "This is the standard game setting plus corpses and infection.",
-                            "Recommended to experience all the features of the game.",
-                            "- All the kinds of undeads.",
-                            "- Undeads can evolve to stronger forms.",
-                            "- Infection:",
-                            "  - some undeads can infect livings when biting them.",
-                            "  - infected livings can become ill and die.",
-                            "  - infected corpses have more chances to rise as zombies.",
-                            "- Corpses:",
-                            "  - livings that die drop corpses that will rot away.",
-                            "  - corpses may rise as zombies.",
-                            "  - undeads can eat corpses.",
-                            "  - livings can eat corpses if desperate."
-                        };
-                        break;
-                    case 2:
-                        descMode = new string[] {
-                            "This is the classic zombies for hardcore zombie fans.",
-                            "Recommended if you want classic movies zombies.",
-                            "- Undeads are only zombified men and women.",
-                            "- Undeads don't evolve to stronger forms.",
-                            "- Infection:",
-                            "  - some undeads can infect livings when biting them.",
-                            "  - infected livings can become ill and die.",
-                            "  - infected corpses have more chances to rise as zombies.",
-                            "- Corpses:",
-                            "  - livings that die drop corpses that will rot away.",
-                            "  - corpses may rise as zombies.",
-                            "  - undeads can eat corpses.",
-                            "  - livings can eat corpses if desperate.",
-                            "",
-                            "NOTE:",
-                            "This mode force some options OFF.",
-                            "Remember to set them back ON again when you play other modes!"
-                        };
-                        break;
-                    case 3:
-                        descMode = new string[] {
-                            "Expanded gameplay based on Corpses & Infection.",
-                            "Claim enclosed bases, assign food and weapon rooms,",
-                            "and send followers on supply expeditions."
-                        };
-                        break;
-                }
-                foreach (String str in descMode)
-                {
-                    m_UI.UI_DrawStringBold(Color.Gray, str, gx, gy);
-                    gy += BOLD_LINE_SPACING;
-                }
-
-
-                DrawFootnote(Color.White, "cursor to move, ENTER to select, ESC to cancel");
-                m_UI.UI_Repaint();
-
-                // get menu action.
-                KeyEventArgs key = m_UI.UI_WaitKey();
-                switch (key.KeyCode)
-                {
-                    case Keys.Up:       // move up
-                        if (selected > 0) --selected;
-                        else selected = menuEntries.Length - 1;
-                        break;
-                    case Keys.Down:     // move down
-                        selected = (selected + 1) % menuEntries.Length;
-                        break;
-
-                    case Keys.Escape:
-                        choiceDone = false;
-                        loop = false;
-                        break;
-
-                    case Keys.Enter:    // validate
-                        {
-                            switch (selected)
-                            {
-                                case 0: // standard
-                                    m_Session.GameMode = GameMode.GM_STANDARD;
-                                    choiceDone = true;
-                                    loop = false;
-                                    break;
-
-                                case 1: // corpses & infection
-                                    m_Session.GameMode = GameMode.GM_CORPSES_INFECTION;
-                                    choiceDone = true;
-                                    loop = false;
-                                    break;
-
-                                case 2: // vintage
-                                    m_Session.GameMode = GameMode.GM_VINTAGE;
-
-                                    // force some options off.
-                                    s_Options.AllowUndeadsEvolution = false;
-                                    s_Options.ShamblersUpgrade = false;
-                                    s_Options.RatsUpgrade = false;
-                                    s_Options.SkeletonsUpgrade = false;
-                                    ApplyOptions(false);
-
-                                    choiceDone = true;
-                                    loop = false;
-                                    break;
-
-                                case 3: // expanded
-                                    m_Session.GameMode = GameMode.GM_XPD;
-                                    choiceDone = true;
-                                    loop = false;
-                                    break;
-                            }
-                            break;
-                        }
-                }
-
-            }
-            while (loop);
-
-            // done.
-            return choiceDone;
+            return HandleNewGamePreset();
         }
 
         bool HandleNewCharacterRace(DiceRoller roller, out bool isUndead)
@@ -276,7 +117,7 @@ namespace djack.RogueSurvivor.Engine
                 m_UI.UI_Clear(Color.Black);
                 int gx, gy;
                 gx = gy = 0;
-                m_UI.UI_DrawStringBold(Color.Yellow, String.Format("[{0}] New Character - Choose Race", Session.DescGameMode(m_Session.GameMode)), gx, gy);
+                m_UI.UI_DrawStringBold(Color.Yellow, String.Format("[{0}] New Character - Choose Race", m_Session.GamePreset.Name), gx, gy);
                 gy += 2 * BOLD_LINE_SPACING;
                 DrawMenuOrOptions(selected, Color.White, menuEntries, Color.LightGray, descs, gx, ref gy);
                 gy += 2 * BOLD_LINE_SPACING;
@@ -371,7 +212,7 @@ namespace djack.RogueSurvivor.Engine
                 m_UI.UI_Clear(Color.Black);
                 int gx, gy;
                 gx = gy = 0;
-                m_UI.UI_DrawStringBold(Color.Yellow, String.Format("[{0}] New Living - Choose Gender", Session.DescGameMode(m_Session.GameMode)), gx, gy);
+                m_UI.UI_DrawStringBold(Color.Yellow, String.Format("[{0}] New Living - Choose Gender", m_Session.GamePreset.Name), gx, gy);
                 gy += 2 * BOLD_LINE_SPACING;
                 DrawMenuOrOptions(selected, Color.White, menuEntries, Color.LightGray, descs, gx, ref gy);
                 DrawFootnote(Color.White, "cursor to move, ENTER to select, ESC to cancel");
@@ -446,134 +287,59 @@ namespace djack.RogueSurvivor.Engine
 
         bool HandleNewCharacterUndeadType(DiceRoller roller, out GameActors.IDs modelID)
         {
-            ActorModel skeletonModel = GameActors.Skeleton;
-            ActorModel shamblerModel = GameActors.Zombie;
-            ActorModel maleModel = GameActors.MaleZombified;
-            ActorModel femaleModel = GameActors.FemaleZombified;
-            ActorModel masterModel = GameActors.ZombieMaster;
-
-            string[] menuEntries = new string[]
+            GamePreset preset = m_Session.GamePreset;
+            List<GameActors.IDs> types = new List<GameActors.IDs>();
+            if (preset.Skeletons) types.Add(GameActors.IDs.UNDEAD_SKELETON);
+            if (preset.Shamblers) types.Add(GameActors.IDs.UNDEAD_ZOMBIE);
+            if (preset.Zombified)
             {
-                "*Random*",
-                skeletonModel.Name,
-                shamblerModel.Name,
-                maleModel.Name,
-                femaleModel.Name,
-                masterModel.Name,
-            };
-            string[] descs = new string[]
-            {
-                "(picks a type at random for you)",
-                DescribeUndeadModelStatLine(skeletonModel),
-                DescribeUndeadModelStatLine(shamblerModel),
-                DescribeUndeadModelStatLine(maleModel),
-                DescribeUndeadModelStatLine(femaleModel),
-                DescribeUndeadModelStatLine(masterModel)
-            };
+                types.Add(GameActors.IDs.UNDEAD_MALE_ZOMBIFIED);
+                types.Add(GameActors.IDs.UNDEAD_FEMALE_ZOMBIFIED);
+            }
+            if (preset.ZombieMasters) types.Add(GameActors.IDs.UNDEAD_ZOMBIE_MASTER);
+            if (preset.RatZombies) types.Add(GameActors.IDs.UNDEAD_RAT_ZOMBIE);
+            if (types.Count == 0) throw new InvalidOperationException("Preset has no playable undead types.");
 
-            modelID = GameActors.IDs.UNDEAD_MALE_ZOMBIFIED;
-            bool loop = true;
-            bool choiceDone = false;
+            string[] menuEntries = new string[types.Count + 1];
+            string[] descs = new string[menuEntries.Length];
+            menuEntries[0] = "*Random*";
+            descs[0] = "(picks an available type at random for you)";
+            for (int i = 0; i < types.Count; i++)
+            {
+                ActorModel model = GameActors[types[i]];
+                menuEntries[i + 1] = model.Name;
+                descs[i + 1] = DescribeUndeadModelStatLine(model);
+            }
+            modelID = types[0];
             int selected = 0;
-            do
+            while (true)
             {
-                // display.
                 m_UI.UI_Clear(Color.Black);
-                int gx, gy;
-                gx = gy = 0;
-                m_UI.UI_DrawStringBold(Color.Yellow, String.Format("[{0}] New Undead - Choose Type", Session.DescGameMode(m_Session.GameMode)), gx, gy);
+                int gx = 0, gy = 0;
+                m_UI.UI_DrawStringBold(Color.Yellow, String.Format("[{0}] New Undead - Choose Type", preset.Name), gx, gy);
                 gy += 2 * BOLD_LINE_SPACING;
                 DrawMenuOrOptions(selected, Color.White, menuEntries, Color.LightGray, descs, gx, ref gy);
                 DrawFootnote(Color.White, "cursor to move, ENTER to select, ESC to cancel");
                 m_UI.UI_Repaint();
-
-                // get menu action.
                 KeyEventArgs key = m_UI.UI_WaitKey();
-                switch (key.KeyCode)
+                if (key.KeyCode == Keys.Escape) return false;
+                if (key.KeyCode == Keys.Up) selected = (selected + menuEntries.Length - 1) % menuEntries.Length;
+                if (key.KeyCode == Keys.Down) selected = (selected + 1) % menuEntries.Length;
+                if (key.KeyCode != Keys.Enter) continue;
+                if (selected == 0)
                 {
-                    case Keys.Up:       // move up
-                        if (selected > 0) --selected;
-                        else selected = menuEntries.Length - 1;
-                        break;
-                    case Keys.Down:     // move down
-                        selected = (selected + 1) % menuEntries.Length;
-                        break;
-
-                    case Keys.Escape:
-                        choiceDone = false;
-                        loop = false;
-                        break;
-
-                    case Keys.Enter:    // validate
-                        {
-                            switch (selected)
-                            {
-                                case 0: // random
-                                    selected = roller.Roll(0, 5);
-                                    switch (selected)
-                                    {
-                                        case 0: modelID = GameActors.IDs.UNDEAD_SKELETON; break;
-                                        case 1: modelID = GameActors.IDs.UNDEAD_ZOMBIE; break;
-                                        case 2: modelID = GameActors.IDs.UNDEAD_MALE_ZOMBIFIED; break;
-                                        case 3: modelID = GameActors.IDs.UNDEAD_FEMALE_ZOMBIFIED; break;
-                                        case 4: modelID = GameActors.IDs.UNDEAD_ZOMBIE_MASTER; break;
-                                        default:
-                                            throw new ArgumentOutOfRangeException("unhandled select " + selected);
-                                    }
-
-                                    gy += BOLD_LINE_SPACING;
-                                    m_UI.UI_DrawStringBold(Color.White, String.Format("Type : {0}.", GameActors[modelID].Name), gx, gy);
-                                    gy += BOLD_LINE_SPACING;
-                                    m_UI.UI_DrawStringBold(Color.Yellow, "Is that OK? Y to confirm, N to cancel.", gx, gy);
-                                    m_UI.UI_Repaint();
-                                    if (WaitYesOrNo())
-                                    {
-                                        choiceDone = true;
-                                        loop = false;
-                                    }
-                                    break;
-
-                                case 1: // skeleton
-                                    modelID = GameActors.IDs.UNDEAD_SKELETON;
-                                    choiceDone = true;
-                                    loop = false;
-                                    break;
-
-                                case 2: // shambler
-                                    modelID = GameActors.IDs.UNDEAD_ZOMBIE;
-                                    choiceDone = true;
-                                    loop = false;
-                                    break;
-
-                                case 3: // male zombified
-                                    modelID = GameActors.IDs.UNDEAD_MALE_ZOMBIFIED;
-                                    m_CharGen.IsMale = true;
-                                    choiceDone = true;
-                                    loop = false;
-                                    break;
-
-                                case 4: // female zombified
-                                    modelID = GameActors.IDs.UNDEAD_FEMALE_ZOMBIFIED;
-                                    m_CharGen.IsMale = false;
-                                    choiceDone = true;
-                                    loop = false;
-                                    break;
-
-                                case 5: // zm
-                                    modelID = GameActors.IDs.UNDEAD_ZOMBIE_MASTER;
-                                    choiceDone = true;
-                                    loop = false;
-                                    break;
-                            }
-                            break;
-                        }
+                    modelID = types[roller.Roll(0, types.Count)];
+                    gy += BOLD_LINE_SPACING;
+                    m_UI.UI_DrawStringBold(Color.White, String.Format("Type : {0}.", GameActors[modelID].Name), gx, gy);
+                    gy += BOLD_LINE_SPACING;
+                    m_UI.UI_DrawStringBold(Color.Yellow, "Is that OK? Y to confirm, N to cancel.", gx, gy);
+                    m_UI.UI_Repaint();
+                    if (!WaitYesOrNo()) continue;
                 }
-
+                else modelID = types[selected - 1];
+                m_CharGen.IsMale = modelID != GameActors.IDs.UNDEAD_FEMALE_ZOMBIFIED;
+                return true;
             }
-            while (loop);
-
-            // done.
-            return choiceDone;
         }
 
         bool HandleNewCharacterSkill(DiceRoller roller, out Skills.IDs skID)
@@ -607,7 +373,7 @@ namespace djack.RogueSurvivor.Engine
                 int gx, gy;
                 gx = gy = 0;
                 m_UI.UI_DrawStringBold(Color.Yellow, String.Format("[{0}] New {1} Character - Choose Starting Skill",
-                    Session.DescGameMode(m_Session.GameMode),
+                    m_Session.GamePreset.Name,
                     m_CharGen.IsMale ? "Male" : "Female"), gx, gy);
                 gy += 2 * BOLD_LINE_SPACING;
                 DrawMenuOrOptions(selected, Color.White, menuEntries, Color.LightGray, skillDesc, gx, ref gy);

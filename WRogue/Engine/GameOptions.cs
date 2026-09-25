@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -627,7 +627,7 @@ namespace djack.RogueSurvivor.Engine
                 case IDs.GAME_AGGRESSIVE_HUNGRY_CIVILIANS:
                     return "Allows hungry civilians to attack other people for food.";
                 case IDs.GAME_ALLOW_UNDEADS_EVOLUTION:
-                    return "ALWAYS OFF IN VTG-VINTAGE MODE.\nAllows undeads to evolve into stronger forms.";
+                    return "Allows undeads to evolve into stronger forms.";
                 case IDs.GAME_CITY_SIZE:
                     return "Size of the city grid. The city is a square grid of districts.\nLarger cities are more fun but rapidly increases game saves size and loading time.";
                 case IDs.GAME_DAY_ZERO_UNDEADS_PERCENT:
@@ -651,7 +651,7 @@ namespace djack.RogueSurvivor.Engine
                 case IDs.GAME_PERMADEATH:
                     return "Deletes your saved game when you die so you can't reload your way out. Extra challenge and tension.";
                 case IDs.GAME_RATS_UPGRADE:
-                    return "ALWAYS OFF IN VTG-VINTAGE MODE.\nCan Rats type of undeads upgrade their skills like other undeads.\nNot recommended unless you want super annoying rats.";
+                    return "Can Rats type of undeads upgrade their skills like other undeads.\nNot recommended unless you want super annoying rats.";
                 case IDs.GAME_REVEAL_STARTING_DISTRICT:
                     return "You start the game with knowing parts of the map you start in.";
                 case IDs.GAME_REINC_LIVING_RESTRICTED:
@@ -661,9 +661,9 @@ namespace djack.RogueSurvivor.Engine
                 case IDs.GAME_REINCARNATE_TO_SEWERS:
                     return "Enables the possibility to reincarnate into the sewers.";
                 case IDs.GAME_SHAMBLERS_UPGRADE:
-                    return "ALWAYS OFF IN VTG-VINTAGE MODE.\nCan Shamblers type of undeads upgrade their skills like other undeads.";
+                    return "Can Shamblers type of undeads upgrade their skills like other undeads.";
                 case IDs.GAME_SKELETONS_UPGRADE:
-                    return "ALWAYS OFF IN VTG-VINTAGE MODE.\nCan Skeletons type of undeads upgrade their skills like other undeads.";
+                    return "Can Skeletons type of undeads upgrade their skills like other undeads.";
                 case IDs.GAME_SIMULATE_DISTRICTS:
                     return "The game simulates what is happening in districts around you. You should keep this option maxed for better gameplay.\nWhen the simulation happens depends on other sim options.";
                 case IDs.GAME_SIMULATE_SLEEP:
@@ -677,13 +677,13 @@ namespace djack.RogueSurvivor.Engine
                 case IDs.GAME_SPAWN_ZOMBIE_MASTER_CHANCE:
                     return "YOU SHOULDNT BE READING THIS :)";
                 case IDs.GAME_STARVED_ZOMBIFICATION_CHANCE:
-                    return "ONLY IN STD-STANDARD MODE.\nIf NPCs can starve to death, chances of turning into a zombie.";
+                    return "If NPCs can starve to death, chances of turning into a zombie.";
                 case IDs.GAME_SUPPLIESDROP_FACTOR:
                     return "Affects how likely the supplies drop event happens.\n100 is default, 0 to disable.";
                 case IDs.GAME_UNDEADS_UPGRADE_DAYS:
                     return "How often can undeads upgrade their skills. They usually upgrade at a slower pace than livings.";
                 case IDs.GAME_ZOMBIFICATION_CHANCE:
-                    return "ONLY IN STD-STANDARD MODE.\nSome undeads have the ability to turn their living victims into zombies after killing them.\nThis option control the chances of zombification. Changing this value has a large impact on game difficulty.\nException: the player is always checked for zombification when killed in all game modes.";
+                    return "Some undeads have the ability to turn their living victims into zombies after killing them.\nThis option control the chances of zombification. Changing this value has a large impact on game difficulty.\nException: the player is always checked for zombification when killed for every preset.";
                 case IDs.GAME_ZOMBIE_INVASION_DAILY_INCREASE:
                     return "The zombies invasion increases in size each day, to fill up to Max Undeads on a map.";
                 case IDs.UI_ANIM_DELAY:
@@ -794,7 +794,7 @@ namespace djack.RogueSurvivor.Engine
             }
         }
 
-        public string DescribeValue(GameMode mode, IDs option)
+        public string DescribeValue(IDs option)
         {
             switch (option)
             {

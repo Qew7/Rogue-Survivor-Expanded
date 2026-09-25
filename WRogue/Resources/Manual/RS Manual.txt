@@ -49,15 +49,15 @@ You can also play the game as an undead or reincarnate into different characters
 Most of the manual is written with playing a survivor in mind.
 
 
-GAME MODE
----------
-There are 3 different game modes, each enabling or disabling some aspects of the game.
-STANDARD - STD
-- The default game setting.
-CORPSES AND INFECTION - C&I
-- Adds infection and corpses.
-VINTAGE - VTG
-- C&I and a limited selection of zombies for a more classic feel.
+GAME PRESETS
+------------
+The configuration screen opens first with Standard settings. Use Load preset to
+apply Standard, Corpses & Infection, Vintage, Expanded, or a saved custom setup.
+The preset list previews its options as you move through it; Left and Right
+change the preview page. The visible options change when you load a preset. Configure zombie types,
+bases, infection, corpses, evolution, survival thresholds, and decay. Use Other
+gameplay options for population, events, and additional settings. Save as preset
+stores the current setup under a name. The chosen rules are saved with the world.
 
 
 CHARACTER CREATION
@@ -108,14 +108,14 @@ You will learn them as you play.
 You can miss some events notification when sleeping.
 
 
-INFECTION (if enabled in game mode)
+INFECTION (if enabled in the game preset)
 ---------
 Some undeads infect livings whe they damage them.
 Infection does not worsen or heals by itself over time.
 You only get more infected with bites and you can only heal with meds.
 
 
-CORPSES (if enabled in game mode)
+CORPSES (if enabled in the game preset)
 -------
 Dead people become corpses.
 Corpses decay over time and will rot away.
@@ -309,7 +309,7 @@ Sleeping recovers SLP. See the Sleeping action for more details.
 
 
 > INFECTION (INF)
-Only in C&I and VTG game modes.
+Available whenever infection is enabled in the game preset.
 Some undeads deal infection damage.
 As your infection % increase, you feel more and more sick.
 When infection reaches 100% you may die.

@@ -194,7 +194,7 @@ namespace djack.RogueSurvivor.Engine
 #endif
 
             // Corpse?
-            if (Rules.HasCorpses(m_Session.GameMode))
+            if (m_Session.GamePreset.Corpses)
             {
                 if (!deadGuy.Model.Abilities.IsUndead && canDropCorpse)
                 {
@@ -212,7 +212,7 @@ namespace djack.RogueSurvivor.Engine
 
             // Undead level up?
             #region
-            if (killer != null && Rules.HasEvolution(m_Session.GameMode))
+            if (killer != null && m_Session.GamePreset.Evolution)
             {
                 if (killer.Model.Abilities.IsUndead)
                 {
@@ -401,7 +401,7 @@ namespace djack.RogueSurvivor.Engine
         ActorModel CheckUndeadEvolution(Actor undead)
         {
             // check option & game mode.
-            if (!s_Options.AllowUndeadsEvolution || !Rules.HasEvolution(m_Session.GameMode))
+            if (!s_Options.AllowUndeadsEvolution || !m_Session.GamePreset.Evolution)
                 return null;
 
             // evolve?
@@ -839,7 +839,7 @@ namespace djack.RogueSurvivor.Engine
             graveyard.Append(String.Format("- difficulty rating of {0}%.", (int)(100 * m_Session.Scoring.DifficultyRating)));
             if (s_Options.IsPermadeathOn)
                 graveyard.Append(String.Format("- {0} : yes.", GameOptions.Name(GameOptions.IDs.GAME_PERMADEATH)));
-            if (!s_Options.AllowUndeadsEvolution && Rules.HasEvolution(m_Session.GameMode)) // alpha10 only if manually disabled
+            if (!s_Options.AllowUndeadsEvolution && m_Session.GamePreset.Evolution) // alpha10 only if manually disabled
                 graveyard.Append(String.Format("- {0} : {1}.", GameOptions.Name(GameOptions.IDs.GAME_ALLOW_UNDEADS_EVOLUTION), s_Options.AllowUndeadsEvolution ? "yes" : "no"));
             if (s_Options.CitySize != GameOptions.DEFAULT_CITY_SIZE)
                 graveyard.Append(String.Format("- {0} : {1}.", GameOptions.Name(GameOptions.IDs.GAME_CITY_SIZE), s_Options.CitySize));

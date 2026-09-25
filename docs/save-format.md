@@ -42,3 +42,10 @@ map the old name. Renaming or removing a type needs an explicit type alias in
 The legacy `BinaryFormatter` reader remains solely for existing local saves.
 After loading one, saving again writes version 4. Do not load legacy files
 obtained from untrusted sources.
+
+Game sessions now contain an optional `GamePreset` field. Saves written before
+presets were introduced reconstruct the matching Standard, Corpses & Infection,
+Vintage, or Expanded rules from the old mode ID. The session also stores the
+selected gameplay options, so loading a game restores its rules. User-defined
+presets are kept separately in the user config directory as `game-presets.dat`; deleting that file
+does not change existing game saves.

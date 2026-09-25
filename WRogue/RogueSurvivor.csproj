@@ -353,6 +353,8 @@
     <Compile Include="Gameplay\ZoneAttributes.cs" />
     <Compile Include="Logger.cs" />
     <Compile Include="Engine\GameOptions.cs" />
+    <Compile Include="Engine\GamePreset.cs" />
+    <Compile Include="Engine\RogueGame.Flow.GamePresets.cs" />
     <Compile Include="PointExtensions.cs" />
     <Compile Include="SetupConfig.cs" />
     <Compile Include="RogueForm.cs">

@@ -65,7 +65,7 @@ namespace djack.RogueSurvivor.Engine
         bool CheckForEvent_SewersInvasion(Map map)
         {
             // check game mode.
-            if (!Rules.HasZombiesInSewers(m_Session.GameMode))
+            if (!m_Session.GamePreset.ZombiesInSewers)
                 return false;
 
             // randomly.
@@ -947,7 +947,7 @@ namespace djack.RogueSurvivor.Engine
             ///////////////////
             // Spawn hi level?
             ///////////////////
-            if (s_Options.AllowUndeadsEvolution && Rules.HasEvolution(m_Session.GameMode))
+            if (s_Options.AllowUndeadsEvolution && m_Session.GamePreset.Evolution)
             {
                 // chances.
                 int levelupChance = Math.Min(75, day * 2); // +2% per day, max 75%.

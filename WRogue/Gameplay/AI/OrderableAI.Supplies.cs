@@ -20,7 +20,7 @@ namespace djack.RogueSurvivor.Gameplay.AI
 
         ActorAction ExecuteScavengeSupplies(RogueGame game, ActorOrder order)
         {
-            if (Session.Get.GameMode != GameMode.GM_XPD || m_Actor.Model.Abilities.IsUndead ||
+            if (!Session.Get.GamePreset.Bases || m_Actor.Model.Abilities.IsUndead ||
                 m_Actor.Inventory == null || order.Location.Map == null ||
                 m_Actor.Leader == null || m_Actor.Leader.IsDead) return null;
             Map home = order.Location.Map;

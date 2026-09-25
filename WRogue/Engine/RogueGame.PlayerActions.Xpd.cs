@@ -11,9 +11,9 @@ namespace djack.RogueSurvivor.Engine
     {
         public bool TryClaimXpdBase(Actor actor, out string reason)
         {
-            if (m_Session.GameMode != GameMode.GM_XPD)
+            if (!m_Session.GamePreset.Bases)
             {
-                reason = "Bases are available in XPD mode.";
+                reason = "Bases are disabled in this game preset.";
                 return false;
             }
             List<Point> cells = XpdBasePlanner.Preview(actor.Location.Map, actor, m_Rules, out reason);
@@ -25,9 +25,9 @@ namespace djack.RogueSurvivor.Engine
 
         bool HandlePlayerXpdBase(Actor player)
         {
-            if (m_Session.GameMode != GameMode.GM_XPD)
+            if (!m_Session.GamePreset.Bases)
             {
-                AddMessage(MakeErrorMessage("Bases are available in XPD mode."));
+                AddMessage(MakeErrorMessage("Bases are disabled in this game preset."));
                 return false;
             }
             Map map = player.Location.Map;

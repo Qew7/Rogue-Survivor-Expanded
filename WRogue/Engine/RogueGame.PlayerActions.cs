@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Drawing;
@@ -1152,7 +1152,7 @@ namespace djack.RogueSurvivor.Engine
 
         void HandleAiActor(Actor aiActor)
         {
-            if (m_Session.GameMode == GameMode.GM_XPD && !aiActor.HasLeader &&
+            if (m_Session.GamePreset.Bases && !aiActor.HasLeader &&
                 !aiActor.Model.Abilities.IsUndead &&
                 aiActor.Location.Map.XpdBaseAt(aiActor.Location.Position) == null &&
                 aiActor.Location.Map.GetTileAt(aiActor.Location.Position).IsInside &&
