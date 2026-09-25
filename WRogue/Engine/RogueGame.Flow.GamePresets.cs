@@ -17,13 +17,9 @@ namespace djack.RogueSurvivor.Engine
         {
             GamePresetCollection saved;
             try { saved = GamePresetCollection.Load(GamePresetsPath); }
-            catch (Exception error)
+            catch (Exception)
             {
-                m_UI.UI_Clear(Color.Black);
-                m_UI.UI_DrawStringBold(Color.Red, "Could not load game presets: " + error.Message, 0, 0);
-                m_UI.UI_Repaint();
-                m_UI.UI_WaitKey();
-                return false;
+                saved = new GamePresetCollection();
             }
             GamePreset initial = BuiltInGamePreset(GameMode.GM_STANDARD);
             return EditGamePreset(initial, saved, GameMode.GM_STANDARD);

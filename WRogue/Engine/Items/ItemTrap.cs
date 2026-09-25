@@ -15,6 +15,7 @@ namespace djack.RogueSurvivor.Engine.Items
         bool m_IsTriggered;
         // alpha10
         Actor m_Owner;
+        XpdBase m_BaseOwner;
         #endregion
 
         #region Properties
@@ -44,6 +45,8 @@ namespace djack.RogueSurvivor.Engine.Items
                 return m_Owner;
             }
         }
+        public XpdBase BaseOwner { get { return m_BaseOwner; } }
+        public void SetBaseOwner(XpdBase baseOwner) { m_BaseOwner = baseOwner; }
         #endregion
 
         #region Init
@@ -78,6 +81,7 @@ namespace djack.RogueSurvivor.Engine.Items
         public void Desactivate()
         {
             m_Owner = null;
+            m_BaseOwner = null;
             m_IsActivated = false;
         }
         #endregion

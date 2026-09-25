@@ -553,6 +553,9 @@ namespace djack.RogueSurvivor.Gameplay.AI
             #region
             if (!hasEnemies && this.Directives.CanTakeItems)
             {
+                ActorAction expedition = TryStartAutonomousScavenge(game, mapPercepts, m_Exploration);
+                if (expedition != null) return expedition;
+
                 Map map = m_Actor.Location.Map;
 
                 #region Get items
@@ -715,6 +718,11 @@ namespace djack.RogueSurvivor.Gameplay.AI
             // 18 build trap or fortification.
             // alpha10.1 moved trap/fortification rule before following leader rule so they will do it much more often
             #region
+            if (!hasEnemies)
+            {
+                ActorAction baseTrap = DefendXpdBaseWithTrap(game);
+                if (baseTrap != null) return baseTrap;
+            }
             if (game.Rules.RollChance(BUILD_TRAP_CHANCE))
             {
                 ActorAction trapAction = BehaviorBuildTrap(game);

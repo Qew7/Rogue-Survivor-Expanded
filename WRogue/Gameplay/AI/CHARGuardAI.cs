@@ -265,6 +265,13 @@ namespace djack.RogueSurvivor.Gameplay.AI
             #endregion
 
             // 11 wander in CHAR office.
+            if (!hasAnyEnemies)
+            {
+                ActorAction baseTrap = DefendXpdBaseWithTrap(game);
+                if (baseTrap != null) return baseTrap;
+                ActorAction expedition = TryStartAutonomousScavenge(game, mapPercepts, null);
+                if (expedition != null) return expedition;
+            }
             ActorAction wanderInOfficeAction = BehaviorWander(game, (loc) => RogueGame.IsInCHAROffice(loc), null);
             if (wanderInOfficeAction != null)
             {

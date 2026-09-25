@@ -3,6 +3,7 @@ using System.Drawing;
 using djack.RogueSurvivor.Data;
 using djack.RogueSurvivor.Engine;
 using djack.RogueSurvivor.Engine.Actions;
+using djack.RogueSurvivor.Engine.AI;
 using djack.RogueSurvivor.Engine.Items;
 
 namespace djack.RogueSurvivor.Gameplay.AI
@@ -18,14 +19,100 @@ namespace djack.RogueSurvivor.Gameplay.AI
                 m_XpdSupplyStage == 3; }
         }
 
+        protected ActorAction DefendXpdBaseWithTrap(RogueGame game)
+        {
+            if (!Session.Get.GamePreset.Bases || m_Actor.IsPlayer ||
+                m_Actor.Inventory == null ||
+                (m_Actor.Leader != null && m_Actor.Leader.IsPlayer)) return null;
+            ItemTrap trap = m_Actor.Inventory.GetFirstByType(typeof(ItemTrap)) as ItemTrap;
+            if (trap == null) return null;
+            Map map = m_Actor.Location.Map;
+            XpdBase claim = map.XpdBaseAt(m_Actor.Location.Position);
+            if (claim == null || !claim.Owns(m_Actor)) return null;
+
+            Point? best = null;
+            int bestDistance = Int32.MaxValue;
+            foreach (Point cell in claim.Cells)
+            {
+                if (!map.IsWalkable(cell.X, cell.Y) ||
+                    (map.GetActorAt(cell) != null && map.GetActorAt(cell) != m_Actor) ||
+                    (claim.FoodRoom != null && claim.FoodRoom.Value.Contains(cell)) ||
+                    (claim.WeaponRoom != null && claim.WeaponRoom.Value.Contains(cell))) continue;
+                bool boundary = false;
+                foreach (Point step in new[] { new Point(-1, 0), new Point(1, 0),
+                    new Point(0, -1), new Point(0, 1) })
+                {
+                    Point neighbor = new Point(cell.X + step.X, cell.Y + step.Y);
+                    if (map.IsInBounds(neighbor) && map.IsWalkable(neighbor.X, neighbor.Y) &&
+                        !claim.Contains(neighbor)) { boundary = true; break; }
+                }
+                if (!boundary) continue;
+                Inventory onGround = map.GetItemsAt(cell);
+                if (onGround != null && onGround.HasItemMatching(item =>
+                    item is ItemTrap && ((ItemTrap)item).IsActivated)) continue;
+                int distance = game.Rules.GridDistance(m_Actor.Location.Position, cell);
+                if (distance < bestDistance) { best = cell; bestDistance = distance; }
+            }
+            if (best == null) return null;
+            if (best.Value != m_Actor.Location.Position)
+                return BehaviorIntelligentBumpToward(game, best.Value, false, false);
+            if (!trap.IsActivated && !trap.TrapModel.ActivatesWhenDropped)
+            {
+                ActorAction use = new ActionUseItem(m_Actor, game, trap);
+                return use.IsLegal() ? use : null;
+            }
+            ActorAction drop = new ActionDropItem(m_Actor, game, trap);
+            return drop.IsLegal() ? drop : null;
+        }
+
+        protected ActorAction TryStartAutonomousScavenge(RogueGame game,
+            System.Collections.Generic.List<Percept> percepts, ExplorationData exploration)
+        {
+            if (!Session.Get.GamePreset.Bases || m_Actor.IsPlayer ||
+                (m_Actor.Leader != null && m_Actor.Leader.IsPlayer) ||
+                m_Actor.Inventory == null || m_Actor.Inventory.IsFull) return null;
+            Location home = m_Actor.Location;
+            if ((home.Map.LocalTime.TurnCounter + home.Position.X + home.Position.Y) % 30 != 0)
+                return null;
+            XpdBase baseClaim = home.Map.XpdBaseAt(home.Position);
+            if (baseClaim == null || !baseClaim.Owns(m_Actor)) return null;
+            Location supply;
+            Item item;
+            if (!XpdSupplyRoutes.FindSupply(home.Map, home.Map.District, out supply, out item))
+                return null;
+            SetOrder(new ActorOrder(ActorTasks.SCAVENGE_SUPPLIES, home));
+            ActorAction action = ExecuteOrder(game, Order, percepts, exploration);
+            if (action != null) return action;
+            SetOrder(null);
+            return null;
+        }
+
         ActorAction ExecuteScavengeSupplies(RogueGame game, ActorOrder order)
         {
             if (!Session.Get.GamePreset.Bases || m_Actor.Model.Abilities.IsUndead ||
                 m_Actor.Inventory == null || order.Location.Map == null ||
-                m_Actor.Leader == null || m_Actor.Leader.IsDead) return null;
+                (m_Actor.Leader != null && m_Actor.Leader.IsDead)) return null;
+            bool autonomous = m_Actor.Leader == null || !m_Actor.Leader.IsPlayer;
             Map home = order.Location.Map;
             XpdBase baseClaim = home.XpdBaseAt(order.Location.Position);
-            if (baseClaim == null || !baseClaim.Owns(m_Actor)) return null;
+            if (baseClaim == null || !baseClaim.Owns(m_Actor))
+            {
+                Location destination;
+                if (!game.TryFindOwnedXpdBase(m_Actor, out destination, out baseClaim)) return null;
+                order.Retarget(destination);
+                home = destination.Map;
+            }
+
+            if (autonomous && m_XpdSupplyStage < 2) m_XpdSupplyStage = 2;
+
+            // A relocated base may be far from the current scavenging area.
+            if (m_XpdSupplyStage == 2 && !XpdSupplyRoutes.InRange(home.District, m_Actor.Location.Map))
+            {
+                ActorAction returnHome = GoTo(game, order.Location);
+                if (returnHome != null) return returnHome;
+                if (m_Actor.Location.Map != home ||
+                    m_Actor.Location.Position != order.Location.Position) return null;
+            }
 
             while (m_XpdSupplyStage < 2)
             {
@@ -38,12 +125,19 @@ namespace djack.RogueSurvivor.Gameplay.AI
                     Item item;
                     if (FindStoredItem(home, baseClaim, room.Value, food, out supply, out item))
                     {
-                        ActorAction approach = GoTo(game, supply, home.District);
+                        ActorAction approach = GoTo(game, supply);
                         if (approach != null) return approach;
                         if (m_Actor.Location.Map != home || m_Actor.Location.Position != supply.Position)
-                            return null;
+                        {
+                            m_XpdSupplyStage++;
+                            continue;
+                        }
                         ActorAction take = new ActionTakeItem(m_Actor, game, supply.Position, item);
-                        if (!take.IsLegal()) return null;
+                        if (!take.IsLegal())
+                        {
+                            m_XpdSupplyStage++;
+                            continue;
+                        }
                         m_XpdSupplyStage++;
                         return take;
                     }
@@ -56,24 +150,40 @@ namespace djack.RogueSurvivor.Gameplay.AI
                 if (m_Actor.Inventory.IsFull) return null;
                 Location supply;
                 Item item;
-                if (!XpdSupplyRoutes.FindSupply(m_Actor.Location.Map, home.District, out supply, out item))
-                    return null;
-                ActorAction approach = GoTo(game, supply, home.District);
-                if (approach != null) return approach;
-                if (m_Actor.Location.Map != supply.Map || m_Actor.Location.Position != supply.Position)
-                    return null;
-                ActorAction take = new ActionTakeItem(m_Actor, game, supply.Position, item);
-                if (!take.IsLegal()) return null;
-                m_XpdLoot = item;
-                m_XpdSupplyStage = 3;
-                return take;
+                while (XpdSupplyRoutes.FindSupply(m_Actor.Location.Map, home.District,
+                    candidate => !IsItemTaboo(candidate), out supply, out item))
+                {
+                    ActorAction approach = GoTo(game, supply);
+                    if (approach != null) return approach;
+                    if (m_Actor.Location.Map == supply.Map && m_Actor.Location.Position == supply.Position)
+                    {
+                        ActorAction take = new ActionTakeItem(m_Actor, game, supply.Position, item);
+                        if (take.IsLegal())
+                        {
+                            m_XpdLoot = item;
+                            m_XpdSupplyStage = 3;
+                            return take;
+                        }
+                    }
+                    MarkItemAsTaboo(item);
+                }
+                return null;
             }
 
             if (m_XpdLoot == null || !m_Actor.Inventory.Contains(m_XpdLoot)) return null;
             Rectangle? storage = m_XpdLoot is ItemFood ? baseClaim.FoodRoom : baseClaim.WeaponRoom;
-            Location drop = new Location(home, storage == null ? order.Location.Position :
-                FirstWalkableStorageCell(home, baseClaim, storage.Value));
-            ActorAction travel = GoTo(game, drop, home.District);
+            Point? storageCell = storage == null ? null :
+                FirstWalkableStorageCell(home, baseClaim, storage.Value);
+            Point dropPoint = storageCell ?? order.Location.Position;
+            if (!home.IsWalkable(dropPoint.X, dropPoint.Y) ||
+                (home.GetActorAt(dropPoint) != null && home.GetActorAt(dropPoint) != m_Actor))
+            {
+                Point? fallback = FirstWalkableBaseCell(home, baseClaim);
+                if (fallback == null) return null;
+                dropPoint = fallback.Value;
+            }
+            Location drop = new Location(home, dropPoint);
+            ActorAction travel = GoTo(game, drop);
             if (travel != null) return travel;
             if (m_Actor.Location.Map != home || m_Actor.Location.Position != drop.Position)
                 return null;
@@ -85,12 +195,12 @@ namespace djack.RogueSurvivor.Gameplay.AI
             return dropAction;
         }
 
-        ActorAction GoTo(RogueGame game, Location target, District home)
+        ActorAction GoTo(RogueGame game, Location target)
         {
             if (m_Actor.Location.Map == target.Map)
                 return m_Actor.Location.Position == target.Position ? null :
                     BehaviorIntelligentBumpToward(game, target.Position, false, false);
-            Exit exit = XpdSupplyRoutes.NextExit(m_Actor.Location.Map, target.Map, home);
+            Exit exit = XpdSupplyRoutes.NextExit(m_Actor.Location.Map, target.Map, null);
             if (exit == null) return null;
             Point? point = m_Actor.Location.Map.GetExitPos(exit);
             if (point == null) return null;
@@ -123,16 +233,26 @@ namespace djack.RogueSurvivor.Gameplay.AI
             return false;
         }
 
-        static Point FirstWalkableStorageCell(Map map, XpdBase baseClaim, Rectangle room)
+        Point? FirstWalkableStorageCell(Map map, XpdBase baseClaim, Rectangle room)
         {
             for (int y = room.Top; y < room.Bottom; y++)
                 for (int x = room.Left; x < room.Right; x++)
                 {
                     Point point = new Point(x, y);
-                    if (map.IsInBounds(point) && baseClaim.Contains(point) && map.IsWalkable(x, y))
+                    if (map.IsInBounds(point) && baseClaim.Contains(point) && map.IsWalkable(x, y) &&
+                        (map.GetActorAt(point) == null || map.GetActorAt(point) == m_Actor))
                         return point;
                 }
-            throw new InvalidOperationException("The assigned storage room has no walkable base tile");
+            return null;
+        }
+
+        Point? FirstWalkableBaseCell(Map map, XpdBase baseClaim)
+        {
+            foreach (Point point in baseClaim.Cells)
+                if (map.IsWalkable(point.X, point.Y) &&
+                    (map.GetActorAt(point) == null || map.GetActorAt(point) == m_Actor))
+                    return point;
+            return null;
         }
     }
 }

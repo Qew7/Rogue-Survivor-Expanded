@@ -362,6 +362,13 @@ namespace djack.RogueSurvivor.Gameplay.AI
 
             // 12 explore
             #region
+            if (!hasCurrentEnemies)
+            {
+                ActorAction baseTrap = DefendXpdBaseWithTrap(game);
+                if (baseTrap != null) return baseTrap;
+                ActorAction expedition = TryStartAutonomousScavenge(game, mapPercepts, m_Exploration);
+                if (expedition != null) return expedition;
+            }
             ActorAction exploreAction = BehaviorExplore(game, m_Exploration);
             if (exploreAction != null)
             {

@@ -47,7 +47,8 @@ namespace djack.RogueSurvivor.Gameplay.AI
         protected ActorAction ExecuteOrder(RogueGame game, ActorOrder order, List<Percept> percepts, ExplorationData exploration)
         {
             // cancel if leader is dead!
-            if (m_Actor.Leader == null || m_Actor.Leader.IsDead)
+            if ((m_Actor.Leader == null || m_Actor.Leader.IsDead) &&
+                order.Task != ActorTasks.SCAVENGE_SUPPLIES)
                 return null;
 
             // execute task.

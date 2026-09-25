@@ -42,6 +42,11 @@ namespace djack.RogueSurvivor.Data
             m_Location = location;
         }
 
+        public void Retarget(Location location)
+        {
+            m_Location = location;
+        }
+
         public override string ToString()
         {
             switch (m_Task)

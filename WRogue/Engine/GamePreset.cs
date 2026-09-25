@@ -121,9 +121,15 @@ namespace djack.RogueSurvivor.Engine
         public static GamePresetCollection Load(string path)
         {
             if (!File.Exists(path)) return new GamePresetCollection();
-            GamePresetCollection collection = (GamePresetCollection)BinarySaveStore.Load(path, null);
+            GamePresetCollection collection;
+            try { collection = (GamePresetCollection)BinarySaveStore.Load(path, null); }
+            catch (Exception) { return new GamePresetCollection(); }
             if (collection == null || collection.Presets == null) return new GamePresetCollection();
-            foreach (GamePreset preset in collection.Presets) preset.Validate();
+            collection.Presets.RemoveAll(preset =>
+            {
+                try { preset.Validate(); return false; }
+                catch (Exception) { return true; }
+            });
             return collection;
         }
 

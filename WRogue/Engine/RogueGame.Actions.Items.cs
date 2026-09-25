@@ -388,6 +388,8 @@ namespace djack.RogueSurvivor.Engine
         public void DoTakeItem(Actor actor, Point position, Item it)
         {
             Map map = actor.Location.Map;
+            Inventory ground = map.GetItemsAt(position);
+            XpdBase baseClaim = ground != null && ground.Contains(it) ? map.XpdBaseAt(position) : null;
 
             // spend APs.
             SpendActorActionPoints(actor, Rules.BASE_ACTION_COST);
@@ -412,6 +414,9 @@ namespace djack.RogueSurvivor.Engine
                     map.RemoveItemAt(it, position);
             }
 
+            if (quantityAdded > 0 && baseClaim != null && !baseClaim.Owns(actor))
+                NoticeXpdBaseTheft(actor, baseClaim, position);
+
             // message
             if (IsVisibleToPlayer(actor) || IsVisibleToPlayer(new Location(map, position)))
             {
@@ -421,6 +426,20 @@ namespace djack.RogueSurvivor.Engine
             // automatically equip item if flags set & possible, and not already equipped something.
             if (!it.Model.DontAutoEquip && m_Rules.CanActorEquipItem(actor, it) && actor.GetEquippedItem(it.Model.EquipmentPart) == null)
                 DoEquipItem(actor, it);
+        }
+
+        void NoticeXpdBaseTheft(Actor thief, XpdBase baseClaim, Point position)
+        {
+            Map map = thief.Location.Map;
+            foreach (Actor witness in map.Actors)
+            {
+                if (witness == thief || witness.IsDead || witness.IsSleeping ||
+                    !baseClaim.Owns(witness) || m_Rules.AreEnemies(thief, witness)) continue;
+                if (m_Rules.GridDistance(witness.Location.Position, position) >
+                    m_Rules.ActorFOV(witness, map.LocalTime, m_Session.World.Weather) ||
+                    !LOS.CanTraceViewLine(witness.Location, position)) continue;
+                DoMakeAggression(thief, witness);
+            }
         }
 
         public void DoGiveItemTo(Actor actor, Actor target, Item gift)
@@ -601,6 +620,10 @@ namespace djack.RogueSurvivor.Engine
                 // trap activates when dropped?
                 if (clone.TrapModel.ActivatesWhenDropped)
                     clone.Activate(actor); // alpha10 //clone.IsActivated = true;
+
+                XpdBase trapBase = actor.Location.Map.XpdBaseAt(actor.Location.Position);
+                if (clone.IsActivated && trapBase != null && trapBase.Owns(actor))
+                    clone.SetBaseOwner(trapBase);
 
                 // make sure source stack is desactivated (activate only activate the stack top item).
                 trap.Desactivate();  // alpha10  //trap.IsActivated = false;

@@ -230,6 +230,11 @@ namespace djack.RogueSurvivor.Data
             m_XpdBases.Add(baseClaim);
         }
 
+        public bool RemoveXpdBase(XpdBase baseClaim)
+        {
+            return m_XpdBases != null && m_XpdBases.Remove(baseClaim);
+        }
+
         public IEnumerable<Inventory> GroundInventories
         {
             get { return m_aux_GroundItemsList; }

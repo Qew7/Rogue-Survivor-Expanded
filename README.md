@@ -77,14 +77,28 @@ The **Expanded** preset enables claimable bases. Stand inside an enclosed
 building and press **Ctrl+B** to preview its boundaries; press **Y** to claim
 it. Hostile actors and undead block their rooms. Fortified passages can connect
 clear buildings into one base. Living NPC groups and factions can claim bases;
-the player and followers share ownership.
+the player and followers share ownership. Your base boundary is highlighted in
+green on the minimap, and its district coordinate appears beside your name and
+faction. While standing inside another group's base, your status shows
+**FOREIGN BASE**; foreign bases are not marked on the minimap. A basement or
+another level can join the same base when its claimable
+area has a two-way stair connection to an already claimed area. Claim each
+level separately with **Ctrl+B** and **Y**. Open subway tracks are not claimed
+with a station room. Claiming an unconnected area releases every level of the
+previous base; you can own one base at a time. A group leader's death also
+releases every level of its base.
 
 In your base, stand in a room and press **Ctrl+B**, then **F** to assign food
 storage or **W** to assign weapon storage. In the follower order menu, press
 **E** to send a follower for supplies. They take needed provisions from storage,
 search their district and neighboring districts through map exits, and return
 found food and weapons to the assigned rooms. Enable **Claimable bases** in
-any preset to use these mechanics.
+any preset to use these mechanics. If you move your base during a scavenging
+trip, the follower brings collected supplies to the new base.
+NPC residents also make supply trips for their own bases. They leave stored food
+and weapons in place until they need them. Taking supplies from another group's
+base is possible, but an awake owner who sees the theft becomes hostile to the
+thief.
 
 ## Develop and test
 

@@ -75,6 +75,7 @@ namespace djack.RogueSurvivor.Engine
 
             // Set dead flag.
             deadGuy.IsDead = true;
+            ReleaseGroupBases(deadGuy);
 
             // force to stop dragging corpses.
             DoStopDraggingCorpses(deadGuy);

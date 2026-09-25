@@ -353,6 +353,10 @@ namespace djack.RogueSurvivor.Gameplay.AI
             #region
             if (!hasCurrentEnemies)
             {
+                ActorAction baseTrap = DefendXpdBaseWithTrap(game);
+                if (baseTrap != null) return baseTrap;
+                ActorAction expedition = TryStartAutonomousScavenge(game, mapPercepts, m_Exploration);
+                if (expedition != null) return expedition;
                 // alpha10 new common behaviour code, also used by CivilianAI, but Gangs can break and push
                 ActorAction getItemAction = BehaviorGoGetInterestingItems(game, mapPercepts,
                      true, true, CANT_GET_ITEM_EMOTE, false, ref m_DummyPerceptLastItemsSaw);

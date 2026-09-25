@@ -32,6 +32,11 @@ name, so missing fields keep defaults and unknown fields are ignored. Shared
 references and cycles retain their identity. The reader accepts serializable
 game types and a restricted set of framework values and collections.
 
+Armed traps placed by base owners can retain a reference to their `XpdBase`.
+This lets faction members cross those traps safely after a save and load.
+Older saves have no trap base reference and continue using the trap owner's
+existing group safety rule.
+
 When changing a saved class, add a migration test to `tests/unit/` and run both
 `docker build --target test .` and `bash tests/e2e.sh`. The end-to-end test
 creates a real world, saves it, loads it, and reaches the game screen again.
@@ -49,3 +54,8 @@ Vintage, or Expanded rules from the old mode ID. The session also stores the
 selected gameplay options, so loading a game restores its rules. User-defined
 presets are kept separately in the user config directory as `game-presets.dat`; deleting that file
 does not change existing game saves.
+
+Each claimed base section may reference the original section through its
+optional `m_Root` field. Sections on connected maps then remain one base after
+loading. Older saves have no such field; each existing claim remains its own
+section until the player claims a connected level.

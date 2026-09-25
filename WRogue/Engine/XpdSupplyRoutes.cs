@@ -29,7 +29,8 @@ namespace djack.RogueSurvivor.Engine
                 foreach (Exit exit in map.Exits)
                 {
                     Map next = exit.ToMap;
-                    if (!exit.IsAnAIExit || next == null || !InRange(home, next) || first.ContainsKey(next)) continue;
+                    if (!exit.IsAnAIExit || next == null ||
+                        (home != null && !InRange(home, next)) || first.ContainsKey(next)) continue;
                     Exit firstExit = map == from ? exit : first[map];
                     if (next == destination) return firstExit;
                     first.Add(next, firstExit);
@@ -40,6 +41,12 @@ namespace djack.RogueSurvivor.Engine
         }
 
         public static bool FindSupply(Map from, District home, out Location location, out Item item)
+        {
+            return FindSupply(from, home, null, out location, out item);
+        }
+
+        public static bool FindSupply(Map from, District home, Predicate<Item> accept,
+            out Location location, out Item item)
         {
             Queue<Map> queue = new Queue<Map>();
             HashSet<Map> seen = new HashSet<Map>();
@@ -52,11 +59,12 @@ namespace djack.RogueSurvivor.Engine
                     for (int x = 0; x < map.Width; x++)
                     {
                         Point point = new Point(x, y);
-                        if (map.XpdBaseAt(point) != null) continue;
+                        if (map.XpdBaseAt(point) != null || !map.IsWalkable(x, y)) continue;
                         Inventory inventory = map.GetItemsAt(point);
                         if (inventory == null) continue;
                         foreach (Item candidate in inventory.Items)
-                            if (candidate is ItemFood || candidate is ItemWeapon)
+                            if ((candidate is ItemFood || candidate is ItemWeapon) &&
+                                (accept == null || accept(candidate)))
                             {
                                 location = new Location(map, point);
                                 item = candidate;

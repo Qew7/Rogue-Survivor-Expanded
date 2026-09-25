@@ -867,6 +867,18 @@ namespace djack.RogueSurvivor.Engine
                 }
             }
 
+            if (s_Options.IsMinimapOn && m_Player != null)
+            {
+                Map baseMap;
+                XpdBase playerBase = FindPlayerXpdBase(m_Player, out baseMap);
+                if (playerBase != null)
+                    foreach (XpdBase section in map.XpdBases)
+                        if (section.IsPartOf(playerBase))
+                            foreach (Point point in XpdBaseBoundary(section))
+                                m_UI.UI_SetMinimapColor(point.X, point.Y, Color.LimeGreen);
+
+            }
+
             if (s_Options.IsMinimapOn)
                 m_UI.UI_DrawMinimap(MINIMAP_X, MINIMAP_Y);
 
@@ -1021,7 +1033,20 @@ namespace djack.RogueSurvivor.Engine
         public void DrawActorStatus(Actor actor, int gx, int gy)
         {
             // 1. Name & occupation
-            m_UI.UI_DrawStringBold(actor.IsInvincible ? Color.LightGreen : Color.White, String.Format("{0}, {1}", actor.Name, actor.Faction.MemberName), gx, gy);
+            string heading = String.Format("{0}, {1}", actor.Name, actor.Faction.MemberName);
+            bool foreignBase = false;
+            if (actor == m_Player)
+            {
+                Map baseMap;
+                if (FindPlayerXpdBase(actor, out baseMap) != null && baseMap.District != null)
+                    heading += String.Format(" [Base {0}]", World.CoordToString(
+                        baseMap.District.WorldPosition.X, baseMap.District.WorldPosition.Y));
+                XpdBase currentBase = actor.Location.Map.XpdBaseAt(actor.Location.Position);
+                foreignBase = currentBase != null && !currentBase.Owns(actor);
+                if (foreignBase) heading += " [FOREIGN BASE]";
+            }
+            m_UI.UI_DrawStringBold(foreignBase ? Color.OrangeRed :
+                actor.IsInvincible ? Color.LightGreen : Color.White, heading, gx, gy);
 
             // 2. Bars: Health, Stamina, Food, Sleep, Infection.
             gy += BOLD_LINE_SPACING;

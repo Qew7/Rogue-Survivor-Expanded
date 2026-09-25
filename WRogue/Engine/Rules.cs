@@ -1109,6 +1109,8 @@ namespace djack.RogueSurvivor.Engine
         // alpha10
         public bool IsSafeFromTrap(ItemTrap trap, Actor a)
         {
+            if (trap.BaseOwner != null && trap.BaseOwner.Owns(a))
+                return true;
             if (trap.Owner == null)
                 return false;
             if (trap.Owner == a)
