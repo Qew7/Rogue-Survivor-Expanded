@@ -32,12 +32,10 @@ static class XpdGroupFoodDispatchScenario
             XpdBase home = new XpdBase(leader, new[] {
                 new Point(2, 2), new Point(3, 2), new Point(2, 3), new Point(3, 3) });
             world.Map.AddXpdBase(home);
-            List<ItemFood> stored = new List<ItemFood>();
-            for (int i = 0; i < 4; i++)
+            for (int i = 0; i < 9; i++)
             {
                 ItemFood food = new ItemFood(world.Game.GameItems.GROCERIES);
                 world.Map.DropItemAt(food, new Point(2, 3));
-                stored.Add(food);
             }
             for (int i = 0; i < 3; i++)
             {
@@ -49,12 +47,14 @@ static class XpdGroupFoodDispatchScenario
             ItemMeleeWeapon weapon = new ItemMeleeWeapon(world.Game.GameItems.CROWBAR);
             world.Map.DropItemAt(weapon, new Point(4, 2));
             world.Map.LocalTime.TurnCounter = 26; // 26 + 2 + 2 = 30.
+            leader.FoodPoints = 200;
+            follower.FoodPoints = 0;
             leader.ActionPoints = Rules.BASE_ACTION_COST;
             leader.Controller.GetAction(world.Game);
             Check.Equal(null, ((OrderableAI)follower.Controller).Order,
-                "seven groceries cover two days for both group members");
+                "twelve groceries cover current hunger plus two days with leader at 200");
 
-            stored[0].Quantity = 0; // Six groceries fall below the two-day threshold.
+            leader.FoodPoints = 0; // The same food now falls below hunger plus two days.
             leader.ActionPoints = Rules.BASE_ACTION_COST;
             world.NpcTurn(leader);
             Check.Equal(ActorTasks.SCAVENGE_SUPPLIES,

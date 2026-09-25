@@ -96,9 +96,10 @@ search their district and neighboring districts through map exits, and return
 found food and weapons to the assigned rooms. Enable **Claimable bases** in
 any preset to use these mechanics. If you move your base during a scavenging
 trip, the follower brings collected supplies to the new base.
-NPC leaders check food on their base and in the group's inventories. When it
-cannot feed every member for two days, a leader sends an available follower
-from the base for supplies. If none is available, the leader may go instead.
+NPC leaders check each member's current hunger and the food on their base and
+in the group's inventories. When those reserves cannot cover current hunger
+and the next two days' consumption for everyone, a leader sends an available
+follower from the base for supplies. If none is available, the leader may go instead.
 They leave stored food and weapons in place until they need them. Taking
 supplies from another group's base is possible, but an awake owner who sees
 the theft becomes hostile to the thief.

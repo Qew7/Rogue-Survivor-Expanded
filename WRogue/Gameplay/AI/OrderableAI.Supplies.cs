@@ -113,24 +113,25 @@ namespace djack.RogueSurvivor.Gameplay.AI
             return null;
         }
 
-        // Two days of food for every living group member, measured in the same
-        // nutrition points consumed by the hunger rule (one point per turn).
+        // Each actor loses one food point per turn. The group needs enough food
+        // to fill today's hunger deficit and replace the next two days' loss.
         bool NeedsXpdFood(RogueGame game, XpdBase baseClaim)
         {
             Actor leader = baseClaim.GroupLeader;
             if (leader == null || leader.IsDead) return false;
-            int eaters = leader.Model.Abilities.HasToEat ? 1 : 0;
+            int horizon = 2 * WorldTime.TURNS_PER_DAY;
+            long needed = XpdFoodNeeded(game, leader, horizon);
             long nutrition = XpdInventoryNutrition(game, leader.Inventory,
                 leader.Location.Map.LocalTime.TurnCounter);
             if (leader.CountFollowers > 0)
                 foreach (Actor follower in leader.Followers)
                 {
                     if (follower.IsDead) continue;
-                    if (follower.Model.Abilities.HasToEat) eaters++;
+                    needed += XpdFoodNeeded(game, follower, horizon);
                     nutrition += XpdInventoryNutrition(game, follower.Inventory,
                         follower.Location.Map.LocalTime.TurnCounter);
                 }
-            if (eaters == 0) return false;
+            if (needed == 0) return false;
             District district = m_Actor.Location.Map.District;
             if (district != null)
                 foreach (Map map in district.Maps)
@@ -144,7 +145,14 @@ namespace djack.RogueSurvivor.Gameplay.AI
                     nutrition += XpdInventoryNutrition(game,
                         m_Actor.Location.Map.GetItemsAt(point),
                         m_Actor.Location.Map.LocalTime.TurnCounter);
-            return nutrition < (long)eaters * 2 * WorldTime.TURNS_PER_DAY;
+            return nutrition < needed;
+        }
+
+        static int XpdFoodNeeded(RogueGame game, Actor actor, int horizon)
+        {
+            return actor.Model.Abilities.HasToEat ?
+                Math.Max(0, game.Rules.ActorMaxFood(actor) - actor.FoodPoints) +
+                    horizon : 0;
         }
 
         static long XpdInventoryNutrition(RogueGame game, Inventory inventory, int turn)
