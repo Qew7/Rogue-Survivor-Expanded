@@ -201,7 +201,7 @@ with socket.create_connection(("127.0.0.1", 5900), timeout=10) as vnc:
     wait_for_log(log, "saving session... done!", 30)
     wait_for(save, 30)
     save_bytes = os.path.getsize(save)
-    assert read_saved_mods(save) == ("0.1.1", [
+    assert read_saved_mods(save) == (os.environ["ROGUE_GAME_VERSION"], [
         ("Deonapocalypse", "1.0.0"), ("Auxiliary", "")
     ]), "Save did not retain game version, mods and priority"
     deadline = time.monotonic() + 30

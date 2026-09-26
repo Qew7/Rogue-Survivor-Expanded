@@ -13,13 +13,17 @@ static class ModProfileScenario
                 ModInfo[] available = ModCatalog.Discover("mods");
                 Check.Equal(true, available.Length > 0, "sample mod available");
                 Check.Equal("1.0.0", available[0].Version, "mod version loaded");
-                Check.Equal("0.1.1", available[0].GameVersion,
+                Check.Equal(djack.RogueSurvivor.SetupConfig.GAME_VERSION, available[0].GameVersion,
                     "supported game version loaded");
                 Check.Equal(true, available[0].SupportsCurrentGame,
                     "bundled mod supports this game version");
                 Check.Equal(true, new ModInfo { GameVersion = "0.1.0" }.SupportsCurrentGame,
                     "previous patch mod remains compatible");
                 Check.Equal(false, new ModInfo { GameVersion = "0.1.2" }.SupportsCurrentGame,
+                    "unknown 0.1 patch mod is incompatible");
+                Version running = Version.Parse(djack.RogueSurvivor.SetupConfig.GAME_VERSION);
+                string futureVersion = new Version(running.Major + 1, 0, 0).ToString();
+                Check.Equal(false, new ModInfo { GameVersion = futureVersion }.SupportsCurrentGame,
                     "future patch mod is incompatible");
                 string root = Path.Combine(Path.GetTempPath(),
                     "rogue-mod-profile-" + Guid.NewGuid().ToString("N"));

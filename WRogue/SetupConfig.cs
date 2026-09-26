@@ -8,18 +8,22 @@ namespace djack.RogueSurvivor
 {
     public static class SetupConfig
     {
-        public const string GAME_VERSION = "0.1.1";
+        public const string GAME_VERSION = "0.2.0";
+        public const string LAST_LEGACY_GAME_VERSION = "0.1.1";
 
         public static bool SupportsGameVersion(string version)
         {
             Version required;
             Version current;
+            Version legacy;
             if (!Version.TryParse(version, out required) ||
-                !Version.TryParse(GAME_VERSION, out current)) return false;
-            return required.Major == current.Major &&
-                required.Minor == current.Minor &&
-                required.Build >= 0 && required.Revision == -1 &&
-                required.Build <= current.Build;
+                !Version.TryParse(GAME_VERSION, out current) ||
+                !Version.TryParse(LAST_LEGACY_GAME_VERSION, out legacy)) return false;
+            return required.Build >= 0 && required.Revision == -1 &&
+                ((required.Major == legacy.Major && required.Minor == legacy.Minor &&
+                  required.Build <= legacy.Build) ||
+                 (required.Major == current.Major && required.Minor == current.Minor &&
+                  required.Build <= current.Build));
         }
 
         public enum eVideo

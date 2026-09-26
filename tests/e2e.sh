@@ -57,5 +57,5 @@ with socket.create_connection(('127.0.0.1', int(sys.argv[1])), timeout=5) as soc
 print('Game startup, configuration, HTTP and VNC WebSocket checks passed')
 PY
 
-docker compose -p "$project" exec -T game python3 - < tests/e2e/vnc_play.py
+docker compose -p "$project" exec -T -e ROGUE_GAME_VERSION="$(cat VERSION)" game python3 - < tests/e2e/vnc_play.py
 docker compose -p "$project" logs game | grep -F 'loading images done' >/dev/null

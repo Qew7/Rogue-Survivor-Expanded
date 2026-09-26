@@ -2,9 +2,7 @@
 
 An expanded version of roguedjack's Rogue Survivor, based on the source from
 [Tranquill6](https://github.com/Tranquill6).
-Latest repository release: **v0.2.0** (based on Rogue Survivor Alpha 10.1).
-The executable still identifies itself as **0.1.1**; this is also the version
-used for save and mod compatibility.
+Current Expanded version: **0.2.0** (based on Rogue Survivor Alpha 10.1).
 
 ## Play on macOS or Linux
 
@@ -52,14 +50,14 @@ and Esc to cancel. Higher-priority mods override files from lower-priority mods.
 Put each mod in its own folder under `WRogue/mods`. A mod can replace files in
 `Data/` and `Images/`; an optional `authors.json` can provide a description and
 one or more authors and websites, plus `version` and `game_version`.
-The `game_version` value must name the game compatibility version (`0.1.1`) or
-an earlier patch in the `0.1` series to enable the mod. `Deonapocalypse` is
-included as an example. The selected set is remembered for new games. Loading
-a save automatically uses its recorded mods and priority; returning to the menu
-restores the previous selection. Missing mods fall back to original files when
-the save can still be read; otherwise the game reports the required mod and
-version. New saves also record the game compatibility version and reject
-incompatible versions with a message showing both version numbers.
+The `game_version` value must name this version (`0.2.0`) or a compatible
+earlier version to enable the mod. Versions `0.1.0` and `0.1.1` are supported.
+`Deonapocalypse` is included as an example. The selected set is remembered for
+new games. Loading a save automatically uses its recorded mods and priority;
+returning to the menu restores the previous selection. Missing mods fall back
+to original files when the save can still be read; otherwise the game reports
+the required mod and version. New saves also record the Expanded version and
+reject incompatible versions with a message showing both version numbers.
 
 ### Configurable game presets
 
@@ -108,6 +106,11 @@ supplies from another group's base is possible, but an awake owner who sees
 the theft becomes hostile to the thief.
 
 ## Develop and test
+
+For a new release, run `python3 tools/release_version.py X.Y.Z` before committing
+and tagging `vX.Y.Z`. This updates the executable, Windows file metadata,
+bundled mod, README, and save format documentation together. CI checks that
+every copy matches `VERSION` and that release tags use the same number.
 
 ```sh
 docker build --target test .

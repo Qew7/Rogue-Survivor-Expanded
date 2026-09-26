@@ -1,11 +1,21 @@
 using System;
 using System.IO;
+using System.Reflection;
 using djack.RogueSurvivor.Engine;
 
 static class SaveGameVersionTests
 {
     public static void Run()
     {
+        Assembly gameAssembly = typeof(djack.RogueSurvivor.SetupConfig).Assembly;
+        string executableVersion = djack.RogueSurvivor.SetupConfig.GAME_VERSION + ".0";
+        Check.Equal(executableVersion, gameAssembly.GetName().Version.ToString(),
+            "executable assembly version matches game version");
+        AssemblyFileVersionAttribute fileVersion = (AssemblyFileVersionAttribute)
+            Attribute.GetCustomAttribute(gameAssembly, typeof(AssemblyFileVersionAttribute));
+        Check.Equal(executableVersion, fileVersion.Version,
+            "executable file version matches game version");
+
         string path = Path.Combine(Path.GetTempPath(),
             "rogue-game-version-" + Guid.NewGuid().ToString("N"));
         try
@@ -18,27 +28,31 @@ static class SaveGameVersionTests
                 "mod manifest follows game version");
 
             byte[] current = File.ReadAllBytes(path);
-            Check.Equal((byte)'0', current[6], "version starts after string length");
-            byte[] previousPatch = (byte[])current.Clone();
-            previousPatch[10] = (byte)'0'; // 0.1.1 -> 0.1.0
-            File.WriteAllBytes(path, previousPatch);
+            File.WriteAllBytes(path, WithGameVersion(current, "0.1.0"));
             Check.Equal("compatible", BinarySaveStore.Load<string>(path),
-                "previous patch save loads");
+                "earliest supported save loads");
             Check.Equal("example", BinarySaveStore.ReadMods(path)[0].Name,
-                "previous patch save retains mod manifest");
+                "earliest supported save retains mod manifest");
+            File.WriteAllBytes(path, WithGameVersion(current, "0.1.1"));
+            Check.Equal("compatible", BinarySaveStore.Load<string>(path),
+                "previous release save loads");
+            File.WriteAllBytes(path, WithGameVersion(current, "0.1.2"));
+            AssertRejected(() => BinarySaveStore.Load<string>(path),
+                "unknown previous-series patch is rejected", "0.1.2");
 
-            byte[] incompatible = (byte[])current.Clone();
-            incompatible[8] = (byte)'2'; // 0.1.1 -> 0.2.1
+            Version running = Version.Parse(djack.RogueSurvivor.SetupConfig.GAME_VERSION);
+            string futureVersion = new Version(running.Major + 1, 0, 0).ToString();
+            byte[] incompatible = WithGameVersion(current, futureVersion);
             File.WriteAllBytes(path, incompatible);
             AssertRejected(() => BinarySaveStore.ReadMods(path),
-                "incompatible manifest rejected before mod selection");
+                "incompatible manifest rejected before mod selection", futureVersion);
             AssertRejected(() => BinarySaveStore.Load<string>(path),
-                "incompatible payload rejected before deserialization");
+                "incompatible payload rejected before deserialization", futureVersion);
 
             BinarySaveStore.Save(path, "backup", new ModStamp[0]);
             File.WriteAllBytes(path, incompatible);
             AssertRejected(() => BinarySaveStore.Load<string>(path),
-                "compatible backup must not hide incompatible primary save");
+                "compatible backup must not hide incompatible primary save", futureVersion);
         }
         finally
         {
@@ -47,14 +61,32 @@ static class SaveGameVersionTests
         }
     }
 
-    static void AssertRejected(Action action, string description)
+    static byte[] WithGameVersion(byte[] saved, string version)
+    {
+        using (MemoryStream input = new MemoryStream(saved))
+        using (MemoryStream output = new MemoryStream())
+        {
+            byte[] header = new byte[5];
+            if (input.Read(header, 0, header.Length) != header.Length)
+                throw new InvalidDataException("Truncated save header");
+            output.Write(header, 0, header.Length);
+            new BinaryReader(input).ReadString();
+            new BinaryWriter(output).Write(version);
+            byte[] payload = new byte[(int)(input.Length - input.Position)];
+            input.Read(payload, 0, payload.Length);
+            output.Write(payload, 0, payload.Length);
+            return output.ToArray();
+        }
+    }
+
+    static void AssertRejected(Action action, string description, string savedVersion)
     {
         bool rejected = false;
         try { action(); }
         catch (IOException error)
         {
-            rejected = error.Message.Contains("0.2.1") &&
-                error.Message.Contains("0.1.1");
+            rejected = error.Message.Contains(savedVersion) &&
+                error.Message.Contains(djack.RogueSurvivor.SetupConfig.GAME_VERSION);
         }
         Check.Equal(true, rejected, description);
     }
