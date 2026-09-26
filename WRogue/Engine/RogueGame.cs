@@ -1033,7 +1033,7 @@ namespace djack.RogueSurvivor.Engine
         #region Drawing headers & footnotes
         void DrawHeader()
         {
-            m_UI.UI_DrawStringBold(Color.Red, "ROGUE SURVIVOR - " + SetupConfig.GAME_VERSION, 0, 0, Color.DarkRed);
+            m_UI.UI_DrawStringBold(Color.Red, "ROGUE SURVIVOR EXPANDED - " + SetupConfig.GAME_VERSION, 0, 0, Color.DarkRed);
         }
 
         void DrawFootnote(Color color, string text)

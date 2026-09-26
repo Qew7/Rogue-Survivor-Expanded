@@ -915,7 +915,7 @@ namespace djack.RogueSurvivor.Engine
                     lines.Add(String.Format("Sanity  : +{0} (+{1})", sanForPlayer, m.SanityCure));
             }
 
-            if (Rules.HasInfection(m_Session.GameMode))
+            if (m_Session.GamePreset.Infection)
             {
                 int cureForPlayer = (m_Player == null ? m.InfectionCure : m_Rules.ActorMedicineEffect(m_Player, m.InfectionCure));
                 if (m.InfectionCure != 0)
@@ -1282,7 +1282,7 @@ namespace djack.RogueSurvivor.Engine
 
         int FoodToHoursUntilHungry(int food)
         {
-            int left = food - Rules.FOOD_HUNGRY_LEVEL;
+            int left = food - Session.Get.GamePreset.HungerPoints;
             if (left <= 0)
                 return 0;
             return left / WorldTime.TURNS_PER_HOUR;
@@ -1290,7 +1290,7 @@ namespace djack.RogueSurvivor.Engine
 
         int FoodToHoursUntilRotHungry(int food)
         {
-            int left = food - Rules.ROT_HUNGRY_LEVEL;
+            int left = food - Session.Get.GamePreset.RotPoints;
             if (left <= 0)
                 return 0;
             return left / WorldTime.TURNS_PER_HOUR;

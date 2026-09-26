@@ -82,6 +82,8 @@ namespace djack.RogueSurvivor.Engine
             m_UI.UI_Repaint();
 
             // save session object.
+            m_Session.GamePreset.Options = s_Options;
+            m_Session.GamePreset.HasOptions = true;
             Session.Save(m_Session, saveName, Session.SaveFormat.FORMAT_BIN);
 
             AddMessage(new Message(String.Format("{0} DONE.", savingOrAutosaving), m_Session.WorldTime.TurnCounter, Color.Yellow));
@@ -177,6 +179,11 @@ namespace djack.RogueSurvivor.Engine
             m_Session = Session.Get;
             m_Session.Mods = ModCatalog.Stamps(chosen);
             m_Rules = new Rules(m_Session.GameDiceRoller);
+            if (m_Session.GamePreset.HasOptions)
+            {
+                s_Options = m_Session.GamePreset.Options;
+                ApplyOptions(false);
+            }
 
             RefreshPlayer();
 

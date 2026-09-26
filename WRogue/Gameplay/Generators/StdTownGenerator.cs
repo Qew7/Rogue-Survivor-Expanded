@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -80,7 +80,7 @@ namespace djack.RogueSurvivor.Gameplay.Generators
             ////////////////////////////////
             // People and undeads in sewers
             ////////////////////////////////
-            if (Rules.HasZombiesInSewers(m_Game.Session.GameMode))
+            if (m_Game.Session.GamePreset.ZombiesInSewers)
             {
                 int maxTries = 10 * sewers.Width * sewers.Height;
                 // start with day zero nb of undeads.

@@ -867,6 +867,18 @@ namespace djack.RogueSurvivor.Engine
                 }
             }
 
+            if (s_Options.IsMinimapOn && m_Player != null)
+            {
+                Map baseMap;
+                XpdBase playerBase = FindPlayerXpdBase(m_Player, out baseMap);
+                if (playerBase != null)
+                    foreach (XpdBase section in map.XpdBases)
+                        if (section.IsPartOf(playerBase))
+                            foreach (Point point in XpdBaseBoundary(section))
+                                m_UI.UI_SetMinimapColor(point.X, point.Y, Color.LimeGreen);
+
+            }
+
             if (s_Options.IsMinimapOn)
                 m_UI.UI_DrawMinimap(MINIMAP_X, MINIMAP_Y);
 
@@ -1021,7 +1033,20 @@ namespace djack.RogueSurvivor.Engine
         public void DrawActorStatus(Actor actor, int gx, int gy)
         {
             // 1. Name & occupation
-            m_UI.UI_DrawStringBold(actor.IsInvincible ? Color.LightGreen : Color.White, String.Format("{0}, {1}", actor.Name, actor.Faction.MemberName), gx, gy);
+            string heading = String.Format("{0}, {1}", actor.Name, actor.Faction.MemberName);
+            bool foreignBase = false;
+            if (actor == m_Player)
+            {
+                Map baseMap;
+                if (FindPlayerXpdBase(actor, out baseMap) != null && baseMap.District != null)
+                    heading += String.Format(" [Base {0}]", World.CoordToString(
+                        baseMap.District.WorldPosition.X, baseMap.District.WorldPosition.Y));
+                XpdBase currentBase = actor.Location.Map.XpdBaseAt(actor.Location.Position);
+                foreignBase = currentBase != null && !currentBase.Owns(actor);
+                if (foreignBase) heading += " [FOREIGN BASE]";
+            }
+            m_UI.UI_DrawStringBold(foreignBase ? Color.OrangeRed :
+                actor.IsInvincible ? Color.LightGreen : Color.White, heading, gx, gy);
 
             // 2. Bars: Health, Stamina, Food, Sleep, Infection.
             gy += BOLD_LINE_SPACING;
@@ -1050,7 +1075,7 @@ namespace djack.RogueSurvivor.Engine
             {
                 int maxFood = m_Rules.ActorMaxFood(actor);
                 m_UI.UI_DrawStringBold(Color.White, String.Format("FOO {0}", actor.FoodPoints), gx, gy);
-                DrawBar(actor.FoodPoints, actor.PreviousFoodPoints, maxFood, Rules.FOOD_HUNGRY_LEVEL, 100, BOLD_LINE_SPACING, gx + BOLD_LINE_SPACING * 5, gy, Color.Chocolate, Color.Brown, Color.Beige, Color.Gray);
+                DrawBar(actor.FoodPoints, actor.PreviousFoodPoints, maxFood, Session.Get.GamePreset.HungerPoints, 100, BOLD_LINE_SPACING, gx + BOLD_LINE_SPACING * 5, gy, Color.Chocolate, Color.Brown, Color.Beige, Color.Gray);
                 m_UI.UI_DrawStringBold(Color.White, String.Format("{0}", maxFood), gx + BOLD_LINE_SPACING * 6 + 100, gy);
                 if (m_Rules.IsActorHungry(actor))
                 {
@@ -1066,7 +1091,7 @@ namespace djack.RogueSurvivor.Engine
             {
                 int maxFood = m_Rules.ActorMaxRot(actor);
                 m_UI.UI_DrawStringBold(Color.White, String.Format("ROT {0}", actor.FoodPoints), gx, gy);
-                DrawBar(actor.FoodPoints, actor.PreviousFoodPoints, maxFood, Rules.ROT_HUNGRY_LEVEL, 100, BOLD_LINE_SPACING, gx + BOLD_LINE_SPACING * 5, gy, Color.Chocolate, Color.Brown, Color.Beige, Color.Gray);
+                DrawBar(actor.FoodPoints, actor.PreviousFoodPoints, maxFood, Session.Get.GamePreset.RotPoints, 100, BOLD_LINE_SPACING, gx + BOLD_LINE_SPACING * 5, gy, Color.Chocolate, Color.Brown, Color.Beige, Color.Gray);
                 m_UI.UI_DrawStringBold(Color.White, String.Format("{0}", maxFood), gx + BOLD_LINE_SPACING * 6 + 100, gy);
                 if (m_Rules.IsRottingActorHungry(actor))
                 {
@@ -1084,7 +1109,7 @@ namespace djack.RogueSurvivor.Engine
             {
                 int maxSleep = m_Rules.ActorMaxSleep(actor);
                 m_UI.UI_DrawStringBold(Color.White, String.Format("SLP {0}", actor.SleepPoints), gx, gy);
-                DrawBar(actor.SleepPoints, actor.PreviousSleepPoints, maxSleep, Rules.SLEEP_SLEEPY_LEVEL, 100, BOLD_LINE_SPACING, gx + BOLD_LINE_SPACING * 5, gy, Color.Blue, Color.DarkBlue, Color.LightBlue, Color.Gray);
+                DrawBar(actor.SleepPoints, actor.PreviousSleepPoints, maxSleep, Session.Get.GamePreset.SleepPoints, 100, BOLD_LINE_SPACING, gx + BOLD_LINE_SPACING * 5, gy, Color.Blue, Color.DarkBlue, Color.LightBlue, Color.Gray);
                 m_UI.UI_DrawStringBold(Color.White, String.Format("{0}", maxSleep), gx + BOLD_LINE_SPACING * 6 + 100, gy);
                 if (m_Rules.IsActorSleepy(actor))
                 {
@@ -1115,10 +1140,10 @@ namespace djack.RogueSurvivor.Engine
                     m_UI.UI_DrawStringBold(Color.White, String.Format("{0}h", m_Rules.SanityToHoursUntilUnstable(actor)), gx + BOLD_LINE_SPACING * 9 + 100, gy);
             }
 
-            if (Rules.HasInfection(m_Session.GameMode) && !actor.Model.Abilities.IsUndead)
+            if (m_Session.GamePreset.Infection && !actor.Model.Abilities.IsUndead)
             {
                 int maxInf = m_Rules.ActorInfectionHPs(actor);
-                int refInf = (Rules.INFECTION_LEVEL_1_WEAK * maxInf) / 100;
+                int refInf = (m_Session.GamePreset.InfectionWeakThreshold * maxInf) / 100;
                 gy += BOLD_LINE_SPACING;
                 m_UI.UI_DrawStringBold(Color.White, String.Format("INF {0}", actor.Infection), gx, gy);
                 DrawBar(actor.Infection, actor.Infection, maxInf, refInf, 100, BOLD_LINE_SPACING, gx + BOLD_LINE_SPACING * 5, gy, Color.Purple, Color.Black, Color.Black, Color.Gray);

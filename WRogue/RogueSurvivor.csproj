@@ -145,6 +145,7 @@
     <Compile Include="Data\Weather.cs" />
     <Compile Include="Data\World.cs" />
     <Compile Include="Data\Zone.cs" />
+    <Compile Include="Data\XpdBase.cs" />
     <Compile Include="Data\Message.cs" />
     <Compile Include="Data\Odor.cs" />
     <Compile Include="Data\PlayerController.cs" />
@@ -295,6 +296,9 @@
     <Compile Include="Engine\OverlayCollection.cs" />
     <Compile Include="Engine\Overlays.cs" />
     <Compile Include="Engine\ManualNavigator.cs" />
+    <Compile Include="Engine\XpdBasePlanner.cs" />
+    <Compile Include="Engine\XpdSupplyRoutes.cs" />
+    <Compile Include="Engine\RogueGame.PlayerActions.Xpd.cs" />
     <Compile Include="Engine\Tasks\TaskRemoveDecoration.cs" />
     <Compile Include="Engine\TextFile.cs" />
     <Compile Include="Gameplay\AI\FeralDogAI.cs" />
@@ -302,6 +306,7 @@
     <Compile Include="Gameplay\AI\ExplorationData.cs" />
     <Compile Include="Gameplay\AI\GangAI.cs" />
     <Compile Include="Gameplay\AI\OrderableAI.cs" />
+    <Compile Include="Gameplay\AI\OrderableAI.Supplies.cs" />
     <Compile Include="Gameplay\AI\RatAI.cs" />
     <Compile Include="Gameplay\AI\SewersThingAI.cs" />
     <Compile Include="Gameplay\AI\SoldierAI.cs" />
@@ -348,6 +353,8 @@
     <Compile Include="Gameplay\ZoneAttributes.cs" />
     <Compile Include="Logger.cs" />
     <Compile Include="Engine\GameOptions.cs" />
+    <Compile Include="Engine\GamePreset.cs" />
+    <Compile Include="Engine\RogueGame.Flow.GamePresets.cs" />
     <Compile Include="PointExtensions.cs" />
     <Compile Include="SetupConfig.cs" />
     <Compile Include="RogueForm.cs">

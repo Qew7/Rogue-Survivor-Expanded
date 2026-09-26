@@ -19,7 +19,8 @@ namespace djack.RogueSurvivor.Data
         REPORT_EVENTS,
         SLEEP_NOW,
         FOLLOW_TOGGLE,
-        WHERE_ARE_YOU
+        WHERE_ARE_YOU,
+        SCAVENGE_SUPPLIES
     }
 
     [Serializable]
@@ -38,6 +39,11 @@ namespace djack.RogueSurvivor.Data
         public ActorOrder(ActorTasks task, Location location)
         {
             m_Task = task;
+            m_Location = location;
+        }
+
+        public void Retarget(Location location)
+        {
             m_Location = location;
         }
 
@@ -67,6 +73,8 @@ namespace djack.RogueSurvivor.Data
                     return "stop/start following";
                 case ActorTasks.WHERE_ARE_YOU:
                     return "reporting position";
+                case ActorTasks.SCAVENGE_SUPPLIES:
+                    return "scavenge supplies for base";
                 default:
                     throw new NotImplementedException("unhandled task");
             }

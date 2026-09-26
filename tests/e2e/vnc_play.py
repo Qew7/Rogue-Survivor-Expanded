@@ -38,7 +38,9 @@ def wait_for(path, seconds):
         if os.path.exists(path) and os.path.getsize(path) > 100:
             return
         time.sleep(0.5)
-    raise RuntimeError("Game did not create " + path)
+    log = "/opt/game/Config/log.txt"
+    tail = open(log).read().splitlines()[-12:] if os.path.exists(log) else []
+    raise RuntimeError("Game did not create " + path + ": " + repr(tail))
 
 
 def wait_for_log(path, text, seconds=10):
@@ -85,7 +87,8 @@ with socket.create_connection(("127.0.0.1", 5900), timeout=10) as vnc:
     # frame before choosing a character, since initialization time varies.
     vnc.sendall(struct.pack(">BBHH", 5, 1, 500, 300))
     vnc.sendall(struct.pack(">BBHH", 5, 0, 500, 300))
-    enter, down, up = 0xFF0D, 0xFF54, 0xFF52
+    vnc.sendall(struct.pack(">BBHH", 5, 0, 900, 720))
+    enter, down, up, left, right = 0xFF0D, 0xFF54, 0xFF52, 0xFF51, 0xFF53
     log = "/opt/game/Config/log.txt"
     deadline = time.monotonic() + 30
     while time.monotonic() < deadline:
@@ -129,7 +132,22 @@ with socket.create_connection(("127.0.0.1", 5900), timeout=10) as vnc:
     ], "Menu profile did not retain selected mods and priority"
     for _ in range(4):
         key(vnc, up)
-    for symbol in (enter, enter, down, enter, down, enter, down, enter, ord("y")):
+    # The options screen opens first. Enable bases, save the configuration,
+    # then load that preset back into the visible options before starting.
+    key(vnc, enter)
+    # Hover a setting, then traverse both configuration pages before editing.
+    vnc.sendall(struct.pack(">BBHH", 5, 0, 150, 167))
+    time.sleep(0.2)
+    vnc.sendall(struct.pack(">BBHH", 5, 0, 900, 720))
+    # The final entry opens the full options menu; return to the first page.
+    for symbol in (0xFF56, 0xFF56, enter, 0xFF1B, 0xFF55, 0xFF55,
+                   down, down, down, right, up, enter):
+        key(vnc, symbol)
+    for symbol in (ord("t"), ord("e"), ord("s"), ord("t"), enter):
+        key(vnc, symbol)
+    wait_for("/opt/game/Config/Config/game-presets.dat", 10)
+    for symbol in (up, enter, right, down, down, down, down, left, enter, up, enter,
+                   down, enter, down, enter, down, enter, ord("y")):
         key(vnc, symbol)
 
     # World generation can take several seconds on a cold CI worker.
@@ -180,19 +198,23 @@ with socket.create_connection(("127.0.0.1", 5900), timeout=10) as vnc:
     key(vnc, ord("S"))
     vnc.sendall(struct.pack(">BBHI", 4, 0, 0, shift))
     save = "/opt/game/Config/Saves/save.dat"
+    wait_for_log(log, "saving session... done!", 30)
     wait_for(save, 30)
     save_bytes = os.path.getsize(save)
     assert read_saved_mods(save) == ("0.1.1", [
         ("Deonapocalypse", "1.0.0"), ("Auxiliary", "")
     ]), "Save did not retain game version, mods and priority"
-    vnc.sendall(struct.pack(">BBHI", 4, 1, 0, shift))
-    key(vnc, ord("L"))
-    vnc.sendall(struct.pack(">BBHI", 4, 0, 0, shift))
     deadline = time.monotonic() + 30
     while time.monotonic() < deadline:
         if "game load ready" in open(log).read():
             break
-        time.sleep(0.5)
+        vnc.sendall(struct.pack(">BBHI", 4, 1, 0, shift))
+        key(vnc, ord("L"))
+        vnc.sendall(struct.pack(">BBHI", 4, 0, 0, shift))
+        for _ in range(6):
+            if "game load ready" in open(log).read():
+                break
+            time.sleep(0.5)
     else:
         raise RuntimeError("Saved game did not load: " + repr(open(log).read().splitlines()[-18:]))
 

@@ -549,6 +549,8 @@ namespace djack.RogueSurvivor.Gameplay.AI
                 // if can't take, ignore.
                 if (!game.Rules.CanActorGetItem(m_Actor, it))
                     continue;
+                if (ShouldKeepStoredItem(game, position, it))
+                    continue;
                 // if not interesting, ignore.
                 if (!IsInterestingItemToOwn(game, it, ItemSource.GROUND_STACK))
                     continue;
@@ -591,7 +593,17 @@ namespace djack.RogueSurvivor.Gameplay.AI
                         return true;
                     if (IsTileTaboo(p.Location.Position))
                         return true;
-                    if (!HasAnyInterestingItem(game, p.Percepted as Inventory, ItemSource.GROUND_STACK))
+                    Inventory stack = p.Percepted as Inventory;
+                    bool useful = false;
+                    if (stack != null)
+                        foreach (Item item in stack.Items)
+                            if (IsInterestingItemToOwn(game, item, ItemSource.GROUND_STACK) &&
+                                !ShouldKeepStoredItem(game, p.Location.Position, item))
+                            {
+                                useful = true;
+                                break;
+                            }
+                    if (!useful)
                         return true;
                     // alpha10 check reachability
                     RouteFinder.SpecialActions a = allowedActions;
@@ -633,6 +645,21 @@ namespace djack.RogueSurvivor.Gameplay.AI
             game.DoEmote(m_Actor, cantGetItemEmote);
             // failed
             return null;
+        }
+
+        bool ShouldKeepStoredItem(RogueGame game, Point position, Item item)
+        {
+            if (!Session.Get.GamePreset.Bases ||
+                (!(item is ItemFood) && !(item is ItemWeapon))) return false;
+            XpdBase baseClaim = m_Actor.Location.Map.XpdBaseAt(position);
+            if (baseClaim == null || !baseClaim.Owns(m_Actor)) return false;
+            if (item is ItemFood)
+                return !game.Rules.IsActorHungry(m_Actor) ||
+                    m_Actor.Inventory.HasItemMatching(it => it is ItemFood);
+            if (item is ItemWeapon)
+                return m_Actor.GetEquippedWeapon() != null ||
+                    m_Actor.Inventory.HasItemMatching(it => it is ItemWeapon);
+            return false;
         }
         #endregion
         #region Droping items

@@ -61,7 +61,7 @@ namespace djack.RogueSurvivor.Gameplay.AI
             m_Actor.IsRunning = false;
 
             // 0. Equip best item
-            ActorAction bestEquip = BehaviorEquipBestItems(game, true, true);
+            ActorAction bestEquip = IsReturningXpdLoot ? null : BehaviorEquipBestItems(game, true, true);
             if (bestEquip != null)
             {
                 return bestEquip;
@@ -265,6 +265,13 @@ namespace djack.RogueSurvivor.Gameplay.AI
             #endregion
 
             // 11 wander in CHAR office.
+            if (!hasAnyEnemies)
+            {
+                ActorAction baseTrap = DefendXpdBaseWithTrap(game);
+                if (baseTrap != null) return baseTrap;
+                ActorAction expedition = TryStartAutonomousScavenge(game, mapPercepts, null);
+                if (expedition != null) return expedition;
+            }
             ActorAction wanderInOfficeAction = BehaviorWander(game, (loc) => RogueGame.IsInCHAROffice(loc), null);
             if (wanderInOfficeAction != null)
             {

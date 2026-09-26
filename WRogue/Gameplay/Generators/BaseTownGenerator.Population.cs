@@ -240,16 +240,20 @@ namespace djack.RogueSurvivor.Gameplay.Generators
         public Actor CreateNewUndead(int spawnTime)
         {
             Actor newUndead;
-
-            if (Rules.HasAllZombies(m_Game.Session.GameMode))
+            GamePreset preset = m_Game.Session.GamePreset;
+            int skeletonWeight = preset.Skeletons ? RogueGame.Options.SpawnSkeletonChance : 0;
+            int shamblerWeight = preset.Shamblers ? RogueGame.Options.SpawnZombieChance : 0;
+            int masterWeight = preset.ZombieMasters ? RogueGame.Options.SpawnZombieMasterChance : 0;
+            int ratWeight = preset.RatZombies && skeletonWeight + shamblerWeight + masterWeight == 0 && !preset.Zombified ? 100 : 0;
+            int zombifiedWeight = preset.Zombified ? 100 : 0;
+            int chance = m_Rules.Roll(0, skeletonWeight + shamblerWeight + masterWeight + ratWeight + zombifiedWeight);
+            if (chance < skeletonWeight + shamblerWeight + masterWeight + ratWeight)
             {
-                // decide model.
                 ActorModel undeadModel;
-                int chance = m_Rules.Roll(0, 100);
-                undeadModel = (chance < RogueGame.Options.SpawnSkeletonChance ? m_Game.GameActors.Skeleton :
-                    chance < RogueGame.Options.SpawnSkeletonChance + RogueGame.Options.SpawnZombieChance ? m_Game.GameActors.Zombie :
-                    chance < RogueGame.Options.SpawnSkeletonChance + RogueGame.Options.SpawnZombieChance + RogueGame.Options.SpawnZombieMasterChance ? m_Game.GameActors.ZombieMaster :
-                     m_Game.GameActors.Skeleton);
+                undeadModel = chance < skeletonWeight ? m_Game.GameActors.Skeleton :
+                    chance < skeletonWeight + shamblerWeight ? m_Game.GameActors.Zombie :
+                    chance < skeletonWeight + shamblerWeight + masterWeight ? m_Game.GameActors.ZombieMaster :
+                    m_Game.GameActors.RatZombie;
 
                 // create.
                 newUndead = undeadModel.CreateNumberedName(m_Game.GameFactions.TheUndeads, spawnTime);
@@ -304,11 +308,13 @@ namespace djack.RogueSurvivor.Gameplay.Generators
 
         public Actor CreateNewSewersUndead(int spawnTime)
         {
-            if (!Rules.HasAllZombies(m_Game.Session.GameMode))
+            if (!m_Game.Session.GamePreset.RatZombies && !m_Game.Session.GamePreset.Shamblers)
                 return CreateNewUndead(spawnTime);
 
             // decide model.
-            ActorModel undeadModel = m_DiceRoller.RollChance(80) ? m_Game.GameActors.RatZombie : m_Game.GameActors.Zombie;
+            ActorModel undeadModel = m_Game.Session.GamePreset.RatZombies &&
+                (!m_Game.Session.GamePreset.Shamblers || m_DiceRoller.RollChance(80)) ?
+                m_Game.GameActors.RatZombie : m_Game.GameActors.Zombie;
 
             // create.
             Actor newUndead = undeadModel.CreateNumberedName(m_Game.GameFactions.TheUndeads, spawnTime);
@@ -319,7 +325,7 @@ namespace djack.RogueSurvivor.Gameplay.Generators
 
         public Actor CreateNewBasementRatZombie(int spawnTime)
         {
-            if (!Rules.HasAllZombies(m_Game.Session.GameMode))
+            if (!m_Game.Session.GamePreset.RatZombies)
                 return CreateNewUndead(spawnTime);
 
             return m_Game.GameActors.RatZombie.CreateNumberedName(m_Game.GameFactions.TheUndeads, spawnTime);
@@ -327,7 +333,7 @@ namespace djack.RogueSurvivor.Gameplay.Generators
 
         public Actor CreateNewSubwayUndead(int spawnTime)
         {
-            if (!Rules.HasAllZombies(m_Game.Session.GameMode))
+            if (!m_Game.Session.GamePreset.Shamblers)
                 return CreateNewUndead(spawnTime);
 
             // standard zombies.

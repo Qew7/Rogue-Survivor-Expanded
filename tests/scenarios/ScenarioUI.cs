@@ -11,6 +11,7 @@ sealed class ScenarioUI : IRogueUI
     readonly Queue<MouseButtons?> buttons = new Queue<MouseButtons?>();
     public readonly Dictionary<Point, Color> MinimapColors = new Dictionary<Point, Color>();
     public readonly List<string> DrawnImages = new List<string>();
+    public readonly List<string> DrawnStrings = new List<string>();
     public int MinimapTileWrites { get; private set; }
     public Point MousePosition { get; set; }
     public void QueueKey(Keys key) { keys.Enqueue(null); keys.Enqueue(new KeyEventArgs(key)); }
@@ -35,7 +36,8 @@ sealed class ScenarioUI : IRogueUI
     public void UI_DrawRect(Color color, Rectangle rect) { }
     public void UI_FillRect(Color color, Rectangle rect) { }
     public void UI_DrawString(Color color, string text, int x, int y, Color? shadow = null) { }
-    public void UI_DrawStringBold(Color color, string text, int x, int y, Color? shadow = null) { }
+    public void UI_DrawStringBold(Color color, string text, int x, int y, Color? shadow = null)
+    { DrawnStrings.Add(text); }
     public void UI_DrawPopup(string[] lines, Color text, Color border, Color fill, int x, int y) { }
     public void UI_DrawPopupTitle(string title, Color titleColor, string[] lines, Color text, Color border, Color fill, int x, int y) { }
     public void UI_DrawPopupTitleColors(string title, Color titleColor, string[] lines, Color[] colors, Color border, Color fill, int x, int y) { }

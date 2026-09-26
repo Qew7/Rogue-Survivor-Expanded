@@ -253,7 +253,7 @@ namespace djack.RogueSurvivor.Engine
         public int ActorDisturbedLevel(Actor actor)
         {
             float factor = 1.0f - SKILL_STRONG_PSYCHE_LEVEL_BONUS * actor.Sheet.SkillTable.GetSkillLevel((int)Skills.IDs.STRONG_PSYCHE);
-            return (int)(SANITY_UNSTABLE_LEVEL * factor);
+            return (int)(Session.Get.GamePreset.SanityPoints * factor);
         }
 
         public int ActorMaxInv(Actor actor)

@@ -118,7 +118,7 @@ namespace djack.RogueSurvivor.Gameplay.Generators
 
             // rats!
             #region
-            if (Rules.HasZombiesInBasements(m_Game.Session.GameMode))
+            if (m_Game.Session.GamePreset.ZombiesInBasements)
             {
                 DoForEachTile(basement, basement.Rect,
                     (pt) =>

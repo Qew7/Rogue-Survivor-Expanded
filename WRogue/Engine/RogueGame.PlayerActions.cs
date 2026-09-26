@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Drawing;
@@ -222,6 +222,10 @@ namespace djack.RogueSurvivor.Engine
 
                             case PlayerCommand.MOUSE_MOVE_MODE:
                                 ToggleMouseMoveMode();
+                                break;
+
+                            case PlayerCommand.XPD_BASE:
+                                loop = !HandlePlayerXpdBase(player);
                                 break;
 
                             // alpha10.1 moved sim thread responsability out to DoLoadGame
@@ -1148,6 +1152,16 @@ namespace djack.RogueSurvivor.Engine
 
         void HandleAiActor(Actor aiActor)
         {
+            if (m_Session.GamePreset.Bases && !aiActor.HasLeader &&
+                aiActor.CountFollowers > 0 &&
+                !aiActor.Model.Abilities.IsUndead &&
+                aiActor.Location.Map.XpdBaseAt(aiActor.Location.Position) == null &&
+                aiActor.Location.Map.GetTileAt(aiActor.Location.Position).IsInside &&
+                (aiActor.Location.Map.LocalTime.TurnCounter + aiActor.Location.Position.X + aiActor.Location.Position.Y) % 30 == 0)
+            {
+                string claimReason;
+                if (TryClaimXpdBase(aiActor, out claimReason)) return;
+            }
             // Get and perform action from AI controler.
             ActorAction desiredAction = aiActor.Controller.GetAction(this);
 

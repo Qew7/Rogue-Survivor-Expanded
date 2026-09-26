@@ -481,7 +481,7 @@ namespace djack.RogueSurvivor.Engine
         #region Hunger/Rot & Sleep & Sanity
         public bool IsActorHungry(Actor a)
         {
-            return a.Model.Abilities.HasToEat && a.FoodPoints <= FOOD_HUNGRY_LEVEL;
+            return a.Model.Abilities.HasToEat && a.FoodPoints <= Session.Get.GamePreset.HungerPoints;
         }
 
         public bool IsActorStarving(Actor a)
@@ -491,7 +491,7 @@ namespace djack.RogueSurvivor.Engine
 
         public bool IsRottingActorHungry(Actor a)
         {
-            return a.Model.Abilities.IsRotting && a.FoodPoints <= ROT_HUNGRY_LEVEL;
+            return a.Model.Abilities.IsRotting && a.FoodPoints <= Session.Get.GamePreset.RotPoints;
         }
 
         public bool IsRottingActorStarving(Actor a)
@@ -525,7 +525,7 @@ namespace djack.RogueSurvivor.Engine
 
         public bool IsActorSleepy(Actor a)
         {
-            return a.Model.Abilities.HasToSleep && a.SleepPoints <= SLEEP_SLEEPY_LEVEL;
+            return a.Model.Abilities.HasToSleep && a.SleepPoints <= Session.Get.GamePreset.SleepPoints;
         }
 
         public bool IsActorExhausted(Actor a)
@@ -535,7 +535,7 @@ namespace djack.RogueSurvivor.Engine
 
         public int SleepToHoursUntilSleepy(int sleep, bool isNight)
         {
-            int left = sleep - Rules.SLEEP_SLEEPY_LEVEL;
+            int left = sleep - Session.Get.GamePreset.SleepPoints;
             if (isNight)
                 left /= 2;
             if (left <= 0)

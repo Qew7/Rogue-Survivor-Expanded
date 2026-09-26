@@ -305,7 +305,7 @@ namespace djack.RogueSurvivor.Gameplay.Generators
                             }
                         }
 
-                        if (Rules.HasZombiesInBasements(m_Game.Session.GameMode))
+                        if (m_Game.Session.GamePreset.ZombiesInBasements)
                         {
                             if (m_DiceRoller.RollChance(SHOP_BASEMENT_ZOMBIE_RAT_CHANCE))
                                 shopBasement.PlaceActorAt(CreateNewBasementRatZombie(0), pt);

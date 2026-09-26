@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Drawing;
@@ -261,12 +261,6 @@ namespace djack.RogueSurvivor.Engine
 
         #region Infection & Corpses
         const float INFECTION_BASE_FACTOR = 1.0f;
-
-        public static int INFECTION_LEVEL_1_WEAK  = 10;
-        public static int INFECTION_LEVEL_2_TIRED = 30;
-        public static int INFECTION_LEVEL_3_VOMIT = 50;
-        public static int INFECTION_LEVEL_4_BLEED = 75;
-        public static int INFECTION_LEVEL_5_DEATH = 100;
 
         public static int INFECTION_LEVEL_1_WEAK_STA = 24;//16;
         public static int INFECTION_LEVEL_2_TIRED_STA = 24;//16;
@@ -950,7 +944,7 @@ namespace djack.RogueSurvivor.Engine
         public static int InfectionForDamage(Actor infector, int dmg)
         {
             float factor = INFECTION_BASE_FACTOR + infector.Sheet.SkillTable.GetSkillLevel((int)Skills.IDs.Z_INFECTOR) * SKILL_ZINFECTOR_BONUS;
-            return (int)(factor * dmg);
+            return (int)(factor * dmg * Session.Get.GamePreset.InfectionRatePercent / 100f);
         }
 
         public int ActorInfectionPercent(Actor a)
@@ -960,7 +954,8 @@ namespace djack.RogueSurvivor.Engine
 
         public int InfectionEffectTriggerChance1000(int infectionPercent)
         {
-            return INFECTION_EFFECT_TRIGGER_CHANCE_1000 + infectionPercent / 5;
+            return (INFECTION_EFFECT_TRIGGER_CHANCE_1000 + infectionPercent / 5) *
+                Session.Get.GamePreset.InfectionEffectRatePercent / 100;
         }
 
         public int CorpseFreshnessPercent(Corpse c)
@@ -991,7 +986,7 @@ namespace djack.RogueSurvivor.Engine
 
         public static float CorpseDecayPerTurn(Corpse c)
         {
-            return CORPSE_DECAY_PER_TURN;
+            return CORPSE_DECAY_PER_TURN * Session.Get.GamePreset.CorpseDecayPercent / 100f;
         }
 
         public int CorpseZombifyChance(Corpse c, WorldTime timeNow, bool checkDelay = true)
@@ -1015,7 +1010,7 @@ namespace djack.RogueSurvivor.Engine
             }
 
             // base chance.
-            chance = CORPSE_ZOMBIFY_BASE_CHANCE;
+            chance = CORPSE_ZOMBIFY_BASE_CHANCE + Session.Get.GamePreset.CorpseBaseRiseChance;
 
             // living infection
             chance += CORPSE_ZOMBIFY_INFECTIONP_FACTOR * infP;
@@ -1030,7 +1025,7 @@ namespace djack.RogueSurvivor.Engine
                 chance *= CORPSE_ZOMBIFY_DAY_FACTOR;
 
             // ok.
-            int intChance = Math.Max(0, Math.Min(100, (int)chance));
+            int intChance = Math.Max(0, Math.Min(100, (int)(chance * Session.Get.GamePreset.CorpseRiseChance / 100f)));
             return intChance;
         }
 
@@ -1114,6 +1109,8 @@ namespace djack.RogueSurvivor.Engine
         // alpha10
         public bool IsSafeFromTrap(ItemTrap trap, Actor a)
         {
+            if (trap.BaseOwner != null && trap.BaseOwner.Owns(a))
+                return true;
             if (trap.Owner == null)
                 return false;
             if (trap.Owner == a)
@@ -1160,41 +1157,5 @@ namespace djack.RogueSurvivor.Engine
         }
         #endregion
 
-        #region Game modes
-        public static bool HasImmediateZombification(GameMode mode)
-        {
-            return mode == GameMode.GM_STANDARD;
-        }
-
-        public static bool HasInfection(GameMode mode)
-        {
-            return mode != GameMode.GM_STANDARD;
-        }
-
-        public static bool HasCorpses(GameMode mode)
-        {
-            return mode != GameMode.GM_STANDARD;
-        }
-
-        public static bool HasEvolution(GameMode mode)
-        {
-            return mode != GameMode.GM_VINTAGE;
-        }
-
-        public static bool HasAllZombies(GameMode mode)
-        {
-            return mode != GameMode.GM_VINTAGE;
-        }
-
-        public static bool HasZombiesInBasements(GameMode mode)
-        {
-            return mode != GameMode.GM_VINTAGE;
-        }
-
-        public static bool HasZombiesInSewers(GameMode mode)
-        {
-            return mode != GameMode.GM_VINTAGE;
-        }
-        #endregion
     }
 }

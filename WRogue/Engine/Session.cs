@@ -18,7 +18,8 @@ namespace djack.RogueSurvivor.Engine
     {
         GM_STANDARD,
         GM_CORPSES_INFECTION,
-        GM_VINTAGE
+        GM_VINTAGE,
+        GM_XPD
     }
 
     [Serializable]
@@ -388,6 +389,8 @@ namespace djack.RogueSurvivor.Engine
 
         #region Game Mode
         GameMode m_GameMode;
+        [OptionalField]
+        GamePreset m_GamePreset;
         #endregion
 
         #region World map
@@ -444,7 +447,13 @@ namespace djack.RogueSurvivor.Engine
         public GameMode GameMode
         {
             get { return m_GameMode; }
-            set { m_GameMode = value; }
+            set { m_GameMode = value; m_GamePreset = GamePreset.BuiltIn(value); }
+        }
+
+        public GamePreset GamePreset
+        {
+            get { return m_GamePreset ?? (m_GamePreset = GamePreset.BuiltIn(m_GameMode)); }
+            set { if (value == null) throw new ArgumentNullException("value"); value.Validate(); m_GamePreset = value.Copy(); }
         }
 
         public ModStamp[] Mods
@@ -539,6 +548,7 @@ namespace djack.RogueSurvivor.Engine
 
         public void Reset()
         {
+            GameMode = GameMode.GM_STANDARD;
             this.Seed = (int)DateTime.UtcNow.TimeOfDay.Ticks;
             m_GameDiceRoller = new DiceRoller(Seed);
             m_CurrentMap = null;
@@ -852,6 +862,7 @@ namespace djack.RogueSurvivor.Engine
                 case GameMode.GM_STANDARD: return "STD - Standard Game";
                 case GameMode.GM_CORPSES_INFECTION: return "C&I - Corpses & Infection";
                 case GameMode.GM_VINTAGE: return "VTG - Vintage Zombies";
+                case GameMode.GM_XPD: return "XPD - Expanded";
                 default: throw new Exception("unhandled game mode");
             }
         }
@@ -863,6 +874,7 @@ namespace djack.RogueSurvivor.Engine
                 case GameMode.GM_STANDARD: return "STD";
                 case GameMode.GM_CORPSES_INFECTION: return "C&I";
                 case GameMode.GM_VINTAGE: return "VTG";
+                case GameMode.GM_XPD: return "XPD";
                 default: throw new Exception("unhandled game mode");
             }
         }

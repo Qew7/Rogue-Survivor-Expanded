@@ -145,7 +145,9 @@ namespace djack.RogueSurvivor.Engine
                     else if (actor.Model.Abilities.IsRotting)
                     {
                         // rot.
-                        --actor.FoodPoints;
+                        int rotLoss = m_Session.GamePreset.RotDecayPercent / 100;
+                        if (m_Rules.RollChance(m_Session.GamePreset.RotDecayPercent % 100)) rotLoss++;
+                        actor.FoodPoints -= rotLoss;
                         if (actor.FoodPoints < 0) actor.FoodPoints = 0;
 
                         // rot effects.
@@ -347,7 +349,7 @@ namespace djack.RogueSurvivor.Engine
                         KillActor(null, actor, "starvation");
 
                         // zombify?
-                        if (!actor.Model.Abilities.IsUndead && Rules.HasImmediateZombification(m_Session.GameMode) && m_Rules.RollChance(s_Options.StarvedZombificationChance))
+                        if (!actor.Model.Abilities.IsUndead && m_Session.GamePreset.ImmediateZombification && m_Rules.RollChance(s_Options.StarvedZombificationChance))
                         {
                             // remove morpse!
                             map.TryRemoveCorpseOf(actor);

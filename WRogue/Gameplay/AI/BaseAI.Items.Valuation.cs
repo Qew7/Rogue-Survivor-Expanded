@@ -251,7 +251,7 @@ namespace djack.RogueSurvivor.Gameplay.AI
                 if (owned)
                     nutritionPoints -= GetItemNutritionValue(game, it as ItemFood);
                 // rule of thumb: has to cover 25% more than hungry level
-                if (nutritionPoints <= ((5 * Rules.FOOD_HUNGRY_LEVEL) / 4))
+                if (nutritionPoints <= ((5 * Session.Get.GamePreset.HungerPoints) / 4))
                     return ItemRating.NEED;
             }
 
@@ -757,7 +757,7 @@ namespace djack.RogueSurvivor.Gameplay.AI
 
                 // need food if not enough stockpiled to cover our needs
                 // FIXME -- including last means the ai is not willing to trade for a better food!
-                if (!HasEnoughFoodFor(game, maxFood - Rules.FOOD_HUNGRY_LEVEL) || isLastOfItsTypeInMyInventory)
+                if (!HasEnoughFoodFor(game, maxFood - Session.Get.GamePreset.HungerPoints) || isLastOfItsTypeInMyInventory)
                     needFactor += 0.5f;
 
             }

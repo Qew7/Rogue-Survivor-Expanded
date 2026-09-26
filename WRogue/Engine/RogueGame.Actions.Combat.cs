@@ -270,7 +270,8 @@ namespace djack.RogueSurvivor.Engine
                         {
                             AddMessage(MakeMessage(attacker, Conjugate(attacker, VERB_FEAST_ON), defender, " flesh !"));
                         }
-                        InfectActor(defender, Rules.InfectionForDamage(attacker, dmgRoll));
+                        if (m_Session.GamePreset.Infection)
+                            InfectActor(defender, Rules.InfectionForDamage(attacker, dmgRoll));
                     }
 
                     // Killed?
@@ -293,7 +294,7 @@ namespace djack.RogueSurvivor.Engine
                             SeeingCauseInsanity(attacker, attacker.Location, Rules.SANITY_HIT_EATEN_ALIVE, String.Format("{0} eaten alive", defender.Name));
 
                         // turn victim into zombie; always turn player into zombie NOW if killed by zombifier or if was infected.
-                        if (Rules.HasImmediateZombification(m_Session.GameMode) || defender == m_Player)
+                        if (m_Session.GamePreset.ImmediateZombification || defender == m_Player)
                         {
                             if (attacker.Model.Abilities.CanZombifyKilled && !defender.Model.Abilities.IsUndead && m_Rules.RollChance(s_Options.ZombificationChance))
                             {

@@ -70,7 +70,7 @@ namespace djack.RogueSurvivor.Engine
         }
 
         // alpha10 removed mention of mode and mentioned which options are always off in certain modes (vintage)
-        void HandleOptions(bool ingame)
+        void HandleOptions(bool ingame, bool save = true)
         {
             GameOptions prevOptions = s_Options;
 
@@ -133,16 +133,6 @@ namespace djack.RogueSurvivor.Engine
             for (int i = 0; i < list.Length; i++)
             {
                 menuEntries[i] = GameOptions.Name(list[i]);
-                // alpha10 special mode notes
-                GameOptions.IDs id = list[i];
-                if (id == GameOptions.IDs.GAME_ALLOW_UNDEADS_EVOLUTION ||
-                    id == GameOptions.IDs.GAME_RATS_UPGRADE ||
-                    id == GameOptions.IDs.GAME_SKELETONS_UPGRADE ||
-                    id == GameOptions.IDs.GAME_SHAMBLERS_UPGRADE)
-                    menuEntries[i] += " -V";
-                else if (id == GameOptions.IDs.GAME_ZOMBIFICATION_CHANCE ||
-                    id == GameOptions.IDs.GAME_STARVED_ZOMBIFICATION_CHANCE)
-                    menuEntries[i] += " =S";
             }
 
             bool loop = true;
@@ -152,7 +142,7 @@ namespace djack.RogueSurvivor.Engine
             do
             {
                 for (int i = 0; i < list.Length; i++)
-                    values[i] = s_Options.DescribeValue(m_Session.GameMode, list[i]);
+                    values[i] = s_Options.DescribeValue(list[i]);
 
                 int gx, gy;
                 gx = gy = 0;
@@ -179,10 +169,6 @@ namespace djack.RogueSurvivor.Engine
                 // legend.
                 gy += BOLD_LINE_SPACING;
                 m_UI.UI_DrawStringBold(Color.Red, "* Caution : increasing these values makes the game runs slower and saving/loading longer.", gx, gy);
-                gy += BOLD_LINE_SPACING;
-                m_UI.UI_DrawStringBold(Color.White, "-V : option always OFF when playing VTG-Vintage", gx, gy);
-                gy += BOLD_LINE_SPACING;
-                m_UI.UI_DrawStringBold(Color.White, "=S : option used only when playing STD-Standard", gx, gy);
                 gy += BOLD_LINE_SPACING;
 
                 // difficulty rating.
@@ -342,7 +328,7 @@ namespace djack.RogueSurvivor.Engine
             while (loop);
 
             // save.
-            SaveOptions();
+            if (save) SaveOptions();
         }
 
         void HandleRedefineKeys()

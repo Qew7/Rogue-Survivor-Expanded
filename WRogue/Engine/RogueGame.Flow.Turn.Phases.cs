@@ -27,8 +27,8 @@ namespace djack.RogueSurvivor.Engine
         {
                 // 0. Raise the deads; Check infections (non STD)
                 #region
-                bool hasCorpses = Rules.HasCorpses(m_Session.GameMode);
-                bool hasInfection = Rules.HasInfection(m_Session.GameMode);
+                bool hasCorpses = m_Session.GamePreset.Corpses;
+                bool hasInfection = m_Session.GamePreset.Infection;
                 if (hasCorpses || hasInfection)
                 {
                     #region Corpses
@@ -100,7 +100,8 @@ namespace djack.RogueSurvivor.Engine
                         List<Actor> infectedToKill = null;
                         foreach (Actor a in map.Actors)
                         {
-                            if (a.Infection >= Rules.INFECTION_LEVEL_1_WEAK && !a.Model.Abilities.IsUndead)
+                            if (a.Infection > 0 && !a.Model.Abilities.IsUndead &&
+                                m_Rules.ActorInfectionPercent(a) >= m_Session.GamePreset.InfectionWeakThreshold)
                             {
                                 int infectionP = m_Rules.ActorInfectionPercent(a);
 
@@ -117,11 +118,11 @@ namespace djack.RogueSurvivor.Engine
 
                                     // apply effect.
                                     bool killHim = false;
-                                    if (infectionP >= Rules.INFECTION_LEVEL_5_DEATH)
+                                    if (infectionP >= m_Session.GamePreset.InfectionDeathThreshold)
                                     {
                                         killHim = true;
                                     }
-                                    else if (infectionP >= Rules.INFECTION_LEVEL_4_BLEED)
+                                    else if (infectionP >= m_Session.GamePreset.InfectionBleedThreshold)
                                     {
                                         DoVomit(a);
                                         a.HitPoints -= Rules.INFECTION_LEVEL_4_BLEED_HP;
@@ -140,7 +141,7 @@ namespace djack.RogueSurvivor.Engine
                                         if (a.HitPoints <= 0)
                                             killHim = true;
                                     }
-                                    else if (infectionP >= Rules.INFECTION_LEVEL_3_VOMIT)
+                                    else if (infectionP >= m_Session.GamePreset.InfectionVomitThreshold)
                                     {
                                         DoVomit(a);
                                         if (isVisible)
@@ -154,7 +155,7 @@ namespace djack.RogueSurvivor.Engine
                                             }
                                         }
                                     }
-                                    else if (infectionP >= Rules.INFECTION_LEVEL_2_TIRED)
+                                    else if (infectionP >= m_Session.GamePreset.InfectionTiredThreshold)
                                     {
                                         SpendActorStaminaPoints(a, Rules.INFECTION_LEVEL_2_TIRED_STA);
                                         a.SleepPoints -= Rules.INFECTION_LEVEL_2_TIRED_SLP;
@@ -170,7 +171,7 @@ namespace djack.RogueSurvivor.Engine
                                             }
                                         }
                                     }
-                                    else if (infectionP >= Rules.INFECTION_LEVEL_1_WEAK)
+                                    else if (infectionP >= m_Session.GamePreset.InfectionWeakThreshold)
                                     {
                                         SpendActorStaminaPoints(a, Rules.INFECTION_LEVEL_1_WEAK_STA);
                                         if (isVisible)

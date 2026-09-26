@@ -58,6 +58,7 @@ namespace djack.RogueSurvivor.Engine
             Set(PlayerCommand.MARK_ENEMIES_MODE, Keys.E | Keys.Control);
             Set(PlayerCommand.MESSAGE_LOG, Keys.M | Keys.Shift);
             Set(PlayerCommand.MOUSE_MOVE_MODE, Keys.M);
+            Set(PlayerCommand.XPD_BASE, Keys.B | Keys.Control);
             Set(PlayerCommand.MOVE_E, Keys.NumPad6);
             Set(PlayerCommand.MOVE_N, Keys.NumPad8);
             Set(PlayerCommand.MOVE_NE, Keys.NumPad9);
@@ -181,6 +182,9 @@ namespace djack.RogueSurvivor.Engine
                 kb = BinarySaveStore.Load<Keybindings>(filepath);
                 if (kb.Get(PlayerCommand.MOUSE_MOVE_MODE) == Keys.None && kb.Get(Keys.M) == PlayerCommand.NONE)
                     kb.Set(PlayerCommand.MOUSE_MOVE_MODE, Keys.M);
+                if (kb.Get(PlayerCommand.XPD_BASE) == Keys.None &&
+                    kb.Get(Keys.B | Keys.Control) == PlayerCommand.NONE)
+                    kb.Set(PlayerCommand.XPD_BASE, Keys.B | Keys.Control);
             }
             catch (Exception e)
             {
