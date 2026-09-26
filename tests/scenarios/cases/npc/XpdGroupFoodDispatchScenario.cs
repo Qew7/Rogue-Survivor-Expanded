@@ -32,6 +32,8 @@ static class XpdGroupFoodDispatchScenario
             XpdBase home = new XpdBase(leader, new[] {
                 new Point(2, 2), new Point(3, 2), new Point(2, 3), new Point(3, 3) });
             world.Map.AddXpdBase(home);
+            // A foreign claim must not make the group's own food count twice.
+            world.Map.AddXpdBase(new XpdBase(spectator, new[] { new Point(6, 4) }));
             for (int i = 0; i < 9; i++)
             {
                 ItemFood food = new ItemFood(world.Game.GameItems.GROCERIES);

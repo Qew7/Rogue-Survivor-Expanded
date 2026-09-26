@@ -134,17 +134,23 @@ namespace djack.RogueSurvivor.Gameplay.AI
             if (needed == 0) return false;
             District district = m_Actor.Location.Map.District;
             if (district != null)
+            {
                 foreach (Map map in district.Maps)
                     foreach (XpdBase section in map.XpdBases)
                         if (section.IsPartOf(baseClaim))
+                        {
                             foreach (Point point in section.Cells)
                                 nutrition += XpdInventoryNutrition(game, map.GetItemsAt(point),
                                     map.LocalTime.TurnCounter);
+                        }
+            }
             else
+            {
                 foreach (Point point in baseClaim.Cells)
                     nutrition += XpdInventoryNutrition(game,
                         m_Actor.Location.Map.GetItemsAt(point),
                         m_Actor.Location.Map.LocalTime.TurnCounter);
+            }
             return nutrition < needed;
         }
 
