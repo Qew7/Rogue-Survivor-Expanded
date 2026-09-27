@@ -681,6 +681,7 @@ namespace djack.RogueSurvivor.Engine
 
             // take lead.
             actor.AddFollower(other);
+            ReportPersonalityEvent("joined_group", other, actor, other.Location.Map, other.Location.Position);
 
             // reset trust in leader.
             int prevTrust = other.GetTrustIn(actor);
@@ -707,9 +708,11 @@ namespace djack.RogueSurvivor.Engine
 
             // remove from previous leader
             prevLeader.RemoveFollower(other);
+            ReportPersonalityEvent("abandoned", other, prevLeader, other.Location.Map, other.Location.Position);
 
             // take lead.
             actor.AddFollower(other);
+            ReportPersonalityEvent("joined_group", other, actor, other.Location.Map, other.Location.Position);
 
             // reset trust in leader.
             int prevTrust = other.GetTrustIn(actor);
@@ -733,6 +736,7 @@ namespace djack.RogueSurvivor.Engine
 
             // remove lead.
             actor.RemoveFollower(follower);
+            ReportPersonalityEvent("abandoned", follower, actor, follower.Location.Map, follower.Location.Position);
 
             // reset trust in leader.
             follower.SetTrustIn(actor, follower.TrustInLeader);

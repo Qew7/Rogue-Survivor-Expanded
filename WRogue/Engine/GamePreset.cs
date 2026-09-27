@@ -9,6 +9,7 @@ namespace djack.RogueSurvivor.Engine
     {
         public string Name;
         public bool Bases;
+        public bool NpcPersonalitiesEnabled;
         public bool ImmediateZombification;
         public bool Infection;
         public bool Corpses;
@@ -55,6 +56,7 @@ namespace djack.RogueSurvivor.Engine
             GamePreset preset = new GamePreset {
                 Name = Session.DescGameMode(mode),
                 Bases = mode == GameMode.GM_XPD,
+                NpcPersonalitiesEnabled = true,
                 ImmediateZombification = mode == GameMode.GM_STANDARD,
                 Infection = mode != GameMode.GM_STANDARD,
                 Corpses = mode != GameMode.GM_STANDARD,

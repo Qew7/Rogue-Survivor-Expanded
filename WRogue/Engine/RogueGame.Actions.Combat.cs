@@ -175,6 +175,9 @@ namespace djack.RogueSurvivor.Engine
 
         public void DoMeleeAttack(Actor attacker, Actor defender)
         {
+            // An unexpected attack is significant; routine blows in an ongoing fight are not.
+            if (!m_Rules.AreEnemies(attacker, defender))
+                ReportPersonalityEvent("attack", defender, attacker, defender.Location.Map, defender.Location.Position);
             // set activiy & target.
             attacker.Activity = Activity.FIGHTING;
             attacker.TargetActor = defender;
@@ -396,6 +399,8 @@ namespace djack.RogueSurvivor.Engine
 
         public void DoRangedAttack(Actor attacker, Actor defender, List<Point> LoF, FireMode mode)
         {
+            if (!m_Rules.AreEnemies(attacker, defender))
+                ReportPersonalityEvent("attack", defender, attacker, defender.Location.Map, defender.Location.Position);
             // if not enemies, aggression.
             if (!m_Rules.AreEnemies(attacker, defender))
                 DoMakeAggression(attacker, defender);

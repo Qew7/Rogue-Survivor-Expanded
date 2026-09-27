@@ -953,7 +953,8 @@ namespace djack.RogueSurvivor.Engine
             // 1. Actor is not undead or a starving living.
             if (!actor.Model.Abilities.IsUndead)
             {
-                if (!IsActorStarving(actor) && !IsActorInsane(actor))
+                if (!IsActorStarving(actor) && !IsActorInsane(actor) &&
+                    !(IsActorHungry(actor) && Gameplay.Personality.PersonalitySystem.HasTrait(actor, "cannibal")))
                 {
                     reason = "not starving or insane";
                     return false;

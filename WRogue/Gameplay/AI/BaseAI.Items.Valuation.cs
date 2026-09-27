@@ -10,6 +10,7 @@ using djack.RogueSurvivor.Engine.Items;
 using djack.RogueSurvivor.Engine.MapObjects;
 using djack.RogueSurvivor.Gameplay.AI.Sensors;
 using djack.RogueSurvivor.Gameplay.AI.Tools;
+using djack.RogueSurvivor.Gameplay.Personality;
 
 namespace djack.RogueSurvivor.Gameplay.AI
 {
@@ -348,6 +349,12 @@ namespace djack.RogueSurvivor.Gameplay.AI
 
             // Okay:
             // - Anything else.
+            int preference = PersonalitySystem.Bias(m_Actor, DecisionKind.Item, it);
+            if (it is ItemFood || it is ItemMedicine || it is ItemAmmo)
+                preference += PersonalitySystem.Bias(m_Actor, DecisionKind.Supplies);
+            if (preference >= 10) return ItemRating.NEED;
+            if (preference <= -10 && !(it is ItemFood) && !(it is ItemMedicine))
+                return ItemRating.JUNK;
             return ItemRating.OKAY;
         }
 
@@ -410,7 +417,11 @@ namespace djack.RogueSurvivor.Gameplay.AI
             ItemRating offeredRating = RateItem(game, offered, false);
             ItemRating askedRating = RateItem(game, asked, true);
             // compare ratings with matrix (lazy way of doing lots of if/else)
-            return TRADE_RATING_MATRIX[(int)offeredRating, (int)askedRating];
+            TradeRating rating = TRADE_RATING_MATRIX[(int)offeredRating, (int)askedRating];
+            int willingness = PersonalitySystem.Bias(m_Actor, DecisionKind.Trade);
+            if (rating == TradeRating.MAYBE && willingness >= 20) return TradeRating.ACCEPT;
+            if (rating == TradeRating.MAYBE && willingness <= -20) return TradeRating.REFUSE;
+            return rating;
         }
 
         #region Rating exhange of items of same type

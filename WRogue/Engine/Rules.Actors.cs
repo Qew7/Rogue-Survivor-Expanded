@@ -616,8 +616,11 @@ namespace djack.RogueSurvivor.Engine
         public int ActorTrustIncrease(Actor actor)
         {
             int skillBonus = SKILL_CHARISMATIC_TRUST_BONUS * actor.Sheet.SkillTable.GetSkillLevel((int)Skills.IDs.CHARISMATIC);
-
-            return TRUST_BASE_INCREASE + skillBonus;
+            int personality = Gameplay.Personality.PersonalitySystem.Bias(actor,
+                Gameplay.Personality.DecisionKind.Group) / 5;
+            personality += Gameplay.Personality.PersonalitySystem.Bias(actor,
+                Gameplay.Personality.DecisionKind.Compassion) / 5;
+            return Math.Max(0, TRUST_BASE_INCREASE + skillBonus + personality);
         }
 
         public int ActorCharismaticTradeChance(Actor actor)

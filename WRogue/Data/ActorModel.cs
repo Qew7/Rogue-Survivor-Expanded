@@ -1,4 +1,6 @@
 ﻿using System;
+using djack.RogueSurvivor.Engine;
+using djack.RogueSurvivor.Gameplay.Personality;
 
 namespace djack.RogueSurvivor.Data
 {
@@ -110,7 +112,9 @@ namespace djack.RogueSurvivor.Data
         Actor Create(Faction faction, int spawnTime)
         {
             ++m_CreatedCount;
-            return new Actor(this, faction, spawnTime) { Controller = InstanciateController() };
+            Actor actor = new Actor(this, faction, spawnTime) { Controller = InstanciateController() };
+            PersonalitySystem.Initialize(actor, Session.Get.GameDiceRoller);
+            return actor;
         }
 
         ActorController InstanciateController()

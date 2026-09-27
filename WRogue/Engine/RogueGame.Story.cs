@@ -529,6 +529,7 @@ namespace djack.RogueSurvivor.Engine
             #region
             // 1. Make actor the player.
             avatar.Controller = new PlayerController();
+            avatar.Personality = null;
             if (avatar.Activity != Activity.SLEEPING)
                 avatar.Activity = Activity.IDLE;
             PrepareActorForPlayerControl(avatar);

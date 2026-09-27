@@ -896,6 +896,9 @@ namespace djack.RogueSurvivor.Engine
             // add to map.
             if (!isStartingGame)
                 deadVictim.Location.Map.PlaceActorAt(newZombie, deadVictim.Location.Position);
+            if (!isStartingGame)
+                ReportPersonalityEvent("zombified", newZombie, deadVictim,
+                    newZombie.Location.Map, newZombie.Location.Position);
 
             // reset AP - dont act this turn.
             newZombie.ActionPoints = 0;

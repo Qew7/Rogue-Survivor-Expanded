@@ -625,6 +625,7 @@ namespace djack.RogueSurvivor.Engine
 
         void NotifyOrderablesAI(Map map, RaidType raid, Point position)
         {
+            ReportPersonalityEvent("raid", null, null, map, position);
             foreach (Actor a in map.Actors)
             {
                 OrderableAI oAI = a.Controller as OrderableAI;

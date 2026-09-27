@@ -68,6 +68,13 @@ selected gameplay options, so loading a game restores its rules. User-defined
 presets are kept separately in the user config directory as `game-presets.dat`; deleting that file
 does not change existing game saves.
 
+New games with NPC personalities enabled save each intelligent living actor's
+trait instances, unresolved memories and a bounded journal of witnessed
+significant events in the actor graph. The definitions and their callbacks are
+registered from game code and are not serialized. The selected preset stores
+whether this system is enabled. Compatibility with saves from before NPC
+personalities was introduced is outside the current feature scope.
+
 Each claimed base section may reference the original section through its
 optional `m_Root` field. Sections on connected maps then remain one base after
 loading. Older saves have no such field; each existing claim remains its own
