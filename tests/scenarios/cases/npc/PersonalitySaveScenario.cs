@@ -18,10 +18,15 @@ static class PersonalitySaveScenario
                 world.Game.GameFactions.TheCivilians, 0);
             world.Place(actor, 1, 1);
             actor.Personality = new PersonalityState();
+            Guid actorId = actor.PersonalityIdentity;
+            Guid victimId = new Guid("00000000-0000-0000-0000-000000000451");
+            Guid killerId = new Guid("00000000-0000-0000-0000-000000000452");
             int magazineId = world.Game.GameItems.MAGAZINE.ID;
             actor.Personality.AddTrait(new TraitInstance("likes_items", magazineId));
-            actor.Personality.AddMemory(new MemoryInstance("witnessed_murder", 12, 4321, "victim", true));
-            actor.Personality.Remember(new ObservedEvent("murder", 13, "victim", "killer", false, true));
+            actor.Personality.AddMemory(new MemoryInstance("witnessed_murder", 12, 4321,
+                "victim", true, victimId));
+            actor.Personality.Remember(new ObservedEvent("murder", 13, "victim", "killer",
+                false, true, victimId, killerId));
             string path = Path.Combine(Path.GetTempPath(), "personality-" + Guid.NewGuid().ToString("N"));
             try
             {
@@ -30,6 +35,8 @@ static class PersonalitySaveScenario
                 Map restoredMap = loaded.World[0, 0].EntryMap;
                 restoredMap.ReconstructAuxiliaryFields();
                 Actor restored = restoredMap.GetActorAt(1, 1);
+                Check.Equal(actorId, restored.PersonalityIdentity,
+                    "actor identity survives save and load");
                 Check.Equal(1, restored.Personality.Traits.Count, "trait survives save and load");
                 Check.Equal("likes_items", restored.Personality.Traits[0].Id, "trait identity survives");
                 Check.Equal(magazineId, restored.Personality.Traits[0].ItemModelId,
@@ -45,6 +52,8 @@ static class PersonalitySaveScenario
                 Check.Equal("victim", restored.Personality.Memories[0].Subject, "memory subject survives");
                 Check.Equal(true, restored.Personality.Memories[0].RelatedToSubject,
                     "relationship captured in a pending memory survives");
+                Check.Equal(victimId, restored.Personality.Memories[0].SubjectId,
+                    "memory subject identity survives");
                 Check.Equal(1, restored.Personality.Events.Count, "witnessed event survives");
                 Check.Equal("murder", restored.Personality.Events[0].Kind, "event kind survives");
                 Check.Equal(13, restored.Personality.Events[0].Turn, "event time survives");
@@ -53,6 +62,10 @@ static class PersonalitySaveScenario
                 Check.Equal(false, restored.Personality.Events[0].Direct, "witness role survives");
                 Check.Equal(true, restored.Personality.Events[0].RelatedToSubject,
                     "relationship at the time of an event survives");
+                Check.Equal(victimId, restored.Personality.Events[0].SubjectId,
+                    "event subject identity survives");
+                Check.Equal(killerId, restored.Personality.Events[0].OtherId,
+                    "event other actor identity survives");
                 Check.Equal(true, loaded.GamePreset.NpcPersonalitiesEnabled,
                     "preset option survives save and load");
 

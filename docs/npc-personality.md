@@ -40,6 +40,8 @@ Death observations retain whether the subject was a leader or follower at the
 time; later zombification can still trigger a companion memory after the game
 removes the group relationship. A pending memory retains that relationship
 even if the bounded event journal evicts the original death observation.
+Events and memories keep actor identities separately from display names, so
+namesakes do not merge or inherit each other's relationships.
 
 The first catalog contains 50 starting and 20 advanced traits. Advanced traits
 are available only through memory resolution and require an existing trait.

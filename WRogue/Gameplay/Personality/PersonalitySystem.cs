@@ -58,11 +58,11 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         }
 
         static void AddMemory(Actor actor, MemoryDefinition definition, int turn, string subject,
-            DiceRoller dice, bool relatedToSubject = false)
+            DiceRoller dice, bool relatedToSubject = false, Guid subjectId = default(Guid))
         {
             int days = dice.Roll(definition.MinDays, definition.MaxDays + 1);
             actor.Personality.AddMemory(new MemoryInstance(definition.Id, turn,
-                turn + days * WorldTime.TURNS_PER_DAY, subject, relatedToSubject));
+                turn + days * WorldTime.TURNS_PER_DAY, subject, relatedToSubject, subjectId));
         }
 
         public static int Bias(Actor actor, DecisionKind decision, Item item = null)
@@ -95,6 +95,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 !Session.Get.GamePreset.NpcPersonalitiesEnabled) return;
             // Make a snapshot: resolving a death may remove actors from this map.
             List<Actor> actors = new List<Actor>(lifeEvent.Map.Actors);
+            Guid subjectId = lifeEvent.Subject == null ? Guid.Empty : lifeEvent.Subject.PersonalityIdentity;
+            Guid otherId = lifeEvent.Other == null ? Guid.Empty : lifeEvent.Other.PersonalityIdentity;
             foreach (Actor observer in actors)
             {
                 if (observer.Personality == null || observer.IsDead || observer.Model.Abilities.IsUndead ||
@@ -112,13 +114,13 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 bool relatedToSubject = lifeEvent.Subject != null &&
                     (observer.Leader == lifeEvent.Subject || lifeEvent.Subject.Leader == observer);
                 observer.Personality.Remember(new ObservedEvent(lifeEvent.Kind, lifeEvent.Turn,
-                    subject, other, direct, relatedToSubject));
+                    subject, other, direct, relatedToSubject, subjectId, otherId));
                 foreach (MemoryDefinition definition in s_Registry.ForEvent(lifeEvent.Kind))
                     foreach (MemoryTrigger trigger in definition.Triggers)
                         if (trigger.EventKind == lifeEvent.Kind && trigger.Applies(observer, lifeEvent))
                         {
                             AddMemory(observer, definition, lifeEvent.Turn, subject,
-                                game.Session.GameDiceRoller, relatedToSubject);
+                                game.Session.GameDiceRoller, relatedToSubject, subjectId);
                             break;
                         }
             }

@@ -42,12 +42,12 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             return false;
         }
 
-        static bool SawRelatedDeath(Actor actor, string subject)
+        static bool SawRelatedDeath(Actor actor, Guid subjectId)
         {
             foreach (MemoryInstance memory in actor.Personality.Memories)
-                if (memory.Subject == subject && memory.RelatedToSubject) return true;
+                if (memory.SubjectId == subjectId && memory.RelatedToSubject) return true;
             foreach (ObservedEvent e in actor.Personality.Events)
-                if (e.Kind == "death" && e.Subject == subject && e.RelatedToSubject) return true;
+                if (e.Kind == "death" && e.SubjectId == subjectId && e.RelatedToSubject) return true;
             return false;
         }
 
@@ -188,7 +188,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 Gain("obsessive_collector", (a,m) => Has(a,"hoarder")),
                 Gain("paranoid", (a,m) => Has(a,"suspicious")), Skills.IDs.HAULER, Skills.IDs.CARPENTRY);
             M(r, "zombified_friend", "Saw a friend turn", "zombified", (a,e) => e.Other != null &&
-                (e.Other.Leader == a || a.Leader == e.Other || SawRelatedDeath(a, e.Other.UnmodifiedName)),
+                (e.Other.Leader == a || a.Leader == e.Other || SawRelatedDeath(a, e.Other.PersonalityIdentity)),
                 Gain("panic_attacks", (a,m) => Has(a,"fearful")),
                 Gain("hardened", (a,m) => Has(a,"brave")), Skills.IDs.NECROLOGY, Skills.IDs.STRONG_PSYCHE);
             return r;

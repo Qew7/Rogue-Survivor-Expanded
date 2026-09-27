@@ -77,7 +77,8 @@ namespace djack.RogueSurvivor.Engine
             ReportPersonalityEvent("death", deadGuy, killer, deadGuy.Location.Map, deadGuy.Location.Position);
             if (wasMurder)
                 ReportPersonalityEvent("murder", deadGuy, killer, deadGuy.Location.Map, deadGuy.Location.Position);
-            if (killer != null && !deadGuy.Model.Abilities.IsUndead && !killer.Model.Abilities.IsUndead)
+            if (killer != null && deadGuy.Model.Abilities.IsIntelligent &&
+                !deadGuy.Model.Abilities.IsUndead && !killer.Model.Abilities.IsUndead)
                 ReportPersonalityEvent("kill_human", deadGuy, killer, deadGuy.Location.Map, deadGuy.Location.Position);
 
             // Set dead flag.

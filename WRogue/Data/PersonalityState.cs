@@ -26,9 +26,12 @@ namespace djack.RogueSurvivor.Data
         public readonly string Other;
         public readonly bool Direct;
         public readonly bool RelatedToSubject;
+        public readonly Guid SubjectId;
+        public readonly Guid OtherId;
 
         public ObservedEvent(string kind, int turn, string subject, string other, bool direct,
-            bool relatedToSubject = false)
+            bool relatedToSubject = false, Guid subjectId = default(Guid),
+            Guid otherId = default(Guid))
         {
             Kind = kind;
             Turn = turn;
@@ -36,6 +39,8 @@ namespace djack.RogueSurvivor.Data
             Other = other;
             Direct = direct;
             RelatedToSubject = relatedToSubject;
+            SubjectId = subjectId;
+            OtherId = otherId;
         }
     }
 
@@ -47,15 +52,17 @@ namespace djack.RogueSurvivor.Data
         public readonly int ResolveTurn;
         public readonly string Subject;
         public readonly bool RelatedToSubject;
+        public readonly Guid SubjectId;
 
         public MemoryInstance(string id, int startTurn, int resolveTurn, string subject,
-            bool relatedToSubject = false)
+            bool relatedToSubject = false, Guid subjectId = default(Guid))
         {
             Id = id;
             StartTurn = startTurn;
             ResolveTurn = resolveTurn;
             Subject = subject;
             RelatedToSubject = relatedToSubject;
+            SubjectId = subjectId;
         }
     }
 
@@ -89,7 +96,10 @@ namespace djack.RogueSurvivor.Data
         {
             if (memory == null) return false;
             foreach (MemoryInstance existing in m_Memories)
-                if (existing.Id == memory.Id && existing.Subject == memory.Subject)
+                if (existing.Id == memory.Id &&
+                    (existing.SubjectId != Guid.Empty || memory.SubjectId != Guid.Empty
+                        ? existing.SubjectId == memory.SubjectId
+                        : existing.Subject == memory.Subject))
                     return false;
             m_Memories.Add(memory);
             return true;
@@ -102,7 +112,12 @@ namespace djack.RogueSurvivor.Data
             if (lifeEvent == null) return;
             foreach (ObservedEvent old in m_Events)
                 if (old.Kind == lifeEvent.Kind && old.Turn == lifeEvent.Turn &&
-                    old.Subject == lifeEvent.Subject && old.Other == lifeEvent.Other) return;
+                    (old.SubjectId != Guid.Empty || lifeEvent.SubjectId != Guid.Empty
+                        ? old.SubjectId == lifeEvent.SubjectId
+                        : old.Subject == lifeEvent.Subject) &&
+                    (old.OtherId != Guid.Empty || lifeEvent.OtherId != Guid.Empty
+                        ? old.OtherId == lifeEvent.OtherId
+                        : old.Other == lifeEvent.Other)) return;
             m_Events.Add(lifeEvent);
             // Keep the journal bounded even when a district sees many deaths or raids.
             if (m_Events.Count > 32) m_Events.RemoveAt(0);

@@ -78,6 +78,9 @@ Journal entries also retain whether the observer was related to the event's
 subject at the time, so a later zombification can affect former companions.
 Pending memories retain the same relationship flag, allowing their outcomes
 to use it even when the bounded event journal evicts the original event.
+Actors lazily receive a persistent personality identity when involved in an
+event. Memories and journal entries keep those identities alongside names so
+different actors with the same name remain distinct across saves.
 
 Each claimed base section may reference the original section through its
 optional `m_Root` field. Sections on connected maps then remain one base after
