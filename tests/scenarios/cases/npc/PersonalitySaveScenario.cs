@@ -12,7 +12,8 @@ static class PersonalitySaveScenario
         ScenarioRunner.Add("npc/personality-save", () => TownScenarioFactory.Arena(4513,
             "...", "...", "..."), world =>
         {
-            Session.Get.GamePreset = GamePreset.BuiltIn(GameMode.GM_STANDARD);
+            Session original = Session.Get;
+            original.GamePreset = GamePreset.BuiltIn(GameMode.GM_STANDARD);
             Actor actor = world.Game.GameActors.MaleCivilian.CreateNumberedName(
                 world.Game.GameFactions.TheCivilians, 0);
             world.Place(actor, 1, 1);
@@ -52,9 +53,19 @@ static class PersonalitySaveScenario
                     "relationship at the time of an event survives");
                 Check.Equal(true, loaded.GamePreset.NpcPersonalitiesEnabled,
                     "preset option survives save and load");
+
+                Session.Restore(loaded);
+                restoredMap.LocalTime.TurnCounter = 4321;
+                PersonalitySystem.ResolveDue(world.Game, restoredMap);
+                Check.Equal(0, restored.Personality.Memories.Count,
+                    "pending memory resolves after the saved game is restored");
+                Check.Equal(1, restored.Sheet.SkillTable.GetSkillLevel(
+                    (int)djack.RogueSurvivor.Gameplay.Skills.IDs.STRONG_PSYCHE),
+                    "restored memory still grants its fallback skill");
             }
             finally
             {
+                Session.Restore(original);
                 if (File.Exists(path)) File.Delete(path);
                 if (File.Exists(path + ".bak")) File.Delete(path + ".bak");
             }

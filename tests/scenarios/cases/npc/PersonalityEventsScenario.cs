@@ -20,9 +20,12 @@ static class PersonalityEventsScenario
             world.Map.PlaceActorAt(hidden, new Point(5, 1));
             Actor neutral = SkillScenario.Actor(world);
             world.Map.PlaceActorAt(neutral, new Point(0, 1));
+            Actor evolving = SkillScenario.Actor(world);
+            world.Map.PlaceActorAt(evolving, new Point(1, 0));
             witness.Personality = new PersonalityState();
             hidden.Personality = new PersonalityState();
             neutral.Personality = new PersonalityState();
+            evolving.Personality = new PersonalityState();
             witness.Personality.AddTrait(new TraitInstance("lawful"));
             hidden.Personality.AddTrait(new TraitInstance("lawful"));
 
@@ -33,11 +36,16 @@ static class PersonalityEventsScenario
             Check.Equal(0, hidden.Personality.Memories.Count, "wall blocks witnessing");
             Check.Equal(1, neutral.Personality.Memories.Count,
                 "another visible witness also remembers the murder");
+            Check.Equal(1, evolving.Personality.Memories.Count,
+                "witness without a starting prerequisite still forms the memory");
             PersonalitySystem.Report(world.Game, murder);
             Check.Equal(1, witness.Personality.Memories.Count, "same event is not duplicated");
 
+            evolving.Personality.AddTrait(new TraitInstance("lawful"));
+
             int due = System.Math.Max(witness.Personality.Memories[0].ResolveTurn,
                 neutral.Personality.Memories[0].ResolveTurn);
+            due = System.Math.Max(due, evolving.Personality.Memories[0].ResolveTurn);
             world.Map.LocalTime.TurnCounter = due;
             PersonalitySystem.ResolveDue(world.Game, world.Map);
             Check.Equal(true, witness.Personality.HasTrait("zealot"),
@@ -45,6 +53,8 @@ static class PersonalityEventsScenario
             Check.Equal(0, witness.Personality.Memories.Count, "resolved memory removed");
             Check.Equal(1, neutral.Sheet.SkillTable.GetSkillLevel((int)Skills.IDs.STRONG_PSYCHE),
                 "witness without a matching trait gains the fallback skill");
+            Check.Equal(true, evolving.Personality.HasTrait("zealot"),
+                "trait gained while memory is pending changes its outcome");
         });
     }
 }

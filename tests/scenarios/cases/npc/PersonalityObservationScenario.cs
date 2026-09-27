@@ -54,6 +54,9 @@ static class PersonalityObservationScenario
                 "disabled system pauses pending resolution");
 
             Session.Get.GamePreset = GamePreset.BuiltIn(GameMode.GM_STANDARD);
+            PersonalitySystem.ResolveDue(world.Game, world.Map);
+            Check.Equal(0, awake.Personality.Memories.Count,
+                "pending memory resumes resolution when option is enabled again");
             for (int turn = 1; turn <= 40; turn++)
                 PersonalitySystem.Report(world.Game, new SignificantEvent("raid", null, null,
                     world.Map, subject.Location.Position, turn));

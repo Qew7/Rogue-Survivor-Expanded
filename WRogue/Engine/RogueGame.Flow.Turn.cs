@@ -318,7 +318,7 @@ namespace djack.RogueSurvivor.Engine
                     if (actor.HasLeader)
                     {
                         // trust.
-                        ModifyActorTrustInLeader(actor, m_Rules.ActorTrustIncrease(actor.Leader), false);
+                        ModifyActorTrustInLeader(actor, m_Rules.ActorTrustIncrease(actor.Leader, actor), false);
                         // bond with leader.
                         if (m_Rules.HasActorBondWith(actor, actor.Leader) && m_Rules.RollChance(Rules.SANITY_RECOVER_BOND_CHANCE))
                         {

@@ -16,6 +16,8 @@ AI decision axes: item value, courage, group trust, law enforcement, trade,
 exploration, compassion, and supply value. Conflicting starting traits can be
 registered as a pair. A new trait that needs a new action should add its action
 at the relevant AI or rule boundary and query `PersonalitySystem.HasTrait` there.
+Group trust uses both the leader's traits and the follower's desire for company;
+a solitary follower can lose trust over time while a sociable one gains it faster.
 
 A `MemoryDefinition` owns its `MemoryTrigger`s and ordered `MemoryOutcome`s.
 Triggers filter `SignificantEvent`s by kind and observer relationship. Outcomes
