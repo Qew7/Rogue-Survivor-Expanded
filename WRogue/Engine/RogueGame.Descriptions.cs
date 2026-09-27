@@ -85,7 +85,8 @@ namespace djack.RogueSurvivor.Engine
                     TraitDefinition definition = PersonalitySystem.Registry.Trait(trait.Id);
                     if (definition == null) continue;
                     string name = definition.Name;
-                    if (trait.ItemModelId >= 0 && Models.Items != null && Models.Items[trait.ItemModelId] != null)
+                    if (trait.ItemModelId >= 0 && trait.ItemModelId < (int)GameItems.IDs._COUNT &&
+                        Models.Items != null && Models.Items[trait.ItemModelId] != null)
                         name += " " + Models.Items[trait.ItemModelId].PluralName;
                     traitNames.Add(name);
                 }

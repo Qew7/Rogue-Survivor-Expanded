@@ -570,8 +570,9 @@ namespace djack.RogueSurvivor.Gameplay.AI
                 #endregion
 
                 #region Trade
-                if (Directives.CanTrade && game.Rules.RollChance(Math.Max(0, Math.Min(100,
-                    70 + PersonalitySystem.Bias(m_Actor, DecisionKind.Trade)))))
+                int tradeBias = PersonalitySystem.Bias(m_Actor, DecisionKind.Trade);
+                if (Directives.CanTrade && (tradeBias == 0 ||
+                    game.Rules.RollChance(Math.Max(0, Math.Min(100, 70 + tradeBias)))))
                 {
                     // get actors we want to trade with.
                     List<Percept> tradingActors = FilterOut(game, FilterNonEnemies(game, mapPercepts),
