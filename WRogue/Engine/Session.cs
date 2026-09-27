@@ -397,6 +397,8 @@ namespace djack.RogueSurvivor.Engine
         WorldTime m_WorldTime;
         World m_World;
         Map m_CurrentMap;
+        [OptionalField]
+        ResidentRecords m_ResidentRecords;
         #endregion
 
         #region Scoring
@@ -473,6 +475,10 @@ namespace djack.RogueSurvivor.Engine
             }
         }
         public WorldTime WorldTime { get { return m_WorldTime; } }
+        public ResidentRecords ResidentRecords
+        {
+            get { return m_ResidentRecords ?? (m_ResidentRecords = Data.ResidentRecords.Recover(this)); }
+        }
         public int LastTurnPlayerActed { get; set; }
 
         public World World
@@ -554,6 +560,7 @@ namespace djack.RogueSurvivor.Engine
             m_CurrentMap = null;
             m_Scoring = new Scoring();
             m_World = null;
+            m_ResidentRecords = new ResidentRecords();
             m_WorldTime = new WorldTime();
             this.LastTurnPlayerActed = 0;
 

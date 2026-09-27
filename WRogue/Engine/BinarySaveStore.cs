@@ -81,6 +81,16 @@ namespace djack.RogueSurvivor.Engine
             });
         }
 
+        // Archive browsing must read the selected file, never silently replace it with a backup.
+        public static T LoadExact<T>(string path)
+        {
+            ModStamp[] ignored;
+            return (T)Read(path, delegate(object value)
+            {
+                if (!(value is T)) throw new InvalidDataException("Save contains an unexpected object type.");
+            }, out ignored);
+        }
+
         public static ModStamp[] ReadMods(string path)
         {
             try { return ReadModsFile(path); }

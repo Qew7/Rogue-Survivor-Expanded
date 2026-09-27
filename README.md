@@ -91,6 +91,7 @@ considering a leader. Inspecting an NPC shows traits, but not private memories.
 The catalog and extension points are described in
 [docs/npc-personality.md](docs/npc-personality.md).
 Press Shift+I in game to see your relationships with people, groups, and factions.
+Use Read Records below Load Game to browse saved NPC histories together or individually.
 
 The **Expanded** preset enables claimable bases. Stand inside an enclosed
 building and press **Ctrl+B** to preview its boundaries; press **Y** to claim

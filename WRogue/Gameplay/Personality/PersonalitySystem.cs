@@ -82,6 +82,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             if (relatedGroupLeader != null)
                 actor.Personality.RememberGroup(relatedGroupLeader.PersonalityIdentity,
                     relatedGroupLeader.UnmodifiedName, memory, impact / 3);
+            if (actor.Location.Map != null)
+                Session.Get.ResidentRecords.MemoryStarted(actor, memory);
         }
 
         static Actor RelationActor(MemoryRelationRole role, Actor observer, SignificantEvent lifeEvent)
@@ -160,6 +162,12 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             List<Actor> actors = new List<Actor>(lifeEvent.Map.Actors);
             Guid subjectId = lifeEvent.Subject == null ? Guid.Empty : lifeEvent.Subject.PersonalityIdentity;
             Guid otherId = lifeEvent.Other == null ? Guid.Empty : lifeEvent.Other.PersonalityIdentity;
+            ObservedEvent directEvent = new ObservedEvent(lifeEvent.Kind, lifeEvent.Turn,
+                lifeEvent.Subject == null ? null : lifeEvent.Subject.UnmodifiedName,
+                lifeEvent.Other == null ? null : lifeEvent.Other.UnmodifiedName,
+                true, false, subjectId, otherId);
+            if (lifeEvent.SubjectIsDirect) Session.Get.ResidentRecords.Observe(lifeEvent.Subject, directEvent);
+            if (lifeEvent.OtherIsDirect) Session.Get.ResidentRecords.Observe(lifeEvent.Other, directEvent);
             foreach (Actor observer in actors)
             {
                 if ((!observer.IsPlayer && observer.Personality == null) || observer.IsDead || observer.Model.Abilities.IsUndead ||
@@ -178,8 +186,10 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 string other = lifeEvent.Other == null ? null : lifeEvent.Other.UnmodifiedName;
                 bool relatedToSubject = lifeEvent.Subject != null &&
                     (observer.Leader == lifeEvent.Subject || lifeEvent.Subject.Leader == observer);
-                observer.Personality.Remember(new ObservedEvent(lifeEvent.Kind, lifeEvent.Turn,
-                    subject, other, direct, relatedToSubject, subjectId, otherId));
+                ObservedEvent observation = new ObservedEvent(lifeEvent.Kind, lifeEvent.Turn,
+                    subject, other, direct, relatedToSubject, subjectId, otherId);
+                observer.Personality.Remember(observation);
+                Session.Get.ResidentRecords.Observe(observer, observation);
                 foreach (MemoryInstance memory in observer.Personality.Memories)
                 {
                     MemoryDefinition pendingDefinition = s_Registry.Memory(memory.Id);
@@ -240,6 +250,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                         }
                     if (memory.OutcomeId == null) memory.OutcomeId = "none";
                     memory.ResolvedTurn = map.LocalTime.TurnCounter;
+                    Session.Get.ResidentRecords.MemoryResolved(actor, memory);
                     actor.Personality.RemoveMemory(memory);
                 }
             }

@@ -271,6 +271,9 @@
     <Compile Include="Engine\RogueGame.Flow.Turn.Phases.cs" />
     <Compile Include="Engine\RogueGame.PlayerActions.cs" />
     <Compile Include="Engine\RogueGame.PlayerActions.Relationships.cs" />
+    <Compile Include="Engine\RogueGame.Flow.Records.cs" />
+    <Compile Include="Engine\RecordsReader.cs" />
+    <Compile Include="Data\ResidentRecords.cs" />
     <Compile Include="Engine\RogueGame.MouseMove.cs" />
     <Compile Include="Engine\MouseMovePath.cs" />
     <Compile Include="Engine\RogueGame.PlayerActions.Items.cs" />

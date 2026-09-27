@@ -89,6 +89,32 @@ are available only through memory resolution and require an existing trait.
 `likes_items` and `dislikes_items` each take an item model ID; pistol, shotgun,
 magazine, or any other defined item model uses the same trait definition.
 
+## Reading saved records
+
+`Read Records`, directly below `Load Game` in the main menu, opens a saved-world
+chronicle. Choose a `.dat` or `.sav` file in the user `Saves` directory, including
+explicit `.bak` backups, with NPC personalities enabled. The game still has one
+active save slot; copies kept in that directory can be browsed independently.
+Then choose `All residents` or an individual NPC. Namesakes have distinct identity
+tags, and dead NPCs remain available even after their bodies disappear.
+
+The chronicle records intelligent living NPCs from their arrival: starting traits
+and memories, significant events they experience or witness, memory resolution
+and its trait/skill outcome, and death. It is a chronological history of the
+personality system's significant events, not a log of every movement or action.
+Unlike the short AI observation journal, this archive does not evict early events.
+It therefore adds to save size as a world grows older.
+
+This main-menu reader reveals saved NPC records outside gameplay. Reading does
+not resume the simulation or change the active session, mods, or options; NPC
+memories remain hidden from gameplay inspection. Older saves have no full archive:
+the reader recovers surviving observations and relationship memories and marks
+their history as partial. Events already discarded and actors no longer present
+in those older saves cannot be reconstructed.
+
+Use Up/Down and PgUp/PgDn to select or scroll, Enter to open, and Escape to return.
+Home/End jump to the beginning/end of a timeline.
+
 ## Verification
 
 Add a named scenario in its own file under `tests/scenarios/cases/npc/` for each

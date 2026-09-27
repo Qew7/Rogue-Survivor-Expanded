@@ -95,6 +95,15 @@ events they directly experience or witness. It has no generated starting traits
 or memories. Player memories resolve without NPC trait or skill rewards, while
 their attributed relationship history remains in the saved actor graph.
 
+Sessions also store an optional `m_ResidentRecords` chronicle. It holds NPC
+identity/name snapshots, arrival and death turns, and ordered text records of
+significant observations, memory creation, and resolution outcomes. It keeps no
+Actor references, so histories survive actor and corpse removal. Entries are not
+evicted; this increases save size over long games. Older saves recover a partial
+chronicle from surviving actors, corpses, and personality records, without
+inventing discarded events. `Read Records` reads the selected file exactly and
+does not replace the active Session or silently fall back to a backup.
+
 Each claimed base section may reference the original section through its
 optional `m_Root` field. Sections on connected maps then remain one base after
 loading. Older saves have no such field; each existing claim remains its own
