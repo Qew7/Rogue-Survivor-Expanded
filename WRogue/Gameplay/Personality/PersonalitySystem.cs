@@ -115,6 +115,13 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                     (observer.Leader == lifeEvent.Subject || lifeEvent.Subject.Leader == observer);
                 observer.Personality.Remember(new ObservedEvent(lifeEvent.Kind, lifeEvent.Turn,
                     subject, other, direct, relatedToSubject, subjectId, otherId));
+                foreach (MemoryInstance memory in observer.Personality.Memories)
+                {
+                    MemoryDefinition pendingDefinition = s_Registry.Memory(memory.Id);
+                    if (pendingDefinition != null && lifeEvent.Turn >= memory.StartTurn &&
+                        pendingDefinition.TracksEvidence(lifeEvent.Kind))
+                        memory.RememberEvidence(lifeEvent.Kind, lifeEvent.Turn);
+                }
                 foreach (MemoryDefinition definition in s_Registry.ForEvent(lifeEvent.Kind))
                     foreach (MemoryTrigger trigger in definition.Triggers)
                         if (trigger.EventKind == lifeEvent.Kind && trigger.Applies(observer, lifeEvent))

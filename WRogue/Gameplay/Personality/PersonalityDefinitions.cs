@@ -115,17 +115,32 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public readonly int MinDays;
         public readonly int MaxDays;
         public readonly MemoryTrigger[] Triggers;
+        public readonly string[] EvidenceKinds;
         public readonly MemoryOutcome[] Outcomes;
 
         public MemoryDefinition(string id, string name, int minDays, int maxDays,
             MemoryTrigger[] triggers, params MemoryOutcome[] outcomes)
+            : this(id, name, minDays, maxDays, triggers, new string[0], outcomes)
+        {
+        }
+
+        public MemoryDefinition(string id, string name, int minDays, int maxDays,
+            MemoryTrigger[] triggers, string[] evidenceKinds, params MemoryOutcome[] outcomes)
         {
             Id = id;
             Name = name;
             MinDays = minDays;
             MaxDays = maxDays;
             Triggers = triggers;
+            EvidenceKinds = evidenceKinds;
             Outcomes = outcomes;
+        }
+
+        public bool TracksEvidence(string kind)
+        {
+            foreach (string tracked in EvidenceKinds)
+                if (tracked == kind) return true;
+            return false;
         }
     }
 
@@ -155,8 +170,12 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public void Register(MemoryDefinition definition, bool starting)
         {
             if (definition == null || String.IsNullOrEmpty(definition.Id) || m_Memories.ContainsKey(definition.Id) ||
-                definition.MinDays < 1 || definition.MaxDays < definition.MinDays)
+                definition.MinDays < 1 || definition.MaxDays < definition.MinDays ||
+                definition.EvidenceKinds == null)
                 throw new ArgumentException("Invalid memory definition.");
+            foreach (string kind in definition.EvidenceKinds)
+                if (String.IsNullOrEmpty(kind))
+                    throw new ArgumentException("Invalid evidence kind.");
             m_Memories.Add(definition.Id, definition);
             if (starting) m_StartingMemories.Add(definition);
             foreach (MemoryTrigger trigger in definition.Triggers)

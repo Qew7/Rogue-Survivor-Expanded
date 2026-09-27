@@ -21,7 +21,10 @@ a solitary follower can lose trust over time while a sociable one gains it faste
 
 A `MemoryDefinition` owns its `MemoryTrigger`s and ordered `MemoryOutcome`s.
 Triggers filter `SignificantEvent`s by kind and observer relationship. Outcomes
-may inspect current traits and the actor's witnessed-event journal. A successful
+may inspect current traits and the actor's witnessed-event journal. Definitions
+can declare evidence event kinds; a pending memory retains the latest observed
+turn for each declared kind even after older journal entries are evicted. Use
+this for events that must affect an outcome days later. A successful
 outcome awards one eligible trait or one level of an existing living skill. The
 last outcomes should usually provide related skill fallbacks so a capped skill
 does not silently consume a memory. Resolution occurs on the

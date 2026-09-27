@@ -53,6 +53,7 @@ namespace djack.RogueSurvivor.Data
         public readonly string Subject;
         public readonly bool RelatedToSubject;
         public readonly Guid SubjectId;
+        readonly Dictionary<string, int> m_EvidenceTurns = new Dictionary<string, int>();
 
         public MemoryInstance(string id, int startTurn, int resolveTurn, string subject,
             bool relatedToSubject = false, Guid subjectId = default(Guid))
@@ -63,6 +64,19 @@ namespace djack.RogueSurvivor.Data
             Subject = subject;
             RelatedToSubject = relatedToSubject;
             SubjectId = subjectId;
+        }
+
+        public void RememberEvidence(string kind, int turn)
+        {
+            int previous;
+            if (!m_EvidenceTurns.TryGetValue(kind, out previous) || turn > previous)
+                m_EvidenceTurns[kind] = turn;
+        }
+
+        public bool HasEvidenceSince(string kind, int turn)
+        {
+            int observedTurn;
+            return m_EvidenceTurns.TryGetValue(kind, out observedTurn) && observedTurn >= turn;
         }
     }
 

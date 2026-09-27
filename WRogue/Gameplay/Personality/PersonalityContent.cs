@@ -35,8 +35,9 @@ namespace djack.RogueSurvivor.Gameplay.Personality
 
         static bool Has(Actor actor, string id) { return actor.Personality.HasTrait(id); }
 
-        static bool SawSince(Actor actor, string kind, int turn)
+        static bool SawSince(Actor actor, MemoryInstance memory, string kind, int turn)
         {
+            if (memory.HasEvidenceSince(kind, turn)) return true;
             foreach (ObservedEvent e in actor.Personality.Events)
                 if (e.Kind == kind && e.Turn >= turn) return true;
             return false;
@@ -53,10 +54,12 @@ namespace djack.RogueSurvivor.Gameplay.Personality
 
         static void M(PersonalityRegistry r, string id, string name, string eventKind,
             Func<Actor, SignificantEvent, bool> trigger, MemoryOutcome first,
-            MemoryOutcome second, Skills.IDs fallback, Skills.IDs alternative)
+            MemoryOutcome second, Skills.IDs fallback, Skills.IDs alternative,
+            string evidenceKind = null)
         {
             r.Register(new MemoryDefinition(id, name, 2, 6,
-                new[] { new MemoryTrigger(eventKind, trigger) }, first, second,
+                new[] { new MemoryTrigger(eventKind, trigger) },
+                evidenceKind == null ? new string[0] : new[] { evidenceKind }, first, second,
                 Learn(fallback), Learn(alternative)), true);
         }
 
@@ -149,8 +152,9 @@ namespace djack.RogueSurvivor.Gameplay.Personality
 
             // Memory outcomes are ordered: specific paths first, general skill last.
             M(r, "leader_loss", "Loss of a leader", "death", (a,e) => e.Subject == a.Leader,
-                Gain("vengeful", (a,m) => Has(a,"vindictive") && SawSince(a,"murder",m.StartTurn)),
-                Gain("traumatized", (a,m) => Has(a,"timid")), Skills.IDs.LEADERSHIP, Skills.IDs.STRONG_PSYCHE);
+                Gain("vengeful", (a,m) => Has(a,"vindictive") && SawSince(a,m,"murder",m.StartTurn)),
+                Gain("traumatized", (a,m) => Has(a,"timid")), Skills.IDs.LEADERSHIP, Skills.IDs.STRONG_PSYCHE,
+                "murder");
             M(r, "follower_loss", "Loss of a follower", "death", (a,e) => e.Subject != null && e.Subject.Leader == a,
                 Gain("protector", (a,m) => Has(a,"protective")),
                 Gain("resolute", (a,m) => Has(a,"disciplined")), Skills.IDs.LEADERSHIP, Skills.IDs.STRONG_PSYCHE);
@@ -158,8 +162,9 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 Gain("zealot", (a,m) => Has(a,"lawful")),
                 Gain("panic_attacks", (a,m) => Has(a,"fearful")), Skills.IDs.STRONG_PSYCHE, Skills.IDs.UNSUSPICIOUS);
             M(r, "killed_person", "Killed a person", "kill_human", (a,e) => a == e.Other,
-                Gain("maniac", (a,m) => Has(a,"cruel") && SawSince(a,"kill_human",m.StartTurn + 1)),
-                Gain("pacifist", (a,m) => Has(a,"peacemaker")), Skills.IDs.MARTIAL_ARTS, Skills.IDs.STRONG_PSYCHE);
+                Gain("maniac", (a,m) => Has(a,"cruel") && SawSince(a,m,"kill_human",m.StartTurn + 1)),
+                Gain("pacifist", (a,m) => Has(a,"peacemaker")), Skills.IDs.MARTIAL_ARTS, Skills.IDs.STRONG_PSYCHE,
+                "kill_human");
             M(r, "survived_attack", "Survived an attack", "attack", (a,e) => a == e.Subject,
                 Gain("berserker", (a,m) => Has(a,"hotheaded")),
                 Gain("hardened", (a,m) => Has(a,"brave")), Skills.IDs.TOUGH, Skills.IDs.STRONG_PSYCHE);

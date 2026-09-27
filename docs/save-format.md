@@ -78,6 +78,8 @@ Journal entries also retain whether the observer was related to the event's
 subject at the time, so a later zombification can affect former companions.
 Pending memories retain the same relationship flag, allowing their outcomes
 to use it even when the bounded event journal evicts the original event.
+They also retain the latest turn for each evidence kind declared by the memory
+definition, so later events can still affect resolution after journal eviction.
 Actors lazily receive a persistent personality identity when involved in an
 event. Memories and journal entries keep those identities alongside names so
 different actors with the same name remain distinct across saves.

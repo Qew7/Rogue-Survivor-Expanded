@@ -25,6 +25,7 @@ static class PersonalitySaveScenario
             actor.Personality.AddTrait(new TraitInstance("likes_items", magazineId));
             actor.Personality.AddMemory(new MemoryInstance("witnessed_murder", 12, 4321,
                 "victim", true, victimId));
+            actor.Personality.Memories[0].RememberEvidence("murder", 13);
             actor.Personality.Remember(new ObservedEvent("murder", 13, "victim", "killer",
                 false, true, victimId, killerId));
             string path = Path.Combine(Path.GetTempPath(), "personality-" + Guid.NewGuid().ToString("N"));
@@ -54,6 +55,8 @@ static class PersonalitySaveScenario
                     "relationship captured in a pending memory survives");
                 Check.Equal(victimId, restored.Personality.Memories[0].SubjectId,
                     "memory subject identity survives");
+                Check.Equal(true, restored.Personality.Memories[0].HasEvidenceSince("murder", 13),
+                    "pending outcome evidence survives save and load");
                 Check.Equal(1, restored.Personality.Events.Count, "witnessed event survives");
                 Check.Equal("murder", restored.Personality.Events[0].Kind, "event kind survives");
                 Check.Equal(13, restored.Personality.Events[0].Turn, "event time survives");
