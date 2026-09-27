@@ -74,6 +74,8 @@ significant events in the actor graph. The definitions and their callbacks are
 registered from game code and are not serialized. The selected preset stores
 whether this system is enabled. Compatibility with saves from before NPC
 personalities was introduced is outside the current feature scope.
+Journal entries also retain whether the observer was related to the event's
+subject at the time, so a later zombification can affect former companions.
 
 Each claimed base section may reference the original section through its
 optional `m_Root` field. Sections on connected maps then remain one base after

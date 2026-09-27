@@ -42,6 +42,13 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             return false;
         }
 
+        static bool SawRelatedDeath(Actor actor, string subject)
+        {
+            foreach (ObservedEvent e in actor.Personality.Events)
+                if (e.Kind == "death" && e.Subject == subject && e.RelatedToSubject) return true;
+            return false;
+        }
+
         static void M(PersonalityRegistry r, string id, string name, string eventKind,
             Func<Actor, SignificantEvent, bool> trigger, MemoryOutcome first,
             MemoryOutcome second, Skills.IDs fallback)
@@ -177,7 +184,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             M(r, "stockpile", "Lost supplies", "supplies_lost", (a,e) => a == e.Subject,
                 Gain("obsessive_collector", (a,m) => Has(a,"hoarder")),
                 Gain("paranoid", (a,m) => Has(a,"suspicious")), Skills.IDs.HAULER);
-            M(r, "zombified_friend", "Saw a friend turn", "zombified", (a,e) => e.Other != null && (e.Other.Leader == a || a.Leader == e.Other),
+            M(r, "zombified_friend", "Saw a friend turn", "zombified", (a,e) => e.Other != null &&
+                (e.Other.Leader == a || a.Leader == e.Other || SawRelatedDeath(a, e.Other.UnmodifiedName)),
                 Gain("panic_attacks", (a,m) => Has(a,"fearful")),
                 Gain("hardened", (a,m) => Has(a,"brave")), Skills.IDs.NECROLOGY);
             return r;

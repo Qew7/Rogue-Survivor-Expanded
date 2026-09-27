@@ -22,6 +22,22 @@ static class GamePresetScenario
             Check.Equal(true, expanded.Bases, "expanded enables bases");
             Check.Equal(true, standard.NpcPersonalitiesEnabled,
                 "standard enables NPC personalities by default");
+            string[] presetLabels = (string[])typeof(RogueGame).GetField("GamePresetLabels",
+                BindingFlags.Static | BindingFlags.NonPublic).GetValue(null);
+            int personalityRow = Array.IndexOf(presetLabels, "NPC traits and memories");
+            Check.Equal(true, personalityRow >= 0, "personality option appears in new-game menu");
+            string[] presetValues = (string[])Check.Call(typeof(RogueGame), "GamePresetValues",
+                new[] { typeof(GamePreset) }, standard);
+            Check.Equal("ON", presetValues[personalityRow], "menu shows enabled default");
+            Check.Call(typeof(RogueGame), "ChangeGamePreset",
+                new[] { typeof(GamePreset), typeof(int), typeof(int) }, standard, personalityRow - 1, 1);
+            Check.Equal(false, standard.NpcPersonalitiesEnabled, "menu action disables personalities");
+            presetValues = (string[])Check.Call(typeof(RogueGame), "GamePresetValues",
+                new[] { typeof(GamePreset) }, standard);
+            Check.Equal("OFF", presetValues[personalityRow], "menu shows disabled value");
+            Check.Call(typeof(RogueGame), "ChangeGamePreset",
+                new[] { typeof(GamePreset), typeof(int), typeof(int) }, standard, personalityRow - 1, 1);
+            Check.Equal(true, standard.NpcPersonalitiesEnabled, "menu action restores personalities");
             BaseTownGenerator generator = new BaseTownGenerator(world.Game, BaseTownGenerator.DEFAULT_PARAMS);
             Session.Get.GameMode = GameMode.GM_VINTAGE;
             Actor vintageSpawn = generator.CreateNewUndead(0);

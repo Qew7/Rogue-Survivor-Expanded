@@ -139,6 +139,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
 
         public IEnumerable<TraitDefinition> StartingTraits { get { return m_StartingTraits; } }
         public IEnumerable<MemoryDefinition> StartingMemories { get { return m_StartingMemories; } }
+        public IEnumerable<TraitDefinition> AllTraits { get { return m_Traits.Values; } }
+        public IEnumerable<MemoryDefinition> AllMemories { get { return m_Memories.Values; } }
         public int TraitCount { get { return m_Traits.Count; } }
         public int AdvancedTraitCount { get { int n = 0; foreach (TraitDefinition t in m_Traits.Values) if (t.Advanced) n++; return n; } }
 

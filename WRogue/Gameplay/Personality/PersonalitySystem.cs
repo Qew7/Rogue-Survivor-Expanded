@@ -108,8 +108,10 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 if (!direct && !saw) continue;
                 string subject = lifeEvent.Subject == null ? null : lifeEvent.Subject.UnmodifiedName;
                 string other = lifeEvent.Other == null ? null : lifeEvent.Other.UnmodifiedName;
+                bool relatedToSubject = lifeEvent.Subject != null &&
+                    (observer.Leader == lifeEvent.Subject || lifeEvent.Subject.Leader == observer);
                 observer.Personality.Remember(new ObservedEvent(lifeEvent.Kind, lifeEvent.Turn,
-                    subject, other, direct));
+                    subject, other, direct, relatedToSubject));
                 foreach (MemoryDefinition definition in s_Registry.ForEvent(lifeEvent.Kind))
                     foreach (MemoryTrigger trigger in definition.Triggers)
                         if (trigger.EventKind == lifeEvent.Kind && trigger.Applies(observer, lifeEvent))

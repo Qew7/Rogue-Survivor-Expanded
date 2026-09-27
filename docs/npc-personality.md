@@ -33,6 +33,9 @@ matching triggers. Events can be about death, violence, leadership, aid, raids,
 starvation, zombification, lost bases, or theft from a base. A theft of food or
 weapons from an assigned storage room also reports lost supplies. A bounded
 journal prevents save growth from repeated encounters.
+Death observations retain whether the subject was a leader or follower at the
+time; later zombification can still trigger a companion memory after the game
+removes the group relationship.
 
 The first catalog contains 50 starting and 20 advanced traits. Advanced traits
 are available only through memory resolution and require an existing trait.
@@ -45,3 +48,5 @@ Add a named scenario in its own file under `tests/scenarios/cases/npc/` for each
 new behavior or trigger. Test a real action or AI choice and a boundary case.
 Run `sh tests/scenario.sh <name>`, `docker build --target test .`, and for
 menu or rendering changes `bash tests/e2e.sh`.
+`npc/personality-catalog` audits all registered traits, memory triggers and
+outcomes, so run it whenever the catalog changes.

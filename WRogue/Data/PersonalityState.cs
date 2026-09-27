@@ -25,14 +25,17 @@ namespace djack.RogueSurvivor.Data
         public readonly string Subject;
         public readonly string Other;
         public readonly bool Direct;
+        public readonly bool RelatedToSubject;
 
-        public ObservedEvent(string kind, int turn, string subject, string other, bool direct)
+        public ObservedEvent(string kind, int turn, string subject, string other, bool direct,
+            bool relatedToSubject = false)
         {
             Kind = kind;
             Turn = turn;
             Subject = subject;
             Other = other;
             Direct = direct;
+            RelatedToSubject = relatedToSubject;
         }
     }
 
