@@ -108,6 +108,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         }
     }
 
+    enum MemoryRelationRole { None, Subject, Other, OtherOrSubject }
+
     sealed class MemoryDefinition
     {
         public readonly string Id;
@@ -117,6 +119,10 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public readonly MemoryTrigger[] Triggers;
         public readonly string[] EvidenceKinds;
         public readonly MemoryOutcome[] Outcomes;
+        public MemoryRelationRole PersonRole { get; private set; }
+        public MemoryRelationRole GroupRole { get; private set; }
+        public int FeelingChange { get; private set; }
+        public int FallbackFeelingChange { get; private set; }
 
         public MemoryDefinition(string id, string name, int minDays, int maxDays,
             MemoryTrigger[] triggers, params MemoryOutcome[] outcomes)
@@ -134,6 +140,16 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             Triggers = triggers;
             EvidenceKinds = evidenceKinds;
             Outcomes = outcomes;
+        }
+
+        public MemoryDefinition Relate(MemoryRelationRole person, int feeling,
+            MemoryRelationRole group = MemoryRelationRole.None, int? fallbackFeeling = null)
+        {
+            PersonRole = person;
+            GroupRole = group;
+            FeelingChange = feeling;
+            FallbackFeelingChange = fallbackFeeling ?? feeling;
+            return this;
         }
 
         public bool TracksEvidence(string kind)

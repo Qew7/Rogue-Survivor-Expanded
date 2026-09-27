@@ -621,8 +621,11 @@ namespace djack.RogueSurvivor.Engine
             personality += Gameplay.Personality.PersonalitySystem.Bias(actor,
                 Gameplay.Personality.DecisionKind.Compassion) / 5;
             if (follower != null)
+            {
                 personality += Gameplay.Personality.PersonalitySystem.Bias(follower,
                     Gameplay.Personality.DecisionKind.Group) / 5;
+                personality += Gameplay.Personality.PersonalitySystem.Attitude(follower, actor) / 10;
+            }
             int change = TRUST_BASE_INCREASE + skillBonus + personality;
             return follower == null ? Math.Max(0, change) : Math.Max(-10, change);
         }

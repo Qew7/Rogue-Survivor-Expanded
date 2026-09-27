@@ -630,6 +630,12 @@ Also remember that in addition to having smell, some undeads have a visual memor
 Show information you know about the city, such as the city districts layout.
 
 
+> RELATIONSHIPS  (default Shift-I)
+Show your own impressions of people, groups named after their leaders, and factions.
+These impressions come from events you experience or witness. Other people's private memories and feelings are hidden.
+Use PgUp/PgDn to move through the list and Escape to return. Viewing it takes no turn.
+
+
 > MESSAGES LOG  (default Shift-M)
 Show more recent messages.
 

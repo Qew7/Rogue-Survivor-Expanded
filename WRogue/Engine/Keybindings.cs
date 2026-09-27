@@ -50,6 +50,7 @@ namespace djack.RogueSurvivor.Engine
             Set(PlayerCommand.BUILD_LARGE_FORTIFICATION, Keys.N | Keys.Control);
             Set(PlayerCommand.BUILD_SMALL_FORTIFICATION, Keys.N);
             Set(PlayerCommand.CITY_INFO, Keys.I);
+            Set(PlayerCommand.RELATIONSHIPS, Keys.I | Keys.Shift);
             Set(PlayerCommand.EAT_CORPSE, Keys.E | Keys.Shift);
             Set(PlayerCommand.GIVE_ITEM, Keys.G);
             Set(PlayerCommand.HINTS_SCREEN_MODE, Keys.H | Keys.Control);
@@ -185,6 +186,9 @@ namespace djack.RogueSurvivor.Engine
                 if (kb.Get(PlayerCommand.XPD_BASE) == Keys.None &&
                     kb.Get(Keys.B | Keys.Control) == PlayerCommand.NONE)
                     kb.Set(PlayerCommand.XPD_BASE, Keys.B | Keys.Control);
+                if (kb.Get(PlayerCommand.RELATIONSHIPS) == Keys.None &&
+                    kb.Get(Keys.I | Keys.Shift) == PlayerCommand.NONE)
+                    kb.Set(PlayerCommand.RELATIONSHIPS, Keys.I | Keys.Shift);
             }
             catch (Exception e)
             {

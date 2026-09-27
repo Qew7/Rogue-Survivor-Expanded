@@ -58,11 +58,74 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         }
 
         static void AddMemory(Actor actor, MemoryDefinition definition, int turn, string subject,
-            DiceRoller dice, bool relatedToSubject = false, Guid subjectId = default(Guid))
+            DiceRoller dice, bool relatedToSubject = false, Guid subjectId = default(Guid),
+            Actor relatedPerson = null, Actor relatedGroupLeader = null, int impact = 0)
         {
             int days = dice.Roll(definition.MinDays, definition.MaxDays + 1);
-            actor.Personality.AddMemory(new MemoryInstance(definition.Id, turn,
-                turn + days * WorldTime.TURNS_PER_DAY, subject, relatedToSubject, subjectId));
+            MemoryInstance memory = new MemoryInstance(definition.Id, turn,
+                turn + days * WorldTime.TURNS_PER_DAY, subject, relatedToSubject, subjectId,
+                relatedPerson == null ? Guid.Empty : relatedPerson.PersonalityIdentity);
+            if (!actor.Personality.AddMemory(memory)) return;
+            if (relatedPerson != null)
+            {
+                actor.Personality.RememberPerson(relatedPerson.PersonalityIdentity,
+                    relatedPerson.UnmodifiedName, memory, impact);
+                if (relatedGroupLeader == null && relatedPerson.HasLeader)
+                    relatedGroupLeader = relatedPerson.Leader;
+                else if (relatedGroupLeader == null && relatedPerson.CountFollowers > 0)
+                    relatedGroupLeader = relatedPerson;
+                if (relatedPerson.Faction != null &&
+                    relatedPerson.Faction.ID != (int)GameFactions.IDs.TheCivilians)
+                    actor.Personality.RememberFaction(relatedPerson.Faction.ID,
+                        relatedPerson.Faction.Name, memory, impact / 4);
+            }
+            if (relatedGroupLeader != null)
+                actor.Personality.RememberGroup(relatedGroupLeader.PersonalityIdentity,
+                    relatedGroupLeader.UnmodifiedName, memory, impact / 3);
+        }
+
+        static Actor RelationActor(MemoryRelationRole role, Actor observer, SignificantEvent lifeEvent)
+        {
+            Actor target;
+            switch (role)
+            {
+                case MemoryRelationRole.Subject:
+                    target = lifeEvent.Subject;
+                    break;
+                case MemoryRelationRole.OtherOrSubject:
+                    target = lifeEvent.Other ?? lifeEvent.Subject;
+                    break;
+                case MemoryRelationRole.Other:
+                    target = lifeEvent.Other;
+                    break;
+                default:
+                    target = null;
+                    break;
+            }
+            return target == observer ? null : target;
+        }
+
+        public static int Attitude(Actor observer, Actor target)
+        {
+            if (observer == null || target == null || observer == target ||
+                observer.Personality == null || !Session.Get.GamePreset.NpcPersonalitiesEnabled)
+                return 0;
+            int total = 0;
+            RelationshipRecord person = observer.Personality.Person(target.PersonalityIdentity);
+            if (person != null) total += person.Feeling;
+            Actor groupLeader = target.HasLeader ? target.Leader :
+                target.CountFollowers > 0 ? target : null;
+            if (groupLeader != null)
+            {
+                RelationshipRecord group = observer.Personality.Group(groupLeader.PersonalityIdentity);
+                if (group != null) total += group.Feeling;
+            }
+            if (target.Faction != null)
+            {
+                RelationshipRecord faction = observer.Personality.Faction(target.Faction.ID);
+                if (faction != null) total += faction.Feeling;
+            }
+            return Math.Max(-100, Math.Min(100, total));
         }
 
         public static int Bias(Actor actor, DecisionKind decision, Item item = null)
@@ -99,7 +162,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             Guid otherId = lifeEvent.Other == null ? Guid.Empty : lifeEvent.Other.PersonalityIdentity;
             foreach (Actor observer in actors)
             {
-                if (observer.Personality == null || observer.IsDead || observer.Model.Abilities.IsUndead ||
+                if ((!observer.IsPlayer && observer.Personality == null) || observer.IsDead || observer.Model.Abilities.IsUndead ||
                     !observer.Model.Abilities.IsIntelligent)
                     continue;
                 bool direct = (lifeEvent.SubjectIsDirect && observer == lifeEvent.Subject) ||
@@ -109,6 +172,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                         game.Rules.ActorFOV(observer, lifeEvent.Map.LocalTime, game.Session.World.Weather) &&
                     LOS.CanTraceViewLine(observer.Location, lifeEvent.Position);
                 if (!direct && !saw) continue;
+                if (observer.IsPlayer && observer.Personality == null)
+                    observer.Personality = new PersonalityState();
                 string subject = lifeEvent.Subject == null ? null : lifeEvent.Subject.UnmodifiedName;
                 string other = lifeEvent.Other == null ? null : lifeEvent.Other.UnmodifiedName;
                 bool relatedToSubject = lifeEvent.Subject != null &&
@@ -126,8 +191,14 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                     foreach (MemoryTrigger trigger in definition.Triggers)
                         if (trigger.EventKind == lifeEvent.Kind && trigger.Applies(observer, lifeEvent))
                         {
+                            Actor relatedPerson = RelationActor(definition.PersonRole, observer, lifeEvent);
+                            Actor relatedGroupLeader = RelationActor(definition.GroupRole, null, lifeEvent);
+                            int impact = definition.PersonRole == MemoryRelationRole.OtherOrSubject &&
+                                lifeEvent.Other == null ? definition.FallbackFeelingChange :
+                                definition.FeelingChange;
                             AddMemory(observer, definition, lifeEvent.Turn, subject,
-                                game.Session.GameDiceRoller, relatedToSubject, subjectId);
+                                game.Session.GameDiceRoller, relatedToSubject, subjectId,
+                                relatedPerson, relatedGroupLeader, impact);
                             break;
                         }
             }
@@ -147,7 +218,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 {
                     if (map.LocalTime.TurnCounter < memory.ResolveTurn) continue;
                     MemoryDefinition definition = s_Registry.Memory(memory.Id);
-                    if (definition != null)
+                    if (definition != null && !actor.IsPlayer)
                         foreach (MemoryOutcome outcome in definition.Outcomes)
                         {
                             if (outcome.Applies != null && !outcome.Applies(actor, memory)) continue;
@@ -156,15 +227,19 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                                 TraitDefinition trait = s_Registry.Trait(outcome.TraitId);
                                 if (trait == null || !trait.Eligible(actor)) continue;
                                 actor.Personality.AddTrait(new TraitInstance(trait.Id));
+                                memory.OutcomeId = "trait:" + trait.Id;
                                 break;
                             }
                             if (outcome.SkillId.HasValue && actor.Sheet.SkillTable.GetSkillLevel((int)outcome.SkillId.Value) <
                                 Skills.MaxSkillLevel(outcome.SkillId.Value))
                             {
                                 game.SkillUpgrade(actor, outcome.SkillId.Value);
+                                memory.OutcomeId = "skill:" + outcome.SkillId.Value;
                                 break;
                             }
                         }
+                    if (memory.OutcomeId == null) memory.OutcomeId = "none";
+                    memory.ResolvedTurn = map.LocalTime.TurnCounter;
                     actor.Personality.RemoveMemory(memory);
                 }
             }

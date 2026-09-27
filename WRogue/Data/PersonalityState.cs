@@ -53,10 +53,14 @@ namespace djack.RogueSurvivor.Data
         public readonly string Subject;
         public readonly bool RelatedToSubject;
         public readonly Guid SubjectId;
+        public readonly Guid RelatedPersonId;
+        public int ResolvedTurn;
+        public string OutcomeId;
         readonly Dictionary<string, int> m_EvidenceTurns = new Dictionary<string, int>();
 
         public MemoryInstance(string id, int startTurn, int resolveTurn, string subject,
-            bool relatedToSubject = false, Guid subjectId = default(Guid))
+            bool relatedToSubject = false, Guid subjectId = default(Guid),
+            Guid relatedPersonId = default(Guid))
         {
             Id = id;
             StartTurn = startTurn;
@@ -64,6 +68,7 @@ namespace djack.RogueSurvivor.Data
             Subject = subject;
             RelatedToSubject = relatedToSubject;
             SubjectId = subjectId;
+            RelatedPersonId = relatedPersonId;
         }
 
         public void RememberEvidence(string kind, int turn)
@@ -80,6 +85,34 @@ namespace djack.RogueSurvivor.Data
         }
     }
 
+    // A relationship retains its memories after they leave the pending queue. IDs rather
+    // than Actor references keep dead people and former groups in the saved history.
+    [Serializable]
+    sealed class RelationshipRecord
+    {
+        public readonly Guid Identity;
+        public readonly int FactionId;
+        public readonly string Name;
+        public int Feeling;
+        readonly List<MemoryInstance> m_Memories = new List<MemoryInstance>();
+
+        public IList<MemoryInstance> Memories { get { return m_Memories.AsReadOnly(); } }
+
+        public RelationshipRecord(Guid identity, int factionId, string name)
+        {
+            Identity = identity;
+            FactionId = factionId;
+            Name = name;
+        }
+
+        public void Remember(MemoryInstance memory, int change)
+        {
+            if (m_Memories.Contains(memory)) return;
+            m_Memories.Add(memory);
+            Feeling = Math.Max(-100, Math.Min(100, Feeling + change));
+        }
+    }
+
     // This is the only new per-actor object in the saved world graph.
     [Serializable]
     sealed class PersonalityState
@@ -87,10 +120,72 @@ namespace djack.RogueSurvivor.Data
         readonly List<TraitInstance> m_Traits = new List<TraitInstance>(4);
         readonly List<MemoryInstance> m_Memories = new List<MemoryInstance>(2);
         readonly List<ObservedEvent> m_Events = new List<ObservedEvent>(8);
+        // Lazily initialized so personalities from older saves also have an empty tree.
+        Dictionary<Guid, RelationshipRecord> m_People;
+        Dictionary<Guid, RelationshipRecord> m_Groups;
+        Dictionary<int, RelationshipRecord> m_Factions;
+
+        Dictionary<Guid, RelationshipRecord> PersonRecords
+        {
+            get { return m_People ?? (m_People = new Dictionary<Guid, RelationshipRecord>()); }
+        }
+        Dictionary<Guid, RelationshipRecord> GroupRecords
+        {
+            get { return m_Groups ?? (m_Groups = new Dictionary<Guid, RelationshipRecord>()); }
+        }
+        Dictionary<int, RelationshipRecord> FactionRecords
+        {
+            get { return m_Factions ?? (m_Factions = new Dictionary<int, RelationshipRecord>()); }
+        }
 
         public IList<TraitInstance> Traits { get { return m_Traits.AsReadOnly(); } }
         public IList<MemoryInstance> Memories { get { return m_Memories.AsReadOnly(); } }
         public IList<ObservedEvent> Events { get { return m_Events.AsReadOnly(); } }
+        public ICollection<RelationshipRecord> People { get { return PersonRecords.Values; } }
+        public ICollection<RelationshipRecord> Groups { get { return GroupRecords.Values; } }
+        public ICollection<RelationshipRecord> Factions { get { return FactionRecords.Values; } }
+
+        public RelationshipRecord Person(Guid id)
+        {
+            RelationshipRecord record;
+            return PersonRecords.TryGetValue(id, out record) ? record : null;
+        }
+
+        public RelationshipRecord Group(Guid id)
+        {
+            RelationshipRecord record;
+            return GroupRecords.TryGetValue(id, out record) ? record : null;
+        }
+
+        public RelationshipRecord Faction(int id)
+        {
+            RelationshipRecord record;
+            return FactionRecords.TryGetValue(id, out record) ? record : null;
+        }
+
+        public void RememberPerson(Guid id, string name, MemoryInstance memory, int change)
+        {
+            if (id == Guid.Empty || memory == null) return;
+            RelationshipRecord record = Person(id);
+            if (record == null) PersonRecords.Add(id, record = new RelationshipRecord(id, -1, name));
+            record.Remember(memory, change);
+        }
+
+        public void RememberGroup(Guid id, string name, MemoryInstance memory, int change)
+        {
+            if (id == Guid.Empty || memory == null) return;
+            RelationshipRecord record = Group(id);
+            if (record == null) GroupRecords.Add(id, record = new RelationshipRecord(id, -1, name));
+            record.Remember(memory, change);
+        }
+
+        public void RememberFaction(int id, string name, MemoryInstance memory, int change)
+        {
+            if (id < 0 || memory == null) return;
+            RelationshipRecord record = Faction(id);
+            if (record == null) FactionRecords.Add(id, record = new RelationshipRecord(Guid.Empty, id, name));
+            record.Remember(memory, change);
+        }
 
         public bool HasTrait(string id)
         {
@@ -111,9 +206,11 @@ namespace djack.RogueSurvivor.Data
             if (memory == null) return false;
             foreach (MemoryInstance existing in m_Memories)
                 if (existing.Id == memory.Id &&
+                    (existing.RelatedPersonId != Guid.Empty || memory.RelatedPersonId != Guid.Empty
+                        ? existing.RelatedPersonId == memory.RelatedPersonId :
                     (existing.SubjectId != Guid.Empty || memory.SubjectId != Guid.Empty
                         ? existing.SubjectId == memory.SubjectId
-                        : existing.Subject == memory.Subject))
+                        : existing.Subject == memory.Subject)))
                     return false;
             m_Memories.Add(memory);
             return true;

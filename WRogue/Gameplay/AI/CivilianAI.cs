@@ -582,6 +582,7 @@ namespace djack.RogueSurvivor.Gameplay.AI
                             Actor other = p.Percepted as Actor;
                             // dont bother player or someone we can't trade with or already did trade.
                             if (other.IsPlayer) return true;
+                            if (PersonalitySystem.Attitude(m_Actor, other) <= -30) return true;
                             if (!game.Rules.CanActorInitiateTradeWith(m_Actor, other)) return true;
                             if (IsActorTabooTrade(other)) return true;
                             // alpha10 dont bother someone who is fighting or fleeing

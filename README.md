@@ -84,9 +84,13 @@ Item likes and dislikes can target any item model. Significant experiences,
 including a leader's death, violence, a base theft, and a raid, create new
 memories for NPCs who experience or witness them. After several game days,
 memories resolve according to the NPC's traits and later experiences, granting
-a skill level or an advanced trait. Inspect an NPC to see its traits and pending
-memories. The catalog and extension points are described in
+a skill level or an advanced trait. Memories tied to people remain in the NPC's
+private relationship history after resolution. The NPC reacts differently to
+specific people, their leader's group, and their faction when trading or
+considering a leader. Inspecting an NPC shows traits, but not private memories.
+The catalog and extension points are described in
 [docs/npc-personality.md](docs/npc-personality.md).
+Press Shift+I in game to see your relationships with people, groups, and factions.
 
 The **Expanded** preset enables claimable bases. Stand inside an enclosed
 building and press **Ctrl+B** to preview its boundaries; press **Y** to claim

@@ -55,12 +55,15 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         static void M(PersonalityRegistry r, string id, string name, string eventKind,
             Func<Actor, SignificantEvent, bool> trigger, MemoryOutcome first,
             MemoryOutcome second, Skills.IDs fallback, Skills.IDs alternative,
-            string evidenceKind = null)
+            string evidenceKind = null, MemoryRelationRole person = MemoryRelationRole.None,
+            int feeling = 0, MemoryRelationRole group = MemoryRelationRole.None,
+            int? fallbackFeeling = null)
         {
             r.Register(new MemoryDefinition(id, name, 2, 6,
                 new[] { new MemoryTrigger(eventKind, trigger) },
                 evidenceKind == null ? new string[0] : new[] { evidenceKind }, first, second,
-                Learn(fallback), Learn(alternative)), true);
+                Learn(fallback), Learn(alternative)).Relate(person, feeling, group,
+                fallbackFeeling), true);
         }
 
         public static PersonalityRegistry Create()
@@ -154,35 +157,43 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             M(r, "leader_loss", "Loss of a leader", "death", (a,e) => e.Subject == a.Leader,
                 Gain("vengeful", (a,m) => Has(a,"vindictive") && SawSince(a,m,"murder",m.StartTurn)),
                 Gain("traumatized", (a,m) => Has(a,"timid")), Skills.IDs.LEADERSHIP, Skills.IDs.STRONG_PSYCHE,
-                "murder");
+                "murder", person: MemoryRelationRole.Subject, feeling: 10);
             M(r, "follower_loss", "Loss of a follower", "death", (a,e) => e.Subject != null && e.Subject.Leader == a,
                 Gain("protector", (a,m) => Has(a,"protective")),
-                Gain("resolute", (a,m) => Has(a,"disciplined")), Skills.IDs.LEADERSHIP, Skills.IDs.STRONG_PSYCHE);
+                Gain("resolute", (a,m) => Has(a,"disciplined")), Skills.IDs.LEADERSHIP, Skills.IDs.STRONG_PSYCHE,
+                person: MemoryRelationRole.Subject, feeling: 10);
             M(r, "witnessed_murder", "Witnessed a murder", "murder", (a,e) => a != e.Subject && a != e.Other,
                 Gain("zealot", (a,m) => Has(a,"lawful")),
-                Gain("panic_attacks", (a,m) => Has(a,"fearful")), Skills.IDs.STRONG_PSYCHE, Skills.IDs.UNSUSPICIOUS);
+                Gain("panic_attacks", (a,m) => Has(a,"fearful")), Skills.IDs.STRONG_PSYCHE, Skills.IDs.UNSUSPICIOUS,
+                person: MemoryRelationRole.OtherOrSubject, feeling: -30, fallbackFeeling: 10);
             M(r, "killed_person", "Killed a person", "kill_human", (a,e) => a == e.Other,
                 Gain("maniac", (a,m) => Has(a,"cruel") && SawSince(a,m,"kill_human",m.StartTurn + 1)),
                 Gain("pacifist", (a,m) => Has(a,"peacemaker")), Skills.IDs.MARTIAL_ARTS, Skills.IDs.STRONG_PSYCHE,
-                "kill_human");
+                "kill_human", person: MemoryRelationRole.Subject);
             M(r, "survived_attack", "Survived an attack", "attack", (a,e) => a == e.Subject,
                 Gain("berserker", (a,m) => Has(a,"hotheaded")),
-                Gain("hardened", (a,m) => Has(a,"brave")), Skills.IDs.TOUGH, Skills.IDs.STRONG_PSYCHE);
+                Gain("hardened", (a,m) => Has(a,"brave")), Skills.IDs.TOUGH, Skills.IDs.STRONG_PSYCHE,
+                person: MemoryRelationRole.Other, feeling: -35);
             M(r, "base_theft", "Theft from home", "base_theft", (a,e) => a != e.Subject && e.Other != null && (a == e.Other || a.Leader == e.Other),
                 Gain("kleptomaniac", (a,m) => Has(a,"opportunist")),
-                Gain("paranoid", (a,m) => Has(a,"suspicious")), Skills.IDs.UNSUSPICIOUS, Skills.IDs.STRONG_PSYCHE);
+                Gain("paranoid", (a,m) => Has(a,"suspicious")), Skills.IDs.UNSUSPICIOUS, Skills.IDs.STRONG_PSYCHE,
+                person: MemoryRelationRole.Subject, feeling: -30);
             M(r, "base_loss", "Lost a base", "base_loss", (a,e) => e.Subject != null && (a == e.Subject || a.Leader == e.Subject),
                 Gain("hermit", (a,m) => Has(a,"solitary")),
-                Gain("survivor", (a,m) => Has(a,"adaptable")), Skills.IDs.CARPENTRY, Skills.IDs.HAULER);
+                Gain("survivor", (a,m) => Has(a,"adaptable")), Skills.IDs.CARPENTRY, Skills.IDs.HAULER,
+                person: MemoryRelationRole.Subject, group: MemoryRelationRole.Subject);
             M(r, "abandoned", "Abandoned by a group", "abandoned", (a,e) => a == e.Subject,
                 Gain("mistrustful", (a,m) => Has(a,"skeptic")),
-                Gain("traumatized", (a,m) => Has(a,"timid")), Skills.IDs.STRONG_PSYCHE, Skills.IDs.CHARISMATIC);
+                Gain("traumatized", (a,m) => Has(a,"timid")), Skills.IDs.STRONG_PSYCHE, Skills.IDs.CHARISMATIC,
+                person: MemoryRelationRole.Other, feeling: -35, group: MemoryRelationRole.Other);
             M(r, "new_group", "Found companions", "joined_group", (a,e) => a == e.Subject,
                 Gain("selfless", (a,m) => Has(a,"generous")),
-                Gain("protector", (a,m) => Has(a,"protective")), Skills.IDs.CHARISMATIC, Skills.IDs.STRONG_PSYCHE);
+                Gain("protector", (a,m) => Has(a,"protective")), Skills.IDs.CHARISMATIC, Skills.IDs.STRONG_PSYCHE,
+                person: MemoryRelationRole.Other, feeling: 15, group: MemoryRelationRole.Other);
             M(r, "received_help", "Received help", "helped", (a,e) => a == e.Subject,
                 Gain("selfless", (a,m) => Has(a,"generous")),
-                Gain("resolute", (a,m) => Has(a,"disciplined")), Skills.IDs.MEDIC, Skills.IDs.CHARISMATIC);
+                Gain("resolute", (a,m) => Has(a,"disciplined")), Skills.IDs.MEDIC, Skills.IDs.CHARISMATIC,
+                person: MemoryRelationRole.Other, feeling: 30);
             M(r, "raid", "Survived a raid", "raid", (a,e) => true,
                 Gain("fanatic", (a,m) => Has(a,"devout")),
                 Gain("predator", (a,m) => Has(a,"selfish")), Skills.IDs.FIREARMS, Skills.IDs.TOUGH);
@@ -191,11 +202,13 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 Gain("survivor", (a,m) => Has(a,"adaptable")), Skills.IDs.LIGHT_EATER, Skills.IDs.STRONG_PSYCHE);
             M(r, "stockpile", "Lost supplies", "supplies_lost", (a,e) => a == e.Subject,
                 Gain("obsessive_collector", (a,m) => Has(a,"hoarder")),
-                Gain("paranoid", (a,m) => Has(a,"suspicious")), Skills.IDs.HAULER, Skills.IDs.CARPENTRY);
+                Gain("paranoid", (a,m) => Has(a,"suspicious")), Skills.IDs.HAULER, Skills.IDs.CARPENTRY,
+                person: MemoryRelationRole.Other, feeling: -20);
             M(r, "zombified_friend", "Saw a friend turn", "zombified", (a,e) => e.Other != null &&
                 (e.Other.Leader == a || a.Leader == e.Other || SawRelatedDeath(a, e.Other.PersonalityIdentity)),
                 Gain("panic_attacks", (a,m) => Has(a,"fearful")),
-                Gain("hardened", (a,m) => Has(a,"brave")), Skills.IDs.NECROLOGY, Skills.IDs.STRONG_PSYCHE);
+                Gain("hardened", (a,m) => Has(a,"brave")), Skills.IDs.NECROLOGY, Skills.IDs.STRONG_PSYCHE,
+                person: MemoryRelationRole.Other, feeling: 10);
             return r;
         }
     }

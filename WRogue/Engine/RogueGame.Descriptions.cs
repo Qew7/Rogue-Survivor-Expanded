@@ -91,18 +91,6 @@ namespace djack.RogueSurvivor.Engine
                     traitNames.Add(name);
                 }
                 if (traitNames.Count > 0) lines.Add("Traits: " + String.Join(", ", traitNames.ToArray()) + ".");
-                int shown = 0;
-                foreach (MemoryInstance memory in actor.Personality.Memories)
-                {
-                    if (shown++ >= 3) break;
-                    MemoryDefinition definition = PersonalitySystem.Registry.Memory(memory.Id);
-                    if (definition != null)
-                    {
-                        int days = Math.Max(0, (memory.ResolveTurn - actor.Location.Map.LocalTime.TurnCounter +
-                            WorldTime.TURNS_PER_DAY - 1) / WorldTime.TURNS_PER_DAY);
-                        lines.Add(String.Format("Memory: {0} ({1}d).", definition.Name, days));
-                    }
-                }
             }
             AIController ai = actor.Controller as AIController;
             if (ai != null && ai.Order != null)

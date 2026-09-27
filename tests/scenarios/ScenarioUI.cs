@@ -8,6 +8,7 @@ using djack.RogueSurvivor.Engine;
 sealed class ScenarioUI : IRogueUI
 {
     readonly Queue<KeyEventArgs> keys = new Queue<KeyEventArgs>();
+    readonly Queue<KeyEventArgs> waitKeys = new Queue<KeyEventArgs>();
     readonly Queue<MouseButtons?> buttons = new Queue<MouseButtons?>();
     public readonly Dictionary<Point, Color> MinimapColors = new Dictionary<Point, Color>();
     public readonly List<string> DrawnImages = new List<string>();
@@ -16,7 +17,12 @@ sealed class ScenarioUI : IRogueUI
     public Point MousePosition { get; set; }
     public void QueueKey(Keys key) { keys.Enqueue(null); keys.Enqueue(new KeyEventArgs(key)); }
     public void QueueClick(MouseButtons button) { buttons.Enqueue(button); }
-    public KeyEventArgs UI_WaitKey() { throw new InvalidOperationException("Scenario requested keyboard input"); }
+    public void QueueWaitKey(Keys key) { waitKeys.Enqueue(new KeyEventArgs(key)); }
+    public KeyEventArgs UI_WaitKey()
+    {
+        if (waitKeys.Count == 0) throw new InvalidOperationException("Scenario requested keyboard input");
+        return waitKeys.Dequeue();
+    }
     public KeyEventArgs UI_PeekKey() { return keys.Count == 0 ? null : keys.Dequeue(); }
     public void UI_PostKey(KeyEventArgs e) { }
     public Point UI_GetMousePosition() { return MousePosition; }

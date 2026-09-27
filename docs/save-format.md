@@ -83,6 +83,17 @@ definition, so later events can still affect resolution after journal eviction.
 Actors lazily receive a persistent personality identity when involved in an
 event. Memories and journal entries keep those identities alongside names so
 different actors with the same name remain distinct across saves.
+The personality state also stores private person, leader-group, and faction
+relationship records. A record keeps a feeling score and references to its
+attributed memory instances, including resolved instances with their resolution
+turn and outcome. Person and group records use persistent actor identities;
+faction records use existing numeric faction IDs. Names are display snapshots,
+not lookup keys. These fields are optional when reading older personality saves;
+an absent relationship tree starts empty.
+The player's optional personality state stores only relationships formed from
+events they directly experience or witness. It has no generated starting traits
+or memories. Player memories resolve without NPC trait or skill rewards, while
+their attributed relationship history remains in the saved actor graph.
 
 Each claimed base section may reference the original section through its
 optional `m_Root` field. Sections on connected maps then remain one base after

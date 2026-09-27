@@ -1,6 +1,7 @@
 using System.Drawing;
 using djack.RogueSurvivor.Data;
 using djack.RogueSurvivor.Engine;
+using djack.RogueSurvivor.Gameplay.Personality;
 
 static class PersonalityLeaderDeathScenario
 {
@@ -32,8 +33,23 @@ static class PersonalityLeaderDeathScenario
             Check.Equal(null, world.Map.XpdBaseAt(new Point(1, 1)), "base is released");
             Check.Equal(2, follower.Personality.Memories.Count,
                 "real death and base release create distinct memories for follower");
+            RelationshipRecord personal = follower.Personality.Person(leader.PersonalityIdentity);
+            Check.Equal(true, personal != null,
+                "a follower remembers their dead leader by identity");
+            Check.Equal(2, personal.Memories.Count,
+                "death and base loss both belong to the dead leader's relationship");
+            Check.Equal(true, follower.Personality.Group(leader.PersonalityIdentity) != null,
+                "base loss remains attributed to the original leader's group");
             Check.Equal(0, hidden.Personality.Memories.Count,
                 "unrelated NPC behind wall learns neither event");
+            int due = System.Math.Max(follower.Personality.Memories[0].ResolveTurn,
+                follower.Personality.Memories[1].ResolveTurn);
+            world.Map.LocalTime.TurnCounter = due;
+            PersonalitySystem.ResolveDue(world.Game, world.Map);
+            Check.Equal(0, follower.Personality.Memories.Count,
+                "dead leader's memories resolve normally");
+            Check.Equal(2, personal.Memories.Count,
+                "relationship with the dead leader retains its resolved memories");
         });
     }
 }
