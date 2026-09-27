@@ -20,7 +20,7 @@ static class PersonalitySaveScenario
             actor.Personality = new PersonalityState();
             int magazineId = world.Game.GameItems.MAGAZINE.ID;
             actor.Personality.AddTrait(new TraitInstance("likes_items", magazineId));
-            actor.Personality.AddMemory(new MemoryInstance("witnessed_murder", 12, 4321, "victim"));
+            actor.Personality.AddMemory(new MemoryInstance("witnessed_murder", 12, 4321, "victim", true));
             actor.Personality.Remember(new ObservedEvent("murder", 13, "victim", "killer", false, true));
             string path = Path.Combine(Path.GetTempPath(), "personality-" + Guid.NewGuid().ToString("N"));
             try
@@ -43,6 +43,8 @@ static class PersonalitySaveScenario
                 Check.Equal(12, restored.Personality.Memories[0].StartTurn, "memory start survives");
                 Check.Equal(4321, restored.Personality.Memories[0].ResolveTurn, "deadline survives");
                 Check.Equal("victim", restored.Personality.Memories[0].Subject, "memory subject survives");
+                Check.Equal(true, restored.Personality.Memories[0].RelatedToSubject,
+                    "relationship captured in a pending memory survives");
                 Check.Equal(1, restored.Personality.Events.Count, "witnessed event survives");
                 Check.Equal("murder", restored.Personality.Events[0].Kind, "event kind survives");
                 Check.Equal(13, restored.Personality.Events[0].Turn, "event time survives");

@@ -23,7 +23,8 @@ A `MemoryDefinition` owns its `MemoryTrigger`s and ordered `MemoryOutcome`s.
 Triggers filter `SignificantEvent`s by kind and observer relationship. Outcomes
 may inspect current traits and the actor's witnessed-event journal. A successful
 outcome awards one eligible trait or one level of an existing living skill. The
-last outcome should usually provide a skill fallback. Resolution occurs on the
+last outcomes should usually provide related skill fallbacks so a capped skill
+does not silently consume a memory. Resolution occurs on the
 actor's map when its local day advances. Starting memories use the same
 definitions and have a randomly rolled two-to-six-day deadline.
 
@@ -37,7 +38,8 @@ weapons from an assigned storage room also reports lost supplies. A bounded
 journal prevents save growth from repeated encounters.
 Death observations retain whether the subject was a leader or follower at the
 time; later zombification can still trigger a companion memory after the game
-removes the group relationship.
+removes the group relationship. A pending memory retains that relationship
+even if the bounded event journal evicts the original death observation.
 
 The first catalog contains 50 starting and 20 advanced traits. Advanced traits
 are available only through memory resolution and require an existing trait.

@@ -57,11 +57,12 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             return -1;
         }
 
-        static void AddMemory(Actor actor, MemoryDefinition definition, int turn, string subject, DiceRoller dice)
+        static void AddMemory(Actor actor, MemoryDefinition definition, int turn, string subject,
+            DiceRoller dice, bool relatedToSubject = false)
         {
             int days = dice.Roll(definition.MinDays, definition.MaxDays + 1);
             actor.Personality.AddMemory(new MemoryInstance(definition.Id, turn,
-                turn + days * WorldTime.TURNS_PER_DAY, subject));
+                turn + days * WorldTime.TURNS_PER_DAY, subject, relatedToSubject));
         }
 
         public static int Bias(Actor actor, DecisionKind decision, Item item = null)
@@ -116,7 +117,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                     foreach (MemoryTrigger trigger in definition.Triggers)
                         if (trigger.EventKind == lifeEvent.Kind && trigger.Applies(observer, lifeEvent))
                         {
-                            AddMemory(observer, definition, lifeEvent.Turn, subject, game.Session.GameDiceRoller);
+                            AddMemory(observer, definition, lifeEvent.Turn, subject,
+                                game.Session.GameDiceRoller, relatedToSubject);
                             break;
                         }
             }

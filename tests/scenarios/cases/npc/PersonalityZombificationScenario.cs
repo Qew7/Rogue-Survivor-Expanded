@@ -36,6 +36,12 @@ static class PersonalityZombificationScenario
             Check.Equal(null, follower.Leader, "death removes follower relationship");
             Check.Equal(true, leader.Personality.Events[0].RelatedToSubject,
                 "death journal preserves the former relationship");
+            for (int turn = 1; turn <= 40; turn++)
+                leader.Personality.Remember(new ObservedEvent("raid", turn, null, null, false));
+            Check.Equal(32, leader.Personality.Events.Count,
+                "heavy events evict the earlier death observation");
+            Check.Equal("raid", leader.Personality.Events[0].Kind,
+                "death observation has left the bounded journal");
             Actor zombie = (Actor)Check.Call(world.Game, "Zombify",
                 new[] { typeof(Actor), typeof(Actor), typeof(bool) }, null, follower, false);
             Check.Equal(true, zombie.Model.Abilities.IsUndead, "real zombification creates an undead actor");

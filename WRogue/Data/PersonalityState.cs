@@ -46,13 +46,16 @@ namespace djack.RogueSurvivor.Data
         public readonly int StartTurn;
         public readonly int ResolveTurn;
         public readonly string Subject;
+        public readonly bool RelatedToSubject;
 
-        public MemoryInstance(string id, int startTurn, int resolveTurn, string subject)
+        public MemoryInstance(string id, int startTurn, int resolveTurn, string subject,
+            bool relatedToSubject = false)
         {
             Id = id;
             StartTurn = startTurn;
             ResolveTurn = resolveTurn;
             Subject = subject;
+            RelatedToSubject = relatedToSubject;
         }
     }
 

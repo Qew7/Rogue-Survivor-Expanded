@@ -76,6 +76,8 @@ whether this system is enabled. Compatibility with saves from before NPC
 personalities was introduced is outside the current feature scope.
 Journal entries also retain whether the observer was related to the event's
 subject at the time, so a later zombification can affect former companions.
+Pending memories retain the same relationship flag, allowing their outcomes
+to use it even when the bounded event journal evicts the original event.
 
 Each claimed base section may reference the original section through its
 optional `m_Root` field. Sections on connected maps then remain one base after
