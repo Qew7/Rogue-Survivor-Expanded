@@ -214,7 +214,9 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public IEnumerable<MemoryDefinition> ForEvent(string kind)
         {
             List<MemoryDefinition> definitions;
-            return kind != null && m_ByEvent.TryGetValue(kind, out definitions) ? definitions : new MemoryDefinition[0];
+            if (kind != null && m_ByEvent.TryGetValue(kind, out definitions))
+                return definitions;
+            return new MemoryDefinition[0];
         }
     }
 }

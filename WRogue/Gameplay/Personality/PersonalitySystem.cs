@@ -22,7 +22,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             List<TraitDefinition> available = new List<TraitDefinition>(s_Registry.StartingTraits);
             for (int i = 0; i < 3 && available.Count > 0; i++)
             {
-                available.RemoveAll(definition => !definition.Eligible(actor));
+                available.RemoveAll(candidate => !candidate.Eligible(actor));
                 if (available.Count == 0) break;
                 int choice = dice.Roll(0, available.Count);
                 TraitDefinition definition = available[choice];
