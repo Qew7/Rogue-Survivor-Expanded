@@ -73,6 +73,14 @@ namespace djack.RogueSurvivor.Engine
                     killer == null ? "N/A" : killer.TheName), deadGuy.TheName, reason));
 #endif
 
+            bool wasMurder = (killer != null && m_Rules.IsMurder(killer, deadGuy));
+            ReportPersonalityEvent("death", deadGuy, killer, deadGuy.Location.Map, deadGuy.Location.Position);
+            if (wasMurder)
+                ReportPersonalityEvent("murder", deadGuy, killer, deadGuy.Location.Map, deadGuy.Location.Position);
+            if (killer != null && deadGuy.Model.Abilities.IsIntelligent &&
+                !deadGuy.Model.Abilities.IsUndead && !killer.Model.Abilities.IsUndead)
+                ReportPersonalityEvent("kill_human", deadGuy, killer, deadGuy.Location.Map, deadGuy.Location.Position);
+
             // Set dead flag.
             deadGuy.IsDead = true;
             ReleaseGroupBases(deadGuy);
@@ -159,7 +167,6 @@ namespace djack.RogueSurvivor.Engine
             #endregion
 
             // Remove aggressor & self defence relations.
-            bool wasMurder = (killer != null && m_Rules.IsMurder(killer, deadGuy));
             deadGuy.RemoveAllAgressorSelfDefenceRelations();
 
             // Remove from map.

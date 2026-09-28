@@ -27,6 +27,7 @@ namespace djack.RogueSurvivor.Engine
             XpdBase linkedBase = FindLinkedXpdBase(actor, actor.Location.Map, cells);
             XpdBase newBase = new XpdBase(actor, cells, linkedBase);
             actor.Location.Map.AddXpdBase(newBase);
+            ReportPersonalityEvent("base_claimed", actor, null, actor.Location.Map, actor.Location.Position);
             if (actor.IsPlayer) ReleaseGroupBases(actor, newBase);
             SpendActorActionPoints(actor, Rules.BASE_ACTION_COST);
             return true;
@@ -41,7 +42,14 @@ namespace djack.RogueSurvivor.Engine
                     if (baseClaim.GroupLeader == leader &&
                         (except == null || !baseClaim.IsPartOf(except)))
                         released.Add(baseClaim);
-                foreach (XpdBase baseClaim in released) map.RemoveXpdBase(baseClaim);
+                foreach (XpdBase baseClaim in released)
+                {
+                    Point first = Point.Empty;
+                    foreach (Point cell in baseClaim.Cells) { first = cell; break; }
+                    if (except == null)
+                        ReportPersonalityEvent("base_loss", leader, null, map, first);
+                    map.RemoveXpdBase(baseClaim);
+                }
             }
         }
 

@@ -12,6 +12,7 @@ using djack.RogueSurvivor.Engine.Items;
 using djack.RogueSurvivor.Engine.MapObjects;
 using djack.RogueSurvivor.Gameplay;
 using djack.RogueSurvivor.Gameplay.AI;
+using djack.RogueSurvivor.Gameplay.Personality;
 using djack.RogueSurvivor.Gameplay.Generators;
 
 using Message = djack.RogueSurvivor.Data.Message;
@@ -76,6 +77,21 @@ namespace djack.RogueSurvivor.Engine
             lines.Add(String.Format("{0}.", Capitalize(actor.Model.Name)));
 
             lines.Add(String.Format("{0} since {1}.", actor.Model.Abilities.IsUndead ? "Undead" : "Staying alive", new WorldTime(actor.SpawnTime).ToString()));
+            if (m_Session.GamePreset.NpcPersonalitiesEnabled && actor.Personality != null)
+            {
+                List<string> traitNames = new List<string>();
+                foreach (TraitInstance trait in actor.Personality.Traits)
+                {
+                    TraitDefinition definition = PersonalitySystem.Registry.Trait(trait.Id);
+                    if (definition == null) continue;
+                    string name = definition.Name;
+                    if (trait.ItemModelId >= 0 && trait.ItemModelId < (int)GameItems.IDs._COUNT &&
+                        Models.Items != null && Models.Items[trait.ItemModelId] != null)
+                        name += " " + Models.Items[trait.ItemModelId].PluralName;
+                    traitNames.Add(name);
+                }
+                if (traitNames.Count > 0) lines.Add("Traits: " + String.Join(", ", traitNames.ToArray()) + ".");
+            }
             AIController ai = actor.Controller as AIController;
             if (ai != null && ai.Order != null)
             {

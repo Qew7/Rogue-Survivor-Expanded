@@ -548,6 +548,8 @@ namespace djack.RogueSurvivor.Data
             }
             m_aux_ActorsByPosition.Add(position, actor);
             actor.Location = new Location(this, position);
+            if (actor.Personality != null && Engine.Session.Get.GamePreset.NpcPersonalitiesEnabled)
+                Engine.Session.Get.ResidentRecords.Register(actor);
 
             // reset check actor index, as it is now invalidated.
             m_iCheckNextActorIndex = 0;

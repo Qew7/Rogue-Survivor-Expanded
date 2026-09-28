@@ -46,6 +46,8 @@ namespace djack.RogueSurvivor.Data
         ActorController m_Controller;
         bool m_isBotPlayer;  // alpha10.1
         ActorSheet m_Sheet;
+        PersonalityState m_Personality;
+        Guid m_PersonalityIdentity;
         int m_SpawnTime;
         #endregion
 
@@ -193,6 +195,22 @@ namespace djack.RogueSurvivor.Data
         public int SpawnTime
         {
             get { return m_SpawnTime; }
+        }
+
+        public PersonalityState Personality
+        {
+            get { return m_Personality; }
+            set { m_Personality = value; }
+        }
+
+        public Guid PersonalityIdentity
+        {
+            get
+            {
+                if (m_PersonalityIdentity == Guid.Empty)
+                    m_PersonalityIdentity = Guid.NewGuid();
+                return m_PersonalityIdentity;
+            }
         }
 
         public int GangID

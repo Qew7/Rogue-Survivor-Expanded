@@ -68,6 +68,50 @@ selected gameplay options, so loading a game restores its rules. User-defined
 presets are kept separately in the user config directory as `game-presets.dat`; deleting that file
 does not change existing game saves.
 
+New games with NPC personalities enabled save each intelligent living actor's
+trait instances, unresolved memories and a bounded journal of witnessed
+significant events in the actor graph. The definitions and their callbacks are
+registered from game code and are not serialized. The selected preset stores
+whether this system is enabled. Compatibility with saves from before NPC
+personalities was introduced is outside the current feature scope.
+Journal entries also retain whether the observer was related to the event's
+subject at the time, so a later zombification can affect former companions.
+Pending memories retain the same relationship flag, allowing their outcomes
+to use it even when the bounded event journal evicts the original event.
+They also retain the latest turn for each evidence kind declared by the memory
+definition, so later events can still affect resolution after journal eviction.
+Actors lazily receive a persistent personality identity when involved in an
+event. Memories and journal entries keep those identities alongside names so
+different actors with the same name remain distinct across saves.
+The personality state also stores private person, leader-group, and faction
+relationship records. A record keeps a feeling score and references to its
+attributed memory instances, including resolved instances with their resolution
+turn and outcome. Person and group records use persistent actor identities;
+faction records use existing numeric faction IDs. Names are display snapshots,
+not lookup keys. These fields are optional when reading older personality saves;
+an absent relationship tree starts empty.
+The player's optional personality state stores only relationships formed from
+events they directly experience or witness. It has no generated starting traits
+or memories. Player memories resolve without NPC trait or skill rewards, while
+their attributed relationship history remains in the saved actor graph.
+
+Unique encounters, faction experiences, and world/story events reuse these
+existing string memory and trait IDs in the graph. Definitions such as faction
+attitude bias and first-encounter policy are rebuilt from the content catalog;
+they are not serialized. Retained per-person encounter memories prevent a
+unique character from granting the same first encounter again after loading.
+Source-specific memories and acquired traits have a save/load scenario; this
+content expansion does not change the save header or existing numeric IDs.
+
+Sessions also store an optional `m_ResidentRecords` chronicle. It holds NPC
+identity/name snapshots, arrival and death turns, and ordered text records of
+significant observations, memory creation, and resolution outcomes. It keeps no
+Actor references, so histories survive actor and corpse removal. Entries are not
+evicted; this increases save size over long games. Older saves recover a partial
+chronicle from surviving actors, corpses, and personality records, without
+inventing discarded events. `Read Records` reads the selected file exactly and
+does not replace the active Session or silently fall back to a backup.
+
 Each claimed base section may reference the original section through its
 optional `m_Root` field. Sections on connected maps then remain one base after
 loading. Older saves have no such field; each existing claim remains its own

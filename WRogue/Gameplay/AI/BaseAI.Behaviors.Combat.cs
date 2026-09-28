@@ -10,6 +10,7 @@ using djack.RogueSurvivor.Engine.Items;
 using djack.RogueSurvivor.Engine.MapObjects;
 using djack.RogueSurvivor.Gameplay.AI.Sensors;
 using djack.RogueSurvivor.Gameplay.AI.Tools;
+using djack.RogueSurvivor.Gameplay.Personality;
 
 namespace djack.RogueSurvivor.Gameplay.AI
 {
@@ -450,6 +451,9 @@ namespace djack.RogueSurvivor.Gameplay.AI
             string[] emotes,
             RouteFinder.SpecialActions allowedChargeActions)
         {
+            int personalityCourage = PersonalitySystem.Bias(m_Actor, DecisionKind.Courage);
+            if (personalityCourage >= 20) courage = ActorCourage.COURAGEOUS;
+            else if (personalityCourage <= -20) courage = ActorCourage.COWARD;
             // alpha10 filter out unreachables if no ranged weapon equipped
             // (we shouldnt be here anyway if we have a ranged weapon)
             if (m_Actor.GetEquippedRangedWeapon() == null)
@@ -570,6 +574,10 @@ namespace djack.RogueSurvivor.Gameplay.AI
                     #endregion
                 }
             }
+
+            if (!HasEquipedRangedWeapon(enemy) && !game.Rules.IsActorTired(m_Actor) &&
+                personalityCourage != 0 && game.Rules.RollChance(Math.Min(60, Math.Abs(personalityCourage))))
+                decideToFlee = personalityCourage < 0;
 
             // alpha10
             // Improve STA management a bit.
@@ -951,7 +959,8 @@ namespace djack.RogueSurvivor.Gameplay.AI
             target = null;
 
             // sanity checks.
-            if (!m_Actor.Model.Abilities.IsLawEnforcer)
+            if (!m_Actor.Model.Abilities.IsLawEnforcer &&
+                PersonalitySystem.Bias(m_Actor, DecisionKind.Law) < 25)
                 return null;
             if (percepts == null)
                 return null;

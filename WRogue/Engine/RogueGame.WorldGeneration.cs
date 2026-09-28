@@ -1010,6 +1010,7 @@ namespace djack.RogueSurvivor.Engine
             }
 
             player.Controller = new PlayerController();
+            player.Personality = null;
             #endregion
 
             /////////////

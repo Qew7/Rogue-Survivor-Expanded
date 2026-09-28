@@ -253,6 +253,9 @@ namespace djack.RogueSurvivor.Engine
                             case PlayerCommand.CITY_INFO:
                                 HandleCityInfo();
                                 break;
+                            case PlayerCommand.RELATIONSHIPS:
+                                HandleRelationships();
+                                break;
                             #endregion
 
                             #region actual game actions.

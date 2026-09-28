@@ -34,6 +34,7 @@ namespace djack.RogueSurvivor.Engine
             new Entry(PlayerCommand.BUILD_LARGE_FORTIFICATION, "Build Large Fortification"),
             new Entry(PlayerCommand.BUILD_SMALL_FORTIFICATION, "Build Small Fortification"),
             new Entry(PlayerCommand.CITY_INFO, "City Info"),
+            new Entry(PlayerCommand.RELATIONSHIPS, "Relationships"),
             new Entry(PlayerCommand.CLOSE_DOOR, "Close"),
             new Entry(PlayerCommand.FIRE_MODE, "Fire"),
             new Entry(PlayerCommand.GIVE_ITEM, "Give"),

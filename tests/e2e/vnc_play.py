@@ -105,7 +105,12 @@ with socket.create_connection(("127.0.0.1", 5900), timeout=10) as vnc:
         time.sleep(0.2)
     else:
         raise RuntimeError("Main menu did not appear")
-    for _ in range(4):
+    for _ in range(2):
+        key(vnc, down)
+    key(vnc, enter)  # Read Records before any save exists.
+    wait_for_log(log, "records screen ready: Read Records")
+    key(vnc, 0xFF1B)
+    for _ in range(3):
         key(vnc, down)
     key(vnc, enter)  # Mods in the main menu.
     wait_for_log(log, "mod selection ready")
@@ -130,7 +135,7 @@ with socket.create_connection(("127.0.0.1", 5900), timeout=10) as vnc:
     assert [mod["name"] for mod in json.load(open(profile))] == [
         "Deonapocalypse", "Auxiliary"
     ], "Menu profile did not retain selected mods and priority"
-    for _ in range(4):
+    for _ in range(5):
         key(vnc, up)
     # The options screen opens first. Enable bases, save the configuration,
     # then load that preset back into the visible options before starting.

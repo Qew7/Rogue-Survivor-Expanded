@@ -124,8 +124,11 @@ namespace djack.RogueSurvivor.Engine
                     if (actor.Model.Abilities.HasToEat)
                     {
                         // food points loss.
+                        int foodBeforeLoss = actor.FoodPoints;
                         --actor.FoodPoints;
                         if (actor.FoodPoints < 0) actor.FoodPoints = 0;
+                        if (foodBeforeLoss > 0 && actor.FoodPoints == 0 && actor.Personality != null)
+                            ReportPersonalityEvent("starvation", actor, null, map, actor.Location.Position);
 
                         // May kill starved actors.
                         if (m_Rules.IsActorStarving(actor))
@@ -315,7 +318,7 @@ namespace djack.RogueSurvivor.Engine
                     if (actor.HasLeader)
                     {
                         // trust.
-                        ModifyActorTrustInLeader(actor, m_Rules.ActorTrustIncrease(actor.Leader), false);
+                        ModifyActorTrustInLeader(actor, m_Rules.ActorTrustIncrease(actor.Leader, actor), false);
                         // bond with leader.
                         if (m_Rules.HasActorBondWith(actor, actor.Leader) && m_Rules.RollChance(Rules.SANITY_RECOVER_BOND_CHANCE))
                         {
@@ -560,12 +563,16 @@ namespace djack.RogueSurvivor.Engine
             }   // skipped in lodetail turns.
 
             AdvanceMapTimers(map);
+            Gameplay.Personality.PersonalitySystem.ObserveEncounters(this, map);
 
             // -- Advance local time.
             #region
             bool wasLocalNight = map.LocalTime.IsNight;
+            int previousDay = map.LocalTime.Day;
             ++map.LocalTime.TurnCounter;
             bool isLocalDay = !map.LocalTime.IsNight;
+            if (previousDay != map.LocalTime.Day)
+                Gameplay.Personality.PersonalitySystem.ResolveDue(this, map);
             #endregion
 
             // -- Check for NPC upgrade.

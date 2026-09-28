@@ -10,6 +10,7 @@ using djack.RogueSurvivor.Engine.Actions;
 using djack.RogueSurvivor.Engine.AI;
 using djack.RogueSurvivor.Gameplay.AI.Sensors;
 using djack.RogueSurvivor.Gameplay.AI.Tools;
+using djack.RogueSurvivor.Gameplay.Personality;
 
 namespace djack.RogueSurvivor.Gameplay.AI
 {
@@ -60,7 +61,8 @@ namespace djack.RogueSurvivor.Gameplay.AI
 
         protected override void CreateSensors()
         {
-            m_LOSSensor = new LOSSensor(LOSSensor.SensingFilter.ACTORS | LOSSensor.SensingFilter.ITEMS);
+            m_LOSSensor = new LOSSensor(LOSSensor.SensingFilter.ACTORS |
+                LOSSensor.SensingFilter.ITEMS | LOSSensor.SensingFilter.CORPSES);
             m_MemorizedSensor = new MemorizedSensor(m_LOSSensor, LOS_MEMORY);
         }
 
@@ -262,7 +264,8 @@ namespace djack.RogueSurvivor.Gameplay.AI
                     m_Actor.Activity = Activity.IDLE;
                     return eatAction;
                 }
-                if (game.Rules.IsActorStarving(m_Actor) || game.Rules.IsActorInsane(m_Actor))
+                if (game.Rules.IsActorStarving(m_Actor) || game.Rules.IsActorInsane(m_Actor) ||
+                    PersonalitySystem.HasTrait(m_Actor, "cannibal"))
                 {
                     eatAction = BehaviorGoEatCorpse(game, FilterCorpses(game, mapPercepts));
                     if (eatAction != null)

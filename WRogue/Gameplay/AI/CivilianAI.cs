@@ -9,6 +9,7 @@ using djack.RogueSurvivor.Engine.AI;
 using djack.RogueSurvivor.Engine.Items;
 using djack.RogueSurvivor.Gameplay.AI.Sensors;
 using djack.RogueSurvivor.Gameplay.AI.Tools;
+using djack.RogueSurvivor.Gameplay.Personality;
 
 namespace djack.RogueSurvivor.Gameplay.AI
 {
@@ -448,7 +449,8 @@ namespace djack.RogueSurvivor.Gameplay.AI
                     m_Actor.Activity = Activity.IDLE;
                     return eatAction;
                 }
-                if (game.Rules.IsActorStarving(m_Actor) || game.Rules.IsActorInsane(m_Actor))
+                if (game.Rules.IsActorStarving(m_Actor) || game.Rules.IsActorInsane(m_Actor) ||
+                    PersonalitySystem.HasTrait(m_Actor, "cannibal"))
                 {
                     eatAction = BehaviorGoEatCorpse(game, FilterCorpses(game, mapPercepts));
                     if (eatAction != null)
@@ -568,7 +570,9 @@ namespace djack.RogueSurvivor.Gameplay.AI
                 #endregion
 
                 #region Trade
-                if (Directives.CanTrade)
+                int tradeBias = PersonalitySystem.Bias(m_Actor, DecisionKind.Trade);
+                if (Directives.CanTrade && (tradeBias == 0 ||
+                    game.Rules.RollChance(Math.Max(0, Math.Min(100, 70 + tradeBias)))))
                 {
                     // get actors we want to trade with.
                     List<Percept> tradingActors = FilterOut(game, FilterNonEnemies(game, mapPercepts),
@@ -578,6 +582,7 @@ namespace djack.RogueSurvivor.Gameplay.AI
                             Actor other = p.Percepted as Actor;
                             // dont bother player or someone we can't trade with or already did trade.
                             if (other.IsPlayer) return true;
+                            if (PersonalitySystem.Attitude(m_Actor, other) <= -30) return true;
                             if (!game.Rules.CanActorInitiateTradeWith(m_Actor, other)) return true;
                             if (IsActorTabooTrade(other)) return true;
                             // alpha10 dont bother someone who is fighting or fleeing
@@ -833,7 +838,8 @@ namespace djack.RogueSurvivor.Gameplay.AI
             #endregion
 
             // 22 go revive corpse.
-            ActorAction revive = BehaviorGoReviveCorpse(game, FilterCorpses(game, mapPercepts));
+            ActorAction revive = PersonalitySystem.Bias(m_Actor, DecisionKind.Compassion) <= -20 ? null :
+                BehaviorGoReviveCorpse(game, FilterCorpses(game, mapPercepts));
             if (revive != null)
             {
                 m_Actor.Activity = Activity.IDLE;
@@ -842,7 +848,8 @@ namespace djack.RogueSurvivor.Gameplay.AI
 
             // 23 use exit.
             #region
-            if (game.Rules.RollChance(USE_EXIT_CHANCE))
+            if (game.Rules.RollChance(Math.Max(0, Math.Min(100,
+                USE_EXIT_CHANCE + PersonalitySystem.Bias(m_Actor, DecisionKind.Explore)))))
             {
                 ActorAction useExit = BehaviorUseExit(game, UseExitFlags.DONT_BACKTRACK);
                 if (useExit != null)
@@ -920,7 +927,9 @@ namespace djack.RogueSurvivor.Gameplay.AI
 
             // 28 (law enforcer) watch for murderers.
             #region
-            if (m_Actor.Model.Abilities.IsLawEnforcer && mapPercepts != null && game.Rules.RollChance(LAW_ENFORCE_CHANCE))
+            if ((m_Actor.Model.Abilities.IsLawEnforcer || PersonalitySystem.Bias(m_Actor, DecisionKind.Law) >= 25) &&
+                mapPercepts != null && game.Rules.RollChance(Math.Max(0, Math.Min(100,
+                    LAW_ENFORCE_CHANCE + PersonalitySystem.Bias(m_Actor, DecisionKind.Law)))))
             {
                 Actor target;
                 ActorAction lawAction = BehaviorEnforceLaw(game, mapPercepts, out target);

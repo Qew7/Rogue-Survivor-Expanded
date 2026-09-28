@@ -74,6 +74,25 @@ Left/Right change the selected value.
 The chosen rules and settings are stored with the game save. Older saves keep
 their original mode rules.
 
+### NPC traits and memories
+
+The new-game configuration has an **NPC traits and memories** switch. When on,
+intelligent living NPCs begin with three traits and one or two unresolved
+memories. Traits influence what they collect, how they fight, their willingness
+to join and trust a group, trade, exploration, and their response to crime.
+Item likes and dislikes can target any item model. Significant experiences,
+including a leader's death, violence, a base theft, and a raid, create new
+memories for NPCs who experience or witness them. After several game days,
+memories resolve according to the NPC's traits and later experiences, granting
+a skill level or an advanced trait. Memories tied to people remain in the NPC's
+private relationship history after resolution. The NPC reacts differently to
+specific people, their leader's group, and their faction when trading or
+considering a leader. Inspecting an NPC shows traits, but not private memories.
+The catalog and extension points are described in
+[docs/npc-personality.md](docs/npc-personality.md).
+Press Shift+I in game to see your relationships with people, groups, and factions.
+Use Read Records below Load Game to browse saved NPC histories together or individually.
+
 The **Expanded** preset enables claimable bases. Stand inside an enclosed
 building and press **Ctrl+B** to preview its boundaries; press **Y** to claim
 it. Hostile actors and undead block their rooms. Fortified passages can connect

@@ -20,6 +20,24 @@ static class GamePresetScenario
             Check.Equal(true, vintage.Zombified, "vintage spawns zombified humans");
             Check.Equal(false, vintage.Evolution, "vintage has no evolution");
             Check.Equal(true, expanded.Bases, "expanded enables bases");
+            Check.Equal(true, standard.NpcPersonalitiesEnabled,
+                "standard enables NPC personalities by default");
+            string[] presetLabels = (string[])typeof(RogueGame).GetField("GamePresetLabels",
+                BindingFlags.Static | BindingFlags.NonPublic).GetValue(null);
+            int personalityRow = Array.IndexOf(presetLabels, "NPC traits and memories");
+            Check.Equal(true, personalityRow >= 0, "personality option appears in new-game menu");
+            string[] presetValues = (string[])Check.Call(typeof(RogueGame), "GamePresetValues",
+                new[] { typeof(GamePreset) }, standard);
+            Check.Equal("ON", presetValues[personalityRow], "menu shows enabled default");
+            Check.Call(typeof(RogueGame), "ChangeGamePreset",
+                new[] { typeof(GamePreset), typeof(int), typeof(int) }, standard, personalityRow - 1, 1);
+            Check.Equal(false, standard.NpcPersonalitiesEnabled, "menu action disables personalities");
+            presetValues = (string[])Check.Call(typeof(RogueGame), "GamePresetValues",
+                new[] { typeof(GamePreset) }, standard);
+            Check.Equal("OFF", presetValues[personalityRow], "menu shows disabled value");
+            Check.Call(typeof(RogueGame), "ChangeGamePreset",
+                new[] { typeof(GamePreset), typeof(int), typeof(int) }, standard, personalityRow - 1, 1);
+            Check.Equal(true, standard.NpcPersonalitiesEnabled, "menu action restores personalities");
             BaseTownGenerator generator = new BaseTownGenerator(world.Game, BaseTownGenerator.DEFAULT_PARAMS);
             Session.Get.GameMode = GameMode.GM_VINTAGE;
             Actor vintageSpawn = generator.CreateNewUndead(0);
@@ -30,6 +48,7 @@ static class GamePresetScenario
             GamePreset custom = standard.Copy();
             custom.Name = "CUSTOM ONE";
             custom.Bases = true;
+            custom.NpcPersonalitiesEnabled = false;
             custom.Infection = true;
             custom.HungerThreshold = 75;
             custom.SleepThreshold = 75;
@@ -95,11 +114,15 @@ static class GamePresetScenario
                 GamePresetCollection loaded = GamePresetCollection.Load(path);
                 Check.Equal(1, loaded.Presets.Count, "custom preset saved");
                 Check.Equal(75, loaded.Presets[0].HungerThreshold, "custom values survive reload");
+                Check.Equal(false, loaded.Presets[0].NpcPersonalitiesEnabled,
+                    "custom NPC personality setting survives reload");
                 Session.Get.GamePreset = loaded.Presets[0];
                 BinarySaveStore.Save(path + ".session", Session.Get);
                 Session loadedSession = BinarySaveStore.Load<Session>(path + ".session");
                 Check.Equal("CUSTOM ONE", loadedSession.GamePreset.Name, "game save retains preset");
                 Check.Equal(true, loadedSession.GamePreset.Bases, "game save retains base rule");
+                Check.Equal(false, loadedSession.GamePreset.NpcPersonalitiesEnabled,
+                    "game save retains NPC personality setting");
                 Session.Get.GameMode = GameMode.GM_VINTAGE;
                 typeof(Session).GetField("m_GamePreset", BindingFlags.Instance | BindingFlags.NonPublic)
                     .SetValue(Session.Get, null);

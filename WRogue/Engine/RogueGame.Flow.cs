@@ -223,14 +223,15 @@ namespace djack.RogueSurvivor.Engine
             string[] menuEntries = new string[] {
                 "New Game",                                     // 0
                 isLoadEnabled ?  "Load Game" : "(Load Game)",   // 1
-                "Redefine keys",                                // 2
-                "Options",                                      // 3
-                "Mods",                                         // 4
-                "Game Manual",                                  // 5
-                "All Hints",                                    // 6
-                "Hi Scores",                                    // 7
-                "Credits",                                      // 8
-                "Quit Game" };                                  // 9
+                "Read Records",                                 // 2
+                "Redefine keys",                                // 3
+                "Options",                                      // 4
+                "Mods",                                         // 5
+                "Game Manual",                                  // 6
+                "All Hints",                                    // 7
+                "Hi Scores",                                    // 8
+                "Credits",                                      // 9
+                "Quit Game" };                                  // 10
             int selected = 0;
             do
             {
@@ -323,15 +324,19 @@ namespace djack.RogueSurvivor.Engine
                                     break;
 
                                 case 2:
-                                    HandleRedefineKeys();
+                                    HandleReadRecords();
                                     break;
 
                                 case 3:
+                                    HandleRedefineKeys();
+                                    break;
+
+                                case 4:
                                     HandleOptions(false);
                                     ApplyOptions(false);
                                     break;
 
-                                case 4:
+                                case 5:
                                     ModInfo[] previousMods = ModCatalog.Selected;
                                     if (HandleModSelection())
                                     {
@@ -359,23 +364,23 @@ namespace djack.RogueSurvivor.Engine
                                     }
                                     break;
 
-                                case 5:
+                                case 6:
                                     HandleHelpMode();
                                     break;
 
-                                case 6:
+                                case 7:
                                     HandleHintsScreen();
                                     break;
 
-                                case 7:
+                                case 8:
                                     HandleHiScores(true);
                                     break;
 
-                                case 8:
+                                case 9:
                                     HandleCredits();
                                     break;
 
-                                case 9:
+                                case 10:
                                     m_IsGameRunning = false;
                                     loop = false;
                                     break;
@@ -625,6 +630,12 @@ namespace djack.RogueSurvivor.Engine
 
         void NotifyOrderablesAI(Map map, RaidType raid, Point position)
         {
+            NotifyOrderablesAI(map, raid, position, null);
+        }
+
+        void NotifyOrderablesAI(Map map, RaidType raid, Point position, Actor source)
+        {
+            ReportPersonalityEvent(RaidPersonalityKind(raid, source), source, null, map, position, false, false);
             foreach (Actor a in map.Actors)
             {
                 OrderableAI oAI = a.Controller as OrderableAI;

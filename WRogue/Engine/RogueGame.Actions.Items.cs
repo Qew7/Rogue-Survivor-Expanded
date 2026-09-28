@@ -416,7 +416,7 @@ namespace djack.RogueSurvivor.Engine
 
             if (quantityAdded > 0 && noticeTheft && baseClaim != null &&
                 !baseClaim.Owns(actor) && it.LastDroppedBy != actor)
-                NoticeXpdBaseTheft(actor, baseClaim, position);
+                NoticeXpdBaseTheft(actor, baseClaim, position, it);
 
             // message
             if (IsVisibleToPlayer(actor) || IsVisibleToPlayer(new Location(map, position)))
@@ -429,9 +429,15 @@ namespace djack.RogueSurvivor.Engine
                 DoEquipItem(actor, it);
         }
 
-        void NoticeXpdBaseTheft(Actor thief, XpdBase baseClaim, Point position)
+        void NoticeXpdBaseTheft(Actor thief, XpdBase baseClaim, Point position, Item item)
         {
             Map map = thief.Location.Map;
+            ReportPersonalityEvent("base_theft", thief, baseClaim.GroupLeader, map, position, false);
+            if ((baseClaim.FoodRoom.HasValue && baseClaim.FoodRoom.Value.Contains(position) && item is ItemFood) ||
+                (baseClaim.WeaponRoom.HasValue && baseClaim.WeaponRoom.Value.Contains(position) &&
+                    (item is ItemMeleeWeapon || item is ItemRangedWeapon || item is ItemAmmo)))
+                ReportPersonalityEvent("supplies_lost", baseClaim.GroupLeader, thief, map, position,
+                    false, false);
             foreach (Actor witness in map.Actors)
             {
                 if (witness == thief || witness.IsDead || witness.IsSleeping ||
@@ -447,6 +453,11 @@ namespace djack.RogueSurvivor.Engine
         {
             // spend APs.
             SpendActorActionPoints(actor, Rules.BASE_ACTION_COST);
+            bool neededFood = gift is ItemFood && m_Rules.IsActorHungry(target);
+            bool neededMedicine = gift is ItemMedicine &&
+                (target.HitPoints < m_Rules.ActorMaxHPs(target) / 2 || target.Infection > 0);
+            if (neededFood || neededMedicine)
+                ReportPersonalityEvent("helped", target, actor, target.Location.Map, target.Location.Position);
 
             // if leader give to follower, improve trust.
             if (target.Leader == actor)
