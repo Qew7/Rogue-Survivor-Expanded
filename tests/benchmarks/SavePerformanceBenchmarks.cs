@@ -10,7 +10,7 @@ using djack.RogueSurvivor.Engine;
 // Run only against a copied save. All writes go to an independent temporary directory.
 static class SavePerformanceBenchmarks
 {
-    sealed class CountingStream : Stream
+    internal sealed class CountingStream : Stream
     {
         public long Bytes, Calls;
         public override bool CanRead { get { return false; } }
@@ -85,7 +85,7 @@ static class SavePerformanceBenchmarks
             Measure("presave world traversal", () => { session.World.OptimizeBeforeSaving(); return ""; });
             Measure("current atomic file save", () => {
                 string output = Path.Combine(directory, "output.dat");
-                BinarySaveStore.Save(output, session, session.Mods);
+                BinarySaveStore.SaveSnapshot(output, session, session.Mods);
                 return "file bytes=" + new FileInfo(output).Length;
             });
             Measure("graph only, counting sink", () => {

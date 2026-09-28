@@ -32,7 +32,7 @@ static class RecordsScreenScenario
                 BinarySaveStore.Save(Path.Combine(directory, "world.dat"), Session.Get);
                 foreach (Keys key in new[] { Keys.Enter, Keys.Enter, Keys.Escape }) ui.QueueWaitKey(key);
                 int residentIndex = RecordsReader.Residents(new RecordsSave("test", Session.Get))
-                    .FindIndex(r => r.Identity == actor.PersonalityIdentity) + 1;
+                    .FindIndex(r => r.Identity == actor.PersonalityIdentity) + 2;
                 for (int i = 0; i < residentIndex; i++) ui.QueueWaitKey(Keys.Down);
                 foreach (Keys key in new[] { Keys.Enter, Keys.Escape, Keys.Escape, Keys.Escape })
                     ui.QueueWaitKey(key);

@@ -54,12 +54,15 @@ static class SaveStructureAudit
         SaveGraphAudit graph = new SaveGraphAudit(session);
         List<KeyValuePair<Type, SaveGraphAudit.TypeCount>> types = new List<KeyValuePair<Type, SaveGraphAudit.TypeCount>>(graph.Types);
         types.Sort((a, b) => b.Value.Bytes.CompareTo(a.Value.Bytes));
-        Console.WriteLine("SAVE AUDIT graph nodes={0}; reference occurrences={1}; raw bytes={2}; scan={3:F2}s", graph.Nodes.Count, graph.ReferencesWritten, graph.Bytes, timer.Elapsed.TotalSeconds);
+        Console.WriteLine("SAVE AUDIT graph nodes={0}; reference occurrences={1}; legacy raw estimate={2}; scan={3:F2}s", graph.Nodes.Count, graph.ReferencesWritten, graph.Bytes, timer.Elapsed.TotalSeconds);
         Console.WriteLine("SAVE AUDIT type occurrences={0}; unique types={1}; type name bytes={2}; unique type name bytes={3}", graph.TypeOccurrences, graph.UniqueTypes, graph.TypeBytes, graph.UniqueTypeBytes);
         Console.WriteLine("SAVE AUDIT field groups={0}; field schema bytes={1}; unique field schema bytes={2}", graph.FieldGroups, graph.FieldBytes, graph.UniqueFieldBytes);
         Console.WriteLine("SAVE AUDIT string occurrences={0}; unique values={1}; string payload bytes={2}; unique payload bytes={3}", graph.StringOccurrences, graph.UniqueStrings, graph.StringBytes, graph.UniqueStringBytes);
         foreach (KeyValuePair<Type, SaveGraphAudit.TypeCount> pair in types.GetRange(0, Math.Min(15, types.Count)))
             Console.WriteLine("SAVE AUDIT node type {0}: count={1}; bytes={2}", pair.Key.FullName, pair.Value.Nodes, pair.Value.Bytes);
+        SavePerformanceBenchmarks.CountingStream sink = new SavePerformanceBenchmarks.CountingStream();
+        ObjectGraphStore.Write(sink, session);
+        Console.WriteLine("SAVE AUDIT current compact graph raw bytes={0}; writes={1}", sink.Bytes, sink.Calls);
         long maps = 0, outside = 0;
         SaveTileAudit tiles = new SaveTileAudit();
         foreach (object node in graph.Nodes)

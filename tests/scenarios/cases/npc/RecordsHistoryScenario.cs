@@ -63,6 +63,8 @@ static class RecordsHistoryScenario
             snapshot = new RecordsSave("test", Session.Get);
             string history = String.Join(" ", new List<string>(RecordsReader.Lines(snapshot, personal)).ToArray());
             Check.Equal(true, history.Contains("gained trait Selfless"), "resolution outcome stays in history");
+            Check.Equal(true, new RecordsProfile(personal, snapshot.Turn).TraitChanges > 0,
+                "real trait resolution contributes typed development statistics");
             Check.Equal(true, history.Contains("Alex died"), "dead resident remains readable");
             Check.Equal(true, history.Contains("helped Alex"), "early life event survives long journal and death");
         });

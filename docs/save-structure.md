@@ -1,10 +1,11 @@
 # Save structure investigation
 
 This investigates a **copy** of the day-12 version-4 save profiled in
-[performance.md](performance.md#copied-day-12-world-save-investigation).
+[performance.md](performance.md#copied-day-12-world-original-format-4-investigation).
 The input is 25,601,550 bytes. The live game was left running; its container
 was not restarted. These findings describe this snapshot, not every world.
-Production serialization and the save version remain unchanged.
+The audit below describes the original format 4. Its findings led to the
+implemented format-5 changes described later in this document.
 
 ## Maps and shared references
 
@@ -51,7 +52,7 @@ The audit matches the previous writer measurement exactly: **1,104,833,938
 uncompressed bytes**. The graph has 1,804,161 distinct reference objects and
 2,192,769 reference occurrences. References already cost a tag and a 32-bit ID.
 
-| Repeated representation | Occurrences | Unique entries | Current raw bytes |
+| Repeated representation | Occurrences | Unique entries | Format-4 raw bytes |
 | --- | ---: | ---: | ---: |
 | Assembly-qualified type names | 9,263,724 | 155 types | 917,219,523 |
 | Field counts and field names | 2,569,954 groups | Schemas total 14,858 bytes | 110,053,233 |
@@ -65,9 +66,10 @@ The 25.6 MB file size consequently hides much of the save work.
 
 The 155 unique type-name strings total 21,504 bytes. Storing these and the
 field schemas once, replacing type names with 32-bit IDs, would give roughly
-**115 MB raw** under a simple accounting model. This is an encoding estimate,
-not a measured new format: framing, validation and migration details remain
-to be designed. It predicts neither compressed file size nor elapsed time.
+**115 MB raw** under a simple accounting model. This was a preliminary encoding
+estimate, excluding later string pooling and specialized Tile nodes. It predicted neither compressed file size nor
+elapsed time. The implemented codec now measures 90,058,454 raw bytes for
+this same graph.
 
 Unique string payloads total 4,869,644 bytes. A string table with 32-bit IDs
 would save roughly 10.5 MB more raw, after accounting for IDs and the table.
@@ -107,32 +109,35 @@ decoration order, contents, null versus empty lists, coordinate order, map
 dimensions and shared references. Equal layouts alone do not justify removing
 a map's actors, objects, exits, local time or seed.
 
-## Recommended sequence
+## Implemented format-5 changes
 
-1. **Compatible writer/reader improvements:** buffer before GZip (already
-   measured at about 27% less compression-path time), cache serializable
-   member metadata during each operation, and cache resolved/validated types
-   during each read. These retain the existing wire format and allowlist.
-   Verify through the actual atomic file writer and reader.
-2. **New version with type and field tables:** retain graph object IDs and
-   schema field names for migration, but write each name once. Preserve the
-   version-4 reader and all existing legacy readers. This targets the largest
-   measured structural overhead before introducing domain-specific codecs.
-3. **String table and compact tile nodes:** deduplicate immutable values and
-   specialize common tile fields while keeping graph identity. Measure actual
-   compressed size, write/load time and peak memory before adopting blocks/RLE.
-4. **Reader allocation work:** avoid a separate field-name dictionary and
-   StoredValue object for every tile field. Cached schemas and deferred
-   reference fixups can reduce intermediate allocations while preserving
-   forward references and cycles. A full collection after this diagnostic load
-   retained about 172 MB; the earlier uncollected reading was 2.21 GB. Neither
-   reading measures peak RSS, so peak memory needs separate instrumentation.
+- Type names and ordered field schemas are written once per operation and then
+  referenced by integer IDs. Reflection members and validated types are cached.
+- Immutable string values use a shared table. Exact historical text and
+  deduplication keys are preserved.
+- Tiles keep their object IDs and decoration-list references, while model ID
+  and all flag bits use fixed integer payloads. No equal mutable tiles or maps
+  are merged; no terrain palette or RLE has been introduced.
+- The reader uses cached field schemas and deferred reference fixups, avoiding
+  per-tile field dictionaries and field-value objects for undecorated tiles.
+- Both reader and writer enforce an 8,000,000-object limit, replacing the old
+  reader-only 2,000,000 limit. The audited graph used 90.2% of the old limit.
+  Limits for schemas, strings and collections are documented in
+  [save-format.md](save-format.md).
+- A 64 KiB buffer batches writes before compression. Atomic replacement and
+  backup recovery remain in the actual file writer.
+- Resident history is compressed in an independent section. The world graph
+  stores a null archive field; full loading attaches the separately loaded
+  archive. Read Records loads only that section, with no session activation.
 
-The current reader caps the graph at 2,000,000 nodes. This snapshot already
-uses 90.2% of that limit, leaving 195,839 nodes. The writer does not enforce the
-same limit. Growing histories and other world objects therefore warrant a
-separate save-readability regression check. A type table alone does not reduce
-node count; a tile-block design or a reviewed limit change must address this.
+The same copied graph measured 7.79 s serialization (three-sample median),
+13,510,655 compressed bytes and 10.81 s loading with the compact codec. Reading
+its archive alone took 0.46 s. A serialize/load/serialize SHA-256 digest matched,
+including the serialized fields and shared-reference IDs. The diagnostic used
+an old assembly only to import the old copy; current production rejects old
+world saves. Settings files from format 4 remain readable. See
+[performance.md](performance.md#implemented-compact-graph-and-independent-records-section)
+for the measurements and their scope. Peak RSS has not been measured.
 
 Resident history text, deduplication keys and private relationship memories
 serve different purposes. Keep all of them. History compaction should preserve
@@ -141,11 +146,12 @@ names or content definitions can change old records after a rename or mod change
 Recreating maps from their seeds is also unsuitable for lossless saving unless
 every generation dependency and subsequent mutation is recorded.
 
-Before a format migration, test old-version loading, shared references/cycles,
-tile mutation independence, decorations and flags, exits, actor/item locations,
-RNG and clocks, pending and resolved memories, relationship histories, resident
-entries and deduplication, and atomic backup recovery. A repeated save/load
-should preserve a normalized state digest and deterministic next-turn results.
+Verification covers shared references/cycles, independent equal tiles,
+decoration null/empty/order boundaries and flags, exits, actor/item locations,
+RNG and clocks, pending/resolved memories, relationship histories, resident
+entries and deduplication, and atomic backup recovery. New scenarios are
+`storage/compact-save`, `npc/records-lifetime-items`, `npc/records-query` and
+`world/records-browser`. Old world compatibility is intentionally not provided.
 
 ## Reproduce the audit
 
@@ -153,12 +159,16 @@ should preserve a normalized state digest and deterministic next-turn results.
 docker build --target scenarios -t rogue-survivor-save-structure .
 docker run --rm --cpus=1 --memory=3g \
   --mount type=bind,source=/private/tmp/rogue-save-profile,target=/profile,readonly \
-  rogue-survivor-save-structure --audit-save /profile/input.dat
+  rogue-survivor-save-structure --audit-save /profile/current-save.dat
 ```
+
+Use a copied **format-5** save named `current-save.dat`; the historical
+format-4 input requires the original diagnostic image.
 
 `--audit-save` reads serialized fields and collections without activating the
 session, loading mods, reconstructing map indexes or running presave cleanup.
-It does not write any saves. The unit test checks byte accounting against the
-actual graph writer, a cycle/shared-map/shared-tile roundtrip, distinct equal
-tiles, and null/empty/ordered decoration boundaries. Full test and portable
+It does not write any saves. Byte accounting reports a **legacy-format estimate**, followed by the actual
+compact raw size; the per-type estimates are not format-5 byte totals. The unit
+test checks that compact output is smaller, a cycle/shared-map/shared-tile
+roundtrip, distinct equal tiles, and null/empty/ordered decoration boundaries. Full test and portable
 build validation: `docker build --target test .`.

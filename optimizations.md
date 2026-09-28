@@ -19,6 +19,8 @@ For benchmark commands, before/after timings, and measurement limits, see
 | Corpses | Added an auxiliary membership index rebuilt after loading. |
 | Canvas resources | Released temporary graphics resources at frame clear and canvas shutdown. |
 | District worker | Waited for turn notifications instead of repeatedly polling while idle. |
+| Save graph | Added shared type/schema/string tables, compact Tile nodes, cached reflection metadata and buffered compression in format 5. |
+| Read Records | Stored the archive once in an independent section and cached resident metrics and timeline lines for browsing. |
 
 The canvas change fixes resource lifetime; it has no claimed frame-rate gain.
 Behavior is covered by named scenarios and unit tests.

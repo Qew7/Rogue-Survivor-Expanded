@@ -1,15 +1,13 @@
 # Save format
 
-`BinarySaveStore` writes every binary save atomically and keeps the previous
-file as `<name>.bak`. It recognizes five payloads:
+Game worlds use **format 5**. Old world saves, including format 4 and unmarked
+BinaryFormatter files, are intentionally unsupported; start a new game.
+No running container or existing world save is deleted by the upgrade.
+Version-4 binary settings (options, keybindings, hints, scores and preset
+collections) remain readable, so changing the world format does not reset them.
+Unmarked BinaryFormatter settings are no longer accepted.
 
-| Header | Payload | Reader |
-| --- | --- | --- |
-| None | Original BinaryFormatter stream | Legacy migration only |
-| `RSE1` + byte `1` | BinaryFormatter stream | Legacy migration only |
-| `RSE1` + byte `2` | GZip compressed object graph | Previous writer and current reader |
-| `RSE1` + byte `3` | Ordered mod names and versions, then GZip graph | Previous writer and current reader |
-| `RSE1` + byte `4` | Expanded game version, ordered mod names and versions, then GZip graph | Current writer and reader |
+## Envelope and archive
 
 Saves record the Rogue Survivor Expanded version (`0.2.0` at
 this release). Saves from `0.1.0`, `0.1.1`, and the current release series are accepted;
@@ -17,106 +15,119 @@ other versions are rejected before loading their mod list or object graph. The
 error shows the saved and running versions. Older
 formats have no game version and remain readable for migration.
 
-The mod list is outside the graph so a failed load can still report which mod
-and version the save needs. Older saves have no recorded mod list. Loading a
-save applies its available mods in saved priority order; unavailable mods fall
-back to original resource files and are omitted from the next save. The menu's
-selected mods are stored separately in `mod-profile.json` under the user data
-directory and restored when gameplay ends. If an absent mod supplied a model ID
-that has no definition in the active game data, loading stops and reports the
-missing mod and required version.
+Every write uses a temporary file, flushes it, and atomically replaces the
+destination, retaining the previous file as `<name>.bak`. Failed writes remove
+the temporary file. Normal game loading can recover from the backup; Read
+Records reads exactly the selected file and never substitutes its backup.
 
-The version 2 graph assigns IDs to reference objects. Nodes contain their
-type, instance fields, arrays or collection elements. Field names are read by
-name, so missing fields keep defaults and unknown fields are ignored. Shared
-references and cycles retain their identity. The reader accepts serializable
-game types and a restricted set of framework values and collections.
+The envelope contains, in order:
 
-For a measured map/reference audit and lossless compaction candidates, see
-[save-structure.md](save-structure.md). Its diagnostic tooling leaves the
-production format unchanged.
+1. `RSE1` magic and one byte `5`.
+2. The game version string and ordered mod name/version manifest.
+3. A Boolean indicating whether the root is a Session.
+4. For a Session: the personality-enabled Boolean, save turn (Int32),
+   compressed archive length (Int64), and the GZip archive graph.
+5. The GZip world/root graph.
 
-Armed traps placed by base owners can retain a reference to their `XpdBase`.
-This lets the base leader and their followers cross those traps safely after a save and load.
-Older saves have no trap base reference and continue using the trap owner's
-existing group safety rule.
+Non-session settings omit step 4. The game-version compatibility policy remains
+independent of the envelope version; an accepted game-version string does not
+make an old world format readable. Incompatible game versions are rejected
+before applying mods, and a backup does not hide that error.
 
-Older saves may contain bases assigned to an entire faction without a group
-leader. Such claims are released when the map is loaded; group-owned claims
-remain intact.
+The resident archive is stored **once**, in its own length-bounded section.
+The world graph writes null for the Session's `m_ResidentRecords` field without
+mutating the live Session. Full loading restores that field from the archive.
+Existing archive data is preserved even if personalities are disabled.
+Normal saves refresh living NPC snapshots before serialization; the diagnostic
+`SaveSnapshot` entry point preserves existing snapshots without accessing
+model catalogs.
 
-Ground items may store the actor who last dropped them. This keeps an actor's
-own item from being treated as stolen when picked up on a foreign base, even
-after loading. Older saves have no dropper reference and retain the previous
-ground-item behavior.
+Read Records reads only the archive section and checks its own GZip integrity.
+It requires personalities enabled and does not load maps, activate a Session,
+apply mods, change options, or start simulation. It can therefore read records
+even when mod assets are unavailable. It does not validate the unused world
+section; full game loading validates both sections and checks that the turn
+and personality setting match their envelope.
 
-NPC supply orders store whether a leader sent the follower specifically for
-food. This keeps an active food trip focused on food after loading. Orders
-from older saves retain their previous food-and-weapon behavior.
+The mod manifest remains outside both graphs. Full loading restores available
+mods in saved priority order, with existing fallback/error behavior for missing
+resources or model definitions. The menu mod profile remains separate.
 
-When changing a saved class, add a migration test to `tests/unit/` and run both
-`docker build --target test .` and `bash tests/e2e.sh`. The end-to-end test
-creates a real world, saves it, loads it, and reaches the game screen again.
-Renaming a private field loses its old value unless the reader is taught to
-map the old name. Renaming or removing a type needs an explicit type alias in
-`ObjectGraphStore`.
+## Compact graph
 
-The legacy `BinaryFormatter` reader remains solely for existing local saves.
-After loading one, saving again writes version 4. Do not load legacy files
-obtained from untrusted sources.
+Each section has its own tables and reference graph:
 
-Game sessions now contain an optional `GamePreset` field. Saves written before
-presets were introduced reconstruct the matching Standard, Corpses & Infection,
-Vintage, or Expanded rules from the old mode ID. The session also stores the
-selected gameplay options, so loading a game restores its rules. User-defined
-presets are kept separately in the user config directory as `game-presets.dat`; deleting that file
-does not change existing game saves.
+- Object IDs are contiguous, starting at 1; node ID 0 ends the graph. Shared
+  mutable objects and cycles retain identity.
+- Type/schema IDs and string IDs use a negative ID followed by their definition
+  on first use, and a positive ID on subsequent uses.
+- Each type name and its ordered field names is written once. Field names still
+  support optional fields: absent fields retain defaults and unknown fields are
+  ignored. Type resolution and member metadata are cached per operation.
+- Values have null, reference, literal or value-structure tags. Primitive and
+  enum encodings preserve their previous values; strings share immutable text.
+- Collections serialize their elements, not internal capacity or indexes.
+- Tile nodes retain their object ID and write model ID, **all** flags and the
+  decoration-list reference as three Int32 values. Decoration reference 0 means
+  null. Empty lists, ordered contents and shared lists remain distinct as needed.
+  Equal tile values do not merge mutable Tile instances.
 
-New games with NPC personalities enabled save each intelligent living actor's
-trait instances, unresolved memories and a bounded journal of witnessed
-significant events in the actor graph. The definitions and their callbacks are
-registered from game code and are not serialized. The selected preset stores
-whether this system is enabled. Compatibility with saves from before NPC
-personalities was introduced is outside the current feature scope.
-Journal entries also retain whether the observer was related to the event's
-subject at the time, so a later zombification can affect former companions.
-Pending memories retain the same relationship flag, allowing their outcomes
-to use it even when the bounded event journal evicts the original event.
-They also retain the latest turn for each evidence kind declared by the memory
-definition, so later events can still affect resolution after journal eviction.
-Actors lazily receive a persistent personality identity when involved in an
-event. Memories and journal entries keep those identities alongside names so
-different actors with the same name remain distinct across saves.
-The personality state also stores private person, leader-group, and faction
-relationship records. A record keeps a feeling score and references to its
-attributed memory instances, including resolved instances with their resolution
-turn and outcome. Person and group records use persistent actor identities;
-faction records use existing numeric faction IDs. Names are display snapshots,
-not lookup keys. These fields are optional when reading older personality saves;
-an absent relationship tree starts empty.
-The player's optional personality state stores only relationships formed from
-events they directly experience or witness. It has no generated starting traits
-or memories. Player memories resolve without NPC trait or skill rewards, while
-their attributed relationship history remains in the saved actor graph.
+A 64 KiB buffer sits before GZip. The writer and reader both cap graphs at
+8,000,000 objects and string values, type tables at 4,096 types, and collection sizes at
+100,000,000 elements. Invalid IDs, counts, type/value kinds, duplicate schema
+field names and trailing graph data are rejected. The type allowlist still
+permits serializable game types and a small set of framework values/collections.
+The settings-only version-4 reader caps its graph at 20,000 objects and rejects
+a Session root immediately.
 
-Unique encounters, faction experiences, and world/story events reuse these
-existing string memory and trait IDs in the graph. Definitions such as faction
-attitude bias and first-encounter policy are rebuilt from the content catalog;
-they are not serialized. Retained per-person encounter memories prevent a
-unique character from granting the same first encounter again after loading.
-Source-specific memories and acquired traits have a save/load scenario; this
-content expansion does not change the save header or existing numeric IDs.
+## Persistent gameplay state
 
-Sessions also store an optional `m_ResidentRecords` chronicle. It holds NPC
-identity/name snapshots, arrival and death turns, and ordered text records of
-significant observations, memory creation, and resolution outcomes. It keeps no
-Actor references, so histories survive actor and corpse removal. Entries are not
-evicted; this increases save size over long games. Older saves recover a partial
-chronicle from surviving actors, corpses, and personality records, without
-inventing discarded events. `Read Records` reads the selected file exactly and
-does not replace the active Session or silently fall back to a backup.
+Numeric model/content IDs and string personality IDs remain stable. Tile,
+actor and item model definitions and personality callbacks are rebuilt from
+content; the save retains their IDs and instance state.
 
-Each claimed base section may reference the original section through its
-optional `m_Root` field. Sections on connected maps then remain one base after
-loading. Older saves have no such field; each existing claim remains its own
-section until the player claims a connected level.
+The graph retains map ownership and exits, local/world clocks and RNG state,
+actor/item positions, corpse references, trap and base ownership, item dropper
+attribution, NPC orders, selected presets/options, and connected base sections.
+Auxiliary map indexes are not serialized and are rebuilt for gameplay.
+
+Personality state retains traits, pending memories, bounded observations,
+evidence turns, persistent actor identities, and person/group/faction
+relationships. The same memory can be referenced from a pending queue and
+several relationships; it is stored once and remains in those histories after
+resolution, with its outcome and turn. Player relationships retain their own
+experienced/witnessed events and do not expose another NPC's private memory
+during gameplay.
+
+Resident records retain NPC identity/name, spawn/death turns, faction and
+leader-group snapshots, last inventory and traits, cumulative item acquisitions,
+and the snapshot turn. Entries retain ordered text, event kind, direct/witnessed
+status, participant IDs and whether resolution actually granted a trait.
+Deduplication keys are preserved. Histories contain no Actor references and
+survive actor/corpse removal; entries are not evicted.
+
+Inventory's `TotalReceived` counts item **units** successfully added by AddAll
+and AddAsMuchAsPossible, including generation, pickups, gifts and trades.
+Partial additions count only the transferred quantity; failed additions add
+nothing. Consumption/removal does not subtract. Picking up the same item again
+counts another acquisition. This is not a count of distinct physical items.
+
+An explicitly missing archive can still be rebuilt from available actors,
+corpses and personality records and marked partial. This does not add support
+for old world envelopes or invent discarded events.
+
+## Verification
+
+When changing saved fields, test save/load state, alias identity and boundaries.
+Renaming fields/types needs an explicit mapping or a new format policy; preserve
+numeric and string content IDs. Run the named scenarios, then
+`docker build --target test .` and `bash tests/e2e.sh`.
+
+Relevant scenarios: `storage/compact-save`, `npc/records-reader-save`,
+`npc/records-lifetime-items`, `npc/records-query`, `world/records-browser`,
+and existing personality/relationship/base persistence cases. The E2E test
+generates a world, writes/loads format 5, then uses search, filters, sorting and
+the interesting-NPC selector through the real VNC UI.
+
+See [performance.md](performance.md) for measurements and
+[save-structure.md](save-structure.md) for the original structural audit.

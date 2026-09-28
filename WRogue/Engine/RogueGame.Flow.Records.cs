@@ -42,22 +42,7 @@ namespace djack.RogueSurvivor.Engine
                     "Disabled or unreadable saves skipped: " + skipped);
                 if (choice < 0) return;
                 RecordsSave save = saves[choice];
-                List<ResidentRecord> people = RecordsReader.Residents(save);
-                List<string> residents = new List<string> { "All residents" };
-                foreach (ResidentRecord resident in people)
-                    residents.Add(resident.Name + " [" + resident.Identity.ToString("N").Substring(0, 8) +
-                        "] | from " + new WorldTime(resident.SpawnTurn) +
-                        (resident.DeathTurn == -2 ? " | dead (date unknown)" :
-                        resident.DeathTurn < 0 ? " | alive" : " | died " + new WorldTime(resident.DeathTurn)));
-                while (true)
-                {
-                    int person = ChooseRecord("Read Records - " + Path.GetFileName(save.Path), residents.ToArray(),
-                        "Recorded residents: " + people.Count);
-                    if (person < 0) break;
-                    ResidentRecord selected = person == 0 ? null : people[person - 1];
-                    ShowRecordLines(selected == null ? "All residents" : selected.Name,
-                        RecordsReader.Lines(save, selected));
-                }
+                BrowseRecords(save);
             }
         }
 

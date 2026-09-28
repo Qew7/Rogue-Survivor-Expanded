@@ -3,7 +3,7 @@ using System.Drawing;
 using System.IO;
 using System.Reflection;
 using System.Runtime.Serialization;
-using System.Runtime.Serialization.Formatters.Binary;
+
 using djack.RogueSurvivor.Data;
 using djack.RogueSurvivor.Engine;
 using djack.RogueSurvivor.Engine.Actions;
@@ -57,6 +57,9 @@ static class MovementScenarioTests
         district.EntryMap = map;
         world[0, 0] = district;
         Session session = (Session)FormatterServices.GetUninitializedObject(typeof(Session));
+        typeof(Session).GetField("m_WorldTime", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(session, new WorldTime());
+        GamePreset preset = GamePreset.BuiltIn(GameMode.GM_STANDARD); preset.NpcPersonalitiesEnabled = false;
+        session.GamePreset = preset; session.RestoreResidentRecords(new ResidentRecords());
         session.Seed = 123;
         session.World = world;
         session.CurrentMap = map;
@@ -77,12 +80,7 @@ static class MovementScenarioTests
             Check.Equal(expected, Session.Get.GameDiceRoller.Roll(0, 100),
                 "session resumes random sequence");
 
-            using (FileStream legacy = File.Create(path))
-                new BinaryFormatter().Serialize(legacy, session);
-            Check.Equal(true, Session.Load(path, Session.SaveFormat.FORMAT_BIN),
-                "legacy session format loads");
-            Check.Equal(true, Session.Get.CurrentMap.GetActorAt(new Point(3, 2)) != null,
-                "legacy session restores map actor");
+
         }
         finally
         {

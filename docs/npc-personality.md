@@ -198,15 +198,48 @@ personality system's significant events, not a log of every movement or action.
 Unlike the short AI observation journal, this archive does not evict early events.
 It therefore adds to save size as a world grows older.
 
-This main-menu reader reveals saved NPC records outside gameplay. Reading does
-not resume the simulation or change the active session, mods, or options; NPC
-memories remain hidden from gameplay inspection. Older saves have no full archive:
-the reader recovers surviving observations and relationship memories and marks
-their history as partial. Events already discarded and actors no longer present
-in those older saves cannot be reconstructed.
+This main-menu reader reveals saved NPC records outside gameplay. Format-5
+saves carry a separate compressed archive, so reading does not load the world,
+resume simulation, or change the active session, mods or options. NPC memories
+remain hidden from gameplay inspection. Old world formats are unsupported.
 
-Use Up/Down and PgUp/PgDn to select or scroll, Enter to open, and Escape to return.
-Home/End jump to the beginning/end of a timeline.
+### Search, filters and ordering
+
+In the resident browser:
+
+- **S** searches a name (case insensitive); **F** opens combined filters.
+- Filter by current/last faction or group leader, alive/dead status, minimum
+  item acquisitions, memories, events, unique participants appearing in events, human kills,
+  resolved memories and gained traits; specify a minimum/maximum lifespan.
+- **O** sorts by name or any of those metrics, including lifespan and interest
+  score. Numeric sorts default to most/longest first; **V** reverses the order.
+- **I**, or the “Most interesting NPC” row, opens the highest-scoring resident
+  **among the current matches**. Empty results are explained. Ties use name and
+  persistent identity, so the same save/query selects the same resident.
+- **R** resets the browser; Enter opens one resident or the merged history of
+  all matching residents.
+
+Item acquisitions count successful incoming units over the entire life,
+including starting inventory, partial pickups, gifts and trades. Spending or
+losing items does not subtract; repeated pickups count again. Last inventory
+units/stacks are shown separately. Memory counts include creation history,
+even after resolution or removal from the AI's pending queue. Life duration
+is elapsed turns divided by 720, ending at death for dead residents. Unknown
+death dates display “?” and do not match a numeric lifespan range.
+
+The interest score gives capped weights to different event kinds (8, cap 12),
+direct experiences (2, cap 40), created memories (5, cap 20), resolutions (6,
+cap 12), gained traits (8, cap 10), unique participants appearing in events (3, cap 15),
+world experiences (4, cap 15) and help given (4, cap 12). It does not reward
+item farming or age by themselves. The resident's page shows its metrics and
+the formula so the selection is explainable.
+
+In a timeline, **S** searches event text and **F** selects memories/traits,
+combat, help, encounters/groups, world events or life/survival. Both restrictions
+combine; **R** clears them. Up/Down and PgUp/PgDn scroll, Home/End jump, Escape
+returns. Changing a timeline filter does not change the resident's life score.
+Text prompts support Backspace, Ctrl+A to clear and Ctrl+V to paste names.
+
 
 ## Verification
 

@@ -9,9 +9,11 @@ namespace djack.RogueSurvivor.Data
         #region Fields
         List<Item> m_Items;
         int m_MaxCapacity;
+        long m_TotalReceived;
         #endregion
 
         #region Properties
+        public long TotalReceived { get { return m_TotalReceived; } }
         public IEnumerable<Item> Items
         {
             get { return m_Items; }
@@ -110,6 +112,7 @@ namespace djack.RogueSurvivor.Data
                     if (quantityLeft <= 0)
                         break;
                 }
+                m_TotalReceived += it.Quantity;
                 return true;
             }
 
@@ -120,6 +123,7 @@ namespace djack.RogueSurvivor.Data
 
             // One slot free, add.
             m_Items.Add(it);
+            m_TotalReceived += it.Quantity;
             return true;
         }
 
@@ -168,6 +172,7 @@ namespace djack.RogueSurvivor.Data
                 }
 
                 // Done.
+                m_TotalReceived += quantityAdded;
                 return true;
             }
 
@@ -181,6 +186,7 @@ namespace djack.RogueSurvivor.Data
             // Add to free slot.
             quantityAdded = it.Quantity;
             m_Items.Add(it);
+            m_TotalReceived += quantityAdded;
             return true;
         }
 

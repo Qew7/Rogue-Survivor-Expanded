@@ -12,12 +12,16 @@ namespace djack.RogueSurvivor.Data
         public readonly int Turn;
         public readonly int Sequence;
         public readonly string Text;
-        public ResidentEntry(int turn, string text, int sequence)
-        { Turn = turn; Text = text; Sequence = sequence; }
+        public readonly string Kind;
+        public readonly bool Direct, GainedTrait;
+        public readonly Guid SubjectId, OtherId;
+        public ResidentEntry(int turn, string text, int sequence, string kind = "note", bool direct = false,
+            Guid subjectId = default(Guid), Guid otherId = default(Guid), bool gainedTrait = false)
+        { Turn = turn; Text = text; Sequence = sequence; Kind = kind; Direct = direct; SubjectId = subjectId; OtherId = otherId; GainedTrait = gainedTrait; }
     }
 
     [Serializable]
-    sealed class ResidentRecord
+    sealed partial class ResidentRecord
     {
         public readonly Guid Identity;
         public string Name;
@@ -32,17 +36,20 @@ namespace djack.RogueSurvivor.Data
             Name = actor.UnmodifiedName;
             SpawnTurn = actor.SpawnTime;
         }
-        public void Add(string key, int turn, string text)
+        public void Add(string key, int turn, string text, ObservedEvent observed = null, bool gainedTrait = false)
         {
             if (m_Keys.ContainsKey(key)) return;
             m_Keys.Add(key, true);
-            m_Entries.Add(new ResidentEntry(turn, text, m_Entries.Count));
+            string kind = key.Split(':')[0];
+            m_Entries.Add(new ResidentEntry(turn, text, m_Entries.Count, observed == null ? kind : observed.Kind,
+                observed != null && observed.Direct, observed == null ? Guid.Empty : observed.SubjectId,
+                observed == null ? Guid.Empty : observed.OtherId, gainedTrait));
         }
     }
 
     // No Actor references: the chronicle survives removal of actors and corpses.
     [Serializable]
-    sealed class ResidentRecords
+    sealed partial class ResidentRecords
     {
         readonly Dictionary<Guid, ResidentRecord> m_Residents = new Dictionary<Guid, ResidentRecord>();
         public bool IsPartial;
@@ -71,6 +78,7 @@ namespace djack.RogueSurvivor.Data
                 }
             }
             record.Name = actor.UnmodifiedName;
+            if (record.DeathTurn < 0) record.Snapshot(actor);
             return record;
         }
 
@@ -120,7 +128,8 @@ namespace djack.RogueSurvivor.Data
             }
             else outcome = "no new trait or skill";
             record.Add("resolved:" + MemoryKey(memory), memory.ResolvedTurn,
-                "Resolved memory: " + MemoryName(memory.Id) + "; " + outcome + ".");
+                "Resolved memory: " + MemoryName(memory.Id) + "; " + outcome + ".", null,
+                memory.OutcomeId != null && memory.OutcomeId.StartsWith("trait:", StringComparison.Ordinal));
         }
         public void Observe(Actor actor, ObservedEvent observed)
         {
@@ -129,7 +138,7 @@ namespace djack.RogueSurvivor.Data
             string key = "event:" + observed.Kind + ":" + observed.Turn + ":" +
                 observed.SubjectId + ":" + observed.OtherId + ":" + observed.Subject + ":" + observed.Other;
             record.Add(key, observed.Turn, (observed.Direct ? "Experienced: " : "Witnessed: ") +
-                EventText(observed));
+                EventText(observed), observed);
             if (observed.Kind == "death" && observed.SubjectId == actor.PersonalityIdentity)
                 record.DeathTurn = observed.Turn;
         }

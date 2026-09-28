@@ -1,15 +1,15 @@
 using System;
 using System.IO;
 using System.IO.Compression;
-using System.Runtime.Serialization.Formatters.Binary;
+using djack.RogueSurvivor.Data;
 
 namespace djack.RogueSurvivor.Engine
 {
-    // Versioned envelope around the legacy object graph. Old unmarked saves remain readable.
-    static class BinarySaveStore
+    // V5 envelope: independently readable archive, then the compact world graph.
+    static partial class BinarySaveStore
     {
         static readonly byte[] Magic = { (byte)'R', (byte)'S', (byte)'E', (byte)'1' };
-        const byte Version = 4;
+        const byte Version = 5;
 
         sealed class IncompatibleGameVersionException : IOException
         {
@@ -24,6 +24,13 @@ namespace djack.RogueSurvivor.Engine
         }
 
         public static void Save(string path, object value, ModStamp[] mods)
+        { SaveCore(path, value, mods, true); }
+
+        // Diagnostic copy: retain the already captured metrics without accessing model catalogs.
+        internal static void SaveSnapshot(string path, object value, ModStamp[] mods)
+        { SaveCore(path, value, mods, false); }
+
+        static void SaveCore(string path, object value, ModStamp[] mods, bool refreshRecords)
         {
             if (path == null) throw new ArgumentNullException("path");
             if (value == null) throw new ArgumentNullException("value");
@@ -36,8 +43,9 @@ namespace djack.RogueSurvivor.Engine
                     stream.WriteByte(Version);
                     new BinaryWriter(stream).Write(SetupConfig.GAME_VERSION);
                     WriteMods(stream, mods ?? new ModStamp[0]);
-                    using (GZipStream compressed = new GZipStream(stream, CompressionMode.Compress, true))
-                        ObjectGraphStore.Write(compressed, value);
+                    Session session = value as Session;
+                    WriteRecordsSection(stream, session, refreshRecords);
+                    WriteCompressed(stream, value, session != null);
                     stream.Flush();
                 }
                 if (File.Exists(path))
@@ -106,17 +114,7 @@ namespace djack.RogueSurvivor.Engine
         {
             using (FileStream stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
-                byte[] header = new byte[Magic.Length];
-                if (stream.Read(header, 0, header.Length) != header.Length)
-                    throw new InvalidDataException("Save is truncated.");
-                for (int i = 0; i < header.Length; i++)
-                    if (header[i] != Magic[i]) return new ModStamp[0];
-                int version = stream.ReadByte();
-                if (version == 1 || version == 2) return new ModStamp[0];
-                if (version != 3 && version != Version)
-                    throw new InvalidDataException("Unsupported save version: " + version);
-                if (version == Version) CheckGameVersion(stream);
-                return ReadMods(stream);
+                return ReadEnvelope(stream);
             }
         }
 
@@ -161,31 +159,28 @@ namespace djack.RogueSurvivor.Engine
         {
             using (FileStream stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
-                byte[] header = new byte[Magic.Length];
-                if (stream.Read(header, 0, header.Length) != header.Length)
-                    throw new InvalidDataException("Save is truncated.");
-                bool marked = true;
-                for (int i = 0; i < header.Length; i++)
-                    if (header[i] != Magic[i]) marked = false;
-                int version = 0;
-                if (marked)
+                bool legacy;
+                mods = ReadEnvelope(stream, true, out legacy);
+                if (legacy)
                 {
-                    version = stream.ReadByte();
-                    if (version != 1 && version != 2 && version != 3 && version != Version)
-                        throw new InvalidDataException("Unsupported save version: " + version);
-                    if (version == Version) CheckGameVersion(stream);
-                }
-                else
-                    stream.Position = 0;
-                mods = version >= 3 ? ReadMods(stream) : new ModStamp[0];
-                object value;
-                if (version >= 2)
-                {
+                    object settings;
                     using (GZipStream compressed = new GZipStream(stream, CompressionMode.Decompress, true))
-                        value = ObjectGraphStore.Read(compressed);
+                        settings = ObjectGraphStore.ReadLegacySettings(compressed);
+                    if (validate != null) validate(settings); return settings;
                 }
-                else
-                    value = new BinaryFormatter().Deserialize(stream);
+                bool isSession, enabled; int turn;
+                ResidentRecords records = ReadRecordsSection(stream, true, out isSession, out enabled, out turn);
+                object value;
+                using (GZipStream compressed = new GZipStream(stream, CompressionMode.Decompress, true))
+                    value = ObjectGraphStore.Read(compressed);
+                if (isSession)
+                {
+                    Session session = value as Session;
+                    if (session == null || session.WorldTime.TurnCounter != turn ||
+                        session.GamePreset.NpcPersonalitiesEnabled != enabled)
+                        throw new InvalidDataException("Archive does not match saved session.");
+                    session.RestoreResidentRecords(records);
+                }
                 if (validate != null) validate(value);
                 return value;
             }

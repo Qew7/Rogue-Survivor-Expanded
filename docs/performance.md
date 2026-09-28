@@ -18,19 +18,19 @@ machine, Docker configuration, and runtime.
 
 `--bench-save` profiles an existing **copied** save with three samples per case.
 It reports world/chronicle counts, presave traversal, the current atomic file
-writer, serialization without compression, direct GZip, buffered GZip at
-Optimal/Fastest levels, the archive alone, and the graph without its archive.
+writer for the already captured snapshot, serialization without compression,
+direct GZip, buffered GZip at Optimal/Fastest levels, the archive alone, and the graph without its archive.
 The last case isolates cost; it is not a proposal to discard history.
 The input file is never overwritten. Generated saves are written to and removed
 from an independent temporary directory inside the diagnostic container.
 
-For a copied save at `/private/tmp/rogue-save-profile/input.dat`:
+For a copied **format-5** save at `/private/tmp/rogue-save-profile/current-save.dat`:
 
 ```sh
 docker build --target scenarios -t rogue-survivor-save-profile .
 docker run --rm --cpus=1 --memory=3g \
   --mount type=bind,source=/private/tmp/rogue-save-profile,target=/profile,readonly \
-  rogue-survivor-save-profile --bench-save /profile/input.dat
+  rogue-survivor-save-profile --bench-save /profile/current-save.dat
 ```
 
 This uses a separate image and container and does not restart a running game.
@@ -43,7 +43,7 @@ for order effects. File writing uses the temporary container filesystem, not
 the live save volume; waiting for the simulation worker and UI redraws is outside
 these headless measurements.
 
-### Copied day-12 world, save investigation
+### Copied day-12 world, original format-4 investigation
 
 Measured on a copy of a running game's version-4 save, with Docker/Mono limited
 to one CPU and 3 GiB RAM. The live game was left running. Medians of three
@@ -52,7 +52,7 @@ samples, fixed case order:
 | Case | Median | Output size |
 | --- | ---: | ---: |
 | Presave world traversal | 6.29 ms | — |
-| Current atomic file save | 33.17 s | 25,601,529 bytes |
+| Original atomic file save | 33.17 s | 25,601,529 bytes |
 | Graph serialization to a counting sink | 17.39 s | 1,104,833,938 bytes |
 | Graph + direct default/Optimal GZip | 32.56 s | 25,601,514 bytes |
 | Graph + 64 KiB buffer before Optimal GZip | 23.75 s | 25,601,514 bytes |
@@ -64,8 +64,9 @@ This world contains 418 maps and 1,107,446 tiles. A subsequent
 [structure audit](save-structure.md) confirmed that these are 418 distinct map
 objects, with no additional maps reachable outside the district lists; 305
 are building basements. Repeated type names and field schemas account for 93%
-of the raw graph bytes. Run `--audit-save copied-save-path` in the same diagnostic
-image to reproduce the counts and byte breakdown without writing a save.
+of the raw graph bytes. These historical counts were obtained with the original
+format-4 diagnostic image. The current reader accepts only format-5 worlds; its audit reports the
+old encoding estimate alongside the actual compact raw size.
 Maps retain 6,071 actors;
 their personality states contain 5,873 traits, 3,171 pending memories, 2,898
 recent observations, 588 relationships, and 874 relationship-memory links.
@@ -85,13 +86,46 @@ data and is not a before/after comparison with personalities disabled. The
 archive grows without eviction, so its future cost can be larger. Its current
 cost does not explain most of this world's save pause.
 
-The strongest measured compatible candidate is a buffer before GZip: about
-27% less time in the direct-GZip comparison, with the same output size.
-Fastest gave no meaningful further benefit or size change on this runtime.
-Follow-up work should verify buffered saves through the actual file writer and
-reader, then investigate cached serialization metadata or a compact type/field
-table and tile encoding. The latter changes require format compatibility work.
-No production save code was changed by this investigation.
+The original investigation measured a 27% reduction from buffering before
+GZip, with the same output size. Fastest gave no meaningful further benefit or
+size change on this runtime.
+
+### Implemented compact graph and independent records section
+
+Format 5 now uses per-operation type/schema and string tables, cached reflection
+metadata, compact Tile nodes, and a 64 KiB buffer before GZip. Object IDs still
+preserve shared references and cycles; distinct mutable tiles remain distinct.
+Resident records are stored once in an independent compressed section so
+Read Records can read the archive without loading the world.
+
+A separate diagnostic imported the **same copied format-4 world** with the old
+assembly, then serialized and loaded it with the new graph codec, under the same
+Docker/Mono limits (one CPU, 3 GiB). This importer is diagnostic only; production
+does not load old world formats.
+
+| Case | Original codec | Compact codec |
+| --- | ---: | ---: |
+| Graph + GZip, three-sample write median | 32.56 s | 7.79 s |
+| Compressed graph size | 25,601,514 bytes | 13,510,655 bytes |
+| Raw graph size | 1,104,833,938 bytes | 90,058,454 bytes |
+| Cold graph load, one sample | 101.78 s | 10.81 s |
+| Independent resident archive load, one sample | — | 0.46 s |
+| Independent resident archive compressed size | 2,650,017 bytes | 1,987,874 bytes |
+
+The compact write samples were 8.05, 7.79 and 7.76 seconds. Loading the compact
+graph and serializing it again produced the same SHA-256 raw-stream digest,
+covering all fields and reference IDs. These measurements isolate the graph
+codec: they exclude atomic file replacement, records snapshot refresh, the new
+format-5 envelope, new metadata fields, simulation-worker waiting and UI work.
+They are not measurements of the complete in-game pause. The earlier 99.69 s
+cold load and this import's 101.78 s are separate runs of the old reader.
+
+Named scenarios verify the actual format-5 envelope, archive stored once,
+archive-only reads, counters, shared references, tile independence, flags,
+decorations, clocks/RNG, resolved history and atomic backup recovery. The VNC
+E2E also saves/loads a newly generated world and exercises record search,
+filters, sorting and the interesting-NPC selector. No live container was
+restarted for this work. See [save-format.md](save-format.md) for the wire layout.
 
 Local Docker/Mono measurements during this refactor (milliseconds for the
 specified number of calls):

@@ -479,6 +479,7 @@ namespace djack.RogueSurvivor.Engine
         {
             get { return m_ResidentRecords ?? (m_ResidentRecords = Data.ResidentRecords.Recover(this)); }
         }
+        internal void RestoreResidentRecords(ResidentRecords records) { m_ResidentRecords = records; }
         public int LastTurnPlayerActed { get; set; }
 
         public World World

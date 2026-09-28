@@ -50,6 +50,7 @@ static class Check
             if (error.InnerException is T) return;
             throw;
         }
+        catch (T) { return; }
         throw new Exception(label + ": expected " + typeof(T).Name);
     }
 }

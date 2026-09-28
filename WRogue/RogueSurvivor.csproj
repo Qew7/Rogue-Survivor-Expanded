@@ -299,6 +299,12 @@
     <Compile Include="Engine\PlayerInputReader.cs" />
     <Compile Include="Engine\BinarySaveStore.cs" />
     <Compile Include="Engine\ObjectGraphStore.cs" />
+    <Compile Include="Engine\ObjectGraphStore.Values.cs" />
+    <Compile Include="Engine\BinarySaveStore.Records.cs" />
+    <Compile Include="Engine\RecordsQuery.cs" />
+    <Compile Include="Engine\RecordsQuery.Filters.cs" />
+    <Compile Include="Engine\RogueGame.Flow.Records.Browse.cs" />
+    <Compile Include="Data\ResidentRecord.Metrics.cs" />
     <Compile Include="Engine\DistrictSimulationWorker.cs" />
     <Compile Include="Engine\OverlayCollection.cs" />
     <Compile Include="Engine\Overlays.cs" />

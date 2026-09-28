@@ -71,8 +71,8 @@ the option preview with Left/Right. **Save as preset** stores a named configurat
 future games. On the configuration screen, hover over a setting or select it with
 Up/Down to read its description. Page Up/Down move between pages of settings;
 Left/Right change the selected value.
-The chosen rules and settings are stored with the game save. Older saves keep
-their original mode rules.
+The chosen rules and settings are stored with the game save. Loading restores
+its stored mode rules. World saves require format 5; earlier formats are unsupported.
 
 ### NPC traits and memories
 
@@ -91,7 +91,9 @@ considering a leader. Inspecting an NPC shows traits, but not private memories.
 The catalog and extension points are described in
 [docs/npc-personality.md](docs/npc-personality.md).
 Press Shift+I in game to see your relationships with people, groups, and factions.
-Use Read Records below Load Game to browse saved NPC histories together or individually.
+Use Read Records below Load Game to browse format-5 NPC histories together or individually.
+Search names, filter life metrics, sort residents, or press I to read the most interesting NPC;
+S/F also search and filter events inside a timeline.
 
 The **Expanded** preset enables claimable bases. Stand inside an enclosed
 building and press **Ctrl+B** to preview its boundaries; press **Y** to claim
