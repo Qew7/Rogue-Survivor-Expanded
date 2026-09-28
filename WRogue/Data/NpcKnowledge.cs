@@ -10,14 +10,14 @@ namespace djack.RogueSurvivor.Data
         public long EventId;
         public string Kind, SubjectName, OtherName, StoryId;
         public Guid SubjectId, OtherId, SourceId;
-        public int EventTurn, LearnedTurn, Confidence, Hops, Units;
+        public int EventTurn, LearnedTurn, Confidence, Hops, Units, Risk;
         public Location Place;
         public NpcKnowledgeSource Source;
         public NpcFact Retell(Guid speaker, int turn, int confidence)
         {
             return new NpcFact { EventId = EventId, Kind = Kind, SubjectName = SubjectName, OtherName = OtherName,
                 StoryId = StoryId, SubjectId = SubjectId, OtherId = OtherId, SourceId = speaker, EventTurn = EventTurn,
-                LearnedTurn = turn, Confidence = confidence, Hops = Hops + 1, Units = Units, Place = Place, Source = NpcKnowledgeSource.Told };
+                LearnedTurn = turn, Confidence = confidence, Hops = Hops + 1, Units = Units, Risk = Risk, Place = Place, Source = NpcKnowledgeSource.Told };
         }
     }
     [Serializable]
@@ -36,9 +36,9 @@ namespace djack.RogueSurvivor.Data
     {
         public Location Place;
         public string Kind;
-        public int SeenTurn, Units;
-        public NpcKnownPlace(Location place, string kind, int turn, int units = 0)
-        { Place = place; Kind = kind; SeenTurn = turn; Units = units; }
+        public int SeenTurn, Units, Risk;
+        public NpcKnownPlace(Location place, string kind, int turn, int units = 0, int risk = 0)
+        { Place = place; Kind = kind; SeenTurn = turn; Units = units; Risk = risk; }
     }
     [Serializable]
     sealed class NpcKnownExit
@@ -54,7 +54,7 @@ namespace djack.RogueSurvivor.Data
         public readonly List<NpcKnownPlace> Places = new List<NpcKnownPlace>();
         public readonly List<NpcKnownExit> Exits = new List<NpcKnownExit>();
         readonly Dictionary<string, int> told = new Dictionary<string, int>();
-        public int NextTalkTurn, NextPlanTurn;
+        public int NextTalkTurn, NextPlanTurn, Revision;
         public bool Learn(NpcFact fact)
         {
             NpcFact old = Facts.Find(f => f.EventId == fact.EventId && f.Kind == fact.Kind);
@@ -63,18 +63,21 @@ namespace djack.RogueSurvivor.Data
                 if (old.Confidence >= fact.Confidence) return false;
                 Facts.Remove(old);
             }
-            Facts.Add(fact); Trim(Facts, 48); return true;
+            Facts.Add(fact); Trim(Facts, 48); Revision++; return true;
         }
         public NpcKnownPerson Person(Guid id) { return People.Find(p => p.Id == id); }
         public void See(Actor actor, int turn)
         {
             NpcKnownPerson person = Person(actor.PersonalityIdentity);
+            if (person == null || person.Place != actor.Location || person.Dead != actor.IsDead) Revision++;
             if (person == null) { People.Add(person = new NpcKnownPerson { Id = actor.PersonalityIdentity }); Trim(People, 32); }
             person.Name = actor.UnmodifiedName; person.Place = actor.Location; person.SeenTurn = turn; person.Dead = actor.IsDead;
             person.Confidence = 100; person.Source = NpcKnowledgeSource.Witness;
         }
         public void RememberPlace(NpcKnownPlace place)
         {
+            NpcKnownPlace old = Places.Find(p => p.Kind == place.Kind && p.Place == place.Place);
+            if (old == null || old.Units != place.Units || old.Risk != place.Risk) Revision++;
             Places.RemoveAll(p => p.Kind == place.Kind && p.Place == place.Place);
             Places.Add(place); Trim(Places, 16);
         }
@@ -83,7 +86,7 @@ namespace djack.RogueSurvivor.Data
             NpcKnownPerson old = Person(person.Id);
             if (old != null && (old.SeenTurn > person.SeenTurn || (old.SeenTurn == person.SeenTurn && old.Confidence >= person.Confidence))) return false;
             if (old != null) People.Remove(old);
-            People.Add(person); Trim(People, 32); return true;
+            People.Add(person); Trim(People, 32); Revision++; return true;
         }
         public bool WasTold(long eventId, Guid recipient) { return told.ContainsKey(eventId + ":" + recipient); }
         public void Told(long eventId, Guid recipient, int turn)

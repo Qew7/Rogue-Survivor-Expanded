@@ -37,6 +37,7 @@ namespace djack.RogueSurvivor.Gameplay.AI
             if (!NpcIntentSystem.Enabled(m_Actor)) return null;
             if (visible == null) return null;
             NpcIntentSystem.ConsiderFoodRequest(game, m_Actor, visible);
+            NpcPlanExecution.ConsiderNeed(game, m_Actor);
             foreach (NpcReaction reaction in m_Actor.Personality.Reactions)
             {
                 Actor target = NpcIntentSystem.VisibleTarget(visible, reaction.TargetId);
@@ -47,20 +48,7 @@ namespace djack.RogueSurvivor.Gameplay.AI
             ActorAction groupPlan = BehaviorNpcGroupPlans(game, visible); if (groupPlan != null) return groupPlan;
             NpcStorySystem.Consider(game, m_Actor, visible);
             NpcIntent intent = NpcIntentSystem.Select(m_Actor); if (intent == null) return BehaviorNpcRumors(game, visible);
-            if (NpcIntentContent.Find(intent.DefinitionId).Method >= NpcIntentMethod.SeekPerson)
-                return BehaviorNpcStoryIntent(game, intent, visible);
-            Actor person = NpcIntentSystem.VisibleTarget(visible, intent.TargetId);
-            if (person != null)
-            {
-                ActionNpcIntent action = new ActionNpcIntent(m_Actor, game, intent, person,
-                    NpcIntentSystem.SpareFood(game, m_Actor, person));
-                if (action.IsLegal()) return action;
-                if (game.Rules.GridDistance(m_Actor.Location.Position, person.Location.Position) <= 1)
-                { NpcIntentSystem.Block(m_Actor, intent, "could not perform the intended interaction"); return null; }
-            }
-            ActorAction move = BehaviorNpcKnownRoute(game, intent.LastKnown);
-            if (move != null && move.IsLegal()) return move;
-            NpcIntentSystem.Block(m_Actor, intent, "target could not be reached at its last known location"); return null;
+            return BehaviorNpcPlan(game, intent, visible);
         }
     }
 }

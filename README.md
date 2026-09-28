@@ -103,7 +103,13 @@ through known exits, avoid or warn reported aggressors, and propose group supply
 or shelter plans. Participants pursue independent goals; pickups, gifts,
 arrivals and return reports determine the episode's outcome. Groups retain their
 identity through succession, factions influence plan preferences, and a saved
-director limits concurrent stories and reserves resources. See
+director limits concurrent stories and reserves resources. A bounded planner
+composes actions to reach desired results: an NPC can obtain food by collecting
+known supplies, asking another person or accepting a trade offer. Traits and
+relationships affect method costs; refusals and changed resources cause
+replanning. Action sequences and their consequences are generated during play.
+Elementary goals and actions remain authored mechanics. Plans and causal links
+survive saving and appear retrospectively in Read Records. See
 [docs/npc-intentions.md](docs/npc-intentions.md) for behavior and limits.
 
 The **Expanded** preset enables claimable bases. Stand inside an enclosed

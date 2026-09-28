@@ -366,6 +366,14 @@
     <Compile Include="Gameplay\Personality\PersonalitySystem.cs" />
     <Compile Include="Gameplay\Personality\PersonalityWorldContent.cs" />
     <Compile Include="Data\NpcIntent.cs" />
+    <Compile Include="Data\NpcPlan.cs" />
+    <Compile Include="Gameplay\Personality\NpcGoalPlanner.cs" />
+    <Compile Include="Gameplay\Personality\NpcPlanDomain.cs" />
+    <Compile Include="Gameplay\Personality\NpcPlanExecution.cs" />
+    <Compile Include="Gameplay\AI\BaseAI.Plans.cs" />
+    <Compile Include="Engine\Actions\ActionNpcPlan.cs" />
+    <Compile Include="Engine\Actions\ActionNpcBarter.cs" />
+    <Compile Include="Engine\RogueGame.Actions.Plans.cs" />
     <Compile Include="Data\NpcKnowledge.cs" />
     <Compile Include="Data\NpcStories.cs" />
     <Compile Include="Data\SocialGroup.cs" />

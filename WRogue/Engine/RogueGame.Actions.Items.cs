@@ -385,7 +385,7 @@ namespace djack.RogueSurvivor.Engine
             DoTakeItem(actor, position, it);
         }
 
-        public void DoTakeItem(Actor actor, Point position, Item it, bool noticeTheft = true)
+        public void DoTakeItem(Actor actor, Point position, Item it, bool noticeTheft = true, long causeId = 0, string storyId = null)
         {
             Map map = actor.Location.Map;
             Inventory ground = map.GetItemsAt(position);
@@ -416,7 +416,7 @@ namespace djack.RogueSurvivor.Engine
 
             if (quantityAdded > 0 && noticeTheft && baseClaim != null &&
                 !baseClaim.Owns(actor) && it.LastDroppedBy != actor)
-                NoticeXpdBaseTheft(actor, baseClaim, position, it);
+                NoticeXpdBaseTheft(actor, baseClaim, position, it, causeId, storyId);
 
             // message
             if (IsVisibleToPlayer(actor) || IsVisibleToPlayer(new Location(map, position)))
@@ -429,15 +429,15 @@ namespace djack.RogueSurvivor.Engine
                 DoEquipItem(actor, it);
         }
 
-        void NoticeXpdBaseTheft(Actor thief, XpdBase baseClaim, Point position, Item item)
+        void NoticeXpdBaseTheft(Actor thief, XpdBase baseClaim, Point position, Item item, long causeId = 0, string storyId = null)
         {
             Map map = thief.Location.Map;
-            ReportPersonalityEvent("base_theft", thief, baseClaim.GroupLeader, map, position, false);
+            ReportPersonalityEvent("base_theft", thief, baseClaim.GroupLeader, map, position, false, causeId: causeId, storyId: storyId);
             if ((baseClaim.FoodRoom.HasValue && baseClaim.FoodRoom.Value.Contains(position) && item is ItemFood) ||
                 (baseClaim.WeaponRoom.HasValue && baseClaim.WeaponRoom.Value.Contains(position) &&
                     (item is ItemMeleeWeapon || item is ItemRangedWeapon || item is ItemAmmo)))
                 ReportPersonalityEvent("supplies_lost", baseClaim.GroupLeader, thief, map, position,
-                    false, false);
+                    false, false, causeId, storyId);
             foreach (Actor witness in map.Actors)
             {
                 if (witness == thief || witness.IsDead || witness.IsSleeping ||

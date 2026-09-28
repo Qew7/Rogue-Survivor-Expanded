@@ -8,11 +8,11 @@ namespace djack.RogueSurvivor.Engine
     partial class RogueGame
     {
         void ReportPersonalityEvent(string kind, Actor subject, Actor other, Map map, Point position,
-            bool otherIsDirect = true, bool subjectIsDirect = true)
+            bool otherIsDirect = true, bool subjectIsDirect = true, long causeId = 0, string storyId = null)
         {
             if (map == null || !m_Session.GamePreset.NpcPersonalitiesEnabled) return;
             PersonalitySystem.Report(this, new SignificantEvent(kind, subject, other,
-                map, position, map.LocalTime.TurnCounter, otherIsDirect, subjectIsDirect));
+                map, position, map.LocalTime.TurnCounter, otherIsDirect, subjectIsDirect, causeId: causeId, storyId: storyId));
         }
 
         void ReportNewPersonalityArrivals(Map map, HashSet<Actor> before, string kind)

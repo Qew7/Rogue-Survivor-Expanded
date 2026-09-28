@@ -79,8 +79,11 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 NpcStory story = director.Find(source.StoryId); if (story == null || story.Finished) return;
                 string stage = null;
                 if (source.Kind == "requested_food" || source.Kind == "supplies_requested" || source.Kind == "shelter_suggested") stage = "contacted";
-                if (source.Kind == "supplies_acquired") stage = "returning";
-                if (source.Kind == "shared_food") stage = story.Template == "group_supplies" ? "delivered" : "completed";
+                if (source.Kind == "supplies_acquired") stage = "acquired";
+                if (source.Kind == "shared_food" && source.Other != null && story.Roles.Exists(r => r.ActorId == source.Subject.PersonalityIdentity &&
+                    r.TargetId == source.Other.PersonalityIdentity && r.Goal == NpcIntentContent.Gather.Id)) stage = "delivered";
+                if (source.Kind == "shared_food" && story.Template != "group_supplies" &&
+                    story.Roles.TrueForAll(r => r.Status == NpcIntentStatus.Completed)) stage = "completed";
                 if (source.Kind == "supplies_delivered" || source.Kind == "left_group" || source.Kind == "reunited" || source.Kind == "withdrew" || source.Kind == "confronted") stage = "completed";
                 if (source.Kind == "shelter_reached" && story.Roles.TrueForAll(r => r.Status == NpcIntentStatus.Completed)) stage = "completed";
                 if (source.Kind == "task_declined") stage = "failed";
@@ -96,6 +99,9 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public static void GoalFinished(Actor owner, NpcIntent intent)
         {
             SocialGroup group = owner.SocialGroup;
+            NpcStory story = Session.Get.NpcDirector.Find(intent.StoryId);
+            if (group != null && group.Plan != null && group.Plan.StoryId == intent.StoryId && story != null && story.Finished)
+            { group.Plan.Stage = story.Stage; group.Plan.Destination = default(Location); }
             if (group != null && group.Plan != null && group.Plan.StoryId == intent.StoryId && intent.Status != NpcIntentStatus.Completed)
             { group.Plan.Stage = "failed"; group.Plan.Destination = default(Location); }
         }

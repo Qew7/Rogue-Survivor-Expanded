@@ -210,6 +210,13 @@ namespace djack.RogueSurvivor.Data
             /*int stackedQuantity;
             return GetItemsStackableWith(it, out stackedQuantity) != null;*/
         }
+        public bool CanAddAll(Item item)
+        {
+            if (item == null) throw new ArgumentNullException("item");
+            if (!IsFull) return true;
+            int quantity; GetItemsStackableWith(item, out quantity);
+            return quantity == item.Quantity;
+        }
 
 #if false
         obsolete

@@ -108,9 +108,21 @@ IDs, text, kind, cause/story IDs and expiry. These fields contain no Actor
 references. Last known positions share graph Map objects; terminal intentions
 clear that reference. See [npc-intentions.md](npc-intentions.md) for limits.
 
+Each intention can retain a generated `NpcPlan`: desired-state flags, bound
+action IDs, participant IDs and shared Map locations, condition/effect flags,
+costs, step cursor, knowledge revision, trait fingerprint, retry turn and the
+last actual causal event ID. Failed bindings retain their expiry and location.
+Terminal intentions release steps and failures to clear Map references. A
+loaded plan is revalidated against current observations and rebuilt when needed;
+predicted effects are never restored as actor/world facts. Search nodes and
+execution callbacks are transient. Existing intention enum values remain
+unchanged; `ObtainFood` is appended. These optional fields use format 5 without
+a new world envelope.
+
 Knowledge retains bounded facts with original event IDs/time, source IDs,
 confidence, retelling hops, named participant IDs and remembered positions;
-known people, supplies, shelter and exits; and conversation/query deduplication
+known people, supplies, shelter and exits; remembered ownership risk, a change
+revision; and conversation/query deduplication
 and next planning/speaking turns. Pending location replies contain copied
 knowledge snapshots, so a reply after loading reports the same observation.
 The original event is not recreated as a witnessed event for a listener.
@@ -125,8 +137,8 @@ place and original observation turn, allowing continuation between pickup,
 gift and return report.
 
 Session retains the story director's bounded story/role history, source maps,
-cause IDs, stages, deadlines, actor/resource reservations, cooldowns and per-map
-proposal schedule. Maps in knowledge, exits, goals, plans and reservations are
+cause IDs, stages, deadlines, role target IDs, actor/resource reservations,
+cooldowns and per-map proposal schedule. Maps in knowledge, exits, goals, plans and reservations are
 references to the same loaded graph objects. The per-map schedule is a list of
 saved rows with a nonserialized reference-keyed lookup rebuilt on demand; it
 does not depend on Map's mutable hash code or a serialized dictionary comparer.
@@ -151,8 +163,9 @@ Entries also retain event/cause/story IDs. Private intention starts and terminal
 outcomes are typed chronicle entries with deduplication by intention sequence
 and outcome. They are available to the archive-only reader and excluded from
 physical-event counts and the interesting-life score. Private missing-contact
-inferences and story-stage entries use the same typed archive path and
-**Intentions and outcomes** filter, and also do not inflate those counts.
+inferences, generated `goal_plan` action lists and story-stage entries use the
+same typed archive path and **Intentions and outcomes** filter, and also do not
+inflate those counts.
 Resident snapshots retain stable group identity alongside the current leader
 label. Searching a story tag links its independent participants without loading
 the world.

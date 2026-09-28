@@ -23,6 +23,9 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         { NpcSituationDefinition definition; return byFact.TryGetValue(kind, out definition) ? definition : null; }
         public static void RegisterMemories(PersonalityRegistry registry)
         {
+            registry.Register(new MemoryDefinition("traded_for_food", "Exchanged supplies for food", 2, 5,
+                new[] { new MemoryTrigger("bartered_food", (a, e) => a == e.Subject) },
+                new MemoryOutcome(null, null, Skills.IDs.CHARISMATIC)).Relate(MemoryRelationRole.Other, 2), false);
             registry.Register(new MemoryDefinition("heard_a_report", "Was told a report about events", 2, 5,
                 new[] { new MemoryTrigger("rumor_shared", (a, e) => a == e.Other) },
                 new MemoryOutcome(null, "mistrustful", null), new MemoryOutcome(null, null, Skills.IDs.CHARISMATIC))

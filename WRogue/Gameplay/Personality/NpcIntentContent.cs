@@ -5,7 +5,7 @@ using djack.RogueSurvivor.Engine;
 
 namespace djack.RogueSurvivor.Gameplay.Personality
 {
-    enum NpcIntentMethod { ShareFood, RequestFood, LeaveGroup, SeekPerson, AvoidPerson, ConfrontPerson, GatherFood, ReachShelter, Coordinate }
+    enum NpcIntentMethod { ShareFood, RequestFood, LeaveGroup, SeekPerson, AvoidPerson, ConfrontPerson, GatherFood, ReachShelter, Coordinate, ObtainFood }
     sealed class NpcIntentTrigger
     {
         public readonly string Kind;
@@ -71,6 +71,9 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             NpcIntentMethod.ShareFood, 25, 20, 2 * WorldTime.TURNS_PER_DAY, WorldTime.TURNS_PER_DAY, 1,
             new NpcIntentWeight(DecisionKind.Compassion, 1), new NpcIntentWeight(DecisionKind.Trade, 1))
             .On("helped", (a, e) => a == e.Subject && e.SubjectIsDirect && e.StoryId == null, e => e.Other));
+        public static readonly NpcIntentDefinition Obtain = Add(new NpcIntentDefinition("obtain_food", "Obtain usable food",
+            NpcIntentMethod.ObtainFood, 35, 20, 180, 180, 0, new NpcIntentWeight(DecisionKind.Explore, 1),
+            new NpcIntentWeight(DecisionKind.Supplies, 1), new NpcIntentWeight(DecisionKind.Group, -1, 2)));
         public static readonly NpcIntentDefinition Request = Add(new NpcIntentDefinition("request_food", "Ask for food",
             NpcIntentMethod.RequestFood, 35, 20, 60, 180, 1,
             new NpcIntentWeight(DecisionKind.Group, 1), new NpcIntentWeight(DecisionKind.Trade, 1, 2)));

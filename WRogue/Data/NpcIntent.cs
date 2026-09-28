@@ -13,6 +13,7 @@ namespace djack.RogueSurvivor.Data
         public readonly Guid TargetId;
         public readonly int StartedTurn, Priority;
         public int Deadline, Progress;
+        public NpcPlan Plan;
         public Location Destination;
         public Guid GroupId;
         public Guid CoordinatorId;

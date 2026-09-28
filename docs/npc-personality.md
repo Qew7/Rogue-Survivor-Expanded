@@ -71,6 +71,19 @@ bind separate participant goals, with resource reservations and saved pacing.
 Eligible followers can preserve their group under a successor after an NPC
 leader's death.
 
+Goals now describe desired results. A bounded planner composes available actions
+at runtime, using the NPC's traits, relationships and local knowledge to compare
+methods. Acquiring food can involve a known pickup, a request or a real offered
+exchange; a helper can ask another person before assisting its recipient.
+Refusals and changed supplies trigger replanning. Predicted help never creates
+food, and witnessing another participant's successful delivery can remove a
+redundant step. Plans stay private during gameplay and are retained in Read
+Records alongside their actual outcomes.
+
+An actual food exchange creates the acquired `traded_for_food` memory, attributed
+to the trading partner. Its resolution can grant CHARISMATIC skill. An offer or
+an invalid transaction alone creates no memory of successful negotiation.
+
 Person records also retain trust, fear, attachment, grievance and debt at
 0..100. Aid and known violence change these values; they affect reports and
 method motivation. They complement the existing feeling score and explicit

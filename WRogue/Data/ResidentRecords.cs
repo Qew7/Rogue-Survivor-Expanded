@@ -175,6 +175,8 @@ namespace djack.RogueSurvivor.Data
                 case "task_declined": return subject + " declined " + other + "'s task.";
                 case "shelter_suggested": return subject + " proposed moving the group to known shelter.";
                 case "shelter_declined": return subject + " declined " + other + "'s shelter proposal.";
+                case "food_offered": return subject + " offered to exchange food with " + other + ".";
+                case "bartered_food": return subject + " obtained food by exchanging supplies with " + other + ".";
                 case "shelter_reached": return subject + " reached the agreed shelter.";
                 case "reunited": return subject + " found " + other + " after searching.";
                 case "confronted": return subject + " warned " + other + " about reported violence.";

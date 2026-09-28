@@ -50,7 +50,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             if (source.Kind == "helped" && source.Subject == observer && source.Other != null)
             {
                 foreach (NpcIntent intent in state.Intents)
-                    if (!intent.Finished && intent.DefinitionId == NpcIntentContent.Request.Id &&
+                    if (!intent.Finished && (intent.DefinitionId == NpcIntentContent.Request.Id || intent.DefinitionId == NpcIntentContent.Obtain.Id) &&
                         (HasFood(game, observer) || !game.Rules.IsActorHungry(observer)))
                         Finish(observer, intent, NpcIntentStatus.Completed, "received needed supplies");
                 if (state.Reactions.Count < 4)
@@ -65,8 +65,12 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 foreach (NpcIntent intent in state.Intents)
                     if (!intent.Finished && intent.DefinitionId == NpcIntentContent.Request.Id &&
                         intent.TargetId == source.Subject.PersonalityIdentity && intent.StoryId == source.StoryId)
-                        Finish(observer, intent, NpcIntentStatus.Failed, "request was declined");
+                    {
+                        if (intent.Plan == null) Finish(observer, intent, NpcIntentStatus.Failed, "request was declined");
+                        else { intent.Plan.Invalidate(); intent.Plan.NextPlanningTurn = source.Turn; intent.NextAttempt = source.Turn + 1; intent.Status = NpcIntentStatus.Active; }
+                    }
             NpcIntent answer = null;
+            if (NpcPlanExecution.OfferTrade(game, observer, source)) return;
             foreach (NpcIntentDefinition definition in NpcIntentContent.ForEvent(source.Kind))
             {
                 Actor target = definition.Bind(observer, source);
@@ -93,6 +97,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             intent.LastKnown = default(Location);
             intent.Destination = default(Location);
             intent.CoordinatorPlace = default(Location);
+            if (intent.Plan != null) intent.Plan.Release();
         }
         public static bool HasFood(RogueGame game, Actor actor)
         {
@@ -104,6 +109,9 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         }
         public static void ConsiderFoodRequest(RogueGame game, Actor actor, IList<Actor> visible)
         {
+            if (actor != null && actor.Personality != null)
+                foreach (NpcIntent goal in actor.Personality.Intents)
+                    if (!goal.Finished && goal.DefinitionId == NpcIntentContent.Obtain.Id) return;
             if (!Enabled(actor) || !game.Rules.IsActorHungry(actor) || HasFood(game, actor) ||
                 !actor.Personality.CanStartIntent(NpcIntentContent.Request.Id, actor.Location.Map.LocalTime.TurnCounter)) return;
             Actor best = null; int bestScore = Int32.MinValue;

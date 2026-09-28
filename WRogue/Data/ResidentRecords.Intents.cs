@@ -4,6 +4,17 @@ namespace djack.RogueSurvivor.Data
 {
     sealed partial class ResidentRecords
     {
+        public void PlanChanged(Actor actor, NpcIntent intent)
+        {
+            ResidentRecord record = Register(actor); if (record == null) return;
+            var methods = new System.Collections.Generic.List<string>();
+            foreach (NpcPlanStep step in intent.Plan.Steps) methods.Add(step.Action.ToString());
+            int turn = actor.Location.Map.LocalTime.TurnCounter;
+            record.Add("plan:" + intent.Sequence + ":" + record.Entries.Count, turn,
+                "Plan: " + System.String.Join(" → ", methods.ToArray()) + ". [story " + intent.StoryId + "]",
+                new ObservedEvent("goal_plan", turn, actor.UnmodifiedName, intent.TargetName, true,
+                    causeId: intent.CauseId, storyId: intent.StoryId));
+        }
         public void IntentChanged(Actor actor, NpcIntent intent, string state, string reason)
         {
             ResidentRecord record = Register(actor); if (record == null) return;

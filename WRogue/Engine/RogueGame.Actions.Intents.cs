@@ -16,7 +16,7 @@ namespace djack.RogueSurvivor.Engine
                     "I'm hungry, " + target.UnmodifiedName + ". Could you spare some food?";
                 DoSay(actor, target, text, Sayflags.NONE);
                 intent.Announced = true; intent.Status = NpcIntentStatus.Waiting;
-                NpcIntentSystem.Publish(this, "requested_food", actor, target, intent.CauseId, intent.StoryId);
+                NpcPlanExecution.Publish(this, "requested_food", actor, target, intent);
                 return;
             }
             if (definition.Method == NpcIntentMethod.LeaveGroup)
@@ -26,7 +26,7 @@ namespace djack.RogueSurvivor.Engine
                 SpendActorActionPoints(actor, Rules.BASE_ACTION_COST);
                 actor.SetTrustIn(target, actor.TrustInLeader); target.RemoveFollower(actor); actor.TrustInLeader = Rules.TRUST_NEUTRAL;
                 BaseAI ai = actor.Controller as BaseAI; if (ai != null) ai.SetOrder(null);
-                NpcIntentSystem.Publish(this, "left_group", actor, target, intent.CauseId, intent.StoryId);
+                NpcPlanExecution.Publish(this, "left_group", actor, target, intent);
                 NpcIntentSystem.Finish(actor, intent, NpcIntentStatus.Completed, "left the unsafe leader");
                 return;
             }
@@ -37,11 +37,11 @@ namespace djack.RogueSurvivor.Engine
             { NpcIntentSystem.Finish(actor, intent, NpcIntentStatus.Failed, "food transfer failed"); return; }
             actor.Inventory.Consume(food);
             SpendActorActionPoints(actor, Rules.BASE_ACTION_COST);
-            if (needed) NpcIntentSystem.Publish(this, "helped", target, actor, intent.CauseId, intent.StoryId);
+            if (needed) NpcPlanExecution.Publish(this, "helped", target, actor, intent);
             if (NpcIntentSystem.CanSee(this, actor, target))
                 DoSay(actor, target, intent.DefinitionId == NpcIntentContent.Repay.Id ?
                     "You helped me before. Here, take this food." : "Here, I can spare some food.", Sayflags.IS_FREE_ACTION);
-            NpcIntentSystem.Publish(this, "shared_food", actor, target, intent.CauseId, intent.StoryId);
+            NpcPlanExecution.Publish(this, "shared_food", actor, target, intent);
             if (definition.Method == NpcIntentMethod.GatherFood)
             { intent.Progress = 2; return; }
             NpcIntentSystem.Finish(actor, intent, NpcIntentStatus.Completed, "transferred one food unit");

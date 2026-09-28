@@ -15,6 +15,14 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public static void Observe(RogueGame game, Actor owner, SignificantEvent source, bool direct)
         {
             NpcKnowledge knowledge = owner.Personality.Knowledge;
+            if (source.Kind == "food_offered" && source.Other == owner)
+                foreach (NpcIntent goal in owner.Personality.Intents)
+                    if (!goal.Finished && goal.DefinitionId == NpcIntentContent.Request.Id && goal.StoryId == source.StoryId && goal.Plan != null)
+                    { goal.Plan.Desired = (ulong)NpcPlanFact.Food; goal.Plan.Invalidate(); goal.Plan.NextPlanningTurn = source.Turn; }
+            if (direct && source.StoryId != null)
+                foreach (NpcIntent goal in owner.Personality.Intents)
+                    if (!goal.Finished && goal.Plan != null && goal.StoryId == source.StoryId && source.Id > goal.Plan.LastEventId)
+                        goal.Plan.LastEventId = source.Id;
             if (source.Kind == "group_succession" && source.Subject != null && source.Subject.SocialGroup != null)
             { RelationshipRecord knownGroup = owner.Personality.Group(source.Subject.SocialGroup.Identity);
                 if (knownGroup != null) knownGroup.Name = source.Subject.SocialGroup.LeaderName; }
@@ -22,9 +30,21 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             bool seesOther = source.Other != null && (owner == source.Other || Visible(game, owner, source.Other.Location));
             if (seesSubject) knowledge.See(source.Subject, source.Turn);
             if (seesOther) knowledge.See(source.Other, source.Turn);
+            if (source.Kind == "shared_food" && seesSubject && seesOther && source.Subject != owner && source.StoryId != null)
+                foreach (NpcIntent goal in owner.Personality.Intents)
+                    if (!goal.Finished && goal.TargetId == source.Other.PersonalityIdentity && goal.StoryId == source.StoryId)
+                    {
+                        if (goal.DefinitionId == NpcIntentContent.Help.Id)
+                            NpcIntentSystem.Finish(owner, goal, NpcIntentStatus.Completed, "observed that the recipient received food");
+                        else if (goal.DefinitionId == NpcIntentContent.Gather.Id)
+                        {
+                            goal.Progress = 2; goal.NextAttempt = source.Turn;
+                            if (goal.Plan != null) { goal.Plan.LastEventId = source.Id; goal.Plan.Invalidate(); goal.Plan.NextPlanningTurn = source.Turn; }
+                        }
+                    }
             if (source.Kind == "death" && source.Subject != null)
             { NpcKnownPerson dead = knowledge.Person(source.Subject.PersonalityIdentity); if (dead != null) dead.Dead = true; }
-            if (source.Kind == "attack" || source.Kind == "murder" || source.Kind == "death" || source.Kind == "requested_food" ||
+            if (source.Kind == "attack" || source.Kind == "murder" || source.Kind == "death" || source.Kind == "requested_food" || source.Kind == "food_offered" ||
                 source.Kind == "army_supplies" || source.Kind.EndsWith("_raid", StringComparison.Ordinal))
                 knowledge.Learn(new NpcFact { EventId = source.Id, Kind = source.Kind, EventTurn = source.Turn, LearnedTurn = source.Turn,
                     Source = direct ? NpcKnowledgeSource.Participant : NpcKnowledgeSource.Witness, Confidence = direct ? 100 : 90,
@@ -72,12 +92,14 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 if (items != null)
                 {
                     int units = 0;
+                    XpdBase claim = percept.Location.Map.XpdBaseAt(percept.Location.Position);
+                    int risk = claim != null && !claim.Owns(actor) ? 1 : 0;
                     foreach (Item item in items.Items) if (item is ItemFood && !game.Rules.IsFoodSpoiled((ItemFood)item, turn)) units += item.Quantity;
                     NpcKnownPlace old = knowledge.Places.Find(p => p.Kind == "food" && p.Place == percept.Location);
                     if (units > 0 && (old == null || old.Units != units || turn - old.SeenTurn > 180))
                         knowledge.Learn(new NpcFact { Kind = "food_cache", EventId = Session.Get.NextPersonalityEventId(), EventTurn = turn, LearnedTurn = turn,
-                            Confidence = 90, Source = NpcKnowledgeSource.Witness, SourceId = actor.PersonalityIdentity, Place = percept.Location, Units = units });
-                    knowledge.RememberPlace(new NpcKnownPlace(percept.Location, "food", turn, units));
+                            Confidence = 90, Source = NpcKnowledgeSource.Witness, SourceId = actor.PersonalityIdentity, Place = percept.Location, Units = units, Risk = risk });
+                    knowledge.RememberPlace(new NpcKnownPlace(percept.Location, "food", turn, units, risk));
                 }
             }
             Map map = actor.Location.Map;
@@ -99,7 +121,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             NpcFact fact = source.Retell(speaker.PersonalityIdentity, listener.Location.Map.LocalTime.TurnCounter, confidence);
             bool learned = listener.Personality.Knowledge.Learn(fact);
             if (learned && fact.Kind == "food_cache" && confidence >= 40)
-                listener.Personality.Knowledge.RememberPlace(new NpcKnownPlace(fact.Place, "food", fact.EventTurn, fact.Units));
+                listener.Personality.Knowledge.RememberPlace(new NpcKnownPlace(fact.Place, "food", fact.EventTurn, fact.Units, fact.Risk));
             if (learned && fact.SubjectId != Guid.Empty)
                 listener.Personality.Knowledge.LearnPerson(new NpcKnownPerson { Id = fact.SubjectId, Name = fact.SubjectName, Place = fact.Place,
                     SeenTurn = fact.EventTurn, Confidence = confidence, Source = NpcKnowledgeSource.Told, Dead = fact.Kind == "death" && confidence >= 60 });

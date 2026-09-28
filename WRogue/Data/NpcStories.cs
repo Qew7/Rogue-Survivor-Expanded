@@ -20,6 +20,7 @@ namespace djack.RogueSurvivor.Data
     sealed class NpcStoryRole
     {
         public Guid ActorId;
+        public Guid TargetId;
         public string Name, Goal, Outcome;
         public NpcIntentStatus Status;
     }
@@ -89,7 +90,7 @@ namespace djack.RogueSurvivor.Data
                 NpcStoryRole role = story.Roles.Find(r => r.ActorId == actor.PersonalityIdentity && r.Goal == intent.DefinitionId);
                 if (role == null && story.Roles.Count < 8)
                     story.Roles.Add(new NpcStoryRole { ActorId = actor.PersonalityIdentity, Name = actor.UnmodifiedName,
-                        Goal = intent.DefinitionId, Status = intent.Status });
+                        Goal = intent.DefinitionId, TargetId = intent.TargetId, Status = intent.Status });
             }
         }
         public void Outcome(Actor actor, NpcIntent intent)
@@ -100,6 +101,8 @@ namespace djack.RogueSurvivor.Data
                 NpcStoryRole role = story.Roles.Find(r => r.ActorId == actor.PersonalityIdentity && r.Goal == intent.DefinitionId);
                 if (role != null) { role.Status = intent.Status; role.Outcome = intent.Outcome; }
                 if (story.Finished) return;
+                if (story.Roles.Count > 0 && story.Roles.TrueForAll(r => r.Status == NpcIntentStatus.Completed))
+                { End(story, "completed", intent.FinishedTurn); Session.Get.ResidentRecords.StoryChanged(actor, story, intent.FinishedTurn, 0); return; }
                 if (intent.Status == NpcIntentStatus.Completed && story.Template == NpcIntentContentIdRequest && intent.DefinitionId == NpcIntentContentIdRequest)
                 { End(story, "completed", intent.FinishedTurn); Session.Get.ResidentRecords.StoryChanged(actor, story, intent.FinishedTurn, 0); return; }
                 if (intent.Status != NpcIntentStatus.Completed && story.Roles.TrueForAll(r => r.Status >= NpcIntentStatus.Completed))
@@ -110,6 +113,15 @@ namespace djack.RogueSurvivor.Data
         public void End(NpcStory story, string stage, int turn)
         { lock (this) { story.Stage = stage; story.FinishedTurn = turn; story.Place = default(Location);
             story.Resource = default(Location); story.ReservedActor = Guid.Empty; } }
+        public bool Reserve(string id, Location resource)
+        {
+            lock (this)
+            {
+                NpcStory story = Find(id); if (story == null || story.Finished) return false;
+                if (resource.Map != null && Stories.Exists(s => s != story && !s.Finished && s.Resource == resource)) return false;
+                story.Resource = resource; return true;
+            }
+        }
         public bool OfferDue(Map map, int turn)
         {
             lock (this)

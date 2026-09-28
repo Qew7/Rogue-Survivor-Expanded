@@ -50,6 +50,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 { Finish(owner, intent, NpcIntentStatus.Abandoned, "group membership changed"); continue; }
                 if (definition.Method == NpcIntentMethod.RequestFood && (!game.Rules.IsActorHungry(owner) || HasFood(game, owner)))
                 { Finish(owner, intent, NpcIntentStatus.Completed, "food need was satisfied"); continue; }
+                if (definition.Method == NpcIntentMethod.ObtainFood && (!game.Rules.IsActorHungry(owner) || HasFood(game, owner)))
+                { Finish(owner, intent, NpcIntentStatus.Completed, "observed that usable food is available"); continue; }
                 Actor target = VisibleTarget(visible, intent.TargetId);
                 NpcKnownPerson known = owner.Personality.HasKnowledge ? owner.Personality.Knowledge.Person(intent.TargetId) : null;
                 if (target == null && known != null && known.SeenTurn > intent.LastKnownTurn && known.Confidence >= 40)
@@ -80,7 +82,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             foreach (NpcIntent intent in owner.Personality.IntentList)
             {
                 if (intent.Finished || intent.Status == NpcIntentStatus.Paused || turn < intent.NextAttempt ||
-                    (intent.DefinitionId == NpcIntentContent.Request.Id && intent.Announced)) continue;
+                    (intent.DefinitionId == NpcIntentContent.Request.Id && intent.Announced &&
+                        (intent.Plan == null || intent.Plan.Desired != (ulong)NpcPlanFact.Food))) continue;
                 if (departureOnly && intent.DefinitionId != NpcIntentContent.Leave.Id) continue;
                 NpcIntentDefinition definition = NpcIntentContent.Find(intent.DefinitionId); if (definition == null) continue;
                 if (definition.Method == NpcIntentMethod.Coordinate) continue;

@@ -19,11 +19,11 @@ static class IntentRefusalScenario
             Check.Equal(true, NpcIntentSupport.HasEvent(hungry, "request_refused"), "refusal is actually spoken and observed");
             Check.Equal(3, NpcIntentSupport.FoodUnits(selfish), "refusal transfers no items");
             Check.Equal(0, NpcIntentSupport.FoodUnits(hungry), "request alone cannot fabricate supplies");
-            Check.Equal(NpcIntentStatus.Failed, request.Status, "explicit refusal ends the matching request");
+            Check.Equal(NpcIntentStatus.Active, request.Status, "explicit refusal preserves the food need and invalidates the unsuccessful plan");
             Check.Equal(true, hungry.Personality.Person(selfish.PersonalityIdentity) != null, "refusal becomes a personal experience");
             world.Map.LocalTime.TurnCounter = request.Deadline;
             djack.RogueSurvivor.Gameplay.Personality.NpcIntentSystem.AdvanceClock(world.Game, world.Map);
-            Check.Equal("request was declined", request.Outcome, "deadline does not rewrite an already known outcome");
+            Check.Equal("deadline expired", request.Outcome, "an unmet food goal fails at its own deadline");
             int count = hungry.Personality.Intents.Count;
             NpcIntentSupport.Turn(world, hungry);
             Check.Equal(count, hungry.Personality.Intents.Count, "saved cooldown prevents immediate repeated requests");

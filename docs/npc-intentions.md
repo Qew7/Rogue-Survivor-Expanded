@@ -1,8 +1,8 @@
 # Trait-driven NPC intentions
 
 The system connects local knowledge, perceived events and survival needs to
-persistent intentions and real AI actions. It includes personal goals, spoken
-reports, searches, shared group episodes and a bounded story director. It uses
+persistent intentions, generated action plans and real AI actions. It includes
+personal goals, spoken reports, searches, shared group episodes and a bounded story director. It uses
 the existing personality, relationship, action and chronicle systems.
 
 ## The system as a whole
@@ -15,10 +15,13 @@ flowchart TD
     C --> E[Traits, needs and motivation]
     D --> E
     E --> F[Personal intention]
-    F --> G[Available legal actions]
+    F --> P[Desired state]
+    P --> Q[Search available action combinations]
+    Q --> G[Execute and revalidate a step]
     G --> H[Actual outcome]
     H --> A
     H --> I[Saved chronicle]
+    H --> Q
 ```
 
 Traits determine which goals are attractive and which reactions and methods an
@@ -43,9 +46,10 @@ do not generate autonomous intentions.
 | Situation | Possible intention | Observable action |
 | --- | --- | --- |
 | Received needed aid | Repay the helper | Thanks, approach the last known location, give one food unit |
-| Hungry with no usable food | Ask a visible nonenemy for food | Approach, speak, wait for a response |
+| Hungry with no usable food | Obtain usable food | Collect known supplies, ask someone, or accept a spoken trade offer |
 | Received a food request | Help the requester | Give one food unit if supplies permit |
 | Food request does not produce a help intention | Decline | Speak a refusal; the requester records the known outcome |
+| Receives a food request and prefers trade over charity | Offer an exchange | Speak an offer; exchange two food units for supplies if both inventories permit |
 | Attacked by the current leader, or witnessed that leader murder someone | Leave an unsafe group | Leave the actual follower list and clear the leader's order |
 | Knows of violence, directly or through a report | Avoid or confront the reported aggressor | Withdraw from the reported location, or approach and speak a warning |
 | Has lost contact with a known group member | Search for the companion | Ask people, follow reported locations and known exits, speak on reunion |
@@ -90,6 +94,7 @@ Departure additionally subtracts a leader-trust penalty from 0 to 60.
 | --- | --- | --- | --- | --- |
 | `repay_aid` | 25 / 20 | Compassion + Trade | 2 days | 1 day |
 | `request_food` | 35 / 20 | Group + Trade / 2 | 60 turns | 180 turns |
+| `obtain_food` | 35 / 20 | Explore + Supplies − Group / 2 | 180 turns | 180 turns |
 | `answer_food_request` | 25 / 20 | Compassion + Trade | 60 turns | 60 turns |
 | `leave_unsafe_group` | 40 / 55 | −Group − Courage / 2 | 1 day | 1 day |
 | `seek_companion` | 20 / 35 | Group + Compassion / 2 | 1 day | 180 turns |
@@ -100,7 +105,8 @@ Departure additionally subtracts a leader-trust penalty from 0 to 60.
 | `seek_group_shelter` | 25 / 35 | Group − Courage / 2 | 180 turns | 180 turns |
 
 Repayment, requests, assistance, search and gathering use relation weight +1;
-departure, avoidance and confrontation use −1; coordination and shelter use 0.
+departure, avoidance and confrontation use −1; coordination, shelter and
+autonomous food acquisition use 0.
 One game hour is 30 turns and one day is 720 turns. Request target choice also
 considers visible distance and prefers the current leader, without examining
 others' inventories.
@@ -124,6 +130,14 @@ others' inventories.
   untouched, and inventory acquisition counters reflect the actual transfer.
 - A completed food request requires actual food acquisition or an end to
   hunger. Receiving medicine alone does not satisfy it.
+- The stable `request_food` definition now seeks usable food, rather than a
+  successful request action. A refusal invalidates the attempted method; the
+  same goal can switch to a pickup, another listener or an offered exchange.
+  A refusal stays in personal history even when the food goal later succeeds.
+- A helper who witnesses another participant actually feeding the same
+  recipient in their shared story can complete its assistance goal. A collector
+  can skip duplicate acquisition/delivery and report that observed result.
+  Repayment remains a personal obligation. Unseen gifts update no remote goal.
 - Targets use permanent actor IDs, not names. Pursuit follows a last known
   location through existing movement behavior. Cross-map routes use only exits
   the NPC has seen, with at most 32 remembered exits and 16 maps in a route
@@ -141,19 +155,24 @@ others' inventories.
 Actual significant events receive session-wide increasing IDs. Derived events
 carry a cause ID and story ID. A reply intention inherits the request's story;
 new stories use the owner's permanent ID and intention sequence. Private
-intention starts and terminal outcomes appear once in the resident's chronicle.
+intention starts, generated plans and terminal outcomes appear in the
+resident's chronicle.
 They are not published as perceived world events and do not inflate the
 interesting-life score.
 
 Read Records has an **Intentions and outcomes** event category. Its entries show
-the template, target, result and story tag; physical events retain the same tag.
+the goal, target, generated action sequence, result and story tag; physical
+events retain the same tag.
 This lets a reader search an episode across several residents. Ordinary events
 can also carry cause/story metadata without belonging to an intention.
 
 Format 5 saves preserve intention sequence, cause/story IDs, target identity and
 name snapshot, last known map/position and attitude, status, deadline, retry
 progress, announcement state, outcome, cooldowns and pending reactions. Terminal
-intentions release their map reference. They never retain an Actor reference.
+intentions release their map references, including plan steps and rejected
+bindings. Plans save their desired state, cursor, costs, conditions and effects,
+knowledge/trait cache, retry turn and last actual causal event. They never retain
+an Actor reference.
 The archive stores typed event/cause/story metadata separately from the world
 graph, so reading does not resume simulation. See [save-format.md](save-format.md).
 
@@ -198,8 +217,8 @@ end a search without consulting the unseen actor's current state.
 
 Each NPC retains at most 48 facts, 32 people, 16 places, 32 exits and 64
 conversation/query deduplication entries. Facts and places expire after two days
-from the original observation. Planning checks run at most once per 15 local
-turns. Situation definitions are indexed by event kind and work with these
+from the original observation. New knowledge-based situation checks run at most
+once per 15 local turns. Situation definitions are indexed by event kind and work with these
 bounded lists and current local perceptions.
 
 ## Groups, faction interests and shared episodes
@@ -221,9 +240,13 @@ autonomous succession action.
 Supply plans begin with the leader's knowledge of a member's food request and
 a remembered stock containing at least two units. The leader chooses a visible,
 motivated collector and speaks the assignment. The collector independently
-accepts or speaks a refusal. Acceptance creates a persistent task with three
-steps: actual pickup, actual one-unit gift to the beneficiary, and an actual
-return/report to the coordinator. The gift retains the ordinary donor reserve
+accepts or speaks a refusal. The spoken assignment shares the leader's remembered
+stock snapshot, rather than revealing its current contents. Acceptance creates
+a persistent goal: the beneficiary receives food and the coordinator hears a
+report. The planner may use existing supplies, a pickup, requested aid or an
+offered exchange before the actual one-unit gift and report. An observed gift
+by another participant can satisfy delivery. The gift retains the ordinary
+donor reserve
 and inventory rules. The coordinator has a separate waiting goal: delivery out
 of sight does not remotely tell them it succeeded. It completes when the
 collector reports back. A departed member cannot execute a stale group task.
@@ -286,38 +309,66 @@ actors. The director's pacing and reservation state survives saves. Terminal
 stories, plans and intentions clear their map references, and starting a new
 Session clears its old director.
 
-The architecture supports adding more templates and execution methods. Bargain,
-theft, intimidation, rescue and reconciliation missions are future content;
-the implemented methods and situations are those listed above.
+## Generating plans from desired states
 
-## Current limits and the generation goal
+`NpcGoalPlanner` performs bounded uniform-cost search over reusable action
+definitions. Each action has prerequisites, forbidden facts, expected effects
+and a positive cost. `NpcPlanDomain` binds them to the owner's inventory,
+remembered places and currently perceived people. The goal describes a result:
+usable food, a fed recipient, reported delivery, contact, a warning, safety,
+shelter or departure. There is no authored complete action chain for a plot.
 
-The current implementation selects participants, known locations, motivation
-and outcomes at runtime, but its repertoire of situations is predefined.
-In particular, the supply mission has a fixed pickup/gift/report sequence.
-It does not yet compose arbitrary action sequences to achieve a desired state.
-The deterministic scenarios under `tests/scenarios/` are automated tests;
-they are not scripts played by NPCs in a generated world.
+Available primitives are travel, pickup, food request, offered barter, food
+transfer, delivery report, location question, reunion, warning, retreat, safety
+confirmation, entering shelter and leaving a group. Movement uses existing
+navigation and remembered exits. Trait biases for group preference, compassion,
+trade, exploration, supplies, law and courage change action costs. Actual
+attitude and leader preference change whom an NPC asks. Supplies in a visibly
+claimed foreign base carry remembered risk: lawful actors penalize that method;
+rebellious actors may prefer it. Actual theft still uses existing base rules,
+observation and consequences.
 
-The intended next architecture generates plans from a character's goals and
-knowledge. A goal describes a desired state, such as having usable food or a
-companion reaching safety. A reusable action describes its prerequisites,
-expected effects and costs. The planner chooses and connects available actions
-according to current traits, relationships, risk and known resources. New
-observations and actual action outcomes invalidate steps and trigger replanning;
-expected effects never substitute for executing a legal game action.
+For example, a sociable hungry NPC may ask a neighbor while a solitary scavenger
+collects known food. A helper with only its own reserve can ask a third person
+before feeding the original requester. A trade-minded listener can answer with
+an exchange offer. A collector who already has spare food can omit fetching
+supplies. These choices share goals and primitives instead of separate authored
+plot branches. Independent replies and actions carry the original story tag and
+the latest actually experienced causal event.
 
-For example, obtaining food could involve searching, asking, exchanging goods
-or taking someone else's supplies once those methods exist. Another person's
-independently motivated response can create a new goal and plan. Their connected
-actual events form a story without a predefined plot or guaranteed ending.
-Definitions of goals and elementary actions still need to be authored; complete
-plots and their branch order do not.
+A request predicts potential help; it never gives the requester food. After
+speaking, the NPC waits for a response and evaluates actual state again. A
+disappeared stack, changed traits, a refusal, an offered exchange or a witnessed
+delivery can invalidate a plan. The next plan starts from real observations.
+Every returned game action also rechecks legality immediately before execution;
+stale actions spend no AP and create no outcome. Generated `goal_plan` entries
+remain private during play and appear under **Intentions and outcomes** in
+Read Records, separate from physical events.
 
-The director should retain its budgets, pacing and reservations while the
-planner remains bounded and uses local knowledge. Plan state and causal links
-must survive saving, and Read Records should reconstruct histories from actual
-events. This general planner is a design target, not implemented functionality.
+Barter requires a recent spoken offer addressed to the buyer. The seller must
+still have a nonspoiled, unequipped, nonunique food stack of at least three units.
+The buyer exchanges one whole eligible nonfood stack for two food units, leaving
+the seller a reserve. Existing recipient trade rating and complete capacity in
+both inventories are checked before any mutation. Only the buyer spends a turn;
+received-unit counters and the `bartered_food` event reflect the real exchange.
+The acquired `traded_for_food` memory can resolve to the existing CHARISMATIC
+skill; speech alone grants no negotiation experience.
+
+Each search expands at most 128 states, keeps at most 512 pending states and
+returns at most ten steps. A domain contains at most 64 bound actions, 32 place
+bindings and eight possible listeners. Failed bindings are avoided for 30 turns,
+with at most eight retained failures. Unchanged unsuccessful planning waits
+eight turns; new knowledge or changed traits permits reconsideration. These
+limits bound work rather than guaranteeing a solution. Planning does not scan
+the town or inspect unseen actors' inventories. Actual trade inspects the
+recipient's offer only at the interaction.
+
+The director retains admission, pacing and reservation duties. It does not
+choose a complete plot or force participants to succeed. Goals and elementary
+actions still require authored mechanics; their runtime combinations, people,
+causes and outcomes produce the story. Intimidation, rescue, reconciliation and
+new resource types are future action content. The named deterministic scenarios
+under `tests/scenarios/` verify the implementation; they are not NPC plot scripts.
 
 ## Adding content
 
@@ -326,8 +377,11 @@ events. This general planner is a design target, not implemented functionality.
    threshold, duration and cooldown. Attach event conditions and the target role
    with `.On(...)` before registering the definition. Survival needs may initiate
    goals from the existing local AI perception path instead.
-2. Reuse an existing execution method where possible. For a new method, add its
-   legal action and real state change, then publish an outcome after that change.
+2. Reuse existing desired states and planner actions where possible. A new
+   result belongs in `NpcGoalPlanner.Desired`; new primitives require stable
+   `NpcPlanAction` values, bindings/conditions/effects/costs in `NpcPlanDomain`
+   and a legal action with real state changes in the execution layer. Publish an
+   outcome after that change, rather than writing predicted effects into the world.
    Keep current perception, interruption and retry rules explicit.
    Knowledge-based situations belong in `NpcStoryContent.cs`; route them by
    event kind, set an evidence age/confidence threshold and use known snapshots.
@@ -354,6 +408,14 @@ Scenarios: `npc/intent-gratitude`, `npc/intent-food-request`,
 `world/records-browser`. They exercise actual
 controllers/actions, item/AP accounting, observation boundaries, trait changes,
 interruption, replay deduplication, private memory outcomes and format-5 saves.
+
+Planner scenarios: `npc/planner-methods`, `npc/planner-replan`,
+`npc/planner-refusal-replan`, `npc/planner-chain`, `npc/planner-owned-supplies`,
+`npc/planner-barter`, `npc/planner-barter-boundary`, `npc/planner-risk`,
+`npc/planner-observed-outcome`, `npc/planner-boundaries` and
+`npc/planner-persistence`. These cover different methods for the same goal,
+independent causal chains, uncertain replies, changed resources, theft risk,
+capacity and stale-action boundaries, bounded search and saved continuation.
 
 Run named scenarios with `sh tests/scenario.sh <name>`, then
 `docker build --target test .` and `bash tests/e2e.sh`. The E2E script creates an

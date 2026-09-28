@@ -63,6 +63,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             NpcKnownPerson beneficiary = source.Subject.Personality.Knowledge.Person(plan.BeneficiaryId);
             // The leader actually told the collector the beneficiary and observed destination.
             if (beneficiary == null) return;
+            NpcKnownPlace cache = source.Subject.Personality.Knowledge.Places.Find(p => p.Kind == "food" && p.Place == plan.Destination);
+            if (cache != null) owner.Personality.Knowledge.RememberPlace(new NpcKnownPlace(cache.Place, cache.Kind, cache.SeenTurn, cache.Units, cache.Risk));
             NpcKnownPerson target = new NpcKnownPerson { Id = beneficiary.Id, Name = beneficiary.Name, Place = beneficiary.Place, SeenTurn = beneficiary.SeenTurn };
             NpcIntent goal = StartKnown(owner, target, NpcIntentContent.Gather, source.Id, plan.StoryId, plan.Destination, owner.SocialGroup.Identity);
             if (goal != null) { goal.CoordinatorId = source.Subject.PersonalityIdentity; goal.CoordinatorPlace = source.Subject.Location; }
