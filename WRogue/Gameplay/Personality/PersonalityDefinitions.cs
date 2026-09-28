@@ -31,6 +31,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public readonly bool ItemParameter;
         public readonly string RequiresTrait;
         public readonly TraitEffect[] Effects;
+        public int RelationFactionId { get; private set; } = -1;
+        public int RelationBias { get; private set; }
         readonly List<string> m_Conflicts = new List<string>();
 
         public TraitDefinition(string id, string name, bool advanced, bool itemParameter,
@@ -54,6 +56,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         }
 
         public void AddConflict(string id) { m_Conflicts.Add(id); }
+        public TraitDefinition TowardFaction(int id, int amount)
+        { RelationFactionId = id; RelationBias = amount; return this; }
     }
 
     sealed class SignificantEvent
@@ -123,6 +127,9 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public MemoryRelationRole GroupRole { get; private set; }
         public int FeelingChange { get; private set; }
         public int FallbackFeelingChange { get; private set; }
+        public int RelationFactionId { get; private set; } = -1;
+        public int FactionFeelingChange { get; private set; }
+        public bool OncePerPerson { get; private set; }
 
         public MemoryDefinition(string id, string name, int minDays, int maxDays,
             MemoryTrigger[] triggers, params MemoryOutcome[] outcomes)
@@ -158,6 +165,10 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 if (tracked == kind) return true;
             return false;
         }
+        public MemoryDefinition TowardFaction(int id, int amount)
+        { RelationFactionId = id; FactionFeelingChange = amount; return this; }
+        public MemoryDefinition FirstEncounter()
+        { OncePerPerson = true; return this; }
     }
 
     sealed class PersonalityRegistry

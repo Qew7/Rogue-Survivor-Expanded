@@ -26,7 +26,8 @@ remembered and save graphs do not keep them alive.
 
 Each event changes the feeling toward the person. The same experience has a
 smaller group effect and, for non-civilian factions, a smaller faction effect.
-The three feelings add for a current target, clamped to -100..100. Dislike can
+The three feelings and acquired faction-specific trait biases add for a current
+target, clamped to -100..100. Dislike can
 stop trade offers and recruitment; positive feeling can make a marginal trade
 acceptable. A follower's feeling toward its leader also affects trust growth.
 Relationships only affect behavior while the preset option is enabled. NPC
@@ -34,7 +35,8 @@ inspection shows traits but never reveals private pending or resolved memories.
 
 ## Extending the catalog
 
-Definitions live in `WRogue/Gameplay/Personality/PersonalityContent.cs` and are
+Definitions live in `WRogue/Gameplay/Personality/PersonalityContent.cs` and
+`PersonalityWorldContent.cs` and are
 registered in `PersonalityRegistry`. A `TraitDefinition` has a stable string ID,
 display name, starting/advanced flag, optional required trait, optional item
 model parameter, and one or more `TraitEffect`s. Standard effects change common
@@ -84,10 +86,85 @@ faction feelings. Groups are named after their leader. The screen displays
 only the player's records and qualitative feelings, never another actor's
 private memories or opinions. The list persists in the saved player actor.
 
-The first catalog contains 50 starting and 20 advanced traits. Advanced traits
+The catalog contains 50 starting and 62 advanced traits. Advanced traits
 are available only through memory resolution and require an existing trait.
 `likes_items` and `dislikes_items` each take an item model ID; pistol, shotgun,
 magazine, or any other defined item model uses the same trait definition.
+
+## Experiences with unique characters, factions, and world events
+
+There are 42 additional acquired traits, paired with 42 source-specific memories:
+nine unique encounters, eighteen faction experiences, and fifteen world/story
+events. None of these memories or traits is randomly assigned at character
+creation. Each memory has a two-to-six-day deadline. Its first outcome offers
+the special trait when the NPC has the required starting trait; otherwise it
+offers a related skill, then a fallback skill. Existing traits and skill caps
+still apply. `friend_<faction>` and `wary_<faction>` conflict with each other.
+Player memories preserve history without awarding these NPC outcomes.
+
+Unique encounters happen when an awake intelligent living observer sees the
+actual actor registered in `Session.UniqueActors`. A matching name or actor
+model is insufficient. A wall, distance, sleep, or an unspawned/removed actor
+prevents the encounter. The first encounter is remembered once per observer
+and unique identity, including after resolution and save/load. It changes
+feelings toward the person and their group/faction where applicable.
+
+| Unique | Memory ID | Special trait | Required trait |
+| --- | --- | --- | --- |
+| Big Bear | `met_big_bear` | `bear_resolve` | `brave` |
+| Famu Fataru | `met_famu_fataru` | `blade_discipline` | `disciplined` |
+| Santaman | `met_santaman` | `holiday_spirit` | `generous` |
+| Roguedjack | `met_roguedjack` | `rogue_ingenuity` | `curious` |
+| Duckman | `met_duckman` | `duck_camaraderie` | `sociable` |
+| Hans von Hanz | `met_hans_von_hanz` | `hans_drill` | `disciplined` |
+| The Prisoner Who Should Not Be | `met_prisoner` | `prisoner_secrets` | `suspicious` |
+| Jason Myers | `met_jason_myers` | `masked_survivor` | `cautious` |
+| The Sewers Thing | `met_sewers_thing` | `sewer_dread` | `fearful` |
+
+Actual help from CHAR, Army, Bikers, Gangstas, Police, BlackOps, Psychopaths,
+or Survivors can create `aid_<faction>` and develop `friend_<faction>` in a
+trusting NPC. An attack by one of these factions, Undeads, or Ferals, or a
+witnessed murder committed by them, creates `violence_<faction>` and can develop
+`wary_<faction>` in a suspicious NPC. These experiences supplement the existing
+personal help/violence memories; their additional feeling changes apply to the
+faction without repeating the personal penalty or reward. Friendship adds +15
+to attitude toward other faction members; distrust adds -20. Both also affect
+normal AI trade, group, or supply preferences. Civilian individual encounters
+retain their generic memories; refugee arrivals supply their collective memory.
+Animals and undead have no aid outcome and do not gain personality traits.
+
+World handlers report events at their actual arrival/drop/discovery positions.
+Only observers who see those positions remember them. Failed spawns create no
+arrival memory. Peaceful arrivals have their own events instead of the generic
+`raid` event, which remains registered for old memories. Named raids attribute
+their memories to the actual leader and their group; members of the raiding
+faction do not acquire fear of their own raid.
+
+| World/story event and memory ID | Special trait | Required trait |
+| --- | --- | --- |
+| `zombie_invasion` | `night_watch` | `vigilant` |
+| `sewers_invasion` | `underground_caution` | `cautious` |
+| `refugees_arrival` | `refugee_solidarity` | `kind` |
+| `national_guard_arrival` | `army_confidence` | `trusting` |
+| `army_supplies` | `relief_organizer` | `organized` |
+| `bikers_raid` | `roadside_vigilance` | `vigilant` |
+| `hells_souls_raid` | `hells_souls_defiance` | `brave` |
+| `free_angels_raid` | `free_angels_watchfulness` | `vigilant` |
+| `gangstas_raid` | `streetwise` | `pragmatic` |
+| `craps_raid` | `craps_grudge` | `vindictive` |
+| `floods_raid` | `floods_caution` | `cautious` |
+| `blackops_raid` | `blackops_distrust` | `suspicious` |
+| `survivors_arrival` | `convoy_hope` | `sociable` |
+| `char_discovered` | `char_whistleblower` | `skeptic` |
+| `prisoner_transformed` | `betrayal_scar` | `suspicious` |
+
+Special traits affect existing AI decisions: courage, supplies, exploration,
+compassion, trade, group trust, and law enforcement. World experiences also bias
+attitude toward their source faction. For example, an Army assault can develop
+`wary_army` and make an NPC refuse trade with a previously unfamiliar soldier;
+meeting Santaman can develop generosity and willingness to trade. Resolved
+memories stay in personal/group/faction histories, and the saved-world chronicle
+records the encounter, memory, and eventual trait or skill outcome.
 
 ## Reading saved records
 

@@ -358,6 +358,7 @@
     <Compile Include="Gameplay\Personality\PersonalityDefinitions.cs" />
     <Compile Include="Gameplay\Personality\PersonalityContent.cs" />
     <Compile Include="Gameplay\Personality\PersonalitySystem.cs" />
+    <Compile Include="Gameplay\Personality\PersonalityWorldContent.cs" />
     <Compile Include="Gameplay\GameTiles.cs" />
     <Compile Include="Gameplay\GameImages.cs" />
     <Compile Include="Gameplay\ZoneAttributes.cs" />

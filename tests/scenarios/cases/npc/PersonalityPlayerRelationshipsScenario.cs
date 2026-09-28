@@ -52,9 +52,10 @@ static class PersonalityPlayerRelationshipsScenario
             Check.Equal(false, visible.Contains("Survived an attack"),
                 "relationship screen does not expose memory content");
             PersonalitySystem.Report(world.Game, attack);
-            Check.Equal(1, player.Personality.Person(attacker.PersonalityIdentity).Memories.Count,
+            Check.Equal(2, player.Personality.Person(attacker.PersonalityIdentity).Memories.Count,
                 "duplicate event does not inflate player's relationship");
-            world.Map.LocalTime.TurnCounter = player.Personality.Memories[0].ResolveTurn;
+            foreach (MemoryInstance pending in player.Personality.Memories)
+                world.Map.LocalTime.TurnCounter = Math.Max(world.Map.LocalTime.TurnCounter, pending.ResolveTurn);
             PersonalitySystem.ResolveDue(world.Game, world.Map);
             Check.Equal(0, player.Personality.Memories.Count, "player's pending memory resolves");
             Check.Equal(0, player.Personality.Traits.Count, "journal resolution grants no NPC trait");

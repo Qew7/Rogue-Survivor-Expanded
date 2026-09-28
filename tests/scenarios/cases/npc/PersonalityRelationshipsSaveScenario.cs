@@ -28,7 +28,7 @@ static class PersonalityRelationshipsSaveScenario
             Guid leaderId = leader.PersonalityIdentity;
             PersonalitySystem.Report(world.Game, new SignificantEvent("helped", observer, helper,
                 world.Map, observer.Location.Position, world.Map.LocalTime.TurnCounter));
-            Check.Equal(1, observer.Personality.Memories.Count, "help starts a memory");
+            Check.Equal(2, observer.Personality.Memories.Count, "help starts personal and faction memories");
 
             string path = Path.Combine(Path.GetTempPath(), "relations-" + Guid.NewGuid().ToString("N"));
             try
@@ -44,16 +44,17 @@ static class PersonalityRelationshipsSaveScenario
                 RelationshipRecord person = savedObserver.Personality.Person(helperId);
                 Check.Equal(true, person != null, "personal relationship survives save and load");
                 Check.Equal(30, person.Feeling, "lasting attitude survives save and load");
-                Check.Equal(1, savedObserver.Personality.Memories.Count,
+                Check.Equal(2, savedObserver.Personality.Memories.Count,
                     "pending personal memory survives save and load");
                 Check.Same(savedObserver.Personality.Memories[0], person.Memories[0],
                     "pending queue and relationship share one memory instance");
-                Check.Equal(1, savedObserver.Personality.Faction(savedHelper.Faction.ID).Memories.Count,
+                Check.Equal(2, savedObserver.Personality.Faction(savedHelper.Faction.ID).Memories.Count,
                     "faction relationship and episode survive save and load");
-                Check.Equal(1, savedObserver.Personality.Group(leaderId).Memories.Count,
+                Check.Equal(2, savedObserver.Personality.Group(leaderId).Memories.Count,
                     "leader group relationship and episode survive save and load");
                 Session.Restore(loaded);
-                map.LocalTime.TurnCounter = savedObserver.Personality.Memories[0].ResolveTurn;
+                foreach (MemoryInstance pending in savedObserver.Personality.Memories)
+                    map.LocalTime.TurnCounter = Math.Max(map.LocalTime.TurnCounter, pending.ResolveTurn);
                 PersonalitySystem.ResolveDue(world.Game, map);
                 Check.Equal(0, savedObserver.Personality.Memories.Count,
                     "saved pending memory resolves after load");
@@ -68,14 +69,14 @@ static class PersonalityRelationshipsSaveScenario
                 Actor finalObserver = finalMap.GetActorAt(1, 1);
                 Actor finalHelper = finalMap.GetActorAt(2, 1);
                 RelationshipRecord finalPerson = finalObserver.Personality.Person(helperId);
-                Check.Equal(1, finalPerson.Memories.Count,
+                Check.Equal(2, finalPerson.Memories.Count,
                     "resolved personal memory survives a second save and load");
                 Check.Equal("received_help", finalPerson.Memories[0].Id,
                     "resolved relationship retains event identity");
                 Check.Equal("skill:MEDIC", finalPerson.Memories[0].OutcomeId,
                     "resolved relationship retains outcome");
                 Session.Restore(reloaded);
-                Check.Equal(47, PersonalitySystem.Attitude(finalObserver, finalHelper),
+                Check.Equal(57, PersonalitySystem.Attitude(finalObserver, finalHelper),
                     "loaded personal, group and faction relationship still changes behavior");
             }
             finally

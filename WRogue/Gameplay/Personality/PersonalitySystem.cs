@@ -74,7 +74,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                     relatedGroupLeader = relatedPerson.Leader;
                 else if (relatedGroupLeader == null && relatedPerson.CountFollowers > 0)
                     relatedGroupLeader = relatedPerson;
-                if (relatedPerson.Faction != null &&
+                if (definition.RelationFactionId < 0 && relatedPerson.Faction != null &&
                     relatedPerson.Faction.ID != (int)GameFactions.IDs.TheCivilians)
                     actor.Personality.RememberFaction(relatedPerson.Faction.ID,
                         relatedPerson.Faction.Name, memory, impact / 4);
@@ -82,6 +82,9 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             if (relatedGroupLeader != null)
                 actor.Personality.RememberGroup(relatedGroupLeader.PersonalityIdentity,
                     relatedGroupLeader.UnmodifiedName, memory, impact / 3);
+            if (definition.RelationFactionId >= 0)
+                actor.Personality.RememberFaction(definition.RelationFactionId,
+                    Models.Factions[definition.RelationFactionId].Name, memory, definition.FactionFeelingChange);
             if (actor.Location.Map != null)
                 Session.Get.ResidentRecords.MemoryStarted(actor, memory);
         }
@@ -126,6 +129,12 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             {
                 RelationshipRecord faction = observer.Personality.Faction(target.Faction.ID);
                 if (faction != null) total += faction.Feeling;
+                foreach (TraitInstance trait in observer.Personality.Traits)
+                {
+                    TraitDefinition definition = s_Registry.Trait(trait.Id);
+                    if (definition != null && definition.RelationFactionId == target.Faction.ID)
+                        total += definition.RelationBias;
+                }
             }
             return Math.Max(-100, Math.Min(100, total));
         }
@@ -182,6 +191,18 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 if (!direct && !saw) continue;
                 if (observer.IsPlayer && observer.Personality == null)
                     observer.Personality = new PersonalityState();
+                if (lifeEvent.Kind.StartsWith("met_unique:"))
+                {
+                    if (observer == lifeEvent.Subject) continue;
+                    bool known = false;
+                    RelationshipRecord person = observer.Personality.Person(subjectId);
+                    if (person != null)
+                        foreach (MemoryDefinition definition in s_Registry.ForEvent(lifeEvent.Kind))
+                            if (definition.OncePerPerson)
+                                foreach (MemoryInstance old in person.Memories)
+                                    if (old.Id == definition.Id) known = true;
+                    if (known) continue;
+                }
                 string subject = lifeEvent.Subject == null ? null : lifeEvent.Subject.UnmodifiedName;
                 string other = lifeEvent.Other == null ? null : lifeEvent.Other.UnmodifiedName;
                 bool relatedToSubject = lifeEvent.Subject != null &&
@@ -253,6 +274,21 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                     Session.Get.ResidentRecords.MemoryResolved(actor, memory);
                     actor.Personality.RemoveMemory(memory);
                 }
+            }
+        }
+
+        public static void ObserveEncounters(RogueGame game, Map map)
+        {
+            if (game == null || map == null || !game.Session.GamePreset.NpcPersonalitiesEnabled) return;
+            UniqueActors uniques = game.Session.UniqueActors;
+            if (uniques == null) return;
+            foreach (PersonalityWorldContent.Experience source in PersonalityWorldContent.Uniques)
+            {
+                UniqueActor unique = source.Unique(uniques);
+                Actor actor = unique == null ? null : unique.TheActor;
+                if (actor == null || actor.IsDead || actor.Location.Map != map || !map.HasActor(actor)) continue;
+                Report(game, new SignificantEvent(source.Kind, actor, null, map,
+                    actor.Location.Position, map.LocalTime.TurnCounter, false, false));
             }
         }
     }

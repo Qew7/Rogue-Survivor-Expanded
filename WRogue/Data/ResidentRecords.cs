@@ -135,6 +135,9 @@ namespace djack.RogueSurvivor.Data
         }
         static string EventText(ObservedEvent e)
         {
+            string special = PersonalityWorldContent.EventName(e.Kind);
+            if (special != null) return special +
+                (e.Subject == null ? "." : ": " + e.Subject + ".");
             string subject = e.Subject ?? "Someone";
             string other = e.Other ?? "someone";
             switch (e.Kind)
@@ -152,6 +155,7 @@ namespace djack.RogueSurvivor.Data
                 case "zombified": return other + " turned into " + subject + ".";
                 case "starvation": return subject + " faced starvation.";
                 case "raid": return "A raid occurred.";
+                case "unique_arrival": return subject + " arrived.";
                 default: return e.Kind + ": " + subject + (e.Other == null ? "." : "; " + other + ".");
             }
         }

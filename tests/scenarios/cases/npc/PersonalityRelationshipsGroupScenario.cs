@@ -36,22 +36,22 @@ static class PersonalityRelationshipsGroupScenario
 
             PersonalitySystem.Report(world.Game, new SignificantEvent("attack", victim, attacker,
                 world.Map, victim.Location.Position, world.Map.LocalTime.TurnCounter));
-            Check.Equal(1, victim.Personality.Memories.Count, "attack starts a personal memory");
-            Check.Equal(-54, PersonalitySystem.Attitude(victim, attacker),
+            Check.Equal(2, victim.Personality.Memories.Count, "attack starts personal and faction memories");
+            Check.Equal(-69, PersonalitySystem.Attitude(victim, attacker),
                 "attacker combines personal, group and faction impressions");
-            Check.Equal(-19, PersonalitySystem.Attitude(victim, mate),
+            Check.Equal(-34, PersonalitySystem.Attitude(victim, mate),
                 "same group shares only the group and faction impressions");
-            Check.Equal(-8, PersonalitySystem.Attitude(victim, stranger),
+            Check.Equal(-23, PersonalitySystem.Attitude(victim, stranger),
                 "other group shares only the faction impression");
             Check.Equal(null, victim.Personality.Group(otherLeader.PersonalityIdentity),
                 "leaders with the same name are separate groups");
-            Check.Equal(1, victim.Personality.Group(leader.PersonalityIdentity).Memories.Count,
+            Check.Equal(2, victim.Personality.Group(leader.PersonalityIdentity).Memories.Count,
                 "group retains its attributed memory");
-            Check.Equal(1, victim.Personality.Faction(attacker.Faction.ID).Memories.Count,
+            Check.Equal(2, victim.Personality.Faction(attacker.Faction.ID).Memories.Count,
                 "faction retains its weaker attributed memory");
 
             leader.RemoveFollower(attacker);
-            Check.Equal(-43, PersonalitySystem.Attitude(victim, attacker),
+            Check.Equal(-58, PersonalitySystem.Attitude(victim, attacker),
                 "former member keeps personal and faction impressions");
             string reason;
             Check.Equal(false, world.Game.Rules.CanActorTakeLead(attacker, victim, out reason),
@@ -59,7 +59,7 @@ static class PersonalityRelationshipsGroupScenario
             Check.Equal("does not trust this leader", reason,
                 "recruitment refusal is caused by remembered treatment");
             otherLeader.AddFollower(attacker);
-            Check.Equal(-43, PersonalitySystem.Attitude(victim, attacker),
+            Check.Equal(-58, PersonalitySystem.Attitude(victim, attacker),
                 "joining a namesake's group does not inherit the old group's reputation");
 
             GamePreset disabled = GamePreset.BuiltIn(GameMode.GM_STANDARD);

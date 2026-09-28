@@ -12,8 +12,8 @@ static class PersonalityGenerationScenario
         {
             GamePreset enabled = GamePreset.BuiltIn(GameMode.GM_STANDARD);
             Session.Get.GamePreset = enabled;
-            Check.Equal(70, PersonalitySystem.Registry.TraitCount, "all trait definitions registered");
-            Check.Equal(20, PersonalitySystem.Registry.AdvancedTraitCount, "advanced pool registered");
+            Check.Equal(112, PersonalitySystem.Registry.TraitCount, "all trait definitions registered");
+            Check.Equal(62, PersonalitySystem.Registry.AdvancedTraitCount, "advanced pool registered");
             Actor first = world.Game.GameActors.MaleCivilian.CreateNumberedName(
                 world.Game.GameFactions.TheCivilians, 0);
             Check.Equal(3, first.Personality.Traits.Count, "three starting traits");

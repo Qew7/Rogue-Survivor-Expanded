@@ -209,6 +209,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 Gain("panic_attacks", (a,m) => Has(a,"fearful")),
                 Gain("hardened", (a,m) => Has(a,"brave")), Skills.IDs.NECROLOGY, Skills.IDs.STRONG_PSYCHE,
                 person: MemoryRelationRole.Other, feeling: 10);
+            PersonalityWorldContent.Register(r);
             return r;
         }
     }

@@ -35,7 +35,8 @@ static class PersonalityPlayerRelationshipsSaveScenario
                 Check.Equal(-35, savedPlayer.Personality.Person(attackerId).Feeling,
                     "player's personal impression survives save and load");
                 Session.Restore(loaded);
-                map.LocalTime.TurnCounter = savedPlayer.Personality.Memories[0].ResolveTurn;
+                foreach (MemoryInstance pending in savedPlayer.Personality.Memories)
+                    map.LocalTime.TurnCounter = Math.Max(map.LocalTime.TurnCounter, pending.ResolveTurn);
                 PersonalitySystem.ResolveDue(world.Game, map);
                 BinarySaveStore.Save(path, Session.Get);
                 Session reloaded = BinarySaveStore.Load<Session>(path);
@@ -44,7 +45,7 @@ static class PersonalityPlayerRelationshipsSaveScenario
                 Actor finalPlayer = finalMap.GetActorAt(1, 1);
                 Check.Equal(0, finalPlayer.Personality.Memories.Count,
                     "resolved player memory leaves the pending queue after load");
-                Check.Equal(1, finalPlayer.Personality.Person(attackerId).Memories.Count,
+                Check.Equal(2, finalPlayer.Personality.Person(attackerId).Memories.Count,
                     "player's resolved relationship history survives another save");
                 Check.Equal("none", finalPlayer.Personality.Person(attackerId).Memories[0].OutcomeId,
                     "journal resolution does not give player an NPC outcome");

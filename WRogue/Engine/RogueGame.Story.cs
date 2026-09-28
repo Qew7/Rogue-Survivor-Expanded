@@ -129,6 +129,8 @@ namespace djack.RogueSurvivor.Engine
                             throw new InvalidOperationException("could not find exit to surface in CUF map");
                         Exit fromCUF = m_Session.UniqueMaps.CHARUndergroundFacility.TheMap.GetExitAt(cufExit.Value);
                         fromCUF.IsAnAIExit = true;
+                        ReportPersonalityEvent("char_discovered", player, null, player.Location.Map,
+                            player.Location.Position, false, false);
                     }
                 }
             }
@@ -253,6 +255,8 @@ namespace djack.RogueSurvivor.Engine
                                 monster.Model = m_GameActors.ZombiePrince;
                                 // - zero AP so player don't get hit asap.
                                 monster.ActionPoints = 0;
+                                ReportPersonalityEvent("prisoner_transformed", monster, prisoner, map,
+                                    monster.Location.Position, false, false);
 
                                 // Scoring event.
                                 m_Session.Scoring.AddEvent(m_Session.WorldTime.TurnCounter, String.Format("{0} turned into a {1}!", prisoner.Name, monster.Model.Name));

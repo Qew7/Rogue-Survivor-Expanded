@@ -42,6 +42,7 @@ namespace djack.RogueSurvivor.Engine
 
         void FireEvent_ZombieInvasion(Map map)
         {
+            HashSet<Actor> before = new HashSet<Actor>(map.Actors);
             // announce.
             if (map == m_Player.Location.Map && !m_Player.IsSleeping && !m_Player.Model.Abilities.IsUndead)
             {
@@ -57,6 +58,7 @@ namespace djack.RogueSurvivor.Engine
             int undeadsToSpawn = targetUndeadsCount - undeads;
             for (int i = 0; i < undeadsToSpawn; i++)
                 SpawnNewUndead(map, map.LocalTime.Day);
+            ReportNewPersonalityArrivals(map, before, "zombie_invasion");
 
         }
         #endregion
@@ -83,6 +85,7 @@ namespace djack.RogueSurvivor.Engine
 
         void FireEvent_SewersInvasion(Map map)
         {
+            HashSet<Actor> before = new HashSet<Actor>(map.Actors);
             // do it silently.
             int undeads = CountUndeads(map);
             float invasionRatio = Math.Min(1.0f, (map.LocalTime.Day * s_Options.ZombieInvasionDailyIncrease + s_Options.DayZeroUndeadsPercent) / 100.0f);
@@ -90,6 +93,7 @@ namespace djack.RogueSurvivor.Engine
             int undeadsToSpawn = targetUndeadsCount - undeads;
             for (int i = 0; i < undeadsToSpawn; i++)
                 SpawnNewSewersUndead(map, map.LocalTime.Day);
+            ReportNewPersonalityArrivals(map, before, "sewers_invasion");
 
         }
         #endregion
@@ -175,6 +179,7 @@ namespace djack.RogueSurvivor.Engine
             int size = 1 + (int)(REFUGEES_WAVE_SIZE * RefugeesEventDistrictFactor(district) * s_Options.MaxCivilians);
             int civiliansToSpawn = Math.Min(size, s_Options.MaxCivilians - civilians);
             Map spawnMap = null;
+            Dictionary<Map, HashSet<Actor>> previous = new Dictionary<Map, HashSet<Actor>>();
             for (int i = 0; i < civiliansToSpawn; i++)
             {
                 // map: surface or sewers/subway.
@@ -189,8 +194,11 @@ namespace djack.RogueSurvivor.Engine
                         spawnMap = district.SewersMap;
                 }
                 // do it.
+                if (!previous.ContainsKey(spawnMap)) previous.Add(spawnMap, new HashSet<Actor>(spawnMap.Actors));
                 SpawnNewRefugee(spawnMap);
             }
+            foreach (KeyValuePair<Map, HashSet<Actor>> entry in previous)
+                ReportNewPersonalityArrivals(entry.Key, entry.Value, "refugees_arrival");
 
             // check for uniques, always in surface.
             if (m_Rules.RollChance(UNIQUE_REFUGEE_CHECK_CHANCE))
@@ -223,6 +231,9 @@ namespace djack.RogueSurvivor.Engine
 
             // mark as spawned.
             unique.IsSpawned = true;
+            ReportPersonalityEvent("unique_arrival", unique.TheActor, null, map,
+                unique.TheActor.Location.Position, false, false);
+            Gameplay.Personality.PersonalitySystem.ObserveEncounters(this, map);
 
             // announce.
             if (map == m_Player.Location.Map && !m_Player.IsSleeping && !m_Player.Model.Abilities.IsUndead)
@@ -334,7 +345,7 @@ namespace djack.RogueSurvivor.Engine
                 return;
 
             // notify AI.
-            NotifyOrderablesAI(map, RaidType.NATGUARD, squadLeader.Location.Position);
+            NotifyOrderablesAI(map, RaidType.NATGUARD, squadLeader.Location.Position, squadLeader);
 
             // announce.
             if (map == m_Player.Location.Map && !m_Player.IsSleeping && !m_Player.Model.Abilities.IsUndead)
@@ -570,7 +581,7 @@ namespace djack.RogueSurvivor.Engine
                 return;
 
             // notify AI.
-            NotifyOrderablesAI(map, RaidType.BIKERS, raidLeader.Location.Position);
+            NotifyOrderablesAI(map, RaidType.BIKERS, raidLeader.Location.Position, raidLeader);
 
             // announce.
             if (map == m_Player.Location.Map && !m_Player.IsSleeping && !m_Player.Model.Abilities.IsUndead)
@@ -652,7 +663,7 @@ namespace djack.RogueSurvivor.Engine
                 return;
 
             // notify AI.
-            NotifyOrderablesAI(map, RaidType.GANGSTA, raidLeader.Location.Position);
+            NotifyOrderablesAI(map, RaidType.GANGSTA, raidLeader.Location.Position, raidLeader);
 
             // announce.
             if (map == m_Player.Location.Map && !m_Player.IsSleeping && !m_Player.Model.Abilities.IsUndead)
@@ -722,7 +733,7 @@ namespace djack.RogueSurvivor.Engine
                 return;
 
             // notify AI.
-            NotifyOrderablesAI(map, RaidType.BLACKOPS, raidLeader.Location.Position);
+            NotifyOrderablesAI(map, RaidType.BLACKOPS, raidLeader.Location.Position, raidLeader);
 
             // announce.
             if (map == m_Player.Location.Map && !m_Player.IsSleeping && !m_Player.Model.Abilities.IsUndead)
@@ -786,7 +797,7 @@ namespace djack.RogueSurvivor.Engine
                 return;
 
             // notify AI.
-            NotifyOrderablesAI(map, RaidType.SURVIVORS, bandScout.Location.Position);
+            NotifyOrderablesAI(map, RaidType.SURVIVORS, bandScout.Location.Position, bandScout);
 
             // announce.
             if (map == m_Player.Location.Map && !m_Player.IsSleeping && !m_Player.Model.Abilities.IsUndead)

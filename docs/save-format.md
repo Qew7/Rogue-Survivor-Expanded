@@ -95,6 +95,14 @@ events they directly experience or witness. It has no generated starting traits
 or memories. Player memories resolve without NPC trait or skill rewards, while
 their attributed relationship history remains in the saved actor graph.
 
+Unique encounters, faction experiences, and world/story events reuse these
+existing string memory and trait IDs in the graph. Definitions such as faction
+attitude bias and first-encounter policy are rebuilt from the content catalog;
+they are not serialized. Retained per-person encounter memories prevent a
+unique character from granting the same first encounter again after loading.
+Source-specific memories and acquired traits have a save/load scenario; this
+content expansion does not change the save header or existing numeric IDs.
+
 Sessions also store an optional `m_ResidentRecords` chronicle. It holds NPC
 identity/name snapshots, arrival and death turns, and ordered text records of
 significant observations, memory creation, and resolution outcomes. It keeps no
