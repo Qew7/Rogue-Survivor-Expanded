@@ -1,6 +1,7 @@
 using System.Drawing;
 using djack.RogueSurvivor.Data;
 using djack.RogueSurvivor.Engine;
+using djack.RogueSurvivor.Gameplay.AI;
 using djack.RogueSurvivor.Gameplay.Personality;
 
 static class PersonalityRaidScenario
@@ -14,10 +15,16 @@ static class PersonalityRaidScenario
             Actor witness = SkillScenario.Actor(world);
             witness.Personality = new PersonalityState();
             witness.Personality.AddTrait(new TraitInstance("vigilant"));
+            witness.Controller = new CivilianAI();
             world.Map.PlaceActorAt(witness, new Point(2, 1));
             Actor hidden = SkillScenario.Actor(world);
             hidden.Personality = new PersonalityState();
+            hidden.Controller = new CivilianAI();
             world.Map.PlaceActorAt(hidden, new Point(5, 1));
+            Actor sleeping = SkillScenario.Actor(world);
+            sleeping.Personality = new PersonalityState();
+            sleeping.Controller = new CivilianAI();
+            sleeping.IsSleeping = true;
 
             Check.Call(world.Game, "NotifyOrderablesAI",
                 new[] { typeof(Map), typeof(RaidType), typeof(Point) },
@@ -28,6 +35,14 @@ static class PersonalityRaidScenario
                 "raid notification uses its memory definition");
             Check.Equal(0, hidden.Personality.Memories.Count,
                 "raid behind a wall is not witnessed");
+            System.Reflection.FieldInfo heard = typeof(OrderableAI).GetField("m_LastRaidHeard",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            Check.Equal(true, heard.GetValue(hidden.Controller) != null,
+                "awake NPC can hear a raid behind a wall through the existing reporting system");
+            Check.Equal(0, hidden.Personality.Events.Count,
+                "heard raid is not recorded as a witnessed personality event");
+            Check.Equal(null, heard.GetValue(sleeping.Controller), "sleeping NPC receives no heard raid signal");
+            Check.Equal(0, sleeping.Personality.Memories.Count, "sleeping NPC acquires no raid memory");
             world.Map.LocalTime.TurnCounter = witness.Personality.Memories[0].ResolveTurn;
             PersonalitySystem.ResolveDue(world.Game, world.Map);
             Check.Equal(true, witness.Personality.HasTrait("roadside_vigilance"),

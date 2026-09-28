@@ -18,6 +18,9 @@ attached to their original group. Factions use existing numeric faction IDs.
 Memories involving another person are attributed to that person. Examples
 include help, attacks, murder, theft, abandonment, joining a group, and deaths
 of companions. Loss of the observer's own base is attributed to its group.
+For a leader, that group's key is the leader's own identity; this is a group
+history, not a personal relationship with oneself. The base-loss memory changes
+no feeling score and remains in this history after resolution.
 Unattributed raids and starvation have no personal target. A memory is linked
 to the relevant relationship records as soon as it starts; when it resolves,
 those records retain the memory, its resolution turn, and its outcome. Records
@@ -30,8 +33,21 @@ The three feelings and acquired faction-specific trait biases add for a current
 target, clamped to -100..100. Dislike can
 stop trade offers and recruitment; positive feeling can make a marginal trade
 acceptable. A follower's feeling toward its leader also affects trust growth.
+Accumulated `TrustInLeader` remains the authority for trusting the current
+leader: while it meets the existing threshold, the follower accepts that
+leader's trade offers and does not exclude them from autonomous trade solely
+because of negative attitude. Memories can reduce trust on subsequent turns;
+once trust falls below the threshold, normal attitude-based refusals apply.
 Relationships only affect behavior while the preset option is enabled. NPC
 inspection shows traits but never reveals private pending or resolved memories.
+
+The original AI systems keep their existing roles: `MemorizedSensor` tracks
+recent perceptions, `ExplorationData` tracks visited places, and aggression/
+self-defense records determine combat hostility. Personality observations track
+experienced or witnessed consequences. `OrderableAI.OnRaid` stores a heard
+arrival signal for reporting even without line of sight; hearing it alone does
+not create a witnessed personality memory. `Scoring` keeps the player's game
+history, while `ResidentRecords` keeps individual NPC histories for Read Records.
 
 ## Extending the catalog
 

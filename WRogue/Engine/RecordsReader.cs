@@ -78,12 +78,17 @@ namespace djack.RogueSurvivor.Engine
             {
                 string line = new WorldTime(entry.Value.Turn) + " | " + entry.Key.Name +
                     " [" + entry.Key.Identity.ToString("N").Substring(0, 8) + "] | " + entry.Value.Text;
+                const string indent = "    ";
+                bool continuation = false;
                 while (line.Length > 120)
                 {
-                    int split = line.LastIndexOf(' ', 119, 119);
-                    if (split < 1) split = 120;
+                    int floor = continuation ? indent.Length : 0;
+                    int split = line.LastIndexOf(' ', 119, 120 - floor);
+                    // A break inside the continuation indent would consume no content.
+                    if (split <= floor) split = 120;
                     lines.Add(line.Substring(0, split));
-                    line = "    " + line.Substring(split).TrimStart();
+                    line = indent + line.Substring(split).TrimStart();
+                    continuation = true;
                 }
                 lines.Add(line);
             }

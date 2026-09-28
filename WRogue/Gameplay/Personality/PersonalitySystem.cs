@@ -223,6 +223,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                         if (trigger.EventKind == lifeEvent.Kind && trigger.Applies(observer, lifeEvent))
                         {
                             Actor relatedPerson = RelationActor(definition.PersonRole, observer, lifeEvent);
+                            // A group uses its leader's identity, so leaders can retain their own group's history.
                             Actor relatedGroupLeader = RelationActor(definition.GroupRole, null, lifeEvent);
                             int impact = definition.PersonRole == MemoryRelationRole.OtherOrSubject &&
                                 lifeEvent.Other == null ? definition.FallbackFeelingChange :
