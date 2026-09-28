@@ -80,8 +80,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                         relatedPerson.Faction.Name, memory, impact / 4);
             }
             if (relatedGroupLeader != null)
-                actor.Personality.RememberGroup(relatedGroupLeader.PersonalityIdentity,
-                    relatedGroupLeader.UnmodifiedName, memory, impact / 3);
+                actor.Personality.RememberGroup(relatedGroupLeader.SocialGroup == null ? relatedGroupLeader.PersonalityIdentity : relatedGroupLeader.SocialGroup.Identity,
+                    relatedGroupLeader.SocialGroup == null ? relatedGroupLeader.UnmodifiedName : relatedGroupLeader.SocialGroup.LeaderName, memory, impact / 3);
             if (definition.RelationFactionId >= 0)
                 actor.Personality.RememberFaction(definition.RelationFactionId,
                     Models.Factions[definition.RelationFactionId].Name, memory, definition.FactionFeelingChange);
@@ -122,7 +122,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 target.CountFollowers > 0 ? target : null;
             if (groupLeader != null)
             {
-                RelationshipRecord group = observer.Personality.Group(groupLeader.PersonalityIdentity);
+                RelationshipRecord group = observer.Personality.Group(target.SocialGroup == null ? groupLeader.PersonalityIdentity : target.SocialGroup.Identity);
                 if (group != null) total += group.Feeling;
             }
             if (target.Faction != null)
@@ -212,6 +212,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                     subject, other, direct, relatedToSubject, subjectId, otherId,
                     lifeEvent.Id, lifeEvent.CauseId, lifeEvent.StoryId);
                 if (!observer.Personality.Remember(observation)) continue;
+                NpcKnowledgeSystem.Observe(game, observer, lifeEvent, direct);
                 Session.Get.ResidentRecords.Observe(observer, observation);
                 foreach (MemoryInstance memory in observer.Personality.Memories)
                 {
@@ -225,7 +226,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                         if (trigger.EventKind == lifeEvent.Kind && trigger.Applies(observer, lifeEvent))
                         {
                             Actor relatedPerson = RelationActor(definition.PersonRole, observer, lifeEvent);
-                            // A group uses its leader's identity, so leaders can retain their own group's history.
+                            // Attribute collective history to the permanent group behind the observed leader.
                             Actor relatedGroupLeader = RelationActor(definition.GroupRole, null, lifeEvent);
                             int impact = definition.PersonRole == MemoryRelationRole.OtherOrSubject &&
                                 lifeEvent.Other == null ? definition.FallbackFeelingChange :
@@ -237,6 +238,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                         }
                 NpcIntentSystem.Observe(game, observer, lifeEvent);
             }
+            NpcStorySystem.EventFinished(game, lifeEvent);
         }
 
         public static void ResolveDue(RogueGame game, Map map)

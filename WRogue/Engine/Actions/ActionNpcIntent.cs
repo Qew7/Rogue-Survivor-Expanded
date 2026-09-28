@@ -49,7 +49,8 @@ namespace djack.RogueSurvivor.Engine.Actions
             if (!IsLegal()) return;
             m_Game.DoSay(m_Actor, target, reaction.Text, RogueGame.Sayflags.NONE);
             m_Actor.Personality.Reactions.Remove(reaction);
-            NpcIntentSystem.Publish(m_Game, reaction.Kind, m_Actor, target, reaction.CauseId, reaction.StoryId);
+            SignificantEvent source = NpcIntentSystem.Publish(m_Game, reaction.Kind, m_Actor, target, reaction.CauseId, reaction.StoryId);
+            if (reaction.ReportedPerson != null) NpcKnowledgeSystem.HearLocation(target, m_Actor, reaction.ReportedPerson, source.Id);
         }
     }
 }

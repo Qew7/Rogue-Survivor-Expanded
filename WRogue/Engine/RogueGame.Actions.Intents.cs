@@ -42,6 +42,8 @@ namespace djack.RogueSurvivor.Engine
                 DoSay(actor, target, intent.DefinitionId == NpcIntentContent.Repay.Id ?
                     "You helped me before. Here, take this food." : "Here, I can spare some food.", Sayflags.IS_FREE_ACTION);
             NpcIntentSystem.Publish(this, "shared_food", actor, target, intent.CauseId, intent.StoryId);
+            if (definition.Method == NpcIntentMethod.GatherFood)
+            { intent.Progress = 2; return; }
             NpcIntentSystem.Finish(actor, intent, NpcIntentStatus.Completed, "transferred one food unit");
         }
     }

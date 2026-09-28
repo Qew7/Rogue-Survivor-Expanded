@@ -108,6 +108,32 @@ IDs, text, kind, cause/story IDs and expiry. These fields contain no Actor
 references. Last known positions share graph Map objects; terminal intentions
 clear that reference. See [npc-intentions.md](npc-intentions.md) for limits.
 
+Knowledge retains bounded facts with original event IDs/time, source IDs,
+confidence, retelling hops, named participant IDs and remembered positions;
+known people, supplies, shelter and exits; and conversation/query deduplication
+and next planning/speaking turns. Pending location replies contain copied
+knowledge snapshots, so a reply after loading reports the same observation.
+The original event is not recreated as a witnessed event for a listener.
+
+Person relationships retain trust, fear, attachment, grievance and debt.
+Actors in a group share one serialized `SocialGroup`: permanent identity,
+leader/member IDs, founder faction, plan sequence/cooldown and current plan.
+Nested followers and a successor retain that shared instance. Actor group
+sequences distinguish a newly founded group after a split. Assigned goals save
+group identity, destination, collector progress, coordinator identity/last known
+place and original observation turn, allowing continuation between pickup,
+gift and return report.
+
+Session retains the story director's bounded story/role history, source maps,
+cause IDs, stages, deadlines, actor/resource reservations, cooldowns and per-map
+proposal schedule. Maps in knowledge, exits, goals, plans and reservations are
+references to the same loaded graph objects. The per-map schedule is a list of
+saved rows with a nonserialized reference-keyed lookup rebuilt on demand; it
+does not depend on Map's mutable hash code or a serialized dictionary comparer.
+Terminal goals, plans and stories release location references. Starting a new
+Session clears its director and event sequence. No knowledge or director entry
+retains Actor references.
+
 Session retains the significant-event ID sequence. Observations retain event,
 cause and story IDs; a personality's processed-event cutoff survives journal
 eviction and memory resolution. Intent delivery has its own cutoff. Replaying
@@ -124,7 +150,12 @@ survive actor/corpse removal; entries are not evicted.
 Entries also retain event/cause/story IDs. Private intention starts and terminal
 outcomes are typed chronicle entries with deduplication by intention sequence
 and outcome. They are available to the archive-only reader and excluded from
-physical-event counts and the interesting-life score.
+physical-event counts and the interesting-life score. Private missing-contact
+inferences and story-stage entries use the same typed archive path and
+**Intentions and outcomes** filter, and also do not inflate those counts.
+Resident snapshots retain stable group identity alongside the current leader
+label. Searching a story tag links its independent participants without loading
+the world.
 
 Inventory's `TotalReceived` counts item **units** successfully added by AddAll
 and AddAsMuchAsPossible, including generation, pickups, gifts and trades.
@@ -145,7 +176,8 @@ numeric and string content IDs. Run the named scenarios, then
 
 Relevant scenarios: `storage/compact-save`, `npc/records-reader-save`,
 `npc/records-lifetime-items`, `npc/records-query`, `world/records-browser`,
-`npc/intent-persistence`, `npc/intent-boundaries`, and existing
+`npc/intent-persistence`, `npc/intent-boundaries`, `npc/story-persistence`,
+`npc/story-director`, `factions/social-group-succession`, and existing
 personality/relationship/base persistence cases. The E2E test
 generates a world, writes/loads format 5, then uses search, filters, sorting and
 the interesting-NPC selector through the real VNC UI.

@@ -9,17 +9,18 @@ resolution. No definition object or callback is serialized with the actor.
 
 ## Relationships
 
-An NPC keeps separate private records for people, leader groups, and factions.
-People and groups use stable actor identities; a leader's name is only a display
-label, so namesakes do not merge. A group is the current leader and followers.
-Changing leaders changes which group record applies, while old memories remain
-attached to their original group. Factions use existing numeric faction IDs.
+An NPC keeps separate private records for people, groups, and factions.
+People use stable actor identities and groups use permanent group identities;
+a leader's name is only a display label, so namesakes do not merge. Followers,
+including nested followers, share their top-level group. Succession preserves
+its identity and histories; a newly founded group after a split has a new
+identity. Factions use existing numeric faction IDs.
 
 Memories involving another person are attributed to that person. Examples
 include help, attacks, murder, theft, abandonment, joining a group, and deaths
 of companions. Loss of the observer's own base is attributed to its group.
-For a leader, that group's key is the leader's own identity; this is a group
-history, not a personal relationship with oneself. The base-loss memory changes
+The founder's identity initializes the separate group namespace; a later
+leader does not replace its key. The base-loss memory changes
 no feeling score and remains in this history after resolution.
 Unattributed raids and starvation have no personal target. A memory is linked
 to the relevant relationship records as soon as it starts; when it resolves,
@@ -60,13 +61,29 @@ voluntarily leave an unsafe leader. Private intentions and memories remain
 hidden during gameplay. Read Records retains their starts, outcomes and linked
 physical events, including an **Intentions and outcomes** category.
 
-See [npc-intentions.md](npc-intentions.md) for implemented behavior, limits,
-extension points and the later knowledge, story and group planning stages.
+NPCs also keep bounded knowledge with sources, confidence and remembered places.
+Real conversations can pass reports or answer a searcher's question; direct
+sight takes precedence over weaker reports of the same or older observation.
+Traits select avoiding or warning a reported aggressor, searching for a missing
+companion, accepting a supply assignment, or following a shelter proposal.
+Supply missions use real pickups, gifts and return reports. Shared episodes
+bind separate participant goals, with resource reservations and saved pacing.
+Eligible followers can preserve their group under a successor after an NPC
+leader's death.
+
+Person records also retain trust, fear, attachment, grievance and debt at
+0..100. Aid and known violence change these values; they affect reports and
+method motivation. They complement the existing feeling score and explicit
+leader trust. Knowledge, goals and these opinions remain private during play.
+
+See [npc-intentions.md](npc-intentions.md) for implemented behavior, limits and
+extension points, including faction preferences and director admission rules.
 
 ## Extending the catalog
 
 Definitions live in `WRogue/Gameplay/Personality/PersonalityContent.cs` and
-`PersonalityWorldContent.cs` and are
+`PersonalityWorldContent.cs`; acquired intention/conversation memories are also
+registered through `NpcIntentContent.cs` and `NpcStoryContent.cs`. They are
 registered in `PersonalityRegistry`. A `TraitDefinition` has a stable string ID,
 display name, starting/advanced flag, optional required trait, optional item
 model parameter, and one or more `TraitEffect`s. Standard effects change common

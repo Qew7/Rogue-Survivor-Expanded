@@ -6,6 +6,7 @@ namespace djack.RogueSurvivor.Data
     sealed partial class ResidentRecord
     {
         public string FactionName, GroupName;
+        public Guid GroupIdentity;
         public long ItemsReceived;
         public int InventoryUnits, InventoryStacks, SnapshotTurn, Traits;
         internal void Snapshot(Actor actor)
@@ -13,6 +14,7 @@ namespace djack.RogueSurvivor.Data
             FactionName = actor.Faction == null ? "Unknown" : actor.Faction.Name;
             GroupName = actor.Leader != null ? actor.Leader.UnmodifiedName :
                 actor.CountFollowers > 0 ? actor.UnmodifiedName : "";
+            GroupIdentity = actor.SocialGroup == null ? Guid.Empty : actor.SocialGroup.Identity;
             SnapshotTurn = actor.Location.Map == null ? actor.SpawnTime : actor.Location.Map.LocalTime.TurnCounter;
             InventoryUnits = InventoryStacks = 0;
             if (actor.Inventory != null)

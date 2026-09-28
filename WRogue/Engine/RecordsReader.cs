@@ -61,7 +61,7 @@ namespace djack.RogueSurvivor.Engine
                 case RecordsEventFilter.Encounters: return kind.StartsWith("met_unique:", StringComparison.Ordinal) || kind == "met_unique" || kind == "joined_group" || kind == "abandoned" || kind == "left_group";
                 case RecordsEventFilter.World: return RecordsProfile.IsWorld(kind);
                 case RecordsEventFilter.Life: return kind == "spawn" || kind == "death" || kind == "zombified" || kind == "starvation";
-                case RecordsEventFilter.Intentions: return kind.StartsWith("goal_", StringComparison.Ordinal);
+                case RecordsEventFilter.Intentions: return kind.StartsWith("goal_", StringComparison.Ordinal) || kind == "story_stage" || kind == "knowledge_inferred";
                 default: return true;
             }
         }

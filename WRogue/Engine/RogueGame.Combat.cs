@@ -145,6 +145,7 @@ namespace djack.RogueSurvivor.Engine
                 PlayerDied(killer, reason);
 
             // Remove followers.
+            Gameplay.Personality.NpcStorySystem.Succession(this, deadGuy);
             deadGuy.RemoveAllFollowers();
 
             // Remove from leader.

@@ -5,7 +5,7 @@ using djack.RogueSurvivor.Engine;
 
 namespace djack.RogueSurvivor.Gameplay.Personality
 {
-    enum NpcIntentMethod { ShareFood, RequestFood, LeaveGroup }
+    enum NpcIntentMethod { ShareFood, RequestFood, LeaveGroup, SeekPerson, AvoidPerson, ConfrontPerson, GatherFood, ReachShelter, Coordinate }
     sealed class NpcIntentTrigger
     {
         public readonly string Kind;
@@ -41,10 +41,10 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             return null;
         }
         public int Score(Actor owner, Actor target)
-        { return Score(owner, PersonalitySystem.Attitude(owner, target), owner.Leader == target); }
+        { return ScoreKnown(owner, PersonalitySystem.Attitude(owner, target), owner.Leader == target) + SocialScore(owner, target.PersonalityIdentity); }
         public int Score(Actor owner, NpcIntent intent)
-        { return Score(owner, intent.KnownAttitude, owner.Leader != null && owner.Leader.PersonalityIdentity == intent.TargetId); }
-        int Score(Actor owner, int attitude, bool isLeader)
+        { return ScoreKnown(owner, intent.KnownAttitude, owner.Leader != null && owner.Leader.PersonalityIdentity == intent.TargetId) + SocialScore(owner, intent.TargetId); }
+        public int ScoreKnown(Actor owner, int attitude, bool isLeader)
         {
             int score = BasePriority + RelationWeight * attitude / 2;
             foreach (NpcIntentWeight weight in Weights)
@@ -52,6 +52,15 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             if (Method == NpcIntentMethod.LeaveGroup && isLeader)
                 score -= Math.Min(2 * Rules.TRUST_TRUSTING_THRESHOLD, Math.Max(0, owner.TrustInLeader)) * 30 / Rules.TRUST_TRUSTING_THRESHOLD;
             return score;
+        }
+        public int SocialScore(Actor owner, Guid target)
+        {
+            RelationshipRecord opinion = owner.Personality.Person(target); if (opinion == null) return 0;
+            if (Id == "repay_aid") return opinion.Debt / 2;
+            if (Method == NpcIntentMethod.AvoidPerson) return opinion.Fear / 2;
+            if (Method == NpcIntentMethod.ConfrontPerson) return opinion.Grievance / 2;
+            if (Method == NpcIntentMethod.SeekPerson) return opinion.Attachment / 2;
+            return 0;
         }
     }
     static class NpcIntentContent
@@ -74,6 +83,18 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             new NpcIntentWeight(DecisionKind.Group, -1), new NpcIntentWeight(DecisionKind.Courage, -1, 2))
             .On("attack", (a, e) => a.Leader != null && a.Leader == e.Other && e.Subject == a, e => e.Other)
             .On("murder", (a, e) => a.Leader != null && a.Leader == e.Other && e.Subject != a, e => e.Other));
+        public static readonly NpcIntentDefinition Seek = Add(new NpcIntentDefinition("seek_companion", "Find a missing companion",
+            NpcIntentMethod.SeekPerson, 20, 35, WorldTime.TURNS_PER_DAY, 180, 1, new NpcIntentWeight(DecisionKind.Group, 1), new NpcIntentWeight(DecisionKind.Compassion, 1, 2)));
+        public static readonly NpcIntentDefinition Avoid = Add(new NpcIntentDefinition("avoid_reported_threat", "Avoid a reported aggressor",
+            NpcIntentMethod.AvoidPerson, 20, 35, 180, 180, -1, new NpcIntentWeight(DecisionKind.Courage, -1)));
+        public static readonly NpcIntentDefinition Confront = Add(new NpcIntentDefinition("confront_reported_aggressor", "Confront a reported aggressor",
+            NpcIntentMethod.ConfrontPerson, 15, 35, 180, 180, -1, new NpcIntentWeight(DecisionKind.Courage, 1), new NpcIntentWeight(DecisionKind.Law, 1)));
+        public static readonly NpcIntentDefinition Gather = Add(new NpcIntentDefinition("gather_group_supplies", "Gather supplies for a companion",
+            NpcIntentMethod.GatherFood, 35, 30, WorldTime.TURNS_PER_DAY, 180, 1, new NpcIntentWeight(DecisionKind.Compassion, 1), new NpcIntentWeight(DecisionKind.Supplies, 1), new NpcIntentWeight(DecisionKind.Explore, 1, 2)));
+        public static readonly NpcIntentDefinition Coordinate = Add(new NpcIntentDefinition("coordinate_group_supplies", "Coordinate supplies for the group",
+            NpcIntentMethod.Coordinate, 20, 25, WorldTime.TURNS_PER_DAY, 180, 0, new NpcIntentWeight(DecisionKind.Group, 1), new NpcIntentWeight(DecisionKind.Compassion, 1, 2)));
+        public static readonly NpcIntentDefinition Shelter = Add(new NpcIntentDefinition("seek_group_shelter", "Reach the group's known shelter",
+            NpcIntentMethod.ReachShelter, 25, 35, 180, 180, 0, new NpcIntentWeight(DecisionKind.Group, 1), new NpcIntentWeight(DecisionKind.Courage, -1, 2)));
         static NpcIntentDefinition Add(NpcIntentDefinition definition)
         {
             if (String.IsNullOrEmpty(definition.Id) || definitions.ContainsKey(definition.Id))

@@ -18,10 +18,20 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             if (!Enabled(owner) || target == null || target == owner || target.IsDead ||
                 target.Model.Abilities.IsUndead || !target.Model.Abilities.IsIntelligent) return null;
             int score = definition.Score(owner, target); if (score < definition.Threshold) return null;
-            NpcIntent intent = owner.Personality.StartIntent(definition.Id, owner, target, turn,
-                definition.Duration, definition.Cooldown, score, cause, story, PersonalitySystem.Attitude(owner, target));
-            if (intent != null) Session.Get.ResidentRecords.IntentChanged(owner, intent, "started", definition.Name);
-            return intent;
+            if (!owner.Personality.CanStartIntent(definition.Id, turn)) return null;
+            string storyId = story ?? owner.PersonalityIdentity.ToString("N") + ":" + owner.Personality.NextIntentSequence;
+            NpcStoryDirector director = Session.Get.NpcDirector;
+            lock (director)
+            {
+                NpcStory episode = director.Open(storyId, definition.Id, owner, cause, turn + definition.Duration,
+                    definition.Id + ":" + owner.PersonalityIdentity + ":" + target.PersonalityIdentity);
+                if (episode == null || episode.Roles.Count >= 8) return null;
+                NpcIntent intent = owner.Personality.StartIntent(definition.Id, owner, target, turn,
+                    definition.Duration, definition.Cooldown, score, cause, storyId, PersonalitySystem.Attitude(owner, target));
+                if (intent != null) director.Bind(episode, owner, intent);
+                if (intent != null) Session.Get.ResidentRecords.IntentChanged(owner, intent, "started", definition.Name);
+                return intent;
+            }
         }
         public static void Observe(RogueGame game, Actor observer, SignificantEvent source)
         {
@@ -33,7 +43,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             {
                 foreach (NpcIntent intent in state.Intents)
                     if (!intent.Finished && source.Subject != null &&
-                        (source.Subject == observer || intent.TargetId == source.Subject.PersonalityIdentity))
+                        (source.Subject == observer || intent.TargetId == source.Subject.PersonalityIdentity || intent.CoordinatorId == source.Subject.PersonalityIdentity))
                         Finish(observer, intent, NpcIntentStatus.Failed, source.Subject == observer ? "owner died" : "learned that the target died");
                 if (source.Subject == observer) state.Reactions.Clear();
             }
@@ -78,7 +88,11 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             intent.Status = status; intent.Outcome = reason;
             intent.FinishedTurn = owner.Location.Map == null ? intent.StartedTurn : owner.Location.Map.LocalTime.TurnCounter;
             Session.Get.ResidentRecords.IntentChanged(owner, intent, status.ToString().ToLowerInvariant(), reason);
+            Session.Get.NpcDirector.Outcome(owner, intent);
+            NpcStorySystem.GoalFinished(owner, intent);
             intent.LastKnown = default(Location);
+            intent.Destination = default(Location);
+            intent.CoordinatorPlace = default(Location);
         }
         public static bool HasFood(RogueGame game, Actor actor)
         {

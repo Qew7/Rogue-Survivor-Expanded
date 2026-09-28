@@ -73,6 +73,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public readonly Map Map;
         public readonly System.Drawing.Point Position;
         public readonly int Turn;
+        public NpcGroupPlan Task;
 
         public SignificantEvent(string kind, Actor subject, Actor other, Map map,
             System.Drawing.Point position, int turn, bool otherIsDirect = true,

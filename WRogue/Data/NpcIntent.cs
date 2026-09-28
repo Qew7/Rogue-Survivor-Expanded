@@ -11,19 +11,30 @@ namespace djack.RogueSurvivor.Data
         public readonly long Sequence, CauseId;
         public readonly string DefinitionId, TargetName, StoryId;
         public readonly Guid TargetId;
-        public readonly int StartedTurn, Deadline, Priority;
+        public readonly int StartedTurn, Priority;
+        public int Deadline, Progress;
+        public Location Destination;
+        public Guid GroupId;
+        public Guid CoordinatorId;
+        public Location CoordinatorPlace;
         public Location LastKnown;
         public int KnownAttitude;
         public int NextAttempt, BlockedAttempts, FinishedTurn;
+        public int LastKnownTurn;
         public bool Announced;
         public NpcIntentStatus Status;
         public string Outcome;
         public bool Finished { get { return Status >= NpcIntentStatus.Completed; } }
         public NpcIntent(long sequence, string definition, Actor owner, Actor target, int turn,
             int duration, int priority, long causeId, string storyId, int knownAttitude)
+            : this(sequence, definition, owner, new NpcKnownPerson { Id = target.PersonalityIdentity,
+                Name = target.UnmodifiedName, Place = target.Location }, turn, duration, priority, causeId, storyId, knownAttitude) { }
+        public NpcIntent(long sequence, string definition, Actor owner, NpcKnownPerson target, int turn,
+            int duration, int priority, long causeId, string storyId, int knownAttitude)
         {
-            Sequence = sequence; DefinitionId = definition; TargetId = target.PersonalityIdentity;
-            TargetName = target.UnmodifiedName; LastKnown = target.Location;
+            Sequence = sequence; DefinitionId = definition; TargetId = target.Id;
+            TargetName = target.Name; LastKnown = target.Place;
+            LastKnownTurn = target.SeenTurn;
             StartedTurn = turn; Deadline = turn + duration; Priority = priority; CauseId = causeId;
             KnownAttitude = knownAttitude;
             StoryId = storyId ?? owner.PersonalityIdentity.ToString("N") + ":" + sequence;
@@ -37,8 +48,9 @@ namespace djack.RogueSurvivor.Data
         public readonly string Text, Kind, StoryId;
         public readonly long CauseId;
         public readonly int Deadline;
-        public NpcReaction(Actor target, string text, long causeId, int turn, string kind = "aid_acknowledged", string storyId = null)
-        { TargetId = target.PersonalityIdentity; Text = text; CauseId = causeId; Deadline = turn + 30; Kind = kind; StoryId = storyId; }
+        public readonly NpcKnownPerson ReportedPerson;
+        public NpcReaction(Actor target, string text, long causeId, int turn, string kind = "aid_acknowledged", string storyId = null, NpcKnownPerson report = null)
+        { TargetId = target.PersonalityIdentity; Text = text; CauseId = causeId; Deadline = turn + 30; Kind = kind; StoryId = storyId; ReportedPerson = report; }
     }
 
     sealed partial class PersonalityState
@@ -48,6 +60,7 @@ namespace djack.RogueSurvivor.Data
         Dictionary<string, int> m_IntentCooldowns;
         long m_IntentSequence;
         internal long LastIntentEventId;
+        internal long NextIntentSequence { get { return m_IntentSequence + 1; } }
         internal bool HasIntentState { get { return m_Intents != null && m_Intents.Count > 0; } }
         internal bool HasPendingSocialState
         { get { return (m_Intents != null && m_Intents.Exists(i => !i.Finished)) || (m_Reactions != null && m_Reactions.Count > 0); } }
@@ -64,6 +77,10 @@ namespace djack.RogueSurvivor.Data
             return active < 4;
         }
         internal NpcIntent StartIntent(string id, Actor owner, Actor target, int turn, int duration,
+            int cooldown, int priority, long causeId, string storyId, int knownAttitude)
+        { return StartKnownIntent(id, owner, new NpcKnownPerson { Id = target.PersonalityIdentity, Name = target.UnmodifiedName,
+            Place = target.Location }, turn, duration, cooldown, priority, causeId, storyId, knownAttitude); }
+        internal NpcIntent StartKnownIntent(string id, Actor owner, NpcKnownPerson target, int turn, int duration,
             int cooldown, int priority, long causeId, string storyId, int knownAttitude)
         {
             if (!CanStartIntent(id, turn)) return null;

@@ -25,7 +25,7 @@ namespace djack.RogueSurvivor.Engine
             foreach (ResidentEntry entry in resident.Entries)
             {
                 if (entry.Turn > savedTurn) continue;
-                if (entry.Kind.StartsWith("goal_", StringComparison.Ordinal))
+                if (entry.Kind.StartsWith("goal_", StringComparison.Ordinal) || entry.Kind == "story_stage" || entry.Kind == "knowledge_inferred")
                 { if (entry.Kind == "goal_started") GoalsStarted++; if (entry.Kind == "goal_completed") GoalsCompleted++; continue; }
                 if (entry.Kind == "memory") { Memories++; continue; }
                 if (entry.Kind == "resolved")

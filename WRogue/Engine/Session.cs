@@ -490,6 +490,10 @@ namespace djack.RogueSurvivor.Engine
             get { return m_World; }
             set { m_World = value; }
         }
+        NpcStoryDirector m_NpcDirector;
+        internal NpcStoryDirector NpcDirector { get {
+            if (m_NpcDirector == null) System.Threading.Interlocked.CompareExchange(ref m_NpcDirector, new NpcStoryDirector(), null);
+            return m_NpcDirector; } }
 
         public Map CurrentMap
         {
@@ -565,6 +569,8 @@ namespace djack.RogueSurvivor.Engine
             m_Scoring = new Scoring();
             m_World = null;
             m_ResidentRecords = new ResidentRecords();
+            m_NpcDirector = null;
+            m_PersonalityEventSequence = 0;
             m_WorldTime = new WorldTime();
             this.LastTurnPlayerActed = 0;
 

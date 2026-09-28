@@ -98,8 +98,13 @@ Civilian, gang, soldier and CHAR guard NPCs can pursue trait-driven intentions:
 thank and repay a helper, ask for or share food, decline a request, and leave an
 unsafe leader. These use real AI actions and persist through saves. Internal
 intentions remain private during play; Read Records includes their outcomes and
-linked stories. See [docs/npc-intentions.md](docs/npc-intentions.md) for the
-implemented first stage and the planned extensions.
+linked stories. NPCs can also pass spoken reports, search for missing companions
+through known exits, avoid or warn reported aggressors, and propose group supply
+or shelter plans. Participants pursue independent goals; pickups, gifts,
+arrivals and return reports determine the episode's outcome. Groups retain their
+identity through succession, factions influence plan preferences, and a saved
+director limits concurrent stories and reserves resources. See
+[docs/npc-intentions.md](docs/npc-intentions.md) for behavior and limits.
 
 The **Expanded** preset enables claimable bases. Stand inside an enclosed
 building and press **Ctrl+B** to preview its boundaries; press **Y** to claim

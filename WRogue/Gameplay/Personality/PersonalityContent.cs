@@ -211,6 +211,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 person: MemoryRelationRole.Other, feeling: 10);
             PersonalityWorldContent.Register(r);
             NpcIntentContent.RegisterMemories(r);
+            NpcStoryContent.RegisterMemories(r);
             return r;
         }
     }

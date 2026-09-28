@@ -95,8 +95,15 @@ namespace djack.RogueSurvivor.Data
     {
         public readonly Guid Identity;
         public readonly int FactionId;
-        public readonly string Name;
+        public string Name;
         public int Feeling;
+        public int Trust, Fear, Attachment, Grievance, Debt;
+        public void AdjustSocial(int trust = 0, int fear = 0, int attachment = 0, int grievance = 0, int debt = 0)
+        {
+            Trust = Clamp(Trust + trust); Fear = Clamp(Fear + fear); Attachment = Clamp(Attachment + attachment);
+            Grievance = Clamp(Grievance + grievance); Debt = Clamp(Debt + debt);
+        }
+        static int Clamp(int value) { return Math.Max(0, Math.Min(100, value)); }
         readonly List<MemoryInstance> m_Memories = new List<MemoryInstance>();
 
         public IList<MemoryInstance> Memories { get { return m_Memories.AsReadOnly(); } }
@@ -179,6 +186,7 @@ namespace djack.RogueSurvivor.Data
             if (id == Guid.Empty || memory == null) return;
             RelationshipRecord record = Group(id);
             if (record == null) GroupRecords.Add(id, record = new RelationshipRecord(id, -1, name));
+            record.Name = name;
             record.Remember(memory, change);
         }
 

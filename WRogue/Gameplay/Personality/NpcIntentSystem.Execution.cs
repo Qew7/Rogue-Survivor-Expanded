@@ -11,11 +11,17 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public static void AdvanceClock(RogueGame game, Map map)
         {
             if (!Session.Get.GamePreset.NpcPersonalitiesEnabled) return;
+            Session.Get.NpcDirector.Advance(map, map.LocalTime.TurnCounter);
             foreach (Actor actor in map.Actors)
+            {
+                if (actor.SocialGroup != null && actor.SocialGroup.LeaderId == actor.PersonalityIdentity && actor.SocialGroup.Plan != null &&
+                    !actor.SocialGroup.Plan.Finished && map.LocalTime.TurnCounter >= actor.SocialGroup.Plan.Deadline)
+                { actor.SocialGroup.Plan.Stage = "failed"; actor.SocialGroup.Plan.Destination = default(Location); }
                 if (actor.Personality != null && actor.Personality.HasIntentState)
                     foreach (NpcIntent intent in actor.Personality.IntentList)
                         if (!intent.Finished && map.LocalTime.TurnCounter >= intent.Deadline)
                             Finish(actor, intent, NpcIntentStatus.Failed, "deadline expired");
+            }
         }
         public static bool CanSee(RogueGame game, Actor owner, Actor target)
         {
@@ -34,6 +40,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             foreach (NpcIntent intent in owner.Personality.IntentList)
             {
                 if (intent.Finished) continue;
+                if (intent.GroupId != Guid.Empty && (owner.SocialGroup == null || owner.SocialGroup.Identity != intent.GroupId))
+                { Finish(owner, intent, NpcIntentStatus.Abandoned, "left the group that assigned this goal"); continue; }
                 NpcIntentDefinition definition = NpcIntentContent.Find(intent.DefinitionId);
                 if (definition == null) { Finish(owner, intent, NpcIntentStatus.Abandoned, "unknown intent definition"); continue; }
                 if (turn >= intent.Deadline) { Finish(owner, intent, NpcIntentStatus.Failed, "deadline expired"); continue; }
@@ -43,9 +51,15 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 if (definition.Method == NpcIntentMethod.RequestFood && (!game.Rules.IsActorHungry(owner) || HasFood(game, owner)))
                 { Finish(owner, intent, NpcIntentStatus.Completed, "food need was satisfied"); continue; }
                 Actor target = VisibleTarget(visible, intent.TargetId);
+                NpcKnownPerson known = owner.Personality.HasKnowledge ? owner.Personality.Knowledge.Person(intent.TargetId) : null;
+                if (target == null && known != null && known.SeenTurn > intent.LastKnownTurn && known.Confidence >= 40)
+                { intent.LastKnown = known.Place; intent.LastKnownTurn = known.SeenTurn; }
+                Actor coordinator = VisibleTarget(visible, intent.CoordinatorId);
+                if (coordinator != null) intent.CoordinatorPlace = coordinator.Location;
                 if (target != null)
                 {
                     intent.LastKnown = target.Location;
+                    intent.LastKnownTurn = turn;
                     intent.KnownAttitude = PersonalitySystem.Attitude(owner, target);
                     if (definition.Method != NpcIntentMethod.LeaveGroup && game.Rules.AreEnemies(owner, target))
                     { Finish(owner, intent, NpcIntentStatus.Abandoned, "target became hostile"); continue; }
@@ -69,6 +83,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                     (intent.DefinitionId == NpcIntentContent.Request.Id && intent.Announced)) continue;
                 if (departureOnly && intent.DefinitionId != NpcIntentContent.Leave.Id) continue;
                 NpcIntentDefinition definition = NpcIntentContent.Find(intent.DefinitionId); if (definition == null) continue;
+                if (definition.Method == NpcIntentMethod.Coordinate) continue;
                 int score = definition.Score(owner, intent);
                 if (best == null || score > bestScore || (score == bestScore && intent.Sequence < best.Sequence))
                 { best = intent; bestScore = score; }

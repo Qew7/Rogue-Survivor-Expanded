@@ -1,9 +1,9 @@
 # Trait-driven NPC intentions
 
-The first implementation connects perceived events and survival needs to
-persistent intentions and real AI actions. It uses the existing personality,
-relationship, action and chronicle systems. The later parts of the design below
-are planned; they are not implemented by this first stage.
+The system connects local knowledge, perceived events and survival needs to
+persistent intentions and real AI actions. It includes personal goals, spoken
+reports, searches, shared group episodes and a bounded story director. It uses
+the existing personality, relationship, action and chronicle systems.
 
 ## The system as a whole
 
@@ -47,6 +47,11 @@ do not generate autonomous intentions.
 | Received a food request | Help the requester | Give one food unit if supplies permit |
 | Food request does not produce a help intention | Decline | Speak a refusal; the requester records the known outcome |
 | Attacked by the current leader, or witnessed that leader murder someone | Leave an unsafe group | Leave the actual follower list and clear the leader's order |
+| Knows of violence, directly or through a report | Avoid or confront the reported aggressor | Withdraw from the reported location, or approach and speak a warning |
+| Has lost contact with a known group member | Search for the companion | Ask people, follow reported locations and known exits, speak on reunion |
+| Knows a group member needs food and remembers supplies | Coordinate or perform a supply mission | Propose a task, fetch actual food, give a unit, return and report |
+| Knows of a recent threat and a previously visited indoor place | Seek group shelter | Propose shelter; willing members move there independently |
+| A group leader dies in sight of eligible followers | Preserve the group under a successor | Change the actual leader/follower hierarchy; retain group identity |
 
 Compassion and trade preferences influence repayment and assistance. Group and
 trade preferences influence asking. Group preference, courage, personal attitude
@@ -69,6 +74,13 @@ Scores use integer arithmetic:
 
 `base + relationWeight * attitude / 2 + sum(traitBias * numerator / denominator)`
 
+Remembered debt adds to repayment, fear to avoidance, grievance to confrontation,
+and attachment to searching, each at half its current value. All are integer
+scores. The strongest eligible method is selected for a known violent situation;
+the same report can motivate a timid person to withdraw and a lawful person to
+approach and warn its reported aggressor. A warning changes no HP and creates no
+invented attack or crime.
+
 Attitude is the existing combined person/group/faction assessment. During
 pursuit, target attitude and position are refreshed only when the target is
 visible. Current traits still change motivation when the target is unseen.
@@ -80,10 +92,18 @@ Departure additionally subtracts a leader-trust penalty from 0 to 60.
 | `request_food` | 35 / 20 | Group + Trade / 2 | 60 turns | 180 turns |
 | `answer_food_request` | 25 / 20 | Compassion + Trade | 60 turns | 60 turns |
 | `leave_unsafe_group` | 40 / 55 | −Group − Courage / 2 | 1 day | 1 day |
+| `seek_companion` | 20 / 35 | Group + Compassion / 2 | 1 day | 180 turns |
+| `avoid_reported_threat` | 20 / 35 | −Courage | 180 turns | 180 turns |
+| `confront_reported_aggressor` | 15 / 35 | Courage + Law | 180 turns | 180 turns |
+| `gather_group_supplies` | 35 / 30 | Compassion + Supplies + Explore / 2 | 1 day | 180 turns |
+| `coordinate_group_supplies` | 20 / 25 | Group + Compassion / 2 | 1 day | 180 turns |
+| `seek_group_shelter` | 25 / 35 | Group − Courage / 2 | 180 turns | 180 turns |
 
-The first three use relation weight +1; departure uses −1. One game hour is
-30 turns and one day is 720 turns. Request target choice also considers visible
-distance and prefers the current leader, without examining others' inventories.
+Repayment, requests, assistance, search and gathering use relation weight +1;
+departure, avoidance and confrontation use −1; coordination and shelter use 0.
+One game hour is 30 turns and one day is 720 turns. Request target choice also
+considers visible distance and prefers the current leader, without examining
+others' inventories.
 
 ### Real execution and limits
 
@@ -105,9 +125,10 @@ distance and prefers the current leader, without examining others' inventories.
 - A completed food request requires actual food acquisition or an end to
   hunger. Receiving medicine alone does not satisfy it.
 - Targets use permanent actor IDs, not names. Pursuit follows a last known
-  location through the existing movement behavior on the current map. Unseen
-  movement or death does not update the goal remotely. Cross-map pursuit is
-  not implemented.
+  location through existing movement behavior. Cross-map routes use only exits
+  the NPC has seen, with at most 32 remembered exits and 16 maps in a route
+  search. The current exit is checked against its remembered destination before
+  use. Unseen movement or death does not update a goal remotely.
 - Failed interaction/path attempts wait eight turns before retrying; eight
   blocked attempts fail the intention. The deadline also advances on map turns
   while an actor sleeps or follows an order.
@@ -142,40 +163,161 @@ resolution, journal eviction or loading cannot generate another reward or goal.
 To publish a new occurrence, create a new SignificantEvent; to replay delivery,
 retain the original ID.
 
-## Planned next stages
+## Knowledge and conversations
 
-### Knowledge and several participants
+Facts store the original event ID and time, source actor ID, confidence, last
+known place, participants and story tag. The sources are participation,
+witnessing, being told and inference. Participants receive confidence 100;
+witnesses receive 90. Event metadata cannot identify a participant whom the
+observer cannot see. People are remembered by permanent IDs, including
+namesakes. Seeing someone updates their location at confidence 100.
 
-Introduce explicit known facts with source, observation turn, confidence and
-last known location. Separate participation, witnessing, being told and
-inference. Rumors can then travel through real conversations instead of global
-knowledge. A search or accusation must rely on facts the acting NPC knows.
+An NPC can pass a known report to a visible, awake, nonhostile intelligent
+listener within four tiles. Speaking spends the speaker's AP. The listener
+learns a **report**, rather than receiving a fabricated observation of the
+original violence. The original event ID, time and participants survive
+retelling; the immediate teller becomes its source. Confidence loses 20 per
+retelling, with smaller adjustments for trust and solitary traits, clamped to
+0..95. Reports need confidence 40 to be retold and cannot travel beyond three
+retellings. An NPC waits 30 turns between autonomous reports and remembers whom
+it told. Direct sight at the same or a later observation time takes precedence
+over a weaker report, including a report of death.
 
-Expand situations with role binding, resources, locations and independent
-participant goals. A dispute over supplies, rescue, search for a missing person
-or retaliation can be one story whose actors cooperate or conflict. Stage
-changes must follow real outcomes: reaching a location, a transfer, a death or
-an agreement. The first implementation links requests and replies by story ID;
-it has no general multi-participant story planner yet.
+Perception also remembers food seen on the ground, visited indoor places and
+visible exits. A food report can supply a remembered destination, but the real
+stack, capacity and legal pickup are checked again on arrival. Inventories of
+other people are not inspected to find supplies.
 
-Additional methods can express traits more strongly: appeal to a friend, bargain,
-steal, intimidate, recruit help, avoid a feared person or seek reconciliation.
-Do not script a successful theft or rescue by writing a record; execute the
-existing legal actions and publish what actually happened.
+After 30 turns without seeing a known group member, suitable traits can produce
+an inference of missing contact and a search goal. This does not reveal where
+the companion really is. The searcher asks actual visible people; the respondent
+queues a spoken reply based on their own knowledge. Only after that reply does
+the searcher receive its position/date/confidence snapshot. A reunion requires
+seeing and approaching the actual matching actor. Credible learned death can
+end a search without consulting the unseen actor's current state.
 
-### Groups and world pacing
+Each NPC retains at most 48 facts, 32 people, 16 places, 32 exits and 64
+conversation/query deduplication entries. Facts and places expire after two days
+from the original observation. Planning checks run at most once per 15 local
+turns. Situation definitions are indexed by event kind and work with these
+bounded lists and current local perceptions.
 
-Introduce stable group identity separate from its leader, then group goals and
-faction interests. A group may seek supplies or shelter while its members have
-different personal intentions. Trust, fear, attachment, grievance and debt can
-eventually coexist instead of being reduced to the current feeling scalar.
+## Groups, faction interests and shared episodes
 
-A director can limit repeated situations, reserve contested roles/resources and
-control the number of concurrent stories. It should select plausible situations
-from local knowledge and available actors. Traits still decide participants'
-goals and reactions. Event indexes, bounded local work and a saved schedule are
-needed before extending this across the whole town; scanning every NPC against
-every template on every turn is not the design.
+A group has a permanent identity, member IDs, current leader ID/name and a shared
+plan. Its first identity uses the founder's ID in the separate group namespace;
+a newly founded group after a split receives a new identity. Nested followers
+share their top-level group. Joining, leaving and splitting update the actual
+hierarchy and membership; cycles are rejected. Relationships address the group
+identity and display its observed leader's name. A witnessed succession updates
+the label while preserving previous group experiences.
+
+When an NPC leader dies, an eligible living, awake follower who can see the
+leader may succeed them. Group preference, supply preference and leadership
+capacity rank candidates; actor identity breaks ties. Surviving followers retain
+the same group identity under the successor. The player is not assigned an
+autonomous succession action.
+
+Supply plans begin with the leader's knowledge of a member's food request and
+a remembered stock containing at least two units. The leader chooses a visible,
+motivated collector and speaks the assignment. The collector independently
+accepts or speaks a refusal. Acceptance creates a persistent task with three
+steps: actual pickup, actual one-unit gift to the beneficiary, and an actual
+return/report to the coordinator. The gift retains the ordinary donor reserve
+and inventory rules. The coordinator has a separate waiting goal: delivery out
+of sight does not remotely tell them it succeeded. It completes when the
+collector reports back. A departed member cannot execute a stale group task.
+
+Shelter plans require a remembered recent threat and a previously visited indoor
+place. Members who hear the proposal independently accept according to their
+traits or queue a spoken refusal. Accepted members move to available indoor
+tiles at the remembered shelter; the scene completes after all accepted roles
+actually arrive. A refusal does not silently move the member or fail every
+other participant's goal.
+
+Existing factions contribute to the leader's choice of plan:
+
+| Factions | Supply preference | Shelter preference |
+| --- | --- | --- |
+| Army, Police | +15 | +5 |
+| Bikers, Gangstas | +10 | −5 |
+| CHAR, Black Ops | +5 | +15 |
+| Others | 0 | 0 |
+
+These are additions to personality motivation, not mandatory faction scripts.
+New numeric faction/content IDs are not introduced. Faction interests currently
+operate through their NPC leaders and groups; there is no omniscient faction
+controller issuing town-wide missions.
+
+Person relationships keep five additional values, each clamped to 0..100:
+trust, fear, attachment, grievance and debt. Needed aid builds trust, attachment
+and debt; a gift can repay debt; known violence builds fear and grievance. These
+values influence reports and goal methods alongside the existing feeling score.
+They are private, and remain distinct from the existing `TrustInLeader` field
+that governs explicit follower orders.
+
+New acquired memories cover being told a report, reunion, completing a supply
+mission, reaching group shelter and witnessing group succession. They are
+triggered by actual conversations/actions and resolve to eligible advanced
+traits or existing skill fallbacks. A report memory concerns the teller;
+hearing violence does not create a memory of personally witnessing it.
+
+## Director and world pacing
+
+The Session owns a saved director. New stories are limited to four concurrently
+active episodes per source map and sixteen globally, with at most eight bound
+roles per story. Up to 64 recent stories and 128 cooldown keys are retained;
+private archive entries remain available after a director story is evicted.
+Repeating the same owner/target template or group proposal has a 180-turn
+director cooldown. Local complex proposals share a 15-turn admission interval
+per map; each NPC also saves its own next planning/conversation turn.
+
+A group plan reserves its remembered resource location and collector, preventing
+another active plan from binding the same resource or actor. Reservations are
+released on a terminal result or deadline. Admission and role binding are
+protected by the same director lock for concurrent map simulation. The director
+works from submitted local situations; it does not scan every resident against
+every template or discover unknown targets.
+
+Story stages follow actual events: contact, pickup, delivery, return report,
+arrival, reunion or refusal. Personal role results remain independent. A story
+record contains identifiers and location snapshots, not references to its
+actors. The director's pacing and reservation state survives saves. Terminal
+stories, plans and intentions clear their map references, and starting a new
+Session clears its old director.
+
+The architecture supports adding more templates and execution methods. Bargain,
+theft, intimidation, rescue and reconciliation missions are future content;
+the implemented methods and situations are those listed above.
+
+## Current limits and the generation goal
+
+The current implementation selects participants, known locations, motivation
+and outcomes at runtime, but its repertoire of situations is predefined.
+In particular, the supply mission has a fixed pickup/gift/report sequence.
+It does not yet compose arbitrary action sequences to achieve a desired state.
+The deterministic scenarios under `tests/scenarios/` are automated tests;
+they are not scripts played by NPCs in a generated world.
+
+The intended next architecture generates plans from a character's goals and
+knowledge. A goal describes a desired state, such as having usable food or a
+companion reaching safety. A reusable action describes its prerequisites,
+expected effects and costs. The planner chooses and connects available actions
+according to current traits, relationships, risk and known resources. New
+observations and actual action outcomes invalidate steps and trigger replanning;
+expected effects never substitute for executing a legal game action.
+
+For example, obtaining food could involve searching, asking, exchanging goods
+or taking someone else's supplies once those methods exist. Another person's
+independently motivated response can create a new goal and plan. Their connected
+actual events form a story without a predefined plot or guaranteed ending.
+Definitions of goals and elementary actions still need to be authored; complete
+plots and their branch order do not.
+
+The director should retain its budgets, pacing and reservations while the
+planner remains bounded and uses local knowledge. Plan state and causal links
+must survive saving, and Read Records should reconstruct histories from actual
+events. This general planner is a design target, not implemented functionality.
 
 ## Adding content
 
@@ -187,6 +329,10 @@ every template on every turn is not the design.
 2. Reuse an existing execution method where possible. For a new method, add its
    legal action and real state change, then publish an outcome after that change.
    Keep current perception, interruption and retry rules explicit.
+   Knowledge-based situations belong in `NpcStoryContent.cs`; route them by
+   event kind, set an evidence age/confidence threshold and use known snapshots.
+   Shared plans must bind independent goals after real communication and reserve
+   their contested resource/role through `NpcStoryDirector`.
 3. Register meaningful acquired memories through the personality registry.
    Check which participant owns each memory and relationship; avoid starting
    memories for events that can only happen during the game.
@@ -199,7 +345,13 @@ every template on every turn is not the design.
 Scenarios: `npc/intent-gratitude`, `npc/intent-food-request`,
 `npc/intent-refusal`, `npc/intent-departure`, `npc/intent-boundaries`,
 `npc/intent-knowledge`, `npc/intent-priority`, `npc/intent-controllers`,
-`npc/intent-persistence` and `world/records-browser`. They exercise actual
+`npc/intent-persistence`, `npc/story-rumor`, `npc/story-threat-methods`,
+`npc/story-search`, `npc/story-group-supplies`, `npc/story-group-shelter`,
+`npc/story-group-boundaries`, `npc/story-hidden-source`,
+`npc/story-knowledge-boundaries`, `npc/story-director`,
+`npc/story-persistence`, `factions/social-group-succession`,
+`factions/npc-faction-plans` and
+`world/records-browser`. They exercise actual
 controllers/actions, item/AP accounting, observation boundaries, trait changes,
 interruption, replay deduplication, private memory outcomes and format-5 saves.
 
