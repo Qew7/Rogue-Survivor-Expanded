@@ -14,6 +14,79 @@ game-side traversal and dispatch.
 Timings are diagnostic, not CI pass/fail thresholds. Compare runs on the same
 machine, Docker configuration, and runtime.
 
+## Save diagnostics
+
+`--bench-save` profiles an existing **copied** save with three samples per case.
+It reports world/chronicle counts, presave traversal, the current atomic file
+writer, serialization without compression, direct GZip, buffered GZip at
+Optimal/Fastest levels, the archive alone, and the graph without its archive.
+The last case isolates cost; it is not a proposal to discard history.
+The input file is never overwritten. Generated saves are written to and removed
+from an independent temporary directory inside the diagnostic container.
+
+For a copied save at `/private/tmp/rogue-save-profile/input.dat`:
+
+```sh
+docker build --target scenarios -t rogue-survivor-save-profile .
+docker run --rm --cpus=1 --memory=3g \
+  --mount type=bind,source=/private/tmp/rogue-save-profile,target=/profile,readonly \
+  rogue-survivor-save-profile --bench-save /profile/input.dat
+```
+
+This uses a separate image and container and does not restart a running game.
+Large saves may take substantial time to load before the first measurement.
+The CPU limit reduces interference with play, but its timings are not directly
+comparable with an unrestricted game process. Cold load is reported separately;
+save cases use the loaded graph with GC before each sample. Cases run in a fixed
+order, so follow-up optimization comparisons should alternate variants to check
+for order effects. File writing uses the temporary container filesystem, not
+the live save volume; waiting for the simulation worker and UI redraws is outside
+these headless measurements.
+
+### Copied day-12 world, save investigation
+
+Measured on a copy of a running game's version-4 save, with Docker/Mono limited
+to one CPU and 3 GiB RAM. The live game was left running. Medians of three
+samples, fixed case order:
+
+| Case | Median | Output size |
+| --- | ---: | ---: |
+| Presave world traversal | 6.29 ms | — |
+| Current atomic file save | 33.17 s | 25,601,529 bytes |
+| Graph serialization to a counting sink | 17.39 s | 1,104,833,938 bytes |
+| Graph + direct default/Optimal GZip | 32.56 s | 25,601,514 bytes |
+| Graph + 64 KiB buffer before Optimal GZip | 23.75 s | 25,601,514 bytes |
+| Graph + 64 KiB buffer before Fastest GZip | 23.67 s | 25,601,514 bytes |
+| Resident archive alone, buffered Optimal GZip | 1.06 s | 2,650,017 bytes |
+| Graph without archive, direct Optimal GZip | 31.23 s | 22,945,915 bytes |
+
+This world contains 418 maps and 1,107,446 tiles. Maps retain 6,071 actors;
+their personality states contain 5,873 traits, 3,171 pending memories, 2,898
+recent observations, 588 relationships, and 874 relationship-memory links.
+The archive contains 4,150 residents and 65,805 entries: 2,887,059 text
+characters plus 6,006,390 characters in persisted deduplication keys.
+These actor counts exclude actors held only by corpses or other references.
+
+The raw writer made 63,250,737 stream writes. A separate small probe serialized
+10,000 undecorated tiles into 3,570,123 bytes, about 357 bytes per tile, even
+though each tile carries only a model ID, flags, and a null decoration list.
+The graph format repeats full type names and field names for these objects and
+their primitive values. All of this is rebuilt before compression on each save.
+
+In this snapshot, removing the archive diagnostically reduced direct-GZip time
+by about 4% and compressed size by about 10%. It does not remove other personality
+data and is not a before/after comparison with personalities disabled. The
+archive grows without eviction, so its future cost can be larger. Its current
+cost does not explain most of this world's save pause.
+
+The strongest measured compatible candidate is a buffer before GZip: about
+27% less time in the direct-GZip comparison, with the same output size.
+Fastest gave no meaningful further benefit or size change on this runtime.
+Follow-up work should verify buffered saves through the actual file writer and
+reader, then investigate cached serialization metadata or a compact type/field
+table and tile encoding. The latter changes require format compatibility work.
+No production save code was changed by this investigation.
+
 Local Docker/Mono measurements during this refactor (milliseconds for the
 specified number of calls):
 
