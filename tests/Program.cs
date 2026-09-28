@@ -6,6 +6,11 @@ class Program
     {
         ScenarioRunner.RegisterAll();
         SkillScenario.AssertCoverage();
+        if (args.Length == 2 && args[0] == "--audit-save")
+        {
+            SaveStructureAudit.Run(args[1]);
+            return 0;
+        }
         if (args.Length == 2 && args[0] == "--bench-save")
         {
             SavePerformanceBenchmarks.Run(args[1]);
@@ -33,7 +38,7 @@ class Program
         }
         if (args.Length != 0)
         {
-            Console.Error.WriteLine("Usage: UnitTests.exe [--list|--all|--bench|--bench-ai|--bench-xpd|--bench-save copied-save-path|scenario-name]");
+            Console.Error.WriteLine("Usage: UnitTests.exe [--list|--all|--bench|--bench-ai|--bench-xpd|--bench-save copied-save-path|--audit-save copied-save-path|scenario-name]");
             return 2;
         }
         GameTests.Run();
@@ -46,6 +51,7 @@ class Program
         CommandCatalogTests.Run();
         RandomStateTests.Run();
         SaveStoreTests.Run();
+        SaveStructureAuditTests.Run();
         SaveGameVersionTests.Run();
         XpdFoodOrderMigrationTests.Run();
         HintsSaveTests.Run();

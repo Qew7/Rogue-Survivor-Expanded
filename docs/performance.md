@@ -60,7 +60,13 @@ samples, fixed case order:
 | Resident archive alone, buffered Optimal GZip | 1.06 s | 2,650,017 bytes |
 | Graph without archive, direct Optimal GZip | 31.23 s | 22,945,915 bytes |
 
-This world contains 418 maps and 1,107,446 tiles. Maps retain 6,071 actors;
+This world contains 418 maps and 1,107,446 tiles. A subsequent
+[structure audit](save-structure.md) confirmed that these are 418 distinct map
+objects, with no additional maps reachable outside the district lists; 305
+are building basements. Repeated type names and field schemas account for 93%
+of the raw graph bytes. Run `--audit-save copied-save-path` in the same diagnostic
+image to reproduce the counts and byte breakdown without writing a save.
+Maps retain 6,071 actors;
 their personality states contain 5,873 traits, 3,171 pending memories, 2,898
 recent observations, 588 relationships, and 874 relationship-memory links.
 The archive contains 4,150 residents and 65,805 entries: 2,887,059 text

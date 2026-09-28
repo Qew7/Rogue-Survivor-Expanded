@@ -32,6 +32,10 @@ name, so missing fields keep defaults and unknown fields are ignored. Shared
 references and cycles retain their identity. The reader accepts serializable
 game types and a restricted set of framework values and collections.
 
+For a measured map/reference audit and lossless compaction candidates, see
+[save-structure.md](save-structure.md). Its diagnostic tooling leaves the
+production format unchanged.
+
 Armed traps placed by base owners can retain a reference to their `XpdBase`.
 This lets the base leader and their followers cross those traps safely after a save and load.
 Older saves have no trap base reference and continue using the trap owner's
