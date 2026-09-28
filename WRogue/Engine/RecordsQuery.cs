@@ -6,7 +6,7 @@ namespace djack.RogueSurvivor.Engine
 {
     enum RecordsSort { Name, Items, Memories, Days, Events, Interesting, Encounters, Kills, Help, Resolved, TraitChanges }
     enum RecordsLife { Any, Alive, Dead }
-    enum RecordsEventFilter { All, Memories, Combat, Help, Encounters, World, Life }
+    enum RecordsEventFilter { All, Memories, Combat, Help, Encounters, World, Life, Intentions }
 
     sealed class RecordsProfile
     {
@@ -14,6 +14,7 @@ namespace djack.RogueSurvivor.Engine
         public readonly double Days;
         public readonly bool DaysKnown;
         public readonly int Events, Memories, Resolved, TraitChanges, DirectEvents, Encounters, Kills, Help, WorldEvents, Diversity, Score;
+        public readonly int GoalsStarted, GoalsCompleted;
         public RecordsProfile(ResidentRecord resident, int savedTurn)
         {
             Resident = resident;
@@ -24,6 +25,8 @@ namespace djack.RogueSurvivor.Engine
             foreach (ResidentEntry entry in resident.Entries)
             {
                 if (entry.Turn > savedTurn) continue;
+                if (entry.Kind.StartsWith("goal_", StringComparison.Ordinal))
+                { if (entry.Kind == "goal_started") GoalsStarted++; if (entry.Kind == "goal_completed") GoalsCompleted++; continue; }
                 if (entry.Kind == "memory") { Memories++; continue; }
                 if (entry.Kind == "resolved")
                 {
@@ -65,6 +68,7 @@ namespace djack.RogueSurvivor.Engine
                 "Events: " + Events + " | direct: " + DirectEvents + " | kinds: " + Diversity + " | Unique participants in events: " + Encounters,
                 "Memories: " + Memories + " | resolved: " + Resolved + " | gained traits: " + TraitChanges + " | current/last traits: " + Resident.Traits,
                 "Human kills: " + Kills + " | help given: " + Help + " | world events: " + WorldEvents,
+                "Intentions started: " + GoalsStarted + " | completed: " + GoalsCompleted,
                 "Interest score " + Score + ": diversity*8 (cap12), direct*2 (40), memories*5 (20), resolved*6 (12),",
                 "gained traits*8 (10), encounters*3 (15), world events*4 (15), help given*4 (12).", "" };
         }

@@ -28,11 +28,14 @@ namespace djack.RogueSurvivor.Data
         public readonly bool RelatedToSubject;
         public readonly Guid SubjectId;
         public readonly Guid OtherId;
+        public readonly long EventId, CauseId;
+        public readonly string StoryId;
 
         public ObservedEvent(string kind, int turn, string subject, string other, bool direct,
             bool relatedToSubject = false, Guid subjectId = default(Guid),
-            Guid otherId = default(Guid))
+            Guid otherId = default(Guid), long eventId = 0, long causeId = 0, string storyId = null)
         {
+            EventId = eventId; CauseId = causeId; StoryId = storyId;
             Kind = kind;
             Turn = turn;
             Subject = subject;
@@ -115,7 +118,7 @@ namespace djack.RogueSurvivor.Data
 
     // This is the only new per-actor object in the saved world graph.
     [Serializable]
-    sealed class PersonalityState
+    sealed partial class PersonalityState
     {
         readonly List<TraitInstance> m_Traits = new List<TraitInstance>(4);
         readonly List<MemoryInstance> m_Memories = new List<MemoryInstance>(2);
@@ -218,20 +221,24 @@ namespace djack.RogueSurvivor.Data
 
         public void RemoveMemory(MemoryInstance memory) { m_Memories.Remove(memory); }
 
-        public void Remember(ObservedEvent lifeEvent)
+        long m_LastObservedEventId;
+        public bool Remember(ObservedEvent lifeEvent)
         {
-            if (lifeEvent == null) return;
+            if (lifeEvent == null || (lifeEvent.EventId > 0 && lifeEvent.EventId <= m_LastObservedEventId)) return false;
             foreach (ObservedEvent old in m_Events)
-                if (old.Kind == lifeEvent.Kind && old.Turn == lifeEvent.Turn &&
+                if (old.EventId != 0 && lifeEvent.EventId != 0 ? old.EventId == lifeEvent.EventId :
+                    old.Kind == lifeEvent.Kind && old.Turn == lifeEvent.Turn &&
                     (old.SubjectId != Guid.Empty || lifeEvent.SubjectId != Guid.Empty
                         ? old.SubjectId == lifeEvent.SubjectId
                         : old.Subject == lifeEvent.Subject) &&
                     (old.OtherId != Guid.Empty || lifeEvent.OtherId != Guid.Empty
                         ? old.OtherId == lifeEvent.OtherId
-                        : old.Other == lifeEvent.Other)) return;
+                        : old.Other == lifeEvent.Other)) return false;
             m_Events.Add(lifeEvent);
+            if (lifeEvent.EventId > 0) m_LastObservedEventId = lifeEvent.EventId;
             // Keep the journal bounded even when a district sees many deaths or raids.
             if (m_Events.Count > 32) m_Events.RemoveAt(0);
+            return true;
         }
     }
 }

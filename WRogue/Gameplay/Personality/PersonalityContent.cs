@@ -210,6 +210,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 Gain("hardened", (a,m) => Has(a,"brave")), Skills.IDs.NECROLOGY, Skills.IDs.STRONG_PSYCHE,
                 person: MemoryRelationRole.Other, feeling: 10);
             PersonalityWorldContent.Register(r);
+            NpcIntentContent.RegisterMemories(r);
             return r;
         }
     }

@@ -99,12 +99,32 @@ resolution, with its outcome and turn. Player relationships retain their own
 experienced/witnessed events and do not expose another NPC's private memory
 during gameplay.
 
+Personality state also retains bounded NPC intentions and pending spoken
+reactions, per-template cooldowns and the intention sequence. An intention stores
+its stable definition ID, target identity/name snapshot, last known map/position
+and attitude, cause/story IDs, initial priority, start/deadline/finish turns,
+status, retry delay/count, announcement state and outcome. Reactions store target
+IDs, text, kind, cause/story IDs and expiry. These fields contain no Actor
+references. Last known positions share graph Map objects; terminal intentions
+clear that reference. See [npc-intentions.md](npc-intentions.md) for limits.
+
+Session retains the significant-event ID sequence. Observations retain event,
+cause and story IDs; a personality's processed-event cutoff survives journal
+eviction and memory resolution. Intent delivery has its own cutoff. Replaying
+the same identified event after loading does not create another memory, reward
+or intention. The new fields use format 5's existing graph field encoding;
+absent optional fields initialize to their defaults.
+
 Resident records retain NPC identity/name, spawn/death turns, faction and
 leader-group snapshots, last inventory and traits, cumulative item acquisitions,
 and the snapshot turn. Entries retain ordered text, event kind, direct/witnessed
 status, participant IDs and whether resolution actually granted a trait.
 Deduplication keys are preserved. Histories contain no Actor references and
 survive actor/corpse removal; entries are not evicted.
+Entries also retain event/cause/story IDs. Private intention starts and terminal
+outcomes are typed chronicle entries with deduplication by intention sequence
+and outcome. They are available to the archive-only reader and excluded from
+physical-event counts and the interesting-life score.
 
 Inventory's `TotalReceived` counts item **units** successfully added by AddAll
 and AddAsMuchAsPossible, including generation, pickups, gifts and trades.
@@ -125,7 +145,8 @@ numeric and string content IDs. Run the named scenarios, then
 
 Relevant scenarios: `storage/compact-save`, `npc/records-reader-save`,
 `npc/records-lifetime-items`, `npc/records-query`, `world/records-browser`,
-and existing personality/relationship/base persistence cases. The E2E test
+`npc/intent-persistence`, `npc/intent-boundaries`, and existing
+personality/relationship/base persistence cases. The E2E test
 generates a world, writes/loads format 5, then uses search, filters, sorting and
 the interesting-NPC selector through the real VNC UI.
 

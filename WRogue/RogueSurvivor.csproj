@@ -365,6 +365,14 @@
     <Compile Include="Gameplay\Personality\PersonalityContent.cs" />
     <Compile Include="Gameplay\Personality\PersonalitySystem.cs" />
     <Compile Include="Gameplay\Personality\PersonalityWorldContent.cs" />
+    <Compile Include="Data\NpcIntent.cs" />
+    <Compile Include="Data\ResidentRecords.Intents.cs" />
+    <Compile Include="Gameplay\Personality\NpcIntentContent.cs" />
+    <Compile Include="Gameplay\Personality\NpcIntentSystem.cs" />
+    <Compile Include="Gameplay\Personality\NpcIntentSystem.Execution.cs" />
+    <Compile Include="Engine\Actions\ActionNpcIntent.cs" />
+    <Compile Include="Engine\RogueGame.Actions.Intents.cs" />
+    <Compile Include="Gameplay\AI\BaseAI.Intents.cs" />
     <Compile Include="Gameplay\GameTiles.cs" />
     <Compile Include="Gameplay\GameImages.cs" />
     <Compile Include="Gameplay\ZoneAttributes.cs" />

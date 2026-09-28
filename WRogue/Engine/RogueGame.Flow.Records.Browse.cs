@@ -153,8 +153,13 @@ namespace djack.RogueSurvivor.Engine
                 if (key == Keys.S) { string text = PromptRecordsText("Event text contains", search); if (text != null) search = text; first = 0; lines = null; }
                 if (key == Keys.F)
                 {
-                    int choice = ChooseRecord("Event category", new[] { "All", "Memories and traits", "Combat", "Help", "Encounters and groups", "World events", "Life and survival" }, "Search text and category combine");
-                    if (choice >= 0) filter = (RecordsEventFilter)choice; first = 0; lines = null;
+                    int choice = ChooseRecord("Event category", new[] { "All", "Memories and traits", "Combat", "Help", "Encounters and groups", "World events", "Life and survival", "Intentions and outcomes" }, "Search text and category combine");
+                    if (choice >= 0)
+                    {
+                        filter = (RecordsEventFilter)choice;
+                        Logger.WriteLine(Logger.Stage.RUN_MAIN, "records event category selected: " + filter);
+                    }
+                    first = 0; lines = null;
                 }
                 if (key == Keys.R) { search = ""; filter = RecordsEventFilter.All; first = 0; lines = null; }
                 if (key == Keys.Up) first = Math.Max(0, first - 1);

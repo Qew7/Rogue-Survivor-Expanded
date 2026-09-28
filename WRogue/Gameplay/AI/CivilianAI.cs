@@ -162,6 +162,7 @@ namespace djack.RogueSurvivor.Gameplay.AI
         protected override ActorAction SelectAction(RogueGame game, List<Percept> percepts)
         {
             List<Percept> mapPercepts = FilterSameMap(game, percepts);
+            List<Actor> intentVisible = PrepareNpcIntents(game, mapPercepts);
 
             // DEBUG BOT
 #if DEBUG
@@ -194,6 +195,9 @@ namespace djack.RogueSurvivor.Gameplay.AI
             // end alpha10
 
             // 1. Follow order
+            ActorAction departure = BehaviorNpcDeparture(game);
+            if (departure != null)
+                return BehaviorFleeFromExplosives(game, FilterStacks(game, mapPercepts)) ?? departure;
             #region
             if (this.Order != null)
             {
@@ -487,6 +491,11 @@ namespace djack.RogueSurvivor.Gameplay.AI
             #endregion
 
             // 10 drop useless light/tracker/spray
+            if (!hasEnemies)
+            {
+                ActorAction intentAction = BehaviorNpcIntents(game, intentVisible);
+                if (intentAction != null) return intentAction;
+            }
             #region
             ActorAction dropUseless = BehaviorDropUselessItem(game);
             if (dropUseless != null)

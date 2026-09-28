@@ -167,6 +167,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         {
             if (game == null || lifeEvent == null || lifeEvent.Map == null ||
                 !Session.Get.GamePreset.NpcPersonalitiesEnabled) return;
+            if (lifeEvent.Id == 0) lifeEvent.Id = Session.Get.NextPersonalityEventId();
             // Make a snapshot: resolving a death may remove actors from this map.
             List<Actor> actors = new List<Actor>(lifeEvent.Map.Actors);
             Guid subjectId = lifeEvent.Subject == null ? Guid.Empty : lifeEvent.Subject.PersonalityIdentity;
@@ -174,7 +175,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             ObservedEvent directEvent = new ObservedEvent(lifeEvent.Kind, lifeEvent.Turn,
                 lifeEvent.Subject == null ? null : lifeEvent.Subject.UnmodifiedName,
                 lifeEvent.Other == null ? null : lifeEvent.Other.UnmodifiedName,
-                true, false, subjectId, otherId);
+                true, false, subjectId, otherId, lifeEvent.Id, lifeEvent.CauseId, lifeEvent.StoryId);
             if (lifeEvent.SubjectIsDirect) Session.Get.ResidentRecords.Observe(lifeEvent.Subject, directEvent);
             if (lifeEvent.OtherIsDirect) Session.Get.ResidentRecords.Observe(lifeEvent.Other, directEvent);
             foreach (Actor observer in actors)
@@ -208,8 +209,9 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 bool relatedToSubject = lifeEvent.Subject != null &&
                     (observer.Leader == lifeEvent.Subject || lifeEvent.Subject.Leader == observer);
                 ObservedEvent observation = new ObservedEvent(lifeEvent.Kind, lifeEvent.Turn,
-                    subject, other, direct, relatedToSubject, subjectId, otherId);
-                observer.Personality.Remember(observation);
+                    subject, other, direct, relatedToSubject, subjectId, otherId,
+                    lifeEvent.Id, lifeEvent.CauseId, lifeEvent.StoryId);
+                if (!observer.Personality.Remember(observation)) continue;
                 Session.Get.ResidentRecords.Observe(observer, observation);
                 foreach (MemoryInstance memory in observer.Personality.Memories)
                 {
@@ -233,6 +235,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                                 relatedPerson, relatedGroupLeader, impact);
                             break;
                         }
+                NpcIntentSystem.Observe(game, observer, lifeEvent);
             }
         }
 

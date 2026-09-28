@@ -263,6 +263,11 @@ with socket.create_connection(("127.0.0.1", 5900), timeout=10) as vnc:
     for symbol in (ord("s"), ord("m"), enter):
         key(vnc, symbol)
     wait_for_log(log, "records prompt ready: Event text contains")
+    key(vnc, ord("f"))
+    wait_for_log(log, "records selection ready: Event category")
+    for symbol in (0xFF56, enter):
+        key(vnc, symbol)
+    wait_for_log(log, "records event category selected: Intentions")
     for symbol in (0xFF1B, 0xFF1B, 0xFF1B):
         key(vnc, symbol)
 

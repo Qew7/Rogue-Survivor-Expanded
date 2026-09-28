@@ -49,6 +49,20 @@ arrival signal for reporting even without line of sight; hearing it alone does
 not create a witnessed personality memory. `Scoring` keeps the player's game
 history, while `ResidentRecords` keeps individual NPC histories for Read Records.
 
+## Trait-driven intentions
+
+Civilian, gang, soldier and CHAR guard controllers can turn perceived aid,
+hunger, food requests and violence by their leader into persistent personal
+intentions. Current traits, relationships and leader trust determine motivation;
+existing survival and combat priorities interrupt ordinary social actions.
+NPCs can thank a helper, repay with actual food, ask for or decline aid, and
+voluntarily leave an unsafe leader. Private intentions and memories remain
+hidden during gameplay. Read Records retains their starts, outcomes and linked
+physical events, including an **Intentions and outcomes** category.
+
+See [npc-intentions.md](npc-intentions.md) for implemented behavior, limits,
+extension points and the later knowledge, story and group planning stages.
+
 ## Extending the catalog
 
 Definitions live in `WRogue/Gameplay/Personality/PersonalityContent.cs` and
@@ -235,7 +249,8 @@ item farming or age by themselves. The resident's page shows its metrics and
 the formula so the selection is explainable.
 
 In a timeline, **S** searches event text and **F** selects memories/traits,
-combat, help, encounters/groups, world events or life/survival. Both restrictions
+combat, help, encounters/groups, world events, life/survival or intentions and
+outcomes. Both restrictions
 combine; **R** clears them. Up/Down and PgUp/PgDn scroll, Home/End jump, Escape
 returns. Changing a timeline filter does not change the resident's life score.
 Text prompts support Backspace, Ctrl+A to clear and Ctrl+V to paste names.

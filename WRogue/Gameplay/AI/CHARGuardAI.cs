@@ -55,6 +55,7 @@ namespace djack.RogueSurvivor.Gameplay.AI
         protected override ActorAction SelectAction(RogueGame game, List<Percept> percepts)
         {
             List<Percept> mapPercepts = FilterSameMap(game, percepts);
+            List<Actor> intentVisible = PrepareNpcIntents(game, mapPercepts);
 
             // alpha10
             // don't run by default.
@@ -67,6 +68,10 @@ namespace djack.RogueSurvivor.Gameplay.AI
                 return bestEquip;
             }
             // end alpha10
+
+            ActorAction departure = BehaviorNpcDeparture(game);
+            if (departure != null)
+                return BehaviorFleeFromExplosives(game, FilterStacks(game, mapPercepts)) ?? departure;
 
             // 1. Follow order
             #region
@@ -246,6 +251,12 @@ namespace djack.RogueSurvivor.Gameplay.AI
                         m_Actor.Activity = Activity.SLEEPING;
                     return sleepAction;
                 }
+            }
+
+            if (!hasAnyEnemies)
+            {
+                ActorAction intentAction = BehaviorNpcIntents(game, intentVisible);
+                if (intentAction != null) return intentAction;
             }
 
             // 10 follow leader

@@ -62,6 +62,9 @@ namespace djack.RogueSurvivor.Gameplay.Personality
 
     sealed class SignificantEvent
     {
+        public long Id { get; internal set; }
+        public readonly long CauseId;
+        public readonly string StoryId;
         public readonly string Kind;
         public readonly Actor Subject;
         public readonly bool SubjectIsDirect;
@@ -73,8 +76,9 @@ namespace djack.RogueSurvivor.Gameplay.Personality
 
         public SignificantEvent(string kind, Actor subject, Actor other, Map map,
             System.Drawing.Point position, int turn, bool otherIsDirect = true,
-            bool subjectIsDirect = true)
+            bool subjectIsDirect = true, long causeId = 0, string storyId = null)
         {
+            CauseId = causeId; StoryId = storyId;
             Kind = kind;
             Subject = subject;
             SubjectIsDirect = subjectIsDirect;

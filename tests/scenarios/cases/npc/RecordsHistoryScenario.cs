@@ -45,8 +45,10 @@ static class RecordsHistoryScenario
             Check.Equal(true, initial.Contains("helped Alex"), "real gift is recorded as a life event");
             Check.Equal(true, initial.Contains("Memory: Received help"), "new memory is recorded");
             int count = personal.Entries.Count;
-            PersonalitySystem.Report(world.Game, new SignificantEvent("helped", resident, helper,
-                world.Map, resident.Location.Position, world.Map.LocalTime.TurnCounter));
+            SignificantEvent duplicate = new SignificantEvent("helped", resident, helper,
+                world.Map, resident.Location.Position, world.Map.LocalTime.TurnCounter);
+            foreach (ResidentEntry entry in personal.Entries) if (entry.Kind == "helped") duplicate.Id = entry.EventId;
+            PersonalitySystem.Report(world.Game, duplicate);
             Check.Equal(count, personal.Entries.Count, "duplicate observation does not duplicate history");
             for (int turn = 1; turn <= 40; turn++)
                 PersonalitySystem.Report(world.Game, new SignificantEvent("raid", null, null,

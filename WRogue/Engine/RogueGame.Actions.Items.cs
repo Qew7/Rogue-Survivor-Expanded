@@ -456,8 +456,6 @@ namespace djack.RogueSurvivor.Engine
             bool neededFood = gift is ItemFood && m_Rules.IsActorHungry(target);
             bool neededMedicine = gift is ItemMedicine &&
                 (target.HitPoints < m_Rules.ActorMaxHPs(target) / 2 || target.Infection > 0);
-            if (neededFood || neededMedicine)
-                ReportPersonalityEvent("helped", target, actor, target.Location.Map, target.Location.Position);
 
             // if leader give to follower, improve trust.
             if (target.Leader == actor)
@@ -486,8 +484,11 @@ namespace djack.RogueSurvivor.Engine
             }
 
             // transfer item : drop then take (solves problem of partial quantities transfer).
+            long receivedBefore = target.Inventory == null ? 0 : target.Inventory.TotalReceived;
             DropItem(actor, gift);
             DoTakeItem(target, actor.Location.Position, gift, false);
+            if ((neededFood || neededMedicine) && target.Inventory != null && target.Inventory.TotalReceived > receivedBefore)
+                ReportPersonalityEvent("helped", target, actor, target.Location.Map, target.Location.Position);
 
             // message.
             if (IsVisibleToPlayer(actor) || IsVisibleToPlayer(target))

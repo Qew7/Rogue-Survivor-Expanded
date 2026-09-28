@@ -15,9 +15,13 @@ namespace djack.RogueSurvivor.Data
         public readonly string Kind;
         public readonly bool Direct, GainedTrait;
         public readonly Guid SubjectId, OtherId;
+        public readonly long EventId, CauseId;
+        public readonly string StoryId;
         public ResidentEntry(int turn, string text, int sequence, string kind = "note", bool direct = false,
-            Guid subjectId = default(Guid), Guid otherId = default(Guid), bool gainedTrait = false)
-        { Turn = turn; Text = text; Sequence = sequence; Kind = kind; Direct = direct; SubjectId = subjectId; OtherId = otherId; GainedTrait = gainedTrait; }
+            Guid subjectId = default(Guid), Guid otherId = default(Guid), bool gainedTrait = false,
+            long eventId = 0, long causeId = 0, string storyId = null)
+        { Turn = turn; Text = text; Sequence = sequence; Kind = kind; Direct = direct; SubjectId = subjectId; OtherId = otherId; GainedTrait = gainedTrait;
+            EventId = eventId; CauseId = causeId; StoryId = storyId; }
     }
 
     [Serializable]
@@ -43,7 +47,8 @@ namespace djack.RogueSurvivor.Data
             string kind = key.Split(':')[0];
             m_Entries.Add(new ResidentEntry(turn, text, m_Entries.Count, observed == null ? kind : observed.Kind,
                 observed != null && observed.Direct, observed == null ? Guid.Empty : observed.SubjectId,
-                observed == null ? Guid.Empty : observed.OtherId, gainedTrait));
+                observed == null ? Guid.Empty : observed.OtherId, gainedTrait,
+                observed == null ? 0 : observed.EventId, observed == null ? 0 : observed.CauseId, observed == null ? null : observed.StoryId));
         }
     }
 
@@ -137,8 +142,9 @@ namespace djack.RogueSurvivor.Data
             if (record == null) return;
             string key = "event:" + observed.Kind + ":" + observed.Turn + ":" +
                 observed.SubjectId + ":" + observed.OtherId + ":" + observed.Subject + ":" + observed.Other;
+            if (observed.EventId != 0) key = "event:" + observed.EventId;
             record.Add(key, observed.Turn, (observed.Direct ? "Experienced: " : "Witnessed: ") +
-                EventText(observed), observed);
+                EventText(observed) + (observed.StoryId == null ? "" : " [story " + observed.StoryId + "]"), observed);
             if (observed.Kind == "death" && observed.SubjectId == actor.PersonalityIdentity)
                 record.DeathTurn = observed.Turn;
         }
@@ -156,6 +162,11 @@ namespace djack.RogueSurvivor.Data
                 case "kill_human": return other + " killed " + subject + ".";
                 case "attack": return other + " attacked " + subject + ".";
                 case "helped": return other + " helped " + subject + ".";
+                case "requested_food": return subject + " asked " + other + " for food.";
+                case "request_refused": return subject + " declined " + other + "'s request.";
+                case "shared_food": return subject + " shared food with " + other + ".";
+                case "left_group": return subject + " chose to leave " + other + "'s group.";
+                case "aid_acknowledged": return subject + " acknowledged aid from " + other + ".";
                 case "joined_group": return subject + " joined " + other + "'s group.";
                 case "abandoned": return subject + " was abandoned by " + other + ".";
                 case "base_theft": return subject + " stole from " + other + "'s base.";
@@ -198,6 +209,11 @@ namespace djack.RogueSurvivor.Data
             ResidentRecord record = Register(actor);
             if (record == null) return;
             foreach (ObservedEvent observed in actor.Personality.Events) Observe(actor, observed);
+            foreach (NpcIntent intent in actor.Personality.Intents)
+            {
+                IntentChanged(actor, intent, "started", "recovered from available intent state");
+                if (intent.Finished) IntentChanged(actor, intent, intent.Status.ToString().ToLowerInvariant(), intent.Outcome);
+            }
             List<RelationshipRecord> relations = new List<RelationshipRecord>(actor.Personality.People);
             relations.AddRange(actor.Personality.Groups);
             relations.AddRange(actor.Personality.Factions);

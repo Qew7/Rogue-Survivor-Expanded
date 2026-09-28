@@ -19,7 +19,7 @@ static class RecordsBrowserScenario
                 Keys.S, Keys.B, Keys.Escape, Keys.O, Keys.Down, Keys.Enter, Keys.V, Keys.F,
                 Keys.Down, Keys.Down, Keys.Down, Keys.Down, Keys.Enter, Keys.Back, Keys.D9, Keys.Enter, Keys.Escape,
                 Keys.I, Keys.Escape, Keys.R, Keys.I, Keys.S, Keys.X, Keys.Enter, Keys.F, Keys.Down, Keys.Enter,
-                Keys.R, Keys.End, Keys.Home, Keys.Escape, Keys.Escape }) ui.QueueWaitKey(key);
+                Keys.R, Keys.F, Keys.PageDown, Keys.Enter, Keys.End, Keys.Home, Keys.Escape, Keys.Escape }) ui.QueueWaitKey(key);
             Check.Call(world.Game, "BrowseRecords", new[] { typeof(RecordsSave) }, save);
             string drawn = String.Join(" ", ui.DrawnStrings.ToArray());
             Check.Equal(true, drawn.Contains("No matching NPCs"), "empty filtered winner is explained");
@@ -28,6 +28,7 @@ static class RecordsBrowserScenario
             Check.Equal(true, drawn.Contains("Read Records - Alice"), "most interesting button opens NPC history");
             Check.Equal(true, drawn.Contains("Interest score"), "winner explains its score");
             Check.Equal(true, drawn.Contains("Events: Memories | Text: x"), "timeline search and category combine");
+            Check.Equal(true, drawn.Contains("Events: Intentions | Text: "), "new intentions category opens through the real browser");
             Check.Equal(0, Session.Get.WorldTime.TurnCounter, "browser never simulates turns");
         });
     }
