@@ -72,7 +72,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         void RegisterEvents(NpcCatalogBuilder catalog)
         {
             catalog.OnReport("requested_food", HearNeed);
-            catalog.Event(new NpcEventDefinition("requested_food", NpcRecordCategory.Help, true, e => (e.Subject ?? "Someone") + " asked " + (e.Other ?? "someone") + " for food.", f => f.SubjectName + " asked for food") { StoryStage = (g, s, e) => "contacted" });
+            catalog.Event(new NpcEventDefinition("requested_food", NpcRecordCategory.Help, true, e => (e.Subject ?? "Someone") + " asked " + (e.Other ?? "someone") + " for food.", f => f.SubjectName + " asked for food") { StoryStage = (g, s, e) => "contacted", AudibleReport = true, PlayerReply = new NpcPlayerReply("food", "food_promised", "request_refused", "Yes, I'll bring you food.", "No, I can't help with food.") });
             catalog.Event(new NpcEventDefinition("food_offered", NpcRecordCategory.Help, true, e => (e.Subject ?? "Someone") + " offered to exchange food with " + (e.Other ?? "someone") + ".", null));
             catalog.Event(new NpcEventDefinition("bartered_food", NpcRecordCategory.Help, false, e => (e.Subject ?? "Someone") + " obtained food by exchanging supplies with " + (e.Other ?? "someone") + ".", null));
             catalog.Event(new NpcEventDefinition("supplies_acquired", NpcRecordCategory.None, false, e => (e.Subject ?? "Someone") + " acquired the supplies they were seeking.", null) { StoryStage = (g, s, e) => "acquired" });

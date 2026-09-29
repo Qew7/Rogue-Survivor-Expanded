@@ -32,7 +32,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             return c.Action(() => c.NearPerson(person) && !c.Owner.Personality.Knowledge.WasTold(-c.Goal.Sequence, person) &&
                 (c.Step != null || !c.Goal.Announced && c.Game.Rules.IsActorHungry(c.Owner) && !NpcFoodSupply.HasFood(c.Game, c.Owner)), () => {
                 c.Game.DoSay(c.Owner, c.Target, c.Goal.Generated == null || c.Goal.Generated.SubjectId == c.Owner.PersonalityIdentity ?
-                    "Could you spare some food?" : "Could you spare food? I'm trying to help someone.", RogueGame.Sayflags.NONE);
+                    "Could you spare some food?" : "Could you spare food? I'm trying to help someone.", RogueGame.Sayflags.IS_STORY | RogueGame.Sayflags.IS_REQUEST,
+                    c.Goal.CauseId, c.Goal.StoryId);
                 if (c.Capability.WaitingAfterAnnouncement) { c.Goal.Announced = true; c.Goal.Status = NpcIntentStatus.Waiting; }
                 c.Owner.Personality.Knowledge.Told(-c.Goal.Sequence, person, c.Owner.Location.Map.LocalTime.TurnCounter);
                 c.Publish("requested_food", c.Target); c.Goal.NextAttempt = c.Owner.Location.Map.LocalTime.TurnCounter + 8;

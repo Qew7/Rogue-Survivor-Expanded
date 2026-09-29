@@ -19,7 +19,8 @@ namespace djack.RogueSurvivor.Engine.Actions
         {
             if (!IsLegal()) return;
             NpcAttachment loss = m_Actor.Personality.Attachments.Find(a => a.Kind == "place" && a.MissingUnits > 0 && a.Resource == "food" && a.Person == target.PersonalityIdentity);
-            m_Game.DoSay(m_Actor, target, "Replace the " + loss.MissingUnits + " food units lost from our supplies.", RogueGame.Sayflags.NONE);
+            m_Game.DoSay(m_Actor, target, "Replace the " + loss.MissingUnits + " food units lost from our supplies.", RogueGame.Sayflags.IS_STORY | RogueGame.Sayflags.IS_REQUEST,
+                goal.CauseId, goal.StoryId);
             var source = new SignificantEvent("restitution_requested", m_Actor, target, m_Actor.Location.Map, m_Actor.Location.Position,
                 m_Actor.Location.Map.LocalTime.TurnCounter, causeId: goal.CauseId, storyId: goal.StoryId) { Units = loss.MissingUnits, ResourcePlace = loss.Place, Resource = "food" };
             PersonalitySystem.Report(m_Game, source);

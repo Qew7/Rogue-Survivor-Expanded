@@ -139,6 +139,16 @@ the event definition. Cross-feature coordination uses these subscriptions
 and contracts. For example, physical delivery emits `shared_food`, and the
 promises module handles completion without an extra call in the food action.
 
+A public spoken request can set `AudibleReport` on its `NpcEventDefinition`.
+After ordinary observers are processed, awake people within audio range learn
+its retained fact as hearsay, even without line of sight. Set `PlayerReply`
+on a request addressed to the player to declare its prompt, Y/N phrases and
+registered outcome event IDs. The catalog validates those IDs at build time;
+the conversation action publishes the selected outcome with the request's
+causal ID. Mark the actual `DoSay` call with `IS_STORY | IS_REQUEST` (or
+`IS_STORY | IS_RUMOR`) and pass cause/story IDs so Read Records can archive
+what each NPC actually heard. These flags do not reveal private memories.
+
 `isPrivate: true` with `PrivateAudience` restricts a thought to its owner.
 Merely being named in that thought does not make a person an observer.
 Memories remain private during gameplay even when their triggering event is

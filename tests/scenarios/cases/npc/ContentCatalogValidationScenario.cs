@@ -37,6 +37,10 @@ static class ContentCatalogValidationScenario
             var bad = new NpcCatalogBuilder(new PersonalityRegistry());
             bad.Memory(new MemoryDefinition("lost", "Lost", 1, 1, new[] { new MemoryTrigger("missing", (a, e) => true) }, new MemoryOutcome(null, "missing-trait", null)));
             Check.Throws<ArgumentException>(() => bad.Build(), "unresolved memory references fail before simulation");
+            var badReply = new NpcCatalogBuilder(new PersonalityRegistry());
+            badReply.Event(new NpcEventDefinition("question") { PlayerReply =
+                new NpcPlayerReply("supplies", "missing_yes", "missing_no", "Yes.", "No.") });
+            Check.Throws<ArgumentException>(() => badReply.Build(), "request replies need registered outcomes");
             var incomplete = new NpcCatalogBuilder(new PersonalityRegistry());
             incomplete.Capability(new NpcIntentDefinition("unbound", "Unbound", 30));
             Check.Throws<ArgumentException>(() => incomplete.Build(), "selectable capabilities require a planner and result");

@@ -189,6 +189,7 @@
     <Compile Include="Gameplay\Npc\Contracts\MemoryDefinition.cs" />
     <Compile Include="Gameplay\Npc\Runtime\PersonalityRegistry.cs" />
     <Compile Include="Gameplay\Npc\Events\NpcEventDefinition.cs" />
+    <Compile Include="Gameplay\Npc\Conversation\NpcConversation.cs" />
     <Compile Include="Gameplay\Npc\Events\NpcObservation.cs" />
     <Compile Include="Gameplay\Npc\Events\NpcRecordDescriptions.cs" />
     <Compile Include="Gameplay\Npc\Goals\NpcGoalContext.cs" />
@@ -389,6 +390,7 @@
     <Compile Include="Engine\RogueGame.MouseMove.cs" />
     <Compile Include="Engine\MouseMovePath.cs" />
     <Compile Include="Engine\RogueGame.PlayerActions.Items.cs" />
+    <Compile Include="Engine\RogueGame.PlayerActions.Conversation.cs" />
     <Compile Include="Engine\RogueGame.PlayerActions.Combat.cs" />
     <Compile Include="Engine\RogueGame.PlayerActions.Movement.cs" />
     <Compile Include="Engine\RogueGame.PlayerActions.Followers.cs" />
@@ -488,6 +490,7 @@
     <Compile Include="Data\ResidentRecords.Stories.cs" />
     <Compile Include="Data\ResidentRecords.Intents.cs" />
     <Compile Include="Engine\Actions\ActionNpcTell.cs" />
+    <Compile Include="Engine\Actions\ActionPlayerTalk.cs" />
     <Compile Include="Gameplay\AI\BaseAI.Story.cs" />
     <Compile Include="Engine\Actions\ActionNpcIntent.cs" />
     <Compile Include="Engine\RogueGame.Actions.Intents.cs" />

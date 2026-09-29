@@ -41,6 +41,7 @@ namespace djack.RogueSurvivor.Engine
             new Entry(PlayerCommand.HELP_MODE, "Help"),
             new Entry(PlayerCommand.HINTS_SCREEN_MODE, "Hints screen"),
             new Entry(PlayerCommand.NEGOCIATE_TRADE, "Negociate Trade"),
+            new Entry(PlayerCommand.TALK, "Talk"),
             new Entry(PlayerCommand.ITEM_SLOT_0, "Item 1 slot"),
             new Entry(PlayerCommand.ITEM_SLOT_1, "Item 2 slot"),
             new Entry(PlayerCommand.ITEM_SLOT_2, "Item 3 slot"),

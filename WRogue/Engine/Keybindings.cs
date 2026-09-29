@@ -55,6 +55,7 @@ namespace djack.RogueSurvivor.Engine
             Set(PlayerCommand.GIVE_ITEM, Keys.G);
             Set(PlayerCommand.HINTS_SCREEN_MODE, Keys.H | Keys.Control);
             Set(PlayerCommand.NEGOCIATE_TRADE, Keys.E);
+            Set(PlayerCommand.TALK, Keys.T | Keys.Control);
             Set(PlayerCommand.LOAD_GAME, Keys.L | Keys.Shift);
             Set(PlayerCommand.MARK_ENEMIES_MODE, Keys.E | Keys.Control);
             Set(PlayerCommand.MESSAGE_LOG, Keys.M | Keys.Shift);
@@ -189,6 +190,9 @@ namespace djack.RogueSurvivor.Engine
                 if (kb.Get(PlayerCommand.RELATIONSHIPS) == Keys.None &&
                     kb.Get(Keys.I | Keys.Shift) == PlayerCommand.NONE)
                     kb.Set(PlayerCommand.RELATIONSHIPS, Keys.I | Keys.Shift);
+                if (kb.Get(PlayerCommand.TALK) == Keys.None &&
+                    kb.Get(Keys.T | Keys.Control) == PlayerCommand.NONE)
+                    kb.Set(PlayerCommand.TALK, Keys.T | Keys.Control);
             }
             catch (Exception e)
             {

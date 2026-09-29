@@ -35,7 +35,8 @@ namespace djack.RogueSurvivor.Engine.Actions
             plan.StoryId = id;
             if (group != null) { group.PlanSequence++; group.Plan = plan; group.NextPlanTurn = m_Actor.Location.Map.LocalTime.TurnCounter + 180; }
             else { m_Actor.Personality.FactionPlan = plan; m_Actor.Personality.NextFactionPlanTurn = m_Actor.Location.Map.LocalTime.TurnCounter + 180; }
-            m_Game.DoSay(m_Actor, listener, Definition.Message(m_Actor, plan), RogueGame.Sayflags.NONE);
+            m_Game.DoSay(m_Actor, listener, Definition.Message(m_Actor, plan), RogueGame.Sayflags.IS_STORY | RogueGame.Sayflags.IS_REQUEST,
+                plan.CauseId, id);
             if (Definition.CoordinatorCapability != null)
             {
                 NpcIntent goal = NpcStorySystem.StartKnown(m_Actor, m_Actor.Personality.Knowledge.Person(plan.BeneficiaryId),

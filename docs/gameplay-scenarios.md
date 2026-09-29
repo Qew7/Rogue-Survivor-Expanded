@@ -31,6 +31,10 @@ related review boundaries with real perception, reactions, speech and death.
 `npc/ask-location-unknown-place`, `npc/protection-missing-faction`,
 `npc/planner-barter-place-limit` and `npc/group-plan-participant-exit` cover
 unknown map data, bounded planner locations and shared-goal lifecycle.
+`npc/player-conversation`, `npc/player-talk-input`, `npc/overheard-conversation` and
+`npc/overheard-rumor` cover the talk command, Y/N consequences, audio range,
+walls, rumor learning and archive-only heard-speech search. The first also
+checks persistent promises; `world/talk-keybinding-migration` checks old keys.
 
 Add each new scenario in its own file under the matching topic directory in
 `tests/scenarios/cases/`. Living and undead skills have separate directories.

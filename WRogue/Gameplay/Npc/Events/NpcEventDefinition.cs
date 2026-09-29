@@ -19,8 +19,9 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public readonly bool Private;
         public Func<Actor, SignificantEvent, bool> CanWitness, CanObserve;
         public Func<SignificantEvent, Actor> PrivateAudience;
-        public bool OncePerSubject, ProvesDeath;
+        public bool OncePerSubject, ProvesDeath, AudibleReport;
         public Func<Actor, Actor, bool> CanReply;
+        public NpcPlayerReply PlayerReply;
         public Func<djack.RogueSurvivor.Engine.RogueGame, NpcStory, SignificantEvent, string> StoryStage;
         readonly List<Action<NpcObservation>>[] observers = {
             new List<Action<NpcObservation>>(), new List<Action<NpcObservation>>(),
@@ -54,5 +55,13 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 ((Required & NpcEventFields.PositiveUnits) != 0 && source.Units <= 0))
                 throw new ArgumentException("Missing required payload for NPC event: " + Id);
         }
+    }
+
+    // The event owns the player's two possible responses; the conversation UI only invokes this contract.
+    sealed class NpcPlayerReply
+    {
+        public readonly string Prompt, YesKind, NoKind, YesText, NoText;
+        public NpcPlayerReply(string prompt, string yesKind, string noKind, string yesText, string noText)
+        { Prompt = prompt; YesKind = yesKind; NoKind = noKind; YesText = yesText; NoText = noText; }
     }
 }

@@ -203,6 +203,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             }
             NpcStorySystem.EventFinished(game, lifeEvent);
             if (eventDefinition != null) eventDefinition.Completed(game, lifeEvent);
+            NpcConversation.BroadcastReport(game, lifeEvent, eventDefinition);
+            NpcConversation.OfferPlayerReply(game, lifeEvent, eventDefinition);
         }
 
         public static void ResolveDue(RogueGame game, Map map)

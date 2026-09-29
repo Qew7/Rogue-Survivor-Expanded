@@ -20,7 +20,8 @@ namespace djack.RogueSurvivor.Engine.Actions
         public override void Perform()
         {
             if (!IsLegal()) return;
-            m_Game.DoSay(m_Actor, listener, "Have you seen " + intent.TargetName + "?", RogueGame.Sayflags.NONE);
+            m_Game.DoSay(m_Actor, listener, "Have you seen " + intent.TargetName + "?", RogueGame.Sayflags.IS_STORY | RogueGame.Sayflags.IS_REQUEST,
+                intent.CauseId, intent.StoryId);
             SignificantEvent source = NpcEvents.Publish(m_Game, "asked_location", m_Actor, listener, intent.CauseId, intent.StoryId);
             m_Actor.Personality.Knowledge.Told(-intent.Sequence, listener.PersonalityIdentity, source.Turn);
             NpcKnownPerson known = listener.Personality.Knowledge.Person(intent.TargetId);

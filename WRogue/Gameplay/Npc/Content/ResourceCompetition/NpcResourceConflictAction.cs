@@ -29,7 +29,8 @@ namespace djack.RogueSurvivor.Engine.Actions
         public override void Perform()
         {
             if (!IsLegal()) return;
-            m_Game.DoSay(m_Actor, holder, "I need those " + resource + " supplies too. Can you leave them for me?", RogueGame.Sayflags.NONE);
+            m_Game.DoSay(m_Actor, holder, "I need those " + resource + " supplies too. Can you leave them for me?", RogueGame.Sayflags.IS_STORY | RogueGame.Sayflags.IS_REQUEST,
+                goal.CauseId, goal.StoryId);
             var source = new SignificantEvent("resource_contested", m_Actor, holder, m_Actor.Location.Map, m_Actor.Location.Position,
                 m_Actor.Location.Map.LocalTime.TurnCounter, causeId: goal.CauseId, storyId: goal.StoryId) {
                     ResourcePlace = step.Place, Resource = resource,

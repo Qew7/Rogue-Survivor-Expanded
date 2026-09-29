@@ -297,10 +297,13 @@ namespace djack.RogueSurvivor.Engine
             /// <summary>
             /// A warning or menace, should be highlighted.
             /// </summary>
-            IS_DANGER = (1 << 2)
+            IS_DANGER = (1 << 2),
+            IS_STORY = (1 << 3),
+            IS_RUMOR = (1 << 4),
+            IS_REQUEST = (1 << 5)
         }
 
-        public void DoSay(Actor speaker, Actor target, string text, Sayflags flags)
+        public void DoSay(Actor speaker, Actor target, string text, Sayflags flags, long causeId = 0, string storyId = null)
         {
             Color sayColor = ((flags & Sayflags.IS_DANGER) != 0) ? SAYOREMOTE_DANGER_COLOR : SAYOREMOTE_NORMAL_COLOR;
 
@@ -309,7 +312,12 @@ namespace djack.RogueSurvivor.Engine
                 SpendActorActionPoints(speaker, Rules.BASE_ACTION_COST);
 
             // message.
-            if (IsVisibleToPlayer(speaker) || (IsVisibleToPlayer(target) && !(m_Player.IsSleeping && target == m_Player)))
+            bool story = (flags & Sayflags.IS_STORY) != 0;
+            bool audible = m_Player != null && !m_Player.IsSleeping && m_Player.Location.Map == speaker.Location.Map &&
+                m_Rules.StdDistance(m_Player.Location.Position, speaker.Location.Position) <= m_Player.AudioRange;
+            bool visible = m_Player != null && ((IsVisibleToPlayer(speaker) && (!story || audible)) ||
+                (!story && IsVisibleToPlayer(target) && !(m_Player.IsSleeping && target == m_Player)));
+            if (visible)
             {
                 bool isPlayer = target.IsPlayer;
                 bool isBot = target.IsBotPlayer; // alpha10.1 handle bot
@@ -325,6 +333,34 @@ namespace djack.RogueSurvivor.Engine
                     ClearOverlays();
                     RemoveLastMessage();
                     RedrawPlayScreen();
+                }
+            }
+            else if (story && audible)
+                AddMessageIfAudibleForPlayer(speaker.Location,
+                    new Message("You overhear: \"" + text + "\"", m_Session.WorldTime.TurnCounter, sayColor));
+
+            if ((flags & Sayflags.IS_STORY) != 0 && Session.Get.GamePreset.NpcPersonalitiesEnabled)
+            {
+                long speechId = Session.Get.NextPersonalityEventId();
+                int turn = speaker.Location.Map.LocalTime.TurnCounter;
+                foreach (Actor listener in speaker.Location.Map.Actors)
+                {
+                    if (listener == speaker || listener.IsDead || listener.IsSleeping || listener.Model.Abilities.IsUndead ||
+                        !listener.Model.Abilities.IsIntelligent ||
+                        m_Rules.StdDistance(listener.Location.Position, speaker.Location.Position) > listener.AudioRange) continue;
+                    ResidentRecord record = Session.Get.ResidentRecords.Register(listener);
+                    if (record == null) continue;
+                    bool identified = listener == target || (m_Rules.GridDistance(listener.Location.Position, speaker.Location.Position) <=
+                        m_Rules.ActorFOV(listener, speaker.Location.Map.LocalTime, m_Session.World.Weather) &&
+                        LOS.CanTraceViewLine(listener.Location, speaker.Location.Position));
+                    string kind = (flags & Sayflags.IS_RUMOR) != 0 ? "heard_rumor" :
+                        (flags & Sayflags.IS_REQUEST) != 0 ? "heard_request" : "heard_reply";
+                    var observed = new ObservedEvent(kind, turn, identified ? speaker.UnmodifiedName : null, null,
+                        listener == target, subjectId: identified ? speaker.PersonalityIdentity : Guid.Empty,
+                        eventId: speechId, causeId: causeId, storyId: storyId);
+                    observed.RecordCategories = (int)Gameplay.Personality.NpcRecordCategory.Encounters;
+                    record.Add("heard_speech:" + speechId, turn,
+                        "Heard " + (identified ? speaker.UnmodifiedName : "someone") + " say: \"" + text + "\".", observed);
                 }
             }
         }

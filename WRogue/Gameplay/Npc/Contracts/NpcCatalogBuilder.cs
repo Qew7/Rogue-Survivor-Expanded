@@ -122,6 +122,16 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             }
             foreach (NpcCollectiveDefinition collective in Collectives.Values)
                 if (!Events.ContainsKey(collective.EventId)) throw new ArgumentException("Unknown collective communication event: " + collective.EventId);
+            foreach (NpcEventDefinition definition in Events.Values)
+                if (definition.PlayerReply != null &&
+                    (String.IsNullOrWhiteSpace(definition.PlayerReply.Prompt) ||
+                    String.IsNullOrWhiteSpace(definition.PlayerReply.YesText) ||
+                    String.IsNullOrWhiteSpace(definition.PlayerReply.NoText) ||
+                    String.IsNullOrWhiteSpace(definition.PlayerReply.YesKind) ||
+                    String.IsNullOrWhiteSpace(definition.PlayerReply.NoKind) ||
+                    !Events.ContainsKey(definition.PlayerReply.YesKind) ||
+                    !Events.ContainsKey(definition.PlayerReply.NoKind)))
+                    throw new ArgumentException("Invalid player reply for NPC event: " + definition.Id);
             foreach (NpcEventDefinition definition in Events.Values) definition.Freeze();
             NpcContentCatalog catalog = new NpcContentCatalog(this);
             built = true; return catalog;

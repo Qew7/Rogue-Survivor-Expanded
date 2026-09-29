@@ -30,7 +30,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public static ActorAction Ask(NpcActionContext c)
         { return c.Action(() => c.NearPerson(c.Step.Target) && !c.Owner.Personality.Knowledge.WasTold(-c.Goal.Sequence, c.Step.Target) &&
             NpcPlanExecution.Medicine(c.Game, c.Owner, c.Owner.Location, true) == null, () => {
-            c.Game.DoSay(c.Owner, c.Target, "Could you spare medicine? I'm trying to get treatment.", RogueGame.Sayflags.NONE);
+            c.Game.DoSay(c.Owner, c.Target, "Could you spare medicine? I'm trying to get treatment.", RogueGame.Sayflags.IS_STORY | RogueGame.Sayflags.IS_REQUEST,
+                c.Goal.CauseId, c.Goal.StoryId);
             c.Owner.Personality.Knowledge.Told(-c.Goal.Sequence, c.Step.Target, c.Owner.Location.Map.LocalTime.TurnCounter);
             c.Publish("requested_medicine", c.Target); c.Goal.Plan.Invalidate(); c.Goal.NextAttempt = c.Owner.Location.Map.LocalTime.TurnCounter + 8;
         }); }

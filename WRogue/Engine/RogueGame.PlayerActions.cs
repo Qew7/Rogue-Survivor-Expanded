@@ -578,6 +578,10 @@ namespace djack.RogueSurvivor.Engine
                                 loop = !HandlePlayerNegociateTrade(player); // alpha10
                                 break;
 
+                            case PlayerCommand.TALK:
+                                loop = !HandlePlayerTalk(player);
+                                break;
+
                             case PlayerCommand.MARK_ENEMIES_MODE:
                                 if (TryPlayerInsanity())
                                 {

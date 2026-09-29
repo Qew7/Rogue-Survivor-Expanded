@@ -71,7 +71,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             catalog.Event(new NpcEventDefinition("boundary_defied", NpcRecordCategory.None, true, e => (e.Subject ?? "Someone") + " rejected " + (e.Other ?? "someone") + "'s boundary.", f => f.SubjectName + " rejected a warning"));
             catalog.Event(new NpcEventDefinition("base_theft", NpcRecordCategory.None, true, e => (e.Subject ?? "Someone") + " stole from " + (e.Other ?? "someone") + "'s base.", f => f.SubjectName + " took disputed supplies"));
             catalog.Event(new NpcEventDefinition("restitution_given", NpcRecordCategory.Help, false, e => (e.Subject ?? "Someone") + " replaced supplies lost by " + (e.Other ?? "someone") + ".", null));
-            catalog.Event(new NpcEventDefinition("restitution_requested", NpcRecordCategory.Help, true, e => (e.Subject ?? "Someone") + " asked " + (e.Other ?? "someone") + " to compensate lost supplies.", null));
+            catalog.Event(new NpcEventDefinition("restitution_requested", NpcRecordCategory.Help, true, e => (e.Subject ?? "Someone") + " asked " + (e.Other ?? "someone") + " to compensate lost supplies.", null) { AudibleReport = true, PlayerReply = new NpcPlayerReply("replacement supplies", "food_promised", "restitution_refused", "Yes, I'll replace your supplies.", "No, I won't replace them.") });
             catalog.Event(new NpcEventDefinition("restitution_refused", NpcRecordCategory.Help, true, e => (e.Subject ?? "Someone") + " refused " + (e.Other ?? "someone") + "'s demand for compensation.", null));
             catalog.On("base_theft", NpcObservationPhase.Knowledge, OnKnowledge);
             catalog.On("confronted", NpcObservationPhase.Knowledge, OnKnowledge);
@@ -82,6 +82,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             catalog.On("restitution_given", NpcObservationPhase.Relationships, OnRelationships);
             catalog.On("restitution_refused", NpcObservationPhase.Relationships, OnRelationships);
             catalog.On("restitution_requested", NpcObservationPhase.Relationships, OnRelationships);
+            catalog.On("shared_food", NpcObservationPhase.Relationships, OnRelationships);
         }
         static void OnKnowledge(NpcObservation observation)
         {
@@ -113,6 +114,10 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 foreach (NpcAttachment home in owner.Personality.Attachments)
                     if (home.Kind == "place" && home.Place == source.ResourcePlace && home.Resource == "food" && home.Person == source.Subject.PersonalityIdentity) home.MissingUnits = Math.Max(0, home.MissingUnits - 1);
             }
+            if (source.Kind == "shared_food" && source.Subject != null && source.Subject.IsPlayer && owner == source.Other)
+                foreach (NpcAttachment home in owner.Personality.Attachments)
+                    if (home.Kind == "place" && home.Resource == "food" && home.Person == source.Subject.PersonalityIdentity && home.MissingUnits > 0)
+                    { home.MissingUnits = Math.Max(0, home.MissingUnits - Math.Max(1, source.Units)); break; }
             if (source.Kind == "base_theft" && other != null && source.Subject == owner && source.Resource == "food")
             { other.LossUnits += Math.Max(1, source.Units); other.LossCause = source.Id; other.LossPlace = new Location(source.Map, source.Position); }
             if ((source.Kind == "boundary_accepted" || source.Kind == "boundary_defied" || source.Kind == "restitution_refused") && owner == source.Other && subject != null)
