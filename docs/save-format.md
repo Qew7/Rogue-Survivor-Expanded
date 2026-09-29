@@ -99,6 +99,15 @@ resolution, with its outcome and turn. Player relationships retain their own
 experienced/witnessed events and do not expose another NPC's private memory
 during gameplay.
 
+Social state keeps separate promise snapshots for each participant, including
+resource, remaining units, deadline, outcome and the promisor's original group
+and faction. Resource disputes and personal attachments also persist. Each of
+these lists is allocated only when needed and capped at 16; active promises are
+never evicted to accept a new obligation. Specific nonstacking possessions use
+an item's lazily assigned persistent GUID, while model preferences retain a
+model ID. Generated goal keys distinguish resources, obligations and specific
+items; their supporting event IDs are retained in `Causes`.
+
 Personality state also retains bounded NPC intentions and pending spoken
 reactions, per-template cooldowns and the intention sequence. An intention stores
 its stable definition ID, target identity/name snapshot, last known map/position
@@ -164,6 +173,12 @@ does not depend on Map's mutable hash code or a serialized dictionary comparer.
 Terminal goals, plans and stories release location references. Starting a new
 Session clears its director and event sequence. No knowledge or director entry
 retains Actor references.
+
+Story roles retain the assigned intention sequence so concurrent intentions
+using the same execution method remain distinct. Episodes retain up to eight
+parent story IDs, with cycles rejected when connecting episodes. Resident
+entries retain supporting causal event IDs in `SupportingCauses` and readable
+links between episodes; the archive-only reader needs no world load to read them.
 
 Session retains the significant-event ID sequence. Observations retain event,
 cause and story IDs; a personality's processed-event cutoff survives journal

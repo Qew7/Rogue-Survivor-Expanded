@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace djack.RogueSurvivor.Data
 {
-    enum NpcGoalValue { Nutrition, Care, Reciprocity, Safety, Justice, Belonging, Autonomy, Recovery }
+    enum NpcGoalValue { Nutrition, Care, Reciprocity, Safety, Justice, Belonging, Autonomy, Recovery, MedicalCare, Commitment, Restitution, Possession, ProtectHome }
     [Serializable]
     sealed class NpcGeneratedGoal
     {
@@ -11,7 +11,14 @@ namespace djack.RogueSurvivor.Data
         public Guid SubjectId;
         public int Current, Desired, Deficit, Importance, Confidence, Utility, EvaluatedTurn;
         public ulong Result;
-        public string Key { get { return Value + ":" + SubjectId.ToString("N"); } }
+        public string Resource;
+        public long ObligationId;
+        public int ModelId = -1;
+        public Location ObjectPlace;
+        public Guid ItemId;
+        public long[] Causes;
+        public string Key { get { return Value + ":" + SubjectId.ToString("N") + (Resource == null ? "" : ":" + Resource) +
+            (ObligationId == 0 ? "" : ":" + ObligationId) + (Value == NpcGoalValue.Possession ? ":" + ModelId + ":" + ItemId.ToString("N") : ""); } }
         public string Description
         {
             get
@@ -25,6 +32,11 @@ namespace djack.RogueSurvivor.Data
                     case NpcGoalValue.Safety: return "Reach safety";
                     case NpcGoalValue.Justice: return "Communicate a boundary";
                     case NpcGoalValue.Belonging: return "Restore contact";
+                    case NpcGoalValue.MedicalCare: return "Meet a person's medical need";
+                    case NpcGoalValue.Commitment: return "Fulfil an outstanding promise";
+                    case NpcGoalValue.Restitution: return "Replace supplies lost through my actions";
+                    case NpcGoalValue.Possession: return "Recover a valued kind of item";
+                    case NpcGoalValue.ProtectHome: return "Return to threatened shelter";
                     default: return "Leave an unsafe group";
                 }
             }

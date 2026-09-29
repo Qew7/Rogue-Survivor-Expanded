@@ -21,6 +21,7 @@ namespace djack.RogueSurvivor.Data
     {
         public Guid ActorId;
         public Guid TargetId;
+        public long IntentSequence;
         public string Name, Goal, Outcome;
         public NpcIntentStatus Status;
     }
@@ -33,10 +34,11 @@ namespace djack.RogueSurvivor.Data
         public Location Place, Resource;
         public Guid ReservedActor;
         public readonly List<NpcStoryRole> Roles = new List<NpcStoryRole>();
+        public readonly List<string> Parents = new List<string>();
         public bool Finished { get { return Stage == "completed" || Stage == "failed" || Stage == "abandoned"; } }
     }
     [Serializable]
-    sealed class NpcStoryDirector
+    sealed partial class NpcStoryDirector
     {
         public readonly List<NpcStory> Stories = new List<NpcStory>();
         readonly Dictionary<string, int> cooldowns = new Dictionary<string, int>();
@@ -87,10 +89,10 @@ namespace djack.RogueSurvivor.Data
         {
             lock (this)
             {
-                NpcStoryRole role = story.Roles.Find(r => r.ActorId == actor.PersonalityIdentity && r.Goal == intent.DefinitionId);
+                NpcStoryRole role = story.Roles.Find(r => r.ActorId == actor.PersonalityIdentity && r.Goal == intent.DefinitionId && r.TargetId == intent.TargetId && r.IntentSequence == intent.Sequence);
                 if (role == null && story.Roles.Count < 8)
                     story.Roles.Add(new NpcStoryRole { ActorId = actor.PersonalityIdentity, Name = actor.UnmodifiedName,
-                        Goal = intent.DefinitionId, TargetId = intent.TargetId, Status = intent.Status });
+                        Goal = intent.DefinitionId, TargetId = intent.TargetId, Status = intent.Status, IntentSequence = intent.Sequence });
             }
         }
         public void Outcome(Actor actor, NpcIntent intent)
@@ -98,7 +100,7 @@ namespace djack.RogueSurvivor.Data
             lock (this)
             {
                 NpcStory story = Find(intent.StoryId); if (story == null) return;
-                NpcStoryRole role = story.Roles.Find(r => r.ActorId == actor.PersonalityIdentity && r.Goal == intent.DefinitionId);
+                NpcStoryRole role = story.Roles.Find(r => r.ActorId == actor.PersonalityIdentity && r.Goal == intent.DefinitionId && r.TargetId == intent.TargetId && (r.IntentSequence == 0 || r.IntentSequence == intent.Sequence));
                 if (role != null) { role.Status = intent.Status; role.Outcome = intent.Outcome; }
                 if (story.Finished) return;
                 if (story.Roles.Count > 0 && story.Roles.TrueForAll(r => r.Status == NpcIntentStatus.Completed))

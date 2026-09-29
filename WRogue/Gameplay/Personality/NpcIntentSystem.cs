@@ -51,10 +51,11 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                     }
             if (NpcPlanExecution.OfferTrade(game, observer, source)) return;
             NpcGoalGenerator.Refresh(game, observer);
+            NpcSocialSystem.PrepareReply(game, observer, source);
             if (source.Kind == "requested_food" && source.Other == observer && source.Subject != null &&
                 !game.Rules.AreEnemies(observer, source.Subject))
             {
-                bool answering = false;
+                bool answering = state.Reactions.Exists(r => r.CauseId == source.Id && r.TargetId == source.Subject.PersonalityIdentity && r.Kind == "food_promised");
                 foreach (NpcIntent intent in state.Intents)
                     if (!intent.Finished && intent.DefinitionId == NpcIntentContent.Help.Id && intent.TargetId == source.Subject.PersonalityIdentity) answering = true;
                 if (!answering && state.Reactions.Count < 4)

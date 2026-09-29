@@ -8,10 +8,11 @@ namespace djack.RogueSurvivor.Data
     {
         None = 0, Food = 1, SpareFood = 2, Delivered = 4, Reported = 8,
         Contact = 16, Warned = 32, Sheltered = 64, Safe = 128,
-        Requested = 256, Left = 512, LocationKnown = 1024, Medicine = 4096, Healthy = 8192
+        Requested = 256, Left = 512, LocationKnown = 1024, Medicine = 4096, Healthy = 8192, Helped = 16384, ValuedItem = 32768
     }
     enum NpcPlanAction { Travel, PickupFood, AskFood, GiveFood, ReportDelivery, AskLocation,
-        Reunite, Warn, Retreat, ConfirmSafety, EnterShelter, LeaveGroup, BarterFood, PickupMedicine, UseMedicine }
+        Reunite, Warn, Retreat, ConfirmSafety, EnterShelter, LeaveGroup, BarterFood, PickupMedicine, UseMedicine,
+        AskMedicine, GiveMedicine, TreatPerson, BarterMedicine, PickupValuedItem, DemandRestitution }
     [Serializable]
     sealed class NpcPlanStep
     {

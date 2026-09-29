@@ -416,7 +416,7 @@ namespace djack.RogueSurvivor.Engine
 
             if (quantityAdded > 0 && noticeTheft && baseClaim != null &&
                 !baseClaim.Owns(actor) && it.LastDroppedBy != actor)
-                NoticeXpdBaseTheft(actor, baseClaim, position, it, causeId, storyId);
+                NoticeXpdBaseTheft(actor, baseClaim, position, it, causeId, storyId, quantityAdded);
 
             // message
             if (IsVisibleToPlayer(actor) || IsVisibleToPlayer(new Location(map, position)))
@@ -429,15 +429,16 @@ namespace djack.RogueSurvivor.Engine
                 DoEquipItem(actor, it);
         }
 
-        void NoticeXpdBaseTheft(Actor thief, XpdBase baseClaim, Point position, Item item, long causeId = 0, string storyId = null)
+        void NoticeXpdBaseTheft(Actor thief, XpdBase baseClaim, Point position, Item item, long causeId = 0, string storyId = null, int units = 1)
         {
             Map map = thief.Location.Map;
-            ReportPersonalityEvent("base_theft", thief, baseClaim.GroupLeader, map, position, false, causeId: causeId, storyId: storyId);
+            Gameplay.Personality.PersonalitySystem.Report(this, new Gameplay.Personality.SignificantEvent("base_theft", thief, baseClaim.GroupLeader,
+                map, position, map.LocalTime.TurnCounter, false, causeId: causeId, storyId: storyId) { Units = units, ModelId = item.Model.ID, Resource = item is ItemFood ? "food" : item is ItemMedicine ? "medicine" : "item" });
             if ((baseClaim.FoodRoom.HasValue && baseClaim.FoodRoom.Value.Contains(position) && item is ItemFood) ||
                 (baseClaim.WeaponRoom.HasValue && baseClaim.WeaponRoom.Value.Contains(position) &&
                     (item is ItemMeleeWeapon || item is ItemRangedWeapon || item is ItemAmmo)))
-                ReportPersonalityEvent("supplies_lost", baseClaim.GroupLeader, thief, map, position,
-                    false, false, causeId, storyId);
+                Gameplay.Personality.PersonalitySystem.Report(this, new Gameplay.Personality.SignificantEvent("supplies_lost", baseClaim.GroupLeader, thief,
+                    map, position, map.LocalTime.TurnCounter, false, false, causeId, storyId) { Units = units, ModelId = item.Model.ID, Resource = item is ItemFood ? "food" : "item" });
             foreach (Actor witness in map.Actors)
             {
                 if (witness == thief || witness.IsDead || witness.IsSleeping ||
@@ -489,6 +490,15 @@ namespace djack.RogueSurvivor.Engine
             DoTakeItem(target, actor.Location.Position, gift, false);
             if ((neededFood || neededMedicine) && target.Inventory != null && target.Inventory.TotalReceived > receivedBefore)
                 ReportPersonalityEvent("helped", target, actor, target.Location.Map, target.Location.Position);
+            if (target.Inventory != null && target.Inventory.TotalReceived > receivedBefore && m_Session.GamePreset.NpcPersonalitiesEnabled &&
+                (gift is ItemFood && !m_Rules.IsFoodSpoiled((ItemFood)gift, actor.Location.Map.LocalTime.TurnCounter) || gift is ItemMedicine && ((ItemMedicine)gift).Healing > 0))
+            {
+                string resource = gift is ItemFood ? "food" : "medicine";
+                var shared = new Gameplay.Personality.SignificantEvent(gift is ItemFood ? "shared_food" : "shared_medicine", actor, target,
+                    actor.Location.Map, actor.Location.Position, actor.Location.Map.LocalTime.TurnCounter) { Units = (int)(target.Inventory.TotalReceived - receivedBefore), Resource = resource };
+                Gameplay.Personality.PersonalitySystem.Report(this, shared);
+                if (actor.Personality != null) Gameplay.Personality.NpcSocialSystem.Delivery(this, actor, target, resource, shared.Id, null);
+            }
 
             // message.
             if (IsVisibleToPlayer(actor) || IsVisibleToPlayer(target))

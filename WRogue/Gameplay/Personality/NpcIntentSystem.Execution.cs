@@ -14,6 +14,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             Session.Get.NpcDirector.Advance(map, map.LocalTime.TurnCounter);
             foreach (Actor actor in map.Actors)
             {
+                NpcSocialSystem.Expire(actor);
                 if (actor.SocialGroup != null && actor.SocialGroup.LeaderId == actor.PersonalityIdentity && actor.SocialGroup.Plan != null &&
                     !actor.SocialGroup.Plan.Finished && map.LocalTime.TurnCounter >= actor.SocialGroup.Plan.Deadline)
                 { actor.SocialGroup.Plan.Stage = "failed"; actor.SocialGroup.Plan.Destination = default(Location); }
@@ -35,6 +36,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public static void Maintain(RogueGame game, Actor owner, IList<Actor> visible, bool danger, bool followingOrder)
         {
             if (!Enabled(owner)) return;
+            NpcSocialSystem.Expire(owner);
             NpcGoalGenerator.Refresh(game, owner, true);
             if (!owner.Personality.HasPendingSocialState) return;
             int turn = owner.Location.Map.LocalTime.TurnCounter;

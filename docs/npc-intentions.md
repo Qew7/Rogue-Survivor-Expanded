@@ -73,6 +73,11 @@ change the preferred result as well as the method used to achieve it.
 | Justice | Communicate a boundary about known unaddressed misconduct | Law, courage and grievance |
 | Belonging | Restore contact with a known missing group member | Group preference, compassion, attachment and feeling |
 | Autonomy | Leave membership under a known dangerous leader | Group preference, courage and leader trust |
+| Medical care | Meet another person's known treatment need | Compassion, attachment and known attitude |
+| Commitment | Deliver the resource personally promised | Law, compassion and known attitude |
+| Restitution | Compensate an outstanding food loss | Law, compassion and known attitude |
+| Possession | Recover a valued model or specific owned item | Supplies and an established preference |
+| Home | Return to a personally attached threatened place | Group preference and supplies |
 
 These values and game actions are authored mechanics. Subjects, current
 shortfalls, importance, competing desires and action sequences are bound during
@@ -105,6 +110,9 @@ for example, establishes unaddressed wrongdoing that a lawful owner may want to
 address. Hostility and immediate combat still determine which actions are legal.
 
 ## Observable examples
+
+For resource competition, promises, actual replies, lasting attachments and
+connected causal episodes, see [npc-social-stories.md](npc-social-stories.md).
 
 CivilianAI, GangAI, SoldierAI and CHARGuardAI participate when NPC traits and
 memories are enabled. Intelligent living actors with these controllers can act;

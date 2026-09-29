@@ -212,6 +212,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             PersonalityWorldContent.Register(r);
             NpcIntentContent.RegisterMemories(r);
             NpcStoryContent.RegisterMemories(r);
+            NpcSocialContent.Register(r);
             return r;
         }
     }

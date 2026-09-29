@@ -20,10 +20,13 @@ namespace djack.RogueSurvivor.Engine.Actions
         public override void Perform()
         {
             if (!IsLegal()) return;
-            string report = fact.Kind == "medicine_cache" ? "there was medicine" : fact.Kind == "death" ? fact.SubjectName + " died" : fact.Kind == "requested_food" ?
+            string social = fact.Kind == "promise_broken" ? fact.SubjectName + " did not meet a promise's deadline" :
+                fact.Kind == "promise_kept" ? fact.SubjectName + " kept a promise" : fact.Kind == "base_theft" || fact.Kind == "contested_taken" ? fact.SubjectName + " took disputed supplies" :
+                fact.Kind == "boundary_defied" ? fact.SubjectName + " rejected a warning" : fact.Kind == "requested_medicine" ? fact.SubjectName + " asked for medicine" : null;
+            string report = social ?? (fact.Kind == "medicine_cache" ? "there was medicine" : fact.Kind == "death" ? fact.SubjectName + " died" : fact.Kind == "requested_food" ?
                 fact.SubjectName + " asked for food" : fact.Kind == "food_cache" ? "there was food" :
-                fact.OtherId == Guid.Empty ? "there was " + fact.Kind.Replace('_', ' ') : fact.OtherName + " was involved in violence against " + fact.SubjectName;
-            m_Game.DoSay(m_Actor, target, (fact.Source == NpcKnowledgeSource.Told ? "I was told that " : "I saw that ") + report +
+                fact.OtherId == Guid.Empty ? "there was " + fact.Kind.Replace('_', ' ') : fact.OtherName + " was involved in violence against " + fact.SubjectName);
+            m_Game.DoSay(m_Actor, target, (fact.Source == NpcKnowledgeSource.Told ? "I was told that " : fact.Source == NpcKnowledgeSource.Inferred ? "As far as I know, " : "I saw that ") + report +
                 " near " + fact.Place.Map.Name + ".", RogueGame.Sayflags.NONE);
             if (target.Personality == null) target.Personality = new PersonalityState();
             NpcKnowledgeSystem.Hear(m_Game, target, m_Actor, fact);
@@ -119,9 +122,12 @@ namespace djack.RogueSurvivor.Engine.Actions
             }
             if (method == NpcIntentMethod.GatherFood && intent.Progress == 1) { m_Game.DoNpcIntent(m_Actor, target, intent, food); return; }
             string kind = method == NpcIntentMethod.GatherFood ? "supplies_delivered" : method == NpcIntentMethod.SeekPerson ? "reunited" :
-                method == NpcIntentMethod.ConfrontPerson ? "confronted" : method == NpcIntentMethod.ReachShelter ? "shelter_reached" : "withdrew";
+                method == NpcIntentMethod.ConfrontPerson ? "confronted" : method == NpcIntentMethod.ReachShelter ?
+                    intent.Generated != null && intent.Generated.Value == NpcGoalValue.ProtectHome ? "home_reached" : "shelter_reached" : "withdrew";
             if (target != null) m_Game.DoSay(m_Actor, target, method == NpcIntentMethod.GatherFood ? "The food was delivered." :
-                method == NpcIntentMethod.SeekPerson ? "There you are. I was looking for you." : "I know what happened. Leave us and our belongings alone.", RogueGame.Sayflags.NONE);
+                method == NpcIntentMethod.SeekPerson ? "There you are. I was looking for you." :
+                m_Actor.Personality.Knowledge.Facts.Exists(f => f.Kind == "promise_broken" && f.EventId == intent.CauseId) ?
+                    "You promised to help. What happened?" : "I know what happened. Leave us and our belongings alone.", RogueGame.Sayflags.NONE);
             else m_Game.DoWait(m_Actor);
             NpcIntentSystem.Finish(m_Actor, intent, NpcIntentStatus.Completed, kind == "withdrew" ? "withdrew from the last reported location" : kind);
             NpcIntentSystem.Publish(m_Game, kind, m_Actor, target, intent.CauseId, intent.StoryId);

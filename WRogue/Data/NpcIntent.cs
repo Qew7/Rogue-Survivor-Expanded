@@ -51,6 +51,8 @@ namespace djack.RogueSurvivor.Data
         public readonly long CauseId;
         public readonly int Deadline;
         public readonly NpcKnownPerson ReportedPerson;
+        public Location ResourcePlace;
+        public string Resource, OtherStory;
         public NpcReaction(Actor target, string text, long causeId, int turn, string kind = "aid_acknowledged", string storyId = null, NpcKnownPerson report = null)
         { TargetId = target.PersonalityIdentity; Text = text; CauseId = causeId; Deadline = turn + 30; Kind = kind; StoryId = storyId; ReportedPerson = report; }
     }

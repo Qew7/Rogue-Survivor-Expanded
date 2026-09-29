@@ -1,3 +1,4 @@
+using System;
 using djack.RogueSurvivor.Data;
 using djack.RogueSurvivor.Engine.Items;
 using djack.RogueSurvivor.Gameplay.AI;
@@ -41,7 +42,15 @@ namespace djack.RogueSurvivor.Engine
             if (NpcIntentSystem.CanSee(this, actor, target))
                 DoSay(actor, target, intent.DefinitionId == NpcIntentContent.Repay.Id ?
                     "You helped me before. Here, take this food." : "Here, I can spare some food.", Sayflags.IS_FREE_ACTION);
-            NpcPlanExecution.Publish(this, "shared_food", actor, target, intent);
+            SignificantEvent transferred = NpcPlanExecution.Publish(this, "shared_food", actor, target, intent);
+            NpcSocialSystem.Delivery(this, actor, target, "food", transferred.Id, intent.StoryId);
+            if (intent.Generated != null && intent.Generated.Value == NpcGoalValue.Restitution)
+            {
+                NpcKnownPerson owner = actor.Personality.Knowledge.Person(target.PersonalityIdentity);
+                if (owner != null) owner.LossUnits = Math.Max(0, owner.LossUnits - 1);
+                NpcPlanExecution.Publish(this, "restitution_given", actor, target, intent);
+                if (owner != null && owner.LossUnits > 0) { intent.Plan.Invalidate(); intent.Plan.NextPlanningTurn = actor.Location.Map.LocalTime.TurnCounter; return; }
+            }
             if (definition.Method == NpcIntentMethod.GatherFood)
             { intent.Progress = 2; return; }
             if (intent.Generated != null && intent.Generated.Value == NpcGoalValue.Reciprocity &&

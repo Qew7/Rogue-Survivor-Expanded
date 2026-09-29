@@ -38,7 +38,10 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public static SignificantEvent Publish(RogueGame game, string kind, Actor owner, Actor other, NpcIntent goal)
         {
             long cause = goal.Plan != null && goal.Plan.LastEventId > 0 ? goal.Plan.LastEventId : goal.CauseId;
-            SignificantEvent source = NpcIntentSystem.Publish(game, kind, owner, other, cause, goal.StoryId);
+            var source = new SignificantEvent(kind, owner, other, owner.Location.Map, owner.Location.Position,
+                owner.Location.Map.LocalTime.TurnCounter, causeId: cause, storyId: goal.StoryId)
+                { Resource = goal.Generated == null ? null : goal.Generated.Resource, ResourcePlace = goal.Generated == null ? default(Location) : goal.Generated.ObjectPlace };
+            PersonalitySystem.Report(game, source);
             if (goal.Plan != null) goal.Plan.LastEventId = source.Id;
             return source;
         }

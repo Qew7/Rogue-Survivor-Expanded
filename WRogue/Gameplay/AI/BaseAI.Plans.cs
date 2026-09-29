@@ -68,10 +68,25 @@ namespace djack.RogueSurvivor.Gameplay.AI
                 else if (step.Action == NpcPlanAction.PickupFood)
                     food = NpcPlanExecution.FoodOnGround(game, m_Actor, step.Place);
                 else if (step.Action == NpcPlanAction.GiveFood && person != null) food = NpcIntentSystem.SpareFood(game, m_Actor, person);
+                if (step.Action == NpcPlanAction.PickupFood || step.Action == NpcPlanAction.PickupMedicine || step.Action == NpcPlanAction.PickupValuedItem)
+                {
+                    bool allowed; ActorAction dispute = ResourceAccess(game, goal, step, visible,
+                        step.Action == NpcPlanAction.PickupMedicine ? "medicine" : step.Action == NpcPlanAction.PickupFood ? "food" : "item", out allowed);
+                    if (dispute != null) return dispute;
+                    if (!allowed) { plan.Reject(step, turn); domain = new NpcPlanDomain(game, m_Actor, goal, visible); continue; }
+                }
+                if (step.Action == NpcPlanAction.AskMedicine || step.Action == NpcPlanAction.GiveMedicine || step.Action == NpcPlanAction.TreatPerson)
+                { var aid = new ActionNpcAid(m_Actor, game, goal, step, person); if (aid.IsLegal()) return aid; }
+                if (step.Action == NpcPlanAction.BarterMedicine)
+                { var barter = new ActionNpcMedicineTrade(m_Actor, game, goal, step, person); if (barter.IsLegal()) return barter; }
+                if (step.Action == NpcPlanAction.PickupValuedItem)
+                { var pickup = new ActionNpcValuedItem(m_Actor, game, goal, step); if (pickup.IsLegal()) return pickup; }
+                if (step.Action == NpcPlanAction.DemandRestitution)
+                { var demand = new ActionNpcRestitutionDemand(m_Actor, game, goal, step, person); if (demand.IsLegal()) return demand; }
                 if (step.Action == NpcPlanAction.PickupMedicine || step.Action == NpcPlanAction.UseMedicine)
                 {
                     var medicine = new ActionNpcMedicine(m_Actor, game, goal, step);
-                    if (medicine.IsLegal() && (step.Action != NpcPlanAction.PickupMedicine || Session.Get.NpcDirector.Reserve(goal.StoryId, step.Place))) return medicine;
+                    if (medicine.IsLegal()) return medicine;
                     if (step.Action == NpcPlanAction.PickupMedicine && NpcKnowledgeSystem.Visible(game, m_Actor, step.Place) &&
                         NpcPlanExecution.Medicine(game, m_Actor, step.Place) == null)
                         m_Actor.Personality.Knowledge.RememberPlace(new NpcKnownPlace(step.Place, "medicine", turn));
@@ -84,8 +99,6 @@ namespace djack.RogueSurvivor.Gameplay.AI
                 }
                 if ((step.Action != NpcPlanAction.Travel && step.Action != NpcPlanAction.Retreat || movement != null) && action.IsLegal())
                 {
-                    if (step.Action == NpcPlanAction.PickupFood && !Session.Get.NpcDirector.Reserve(goal.StoryId, step.Place))
-                    { plan.Reject(step, turn); domain = new NpcPlanDomain(game, m_Actor, goal, visible); continue; }
                     return action;
                 }
                 if (step.Action == NpcPlanAction.PickupFood && NpcKnowledgeSystem.Visible(game, m_Actor, step.Place) && food == null)

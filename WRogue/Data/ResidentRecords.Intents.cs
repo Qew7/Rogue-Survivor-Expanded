@@ -25,7 +25,7 @@ namespace djack.RogueSurvivor.Data
             NpcIntentDefinition definition = NpcIntentContent.Find(intent.DefinitionId);
             record.Add("goal:" + intent.Sequence + ":" + state, turn,
                 "Intent " + state + ": " + (intent.Generated != null ? intent.Generated.Description : definition == null ? intent.DefinitionId : definition.Name) + "; target " + targetName +
-                "; " + reason + ". [story " + intent.StoryId + "]", entry);
+                "; " + reason + ". [story " + intent.StoryId + "]", entry, supportingCauses: intent.Generated == null ? null : intent.Generated.Causes);
         }
     }
 }

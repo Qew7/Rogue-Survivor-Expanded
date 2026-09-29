@@ -33,9 +33,11 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 DecisionKind.Explore, DecisionKind.Supplies, DecisionKind.Law, DecisionKind.Courage })
                 Traits = unchecked(Traits * 31 + PersonalitySystem.Bias(owner, kind));
             NpcIntentMethod method = NpcIntentContent.Find(goal.DefinitionId).Method;
-            if (method == NpcIntentMethod.RestoreHealth) { Medicine(); return; }
+            if (method == NpcIntentMethod.RestoreHealth || method == NpcIntentMethod.MedicalAid ||
+                method == NpcIntentMethod.FulfilPromise && goal.Generated != null && goal.Generated.Resource == "medicine") { Medicine(visible); return; }
+            if (method == NpcIntentMethod.ObtainValuedItem) { ValuedItem(); return; }
             bool supply = method == NpcIntentMethod.GatherFood || method == NpcIntentMethod.ShareFood || method == NpcIntentMethod.ObtainFood ||
-                method == NpcIntentMethod.RequestFood;
+                method == NpcIntentMethod.RequestFood || method == NpcIntentMethod.FulfilPromise || method == NpcIntentMethod.RestoreProperty;
             if (supply)
             {
                 foreach (NpcFact offer in owner.Personality.Knowledge.Facts)
@@ -51,6 +53,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 foreach (NpcKnownPlace cache in owner.Personality.Knowledge.Places)
                 {
                     if (cache.Kind != "food" || cache.Units <= 0 || turn - cache.SeenTurn > 180) continue;
+                    if (NpcSocialSystem.RespectRefusal(owner, cache.Place)) continue;
                     ulong at = At(cache.Place); if (at == 0) continue;
                     Travel(cache.Place, Guid.Empty, at);
                     ulong gain = (ulong)NpcPlanFact.Food;
@@ -78,7 +81,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 }
             }
             ulong targetAt = At(goal.LastKnown);
-            if (method == NpcIntentMethod.GatherFood || method == NpcIntentMethod.ShareFood)
+            if (method == NpcIntentMethod.GatherFood || method == NpcIntentMethod.ShareFood || method == NpcIntentMethod.FulfilPromise || method == NpcIntentMethod.RestoreProperty)
             {
                 Travel(goal.LastKnown, goal.TargetId, targetAt);
                 Add(NpcPlanAction.GiveFood, goal.LastKnown, goal.TargetId, targetAt | (ulong)NpcPlanFact.SpareFood,
@@ -97,6 +100,14 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 Travel(goal.LastKnown, goal.TargetId, targetAt, (ulong)NpcPlanFact.LocationKnown);
                 Add(method == NpcIntentMethod.SeekPerson ? NpcPlanAction.Reunite : NpcPlanAction.Warn,
                     goal.LastKnown, goal.TargetId, targetAt | (ulong)NpcPlanFact.LocationKnown, 0, NpcGoalPlanner.Desired(method), 0, 1);
+                if (method == NpcIntentMethod.ConfrontPerson && owner.Personality.HasAttachments && owner.Personality.Attachments.Exists(a => a.Kind == "place" && a.MissingUnits > 0 && a.Resource == "food" && a.Person == goal.TargetId))
+                {
+                    Actions.RemoveAll(a => a.Action == NpcPlanAction.Warn);
+                    Add(NpcPlanAction.Warn, goal.LastKnown, goal.TargetId, targetAt | (ulong)NpcPlanFact.LocationKnown, 0, (ulong)NpcPlanFact.Warned, 0,
+                        5 - PersonalitySystem.Bias(owner, DecisionKind.Courage) / 5 - PersonalitySystem.Bias(owner, DecisionKind.Law) / 10);
+                    Add(NpcPlanAction.DemandRestitution, goal.LastKnown, goal.TargetId, targetAt | (ulong)NpcPlanFact.LocationKnown, 0, (ulong)NpcPlanFact.Warned, 0,
+                        8 - PersonalitySystem.Bias(owner, DecisionKind.Supplies) / 3 - PersonalitySystem.Bias(owner, DecisionKind.Trade) / 3);
+                }
                 if (target == null) foreach (Actor peer in visible)
                 {
                     var question = new Engine.Actions.ActionNpcAskLocation(owner, game, peer, goal);

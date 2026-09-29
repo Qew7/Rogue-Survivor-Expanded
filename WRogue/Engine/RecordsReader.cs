@@ -57,11 +57,12 @@ namespace djack.RogueSurvivor.Engine
             {
                 case RecordsEventFilter.Memories: return kind == "memory" || kind == "resolved" || kind == "initial-trait";
                 case RecordsEventFilter.Combat: return kind == "attack" || kind == "kill_human" || kind == "murder" || kind == "death";
-                case RecordsEventFilter.Help: return kind == "helped" || kind == "shared_food" || kind == "requested_food" || kind == "request_refused" || kind == "aid_acknowledged" || kind == "food_offered" || kind == "bartered_food";
+                case RecordsEventFilter.Help: return kind == "helped" || kind == "shared_food" || kind == "requested_food" || kind == "request_refused" || kind == "aid_acknowledged" || kind == "food_offered" || kind == "bartered_food" ||
+                    kind == "shared_medicine" || kind == "treated_person" || kind == "requested_medicine" || kind == "medicine_offered" || kind == "bartered_medicine" || kind.EndsWith("_promised") || kind.StartsWith("promise_") || kind.StartsWith("restitution_");
                 case RecordsEventFilter.Encounters: return kind.StartsWith("met_unique:", StringComparison.Ordinal) || kind == "met_unique" || kind == "joined_group" || kind == "abandoned" || kind == "left_group";
                 case RecordsEventFilter.World: return RecordsProfile.IsWorld(kind);
                 case RecordsEventFilter.Life: return kind == "spawn" || kind == "death" || kind == "zombified" || kind == "starvation" || kind == "medicine_acquired" || kind == "treated_wounds";
-                case RecordsEventFilter.Intentions: return kind.StartsWith("goal_", StringComparison.Ordinal) || kind == "story_stage" || kind == "knowledge_inferred";
+                case RecordsEventFilter.Intentions: return kind.StartsWith("goal_", StringComparison.Ordinal) || kind == "story_stage" || kind == "knowledge_inferred" || kind == "story_link";
                 default: return true;
             }
         }

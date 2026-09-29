@@ -5,7 +5,8 @@ using djack.RogueSurvivor.Engine;
 
 namespace djack.RogueSurvivor.Gameplay.Personality
 {
-    enum NpcIntentMethod { ShareFood, RequestFood, LeaveGroup, SeekPerson, AvoidPerson, ConfrontPerson, GatherFood, ReachShelter, Coordinate, ObtainFood, RestoreHealth }
+    enum NpcIntentMethod { ShareFood, RequestFood, LeaveGroup, SeekPerson, AvoidPerson, ConfrontPerson, GatherFood, ReachShelter, Coordinate, ObtainFood, RestoreHealth,
+        MedicalAid, FulfilPromise, RestoreProperty, ObtainValuedItem }
     sealed class NpcIntentWeight
     {
         public readonly DecisionKind Axis;
@@ -62,6 +63,10 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public static readonly NpcIntentDefinition Request = Add(new NpcIntentDefinition("request_food", "Ask for food",
             NpcIntentMethod.RequestFood, 35, 20, 60, 180, 1,
             new NpcIntentWeight(DecisionKind.Group, 1), new NpcIntentWeight(DecisionKind.Trade, 1, 2)));
+        public static readonly NpcIntentDefinition MedicalAid = Add(new NpcIntentDefinition("medical_aid", "Meet a person's medical need", NpcIntentMethod.MedicalAid, 25, 20, 180, 60, 1));
+        public static readonly NpcIntentDefinition Promise = Add(new NpcIntentDefinition("fulfil_promise", "Fulfil a promise", NpcIntentMethod.FulfilPromise, 35, 20, 180, 0, 1));
+        public static readonly NpcIntentDefinition Restitution = Add(new NpcIntentDefinition("restore_property", "Replace lost supplies", NpcIntentMethod.RestoreProperty, 30, 20, 180, 180, 1));
+        public static readonly NpcIntentDefinition ValuedItem = Add(new NpcIntentDefinition("recover_valued_item", "Recover a valued item", NpcIntentMethod.ObtainValuedItem, 25, 20, 180, 180, 0));
         public static readonly NpcIntentDefinition Help = Add(new NpcIntentDefinition("answer_food_request", "Answer a food request",
             NpcIntentMethod.ShareFood, 25, 20, 60, 60, 1,
             new NpcIntentWeight(DecisionKind.Compassion, 1), new NpcIntentWeight(DecisionKind.Trade, 1)));

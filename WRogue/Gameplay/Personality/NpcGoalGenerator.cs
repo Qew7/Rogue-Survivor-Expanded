@@ -48,7 +48,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 if (maintain && !intent.Finished && intent.Generated != null && intent.Generated.Utility < MinimumUtility)
                 {
                     bool satisfied = intent.Generated.Deficit == 0 && (intent.Generated.Value == NpcGoalValue.Nutrition ||
-                        intent.Generated.Value == NpcGoalValue.Care || intent.Generated.Value == NpcGoalValue.Reciprocity || intent.Generated.Value == NpcGoalValue.Recovery);
+                        intent.Generated.Value == NpcGoalValue.Care || intent.Generated.Value == NpcGoalValue.Reciprocity || intent.Generated.Value == NpcGoalValue.Recovery ||
+                        intent.Generated.Value == NpcGoalValue.MedicalCare || intent.Generated.Value == NpcGoalValue.Restitution);
                     NpcIntentSystem.Finish(owner, intent, satisfied ? NpcIntentStatus.Completed : NpcIntentStatus.Abandoned,
                         satisfied ? "observed that the desired state was satisfied" : "motivation changed");
                 }
@@ -81,24 +82,30 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         {
             foreach (NpcIntent intent in owner.Personality.Intents)
                 if (!intent.Finished && ((intent.Generated != null && intent.Generated.Key == candidate.State.Key) ||
-                    (intent.DefinitionId == candidate.Capability.Id && intent.TargetId == candidate.Target.Id) ||
+                    (intent.DefinitionId == candidate.Capability.Id && intent.TargetId == candidate.Target.Id && (intent.Generated == null || candidate.State.Resource == null)) ||
                     (candidate.State.Value == NpcGoalValue.Nutrition && (intent.DefinitionId == NpcIntentContent.Request.Id || intent.DefinitionId == NpcIntentContent.Obtain.Id)))) return true;
             return false;
         }
         static void Start(Actor owner, NpcGoalCandidate candidate)
         {
             int turn = owner.Location.Map.LocalTime.TurnCounter;
-            string id = candidate.Story ?? owner.PersonalityIdentity.ToString("N") + ":" + owner.Personality.NextIntentSequence;
+            string parent = candidate.Story;
             NpcStoryDirector director = Session.Get.NpcDirector;
             lock (director)
             {
+                NpcStory prior = parent == null ? null : director.Find(parent);
+                string id = parent != null && prior != null && !prior.Finished ? parent : owner.PersonalityIdentity.ToString("N") + ":" + owner.Personality.NextIntentSequence;
                 NpcStory story = director.Open(id, candidate.Capability.Id, owner, candidate.Cause, turn + candidate.Capability.Duration,
                     "value:" + owner.PersonalityIdentity + ":" + candidate.State.Key);
                 if (story == null || story.Roles.Count >= 8) return;
                 NpcIntent intent = owner.Personality.StartGeneratedGoal(candidate.Capability.Id, owner, candidate.Target, candidate.State,
                     turn, candidate.Capability.Duration, candidate.Capability.Cooldown, candidate.Cause, id);
                 if (intent == null) return;
+                if (candidate.State.ObjectPlace.Map != null) intent.Destination = candidate.State.ObjectPlace;
                 director.Bind(story, owner, intent);
+                director.Link(story, parent, owner, candidate.Cause);
+                foreach (NpcFact fact in owner.Personality.Knowledge.Facts)
+                    if (candidate.State.Causes != null && Array.IndexOf(candidate.State.Causes, fact.EventId) >= 0) director.Link(story, fact.StoryId, owner, fact.EventId);
                 Session.Get.ResidentRecords.IntentChanged(owner, intent, "started", candidate.State.Explanation);
             }
         }
@@ -112,9 +119,12 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             NpcIntentDefinition capability, int current, int desired, int deficit, int confidence, long cause = 0, string story = null)
         {
             if (list.Count >= 192 || target == null || target.Dead || target.Place.Map == null) return;
-            list.Add(new NpcGoalCandidate { Target = target, Capability = capability, Cause = cause, Story = story,
+            var candidate = new NpcGoalCandidate { Target = target, Capability = capability, Cause = cause, Story = story,
                 State = NpcValues.Evaluate(owner, value, value == NpcGoalValue.Nutrition ? owner.PersonalityIdentity : target.Id,
-                    current, desired, deficit, confidence, NpcGoalPlanner.Desired(capability.Method)) });
+                    current, desired, deficit, confidence, NpcGoalPlanner.Desired(capability.Method)) };
+            candidate.State.Causes = cause > 0 && target.SocialCause > 0 && target.SocialCause != cause ? new[] { cause, target.SocialCause } :
+                cause > 0 ? new[] { cause } : target.SocialCause > 0 ? new[] { target.SocialCause } : new long[0];
+            list.Add(candidate);
         }
     }
 }

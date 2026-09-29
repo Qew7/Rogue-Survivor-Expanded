@@ -13,11 +13,12 @@ namespace djack.RogueSurvivor.Data
         public int EventTurn, LearnedTurn, Confidence, Hops, Units, Risk;
         public Location Place;
         public NpcKnowledgeSource Source;
+        public bool NoSubjectLocation;
         public NpcFact Retell(Guid speaker, int turn, int confidence)
         {
             return new NpcFact { EventId = EventId, Kind = Kind, SubjectName = SubjectName, OtherName = OtherName,
                 StoryId = StoryId, SubjectId = SubjectId, OtherId = OtherId, SourceId = speaker, EventTurn = EventTurn,
-                LearnedTurn = turn, Confidence = confidence, Hops = Hops + 1, Units = Units, Risk = Risk, Place = Place, Source = NpcKnowledgeSource.Told };
+                LearnedTurn = turn, Confidence = confidence, Hops = Hops + 1, Units = Units, Risk = Risk, Place = Place, Source = NpcKnowledgeSource.Told, NoSubjectLocation = NoSubjectLocation };
         }
     }
     [Serializable]
@@ -37,6 +38,13 @@ namespace djack.RogueSurvivor.Data
         public int ViolationTurn, ViolationConfidence;
         public long ViolationCause;
         public long AcknowledgedViolation;
+        public int MedicalNeed, MedicalTurn, MedicalConfidence, Wounds, FactionId = -1;
+        public Guid GroupId;
+        public long MedicalCause;
+        public string MedicalStory;
+        public int LossUnits;
+        public long LossCause;
+        public Location LossPlace;
     }
     [Serializable]
     sealed class NpcKnownPlace
@@ -79,6 +87,8 @@ namespace djack.RogueSurvivor.Data
             if (person == null || person.Place != actor.Location || person.Dead != actor.IsDead) Revision++;
             if (person == null) { People.Add(person = new NpcKnownPerson { Id = actor.PersonalityIdentity }); Trim(People, 32); }
             person.Name = actor.UnmodifiedName; person.Place = actor.Location; person.SeenTurn = turn; person.Dead = actor.IsDead;
+            person.FactionId = actor.Faction == null ? -1 : actor.Faction.ID;
+            person.GroupId = actor.SocialGroup == null ? Guid.Empty : actor.SocialGroup.Identity;
             person.Confidence = 100; person.Source = NpcKnowledgeSource.Witness;
         }
         public void RememberPlace(NpcKnownPlace place)
@@ -101,6 +111,10 @@ namespace djack.RogueSurvivor.Data
                 person.ViolationTurn = old.ViolationTurn; person.ViolationConfidence = old.ViolationConfidence; person.ViolationCause = old.ViolationCause;
                 person.AcknowledgedViolation = old.AcknowledgedViolation;
                 person.SocialCause = old.SocialCause; person.ReciprocityTurn = old.ReciprocityTurn;
+                person.MedicalNeed = old.MedicalNeed; person.MedicalTurn = old.MedicalTurn; person.MedicalConfidence = old.MedicalConfidence;
+                person.Wounds = old.Wounds; person.MedicalCause = old.MedicalCause; person.MedicalStory = old.MedicalStory;
+                person.FactionId = old.FactionId; person.GroupId = old.GroupId;
+                person.LossUnits = old.LossUnits; person.LossCause = old.LossCause; person.LossPlace = old.LossPlace;
                 People.Remove(old);
             }
             People.Add(person); Trim(People, 32); Revision++; return true;

@@ -52,7 +52,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                         Math.Min(100, Math.Max(0, opinion.Debt - desired) * 10), 100, person.SocialCause);
                 }
                 int danger = turn - person.ThreatTurn <= 180 ? person.Danger : 0;
-                int violation = turn - (person.ViolationConfidence == 0 ? person.ThreatTurn : person.ViolationTurn) <= 180 ? person.Violation : 0;
+                int violation = person.Violation;
                 bool near = person.Place.Map == owner.Location.Map && game.Rules.GridDistance(owner.Location.Position, person.Place.Position) < 5;
                 if (danger > 0 && (near || Pending(owner, NpcGoalValue.Safety, person.Id)))
                     Add(result, owner, person, NpcGoalValue.Safety, NpcIntentContent.Avoid, danger, 0, danger, person.ThreatConfidence, person.ThreatCause);
@@ -66,6 +66,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                     (turn - person.SeenTurn >= 30 || Pending(owner, NpcGoalValue.Belonging, person.Id)))
                     Add(result, owner, person, NpcGoalValue.Belonging, NpcIntentContent.Seek, 0, 100, 100, person.Confidence);
             }
+            SocialGoals(game, owner, result, self, people);
             return result;
         }
     }

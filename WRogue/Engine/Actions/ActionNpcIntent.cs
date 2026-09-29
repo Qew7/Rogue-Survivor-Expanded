@@ -40,7 +40,9 @@ namespace djack.RogueSurvivor.Engine.Actions
         public ActionNpcReaction(Actor actor, RogueGame game, NpcReaction reaction, Actor target) : base(actor, game)
         { this.reaction = reaction; this.target = target; }
         public override bool IsLegal()
-        { return NpcIntentSystem.Enabled(m_Actor) && reaction != null && target != null &&
+        { return NpcIntentSystem.Enabled(m_Actor) && reaction != null && target != null && target.Personality != null &&
+            ((reaction.Kind != "food_promised" && reaction.Kind != "medicine_promised") ||
+                m_Actor.Personality.CanRememberCommitment && target.Personality.CanRememberCommitment) &&
             target.PersonalityIdentity == reaction.TargetId && !m_Actor.IsSleeping && !target.IsSleeping &&
             m_Actor.Personality.Reactions.Contains(reaction) && m_Actor.Location.Map.LocalTime.TurnCounter <= reaction.Deadline &&
             NpcIntentSystem.CanSee(m_Game, m_Actor, target) && !m_Game.Rules.AreEnemies(m_Actor, target); }
@@ -49,7 +51,11 @@ namespace djack.RogueSurvivor.Engine.Actions
             if (!IsLegal()) return;
             m_Game.DoSay(m_Actor, target, reaction.Text, RogueGame.Sayflags.NONE);
             m_Actor.Personality.Reactions.Remove(reaction);
-            SignificantEvent source = NpcIntentSystem.Publish(m_Game, reaction.Kind, m_Actor, target, reaction.CauseId, reaction.StoryId);
+            var source = new SignificantEvent(reaction.Kind, m_Actor, target, m_Actor.Location.Map, m_Actor.Location.Position,
+                m_Actor.Location.Map.LocalTime.TurnCounter, causeId: reaction.CauseId, storyId: reaction.StoryId)
+                { ResourcePlace = reaction.ResourcePlace, Resource = reaction.Resource };
+            PersonalitySystem.Report(m_Game, source);
+            if (reaction.Kind == "resource_yielded") Session.Get.NpcDirector.ReleaseOwned(reaction.ResourcePlace, m_Actor.PersonalityIdentity);
             if (reaction.ReportedPerson != null) NpcKnowledgeSystem.HearLocation(target, m_Actor, reaction.ReportedPerson, source.Id);
         }
     }

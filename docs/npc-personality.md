@@ -155,10 +155,16 @@ faction feelings. Groups are named after their leader. The screen displays
 only the player's records and qualitative feelings, never another actor's
 private memories or opinions. The list persists in the saved player actor.
 
-The catalog contains 50 starting and 62 advanced traits. Advanced traits
+The catalog contains 50 starting and 64 advanced traits. Advanced traits
 are available only through memory resolution and require an existing trait.
 `likes_items` and `dislikes_items` each take an item model ID; pistol, shotgun,
 magazine, or any other defined item model uses the same trait definition.
+
+Promises, resource disputes, acquired `reliable` and `disillusioned` traits,
+specific possession and home attachments, and causal continuations are described
+in [npc-social-stories.md](npc-social-stories.md). Reports affect reputation with
+confidence discounting. An overdue promise is a private assessment until someone
+actually tells it to others.
 
 ## Experiences with unique characters, factions, and world events
 

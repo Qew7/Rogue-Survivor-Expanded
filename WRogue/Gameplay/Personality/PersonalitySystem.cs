@@ -190,6 +190,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                         game.Rules.ActorFOV(observer, lifeEvent.Map.LocalTime, game.Session.World.Weather) &&
                     LOS.CanTraceViewLine(observer.Location, lifeEvent.Position);
                 if (!direct && !saw) continue;
+                if (!direct && lifeEvent.Kind == "promise_kept" && (observer.Personality == null || !observer.Personality.Knowledge.Facts.Exists(f =>
+                    f.EventId == lifeEvent.CauseId && (f.Kind == "food_promised" || f.Kind == "medicine_promised")))) continue;
                 if (observer.IsPlayer && observer.Personality == null)
                     observer.Personality = new PersonalityState();
                 if (lifeEvent.Kind.StartsWith("met_unique:"))
@@ -213,6 +215,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                     lifeEvent.Id, lifeEvent.CauseId, lifeEvent.StoryId);
                 if (!observer.Personality.Remember(observation)) continue;
                 NpcKnowledgeSystem.Observe(game, observer, lifeEvent, direct);
+                NpcSocialSystem.Observe(game, observer, lifeEvent, direct);
                 Session.Get.ResidentRecords.Observe(observer, observation);
                 foreach (MemoryInstance memory in observer.Personality.Memories)
                 {

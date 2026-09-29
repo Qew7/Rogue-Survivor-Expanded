@@ -2,6 +2,14 @@ namespace djack.RogueSurvivor.Data
 {
     sealed partial class ResidentRecords
     {
+        public void LinkStory(Actor actor, string parent, string child, long cause)
+        {
+            if (parent == null || child == null || parent == child) return;
+            ResidentRecord record = Register(actor); if (record == null) return;
+            int turn = actor.Location.Map.LocalTime.TurnCounter;
+            record.Add("link:" + parent + ":" + child, turn, "Continuation of [story " + parent + "] in [story " + child + "]; cause " + cause + ".",
+                new ObservedEvent("story_link", turn, actor.UnmodifiedName, null, true, causeId: cause, storyId: child));
+        }
         public void InferredMissing(Actor actor, NpcFact fact)
         {
             ResidentRecord record = Register(actor); if (record == null) return;

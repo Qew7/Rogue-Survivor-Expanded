@@ -120,6 +120,14 @@ new urgent needs can replace weaker generated goals. Recovery uses remembered
 medicine and actual treatment. Read Records retains each goal's state and utility
 explanation, and saves preserve its subject and cooldown.
 
+Interactions include scarce-resource disputes, actual concessions or refusals,
+promises with deadlines, direct treatment or medicine gifts, food-loss compensation
+and attachments to people, specific possessions and home. Replies and outcomes
+alter later goals; reputation includes personal, group and faction history.
+Completed episodes can cause connected later episodes. See
+[docs/npc-social-stories.md](docs/npc-social-stories.md) for mechanics and scenarios.
+Gameplay keeps memories private; Read Records retains retrospective causal history.
+
 The **Expanded** preset enables claimable bases. Stand inside an enclosed
 building and press **Ctrl+B** to preview its boundaries; press **Y** to claim
 it. Hostile actors and undead block their rooms. Fortified passages can connect

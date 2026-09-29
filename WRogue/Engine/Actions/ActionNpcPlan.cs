@@ -59,6 +59,7 @@ namespace djack.RogueSurvivor.Engine.Actions
                 m_Game.DoTakeItem(m_Actor, step.Place.Position, food, causeId: plan.LastEventId > 0 ? plan.LastEventId : goal.CauseId, storyId: goal.StoryId);
                 if (m_Actor.Inventory.TotalReceived <= before) { plan.Reject(step, turn); return; }
                 if (goal.Progress < 1) goal.Progress = 1;
+                NpcSocialSystem.Taken(m_Game, m_Actor, goal, step.Place, "food");
                 NpcPlanExecution.Publish(m_Game, "supplies_acquired", m_Actor, null, goal);
                 if (plan.Desired == (ulong)NpcPlanFact.Food && NpcIntentSystem.HasFood(m_Game, m_Actor))
                     NpcIntentSystem.Finish(m_Actor, goal, NpcIntentStatus.Completed, "actually acquired usable food");

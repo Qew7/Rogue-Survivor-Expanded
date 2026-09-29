@@ -17,11 +17,12 @@ namespace djack.RogueSurvivor.Data
         public readonly Guid SubjectId, OtherId;
         public readonly long EventId, CauseId;
         public readonly string StoryId;
+        public readonly long[] SupportingCauses;
         public ResidentEntry(int turn, string text, int sequence, string kind = "note", bool direct = false,
             Guid subjectId = default(Guid), Guid otherId = default(Guid), bool gainedTrait = false,
-            long eventId = 0, long causeId = 0, string storyId = null)
+            long eventId = 0, long causeId = 0, string storyId = null, long[] supportingCauses = null)
         { Turn = turn; Text = text; Sequence = sequence; Kind = kind; Direct = direct; SubjectId = subjectId; OtherId = otherId; GainedTrait = gainedTrait;
-            EventId = eventId; CauseId = causeId; StoryId = storyId; }
+            EventId = eventId; CauseId = causeId; StoryId = storyId; SupportingCauses = supportingCauses; }
     }
 
     [Serializable]
@@ -40,7 +41,7 @@ namespace djack.RogueSurvivor.Data
             Name = actor.UnmodifiedName;
             SpawnTurn = actor.SpawnTime;
         }
-        public void Add(string key, int turn, string text, ObservedEvent observed = null, bool gainedTrait = false)
+        public void Add(string key, int turn, string text, ObservedEvent observed = null, bool gainedTrait = false, long[] supportingCauses = null)
         {
             if (m_Keys.ContainsKey(key)) return;
             m_Keys.Add(key, true);
@@ -48,7 +49,7 @@ namespace djack.RogueSurvivor.Data
             m_Entries.Add(new ResidentEntry(turn, text, m_Entries.Count, observed == null ? kind : observed.Kind,
                 observed != null && observed.Direct, observed == null ? Guid.Empty : observed.SubjectId,
                 observed == null ? Guid.Empty : observed.OtherId, gainedTrait,
-                observed == null ? 0 : observed.EventId, observed == null ? 0 : observed.CauseId, observed == null ? null : observed.StoryId));
+                observed == null ? 0 : observed.EventId, observed == null ? 0 : observed.CauseId, observed == null ? null : observed.StoryId, supportingCauses));
         }
     }
 
@@ -150,6 +151,7 @@ namespace djack.RogueSurvivor.Data
         }
         static string EventText(ObservedEvent e)
         {
+            string social = SocialText(e); if (social != null) return social;
             string special = PersonalityWorldContent.EventName(e.Kind);
             if (special != null) return special +
                 (e.Subject == null ? "." : ": " + e.Subject + ".");
