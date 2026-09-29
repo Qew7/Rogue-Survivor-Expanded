@@ -10,13 +10,15 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public string Id { get { return "possessions"; } }
         public void Register(NpcCatalogBuilder catalog)
         {
+            catalog.OperatorSource(new NpcOperatorSource("item.acquire", c => (ulong)NpcPlanFact.ValuedItem, PossessionPlanOperators.Build,
+                available: d => d.Goal.Generated != null && d.Goal.Generated.ModelId >= 0));
             catalog.Resource(new NpcResourceDefinition("item", (g, a) => a.HitPoints < g.Rules.ActorMaxHPs(a)));
             catalog.GoalSource(this);
             catalog.Value(new NpcValueDefinition("Possession", "Recover a valued kind of item", NpcGoalValue.Possession, m => 30 + m.Supplies, false)
                 { IdentitySuffix = g => ":" + g.ModelId + ":" + g.ItemId.ToString("N") });
-            catalog.Value(new NpcValueDefinition("ProtectHome", "Return to threatened shelter", NpcGoalValue.ProtectHome, m => 25 + m.Group + m.Supplies, false));
+            catalog.Value(new NpcValueDefinition("ProtectHome", "Return to threatened shelter", NpcGoalValue.ProtectHome, m => 25 + m.Group + m.Supplies, false) { ArrivalEvent = "home_reached" });
             var valueditem = new NpcIntentDefinition("recover_valued_item", "Recover a valued item", NpcIntentMethod.ObtainValuedItem, 25, 20, 180, 180, 0);
-            valueditem.BuildPlan = d => { PossessionPlanOperators.Build(d); };
+
             valueditem.Result = (c, g) => (ulong)(NpcPlanFact.ValuedItem);
             catalog.Capability(valueditem);
             RegisterContent(catalog);

@@ -54,6 +54,7 @@ namespace djack.RogueSurvivor.Data
         public int Cursor, Revision, Traits, NextPlanningTurn, Expanded;
         public long LastEventId;
         [System.Runtime.Serialization.OptionalField] public int CatalogFingerprint;
+        [System.Runtime.Serialization.OptionalField] public List<string> CompletedFacts;
         public NpcPlanStep Current { get { return Cursor < Steps.Count ? Steps[Cursor] : null; } }
         public void Invalidate() { Steps.Clear(); Cursor = 0; }
         public bool Blocked(NpcPlanStep step, int turn)
@@ -65,6 +66,6 @@ namespace djack.RogueSurvivor.Data
             Failures.Add(new NpcPlanFailure { Action = step.Action, OperatorId = step.OperatorId, Target = step.Target, Place = step.Place, Until = turn + 30 });
             Invalidate(); NextPlanningTurn = turn;
         }
-        public void Release() { Invalidate(); Failures.Clear(); }
+        public void Release() { Invalidate(); Failures.Clear(); if (CompletedFacts != null) CompletedFacts.Clear(); }
     }
 }

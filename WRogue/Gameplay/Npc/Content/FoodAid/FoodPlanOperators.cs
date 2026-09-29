@@ -18,8 +18,9 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             if (d.Goal.Progress >= 2) d.Initial |= (ulong)NpcPlanFact.Delivered;
             if (d.Goal.Announced) d.Initial |= (ulong)NpcPlanFact.Requested;
         }
-        public static void Build(NpcPlanDomain d, bool allowTarget, bool deliver, bool report = false)
+        public static void Acquisition(NpcPlanDomain d)
         {
+            bool allowTarget = (d.Desired & (ulong)NpcPlanFact.Delivered).Empty;
             int food = 0;
             foreach (Item item in d.Owner.Inventory.Items)
                 if (item is ItemFood && !item.IsEquipped && !d.Game.Rules.IsFoodSpoiled((ItemFood)item, d.Turn)) food += item.Quantity;
@@ -62,17 +63,13 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                     d.Add(NpcPlanAction.AskFood, peer.Location, peer.PersonalityIdentity, at | (ulong)NpcPlanFact.Food,
                         asked | (ulong)NpcPlanFact.SpareFood, asked | (ulong)NpcPlanFact.SpareFood, 0, cost);
                 }
-            if (!deliver) return;
+        }
+        public static void Delivery(NpcPlanDomain d)
+        {
             ulong targetAt = d.At(d.Goal.LastKnown);
                 d.Travel(d.Goal.LastKnown, d.Goal.TargetId, targetAt);
                 d.Add(NpcPlanAction.GiveFood, d.Goal.LastKnown, d.Goal.TargetId, targetAt | (ulong)NpcPlanFact.SpareFood,
                     (ulong)NpcPlanFact.Delivered, (ulong)NpcPlanFact.Delivered, (ulong)NpcPlanFact.SpareFood, 2);
-                if (report && d.Goal.CoordinatorPlace.Map != null)
-                {
-                    ulong at = d.At(d.Goal.CoordinatorPlace); d.Travel(d.Goal.CoordinatorPlace, d.Goal.CoordinatorId, at);
-                    d.Add(NpcPlanAction.ReportDelivery, d.Goal.CoordinatorPlace, d.Goal.CoordinatorId,
-                        at | (ulong)NpcPlanFact.Delivered, 0, (ulong)NpcPlanFact.Reported, 0, 2);
-                }
         }
     }
 }

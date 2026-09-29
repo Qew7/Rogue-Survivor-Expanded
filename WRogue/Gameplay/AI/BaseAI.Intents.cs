@@ -25,6 +25,11 @@ namespace djack.RogueSurvivor.Gameplay.AI
             NpcIntentSystem.Maintain(game, m_Actor, visible, danger, Order != null);
             return visible;
         }
+        protected ActorAction BehaviorNpcEmergency(RogueGame game, List<Actor> visible)
+        {
+            NpcIntent intent = NpcIntentSystem.Select(m_Actor, catalog: game.NpcContent, dangerOnly: true);
+            return intent == null ? null : BehaviorNpcPlan(game, intent, visible);
+        }
         protected ActorAction BehaviorNpcDeparture(RogueGame game, List<Actor> visible)
         {
             NpcIntent intent = NpcIntentSystem.Select(m_Actor, true, game.NpcContent);

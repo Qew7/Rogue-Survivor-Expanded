@@ -68,14 +68,14 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 }
                 if (definition.Score(owner, intent, game.NpcContent.Personalities) < definition.ThresholdFor(intent))
                 { Finish(owner, intent, NpcIntentStatus.Abandoned, "motivation changed"); continue; }
-                bool pause = !definition.Departure && (danger || followingOrder ||
+                bool pause = !definition.Departure && (danger && !definition.ActDuringDanger || followingOrder ||
                     (definition.PauseWhenTired && game.Rules.IsActorTired(owner)) || (definition.PauseWhenHungry && game.Rules.IsActorHungry(owner)));
                 if (pause) intent.Status = NpcIntentStatus.Paused;
                 else if (intent.Status == NpcIntentStatus.Paused) intent.Status = intent.Announced && definition.WaitingAfterAnnouncement
                     ? NpcIntentStatus.Waiting : NpcIntentStatus.Active;
             }
         }
-        public static NpcIntent Select(Actor owner, bool departureOnly = false, NpcContentCatalog catalog = null)
+        public static NpcIntent Select(Actor owner, bool departureOnly = false, NpcContentCatalog catalog = null, bool dangerOnly = false)
         {
             if (!Enabled(owner) || !owner.Personality.HasIntentState) return null;
             catalog = catalog ?? NpcContentCatalog.Default;
@@ -86,7 +86,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 if (intent.Finished || intent.Status == NpcIntentStatus.Paused || turn < intent.NextAttempt || !definition.Selectable ||
                     (definition.WaitingAfterAnnouncement && intent.Announced &&
                         (intent.Plan == null || !intent.Plan.DesiredState.Equals(definition.GetResult(catalog, intent.Generated))))) continue;
-                if (departureOnly && !definition.Departure) continue;
+                if (departureOnly && !definition.Departure || dangerOnly && !definition.ActDuringDanger) continue;
                 int score = definition.Score(owner, intent, catalog.Personalities);
                 if (best == null || score > bestScore || (score == bestScore && intent.Sequence < best.Sequence))
                 { best = intent; bestScore = score; }

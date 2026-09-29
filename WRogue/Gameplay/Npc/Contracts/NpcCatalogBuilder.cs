@@ -11,6 +11,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         internal readonly Dictionary<string, NpcValueDefinition> Values = new Dictionary<string, NpcValueDefinition>();
         internal readonly Dictionary<string, NpcIntentDefinition> Capabilities = new Dictionary<string, NpcIntentDefinition>();
         internal readonly Dictionary<string, NpcOperatorDefinition> Operators = new Dictionary<string, NpcOperatorDefinition>();
+        internal readonly Dictionary<string, NpcOperatorSource> OperatorSources = new Dictionary<string, NpcOperatorSource>();
         internal readonly List<INpcGoalSource> Sources = new List<INpcGoalSource>();
         internal readonly List<Action<NpcPlanDomain>> Seeds = new List<Action<NpcPlanDomain>>();
         internal readonly List<string> Facts = new List<string>();
@@ -27,6 +28,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         internal readonly Dictionary<int, NpcFactionPolicy> Factions = new Dictionary<int, NpcFactionPolicy>();
         internal readonly Dictionary<string, NpcResourceDefinition> Resources = new Dictionary<string, NpcResourceDefinition>();
         internal readonly Dictionary<string, int> Revisions = new Dictionary<string, int>();
+        internal readonly Dictionary<string, NpcCollectiveDefinition> Collectives = new Dictionary<string, NpcCollectiveDefinition>();
+        internal readonly Dictionary<string, NpcInterestDefinition> Interests = new Dictionary<string, NpcInterestDefinition>();
         bool built;
         public NpcCatalogBuilder(PersonalityRegistry personalities) { this.personalities = personalities; }
         void Writable() { if (built) throw new InvalidOperationException("NPC catalog is already built."); }
@@ -43,6 +46,12 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public void Value(NpcValueDefinition value) { Writable(); Put(Values, value.Id, value); }
         public void Capability(NpcIntentDefinition capability) { Writable(); Put(Capabilities, capability.Id, capability); }
         public void Operator(NpcOperatorDefinition action) { Writable(); Put(Operators, action.Id, action); }
+        public void Interest(NpcInterestDefinition definition)
+        { Writable(); if (definition.Observe == null || definition.Evaluate == null) throw new ArgumentException("Incomplete lasting interest."); Put(Interests, definition.Id, definition); }
+        public void Collective(NpcCollectiveDefinition definition)
+        { Writable(); if (definition.Propose == null || definition.Accept == null || definition.Message == null || definition.CanCommunicate == null) throw new ArgumentException("Incomplete collective task."); Put(Collectives, definition.Id, definition); }
+        public void OperatorSource(NpcOperatorSource source)
+        { Writable(); if (source.Produces == null || source.Bind == null) throw new ArgumentException("Missing operator-source contract."); Put(OperatorSources, source.Id, source); }
         public void FactionPolicy(int id, NpcFactionPolicy policy)
         { Writable(); if (id < 0 || policy == null || Factions.ContainsKey(id)) throw new ArgumentException("Invalid or duplicate faction policy."); Factions.Add(id, policy); }
         public void Clock(NpcClockPhase phase, Action<NpcClockContext> observer)
@@ -83,8 +92,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 foreach (string id in value.CooldownAliases) if (!Capabilities.ContainsKey(id)) throw new ArgumentException("Unknown cooldown alias: " + id);
             }
             foreach (NpcIntentDefinition capability in Capabilities.Values)
-                if (capability.Selectable && (capability.BuildPlan == null || (capability.Result == null && capability.ResultFacts == null)))
-                    throw new ArgumentException("Missing plan or result: " + capability.Id);
+                if (capability.Selectable && capability.Result == null && capability.ResultFacts == null)
+                    throw new ArgumentException("Missing desired result: " + capability.Id);
             foreach (NpcOperatorDefinition op in Operators.Values) if (op.Execute == null) throw new ArgumentException("Missing executor: " + op.Id);
             foreach (MemoryDefinition memory in personalities.AllMemories)
             {
@@ -111,6 +120,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 if (!Events.TryGetValue(subscription.Kind, out definition)) throw new ArgumentException("Unknown completion event: " + subscription.Kind);
                 definition.SubscribeCompletion(subscription.Observer);
             }
+            foreach (NpcCollectiveDefinition collective in Collectives.Values)
+                if (!Events.ContainsKey(collective.EventId)) throw new ArgumentException("Unknown collective communication event: " + collective.EventId);
             foreach (NpcEventDefinition definition in Events.Values) definition.Freeze();
             NpcContentCatalog catalog = new NpcContentCatalog(this);
             built = true; return catalog;

@@ -22,6 +22,9 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         }
         public NpcPlanningState Mask(string id)
         { NpcPlanningState flag; if (!flags.TryGetValue(id, out flag)) throw new ArgumentException("Unknown plan fact: " + id); return flag; }
+        public bool TryMask(string id, out NpcPlanningState mask) { return flags.TryGetValue(id, out mask); }
+        public IEnumerable<string> Names(NpcPlanningState state)
+        { foreach (var pair in flags) if (state.Contains(pair.Value)) yield return pair.Key; }
         public ulong this[string id]
         { get { NpcPlanningState flag = Mask(id); if (flag.Extended) throw new ArgumentException("Use the symbolic mask API for extended facts."); return flag.Low; } }
         public static ulong Location(int index)

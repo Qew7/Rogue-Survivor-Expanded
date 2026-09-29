@@ -23,8 +23,9 @@ sealed class NpcRestContent : INpcContentModule, INpcGoalSource
         rest.PauseWhenTired = false;
         rest.WaitingAfterAnnouncement = waitingAfterAnnouncement;
         rest.ResultFacts = (c, g) => c.Facts.Mask("rest.fact.11");
-        rest.BuildPlan = d => d.Add("rest", d.Owner.Location, d.Owner.PersonalityIdentity,
-            default(NpcPlanningState), d.Catalog.Facts.Mask("rest.fact.11"), d.Catalog.Facts.Mask("rest.fact.11"), default(NpcPlanningState), 1);
+        catalog.OperatorSource(new NpcOperatorSource("rest", c => c.Facts.Mask("rest.fact.11"), d => d.Add("rest",
+            d.Owner.Location, d.Owner.PersonalityIdentity, default(NpcPlanningState), d.Catalog.Facts.Mask("rest.fact.11"),
+            d.Catalog.Facts.Mask("rest.fact.11"), default(NpcPlanningState), 1)));
         catalog.Capability(rest);
         catalog.Operator(new NpcOperatorDefinition("rest", null, c => new RestAction(c)));
         catalog.GoalSource(this);

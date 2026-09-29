@@ -17,6 +17,11 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         readonly Dictionary<string, NpcEventDefinition> events;
         public readonly IList<INpcGoalSource> GoalSources;
         public readonly IList<Action<NpcPlanDomain>> PlanSeeds;
+        public readonly IList<NpcOperatorSource> OperatorSources;
+        readonly Dictionary<string, NpcCollectiveDefinition> collectives;
+        public readonly IList<NpcCollectiveDefinition> Collectives;
+        readonly Dictionary<string, NpcInterestDefinition> interests;
+        public readonly IList<NpcInterestDefinition> Interests;
         public readonly PersonalityRegistry Personalities;
         public readonly IList<INpcActionGuard> ActionGuards;
         public readonly NpcFactLayout Facts;
@@ -33,7 +38,13 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             values = new Dictionary<string, NpcValueDefinition>(builder.Values);
             capabilities = new Dictionary<string, NpcIntentDefinition>(builder.Capabilities);
             operators = new Dictionary<string, NpcOperatorDefinition>(builder.Operators);
+            var sources = new List<NpcOperatorSource>(builder.OperatorSources.Values);
+            sources.Sort((a, b) => String.CompareOrdinal(a.Id, b.Id)); OperatorSources = sources.AsReadOnly();
             events = new Dictionary<string, NpcEventDefinition>(builder.Events);
+            interests = new Dictionary<string, NpcInterestDefinition>(builder.Interests);
+            var lasting = new List<NpcInterestDefinition>(interests.Values); lasting.Sort((a, b) => String.CompareOrdinal(a.Id, b.Id)); Interests = lasting.AsReadOnly();
+            collectives = new Dictionary<string, NpcCollectiveDefinition>(builder.Collectives);
+            var tasks = new List<NpcCollectiveDefinition>(collectives.Values); tasks.Sort((a, b) => String.CompareOrdinal(a.Id, b.Id)); Collectives = tasks.AsReadOnly();
             ActionGuards = builder.Guards.AsReadOnly(); GoalSources = builder.Sources.AsReadOnly(); PlanSeeds = builder.Seeds.AsReadOnly();
             foreach (NpcValueDefinition value in values.Values) if (value.LegacyValue.HasValue) legacyValues.Add(value.LegacyValue.Value, value);
             foreach (NpcOperatorDefinition op in operators.Values) if (op.LegacyAction.HasValue) legacyOperators.Add(op.LegacyAction.Value, op);
@@ -47,6 +58,9 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             foreach (string id in values.Keys) keys.Add("value:" + id);
             foreach (string id in capabilities.Keys) keys.Add("capability:" + id);
             foreach (string id in operators.Keys) keys.Add("operator:" + id);
+            foreach (string id in builder.OperatorSources.Keys) keys.Add("operator-source:" + id);
+            foreach (string id in interests.Keys) keys.Add("interest:" + id);
+            foreach (string id in collectives.Keys) keys.Add("collective:" + id);
             foreach (string id in events.Keys) keys.Add("event:" + id);
             foreach (string id in resources.Keys) keys.Add("resource:" + id);
             foreach (TraitDefinition trait in Personalities.AllTraits) keys.Add("trait:" + trait.Id);
@@ -57,6 +71,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             foreach (string key in keys) foreach (char c in key) hash = unchecked(hash * 31 + c);
             Fingerprint = hash;
         }
+        public NpcInterestDefinition Interest(string id) { NpcInterestDefinition value; return id != null && interests.TryGetValue(id, out value) ? value : null; }
+        public NpcCollectiveDefinition Collective(string id) { NpcCollectiveDefinition value; return id != null && collectives.TryGetValue(id, out value) ? value : null; }
         public NpcResourceDefinition Resource(string id) { NpcResourceDefinition value; return id != null && resources.TryGetValue(id, out value) ? value : null; }
         public NpcValueDefinition Value(string id) { NpcValueDefinition value; return id != null && values.TryGetValue(id, out value) ? value : null; }
         public NpcValueDefinition Value(NpcGoalValue id) { NpcValueDefinition value; return legacyValues.TryGetValue(id, out value) ? value : null; }

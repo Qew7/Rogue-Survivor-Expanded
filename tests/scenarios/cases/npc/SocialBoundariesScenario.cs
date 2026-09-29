@@ -23,7 +23,7 @@ static class SocialBoundariesScenario
             NpcIntent goal = NpcStorySystem.StartKnown(carer, carer.Personality.Knowledge.Person(hidden.PersonalityIdentity), NpcIntentContent.MedicalAid);
             var step = new NpcPlanStep { Action = NpcPlanAction.TreatPerson, Target = hidden.PersonalityIdentity, Place = hidden.Location };
             goal.Plan = new NpcPlan(); goal.Plan.Steps.Add(step);
-            var action = new ActionNpcAid(carer, world.Game, goal, step, hidden);
+            var action = world.Game.NpcContent.Operator(step).Execute(new NpcExecutionContext(world.Game, carer, goal, step, new[] { hidden }, null));
             Check.Equal(false, action.IsLegal(), "remembering a person does not permit remote treatment"); action.Perform();
             Check.Equal(1, carer.Inventory.CountItems, "invalid aid consumes no medicine");
             Check.Equal(false, NpcIntentSupport.HasEvent(carer, "treated_person"), "invalid aid emits no consequence");

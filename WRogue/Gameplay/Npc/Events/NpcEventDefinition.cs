@@ -20,6 +20,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public Func<Actor, SignificantEvent, bool> CanWitness, CanObserve;
         public Func<SignificantEvent, Actor> PrivateAudience;
         public bool OncePerSubject, ProvesDeath;
+        public Func<Actor, Actor, bool> CanReply;
         public Func<djack.RogueSurvivor.Engine.RogueGame, NpcStory, SignificantEvent, string> StoryStage;
         readonly List<Action<NpcObservation>>[] observers = {
             new List<Action<NpcObservation>>(), new List<Action<NpcObservation>>(),

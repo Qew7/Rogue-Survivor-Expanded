@@ -13,12 +13,24 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             catalog.Operator(new NpcOperatorDefinition("travel", NpcPlanAction.Travel, Travel));
             catalog.Operator(new NpcOperatorDefinition("retreat", NpcPlanAction.Retreat, Retreat));
         }
+        static ActorAction Wrap(NpcExecutionContext context, ActorAction movement)
+        {
+            var c = new NpcActionContext(context);
+            return c.Action(() => movement.IsLegal(), () => {
+                movement.Perform();
+                NpcIntentDefinition definition = c.Capability;
+                bool arrived = context.Step.Action == NpcPlanAction.Retreat ?
+                    c.Goal.LastKnown.Map != c.Owner.Location.Map || c.Game.Rules.GridDistance(c.Owner.Location.Position, c.Goal.LastKnown.Position) >= 5 :
+                    NpcPlanExecution.Near(c.Game, c.Owner, context.Step.Place) && (definition.TravelArrived == null || definition.TravelArrived(c.Owner));
+                if (arrived && c.Goal.Plan.Current == context.Step) c.Goal.Plan.Cursor++;
+            });
+        }
         static ActorAction Travel(NpcExecutionContext context)
         {
             NpcIntentDefinition capability = context.Game.NpcContent.Capability(context.Goal.DefinitionId);
             Location place = capability.TravelDestination == null ? context.Step.Place : capability.TravelDestination(context);
             ActorAction movement = context.Route == null ? null : context.Route(place);
-            return movement == null ? null : context.PlanAction(movement: movement);
+            return movement == null ? null : Wrap(context, movement);
         }
         static ActorAction Retreat(NpcExecutionContext context)
         {
@@ -33,7 +45,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 ActorAction move = game.Rules.IsBumpableFor(owner, game, place);
                 if (move is ActionMoveStep && move.IsLegal()) { movement = move; distance = d; }
             }
-            return movement == null ? null : context.PlanAction(movement: movement);
+            return movement == null ? null : Wrap(context, movement);
         }
     }
 }

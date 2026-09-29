@@ -12,10 +12,12 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             catalog.Clock(NpcClockPhase.MapTurn, c => NpcPromises.Expire(c.Owner, c.Game.NpcContent));
             catalog.Clock(NpcClockPhase.BeforeDecision, c => NpcPromises.Expire(c.Owner, c.Game.NpcContent));
             catalog.GoalSource(this);
-            catalog.Value(new NpcValueDefinition("Commitment", "Fulfil an outstanding promise", NpcGoalValue.Commitment, m => 70 + m.Law + m.Compassion + m.Feeling / 4, false));
+            catalog.Value(new NpcValueDefinition("Commitment", "Fulfil an outstanding promise", NpcGoalValue.Commitment, m => 70 + m.Law + m.Compassion + m.Feeling / 4, false) { AfterDelivery = ctx => ctx.Owner.Personality.HasCommitments &&
+                System.Linq.Enumerable.Any(ctx.Owner.Personality.Commitments, p => p.Id == ctx.Goal.Generated.ObligationId && p.Status == NpcCommitmentStatus.Active) });
             var promise = new NpcIntentDefinition("fulfil_promise", "Fulfil a promise", NpcIntentMethod.FulfilPromise, 35, 20, 180, 0, 1);
-            promise.BuildPlan = d => { PromisePlanOperators.Build(d); };
+
             promise.Result = (c, g) => (ulong)(NpcPlanFact.Delivered);
+            promise.Resource = "food";
             catalog.Capability(promise);
             RegisterContent(catalog);
         }
@@ -54,8 +56,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             catalog.AfterEvent("shared_medicine", (g, e) => { if (e.Subject != null && e.Subject.Personality != null && e.Other != null) NpcPromises.Delivery(g, e.Subject, e.Other, "medicine", e.Id, e.StoryId); });
             catalog.OnReport("promise_kept", c => NpcReputation.Reputation(c, true, false, false));
             catalog.OnReport("promise_broken", c => NpcReputation.Reputation(c, false, true, false));
-            catalog.Event(new NpcEventDefinition("food_promised", NpcRecordCategory.Help, true, e => (e.Subject ?? "Someone") + " promised to bring food to " + (e.Other ?? "someone") + " within 180 turns.", null));
-            catalog.Event(new NpcEventDefinition("medicine_promised", NpcRecordCategory.Help, true, e => (e.Subject ?? "Someone") + " promised to bring medicine to " + (e.Other ?? "someone") + " within 180 turns.", null));
+            catalog.Event(new NpcEventDefinition("food_promised", NpcRecordCategory.Help, true, e => (e.Subject ?? "Someone") + " promised to bring food to " + (e.Other ?? "someone") + " within 180 turns.", null) { CanReply = (a, b) => a.Personality.CanRememberCommitment && b.Personality.CanRememberCommitment });
+            catalog.Event(new NpcEventDefinition("medicine_promised", NpcRecordCategory.Help, true, e => (e.Subject ?? "Someone") + " promised to bring medicine to " + (e.Other ?? "someone") + " within 180 turns.", null) { CanReply = (a, b) => a.Personality.CanRememberCommitment && b.Personality.CanRememberCommitment });
             catalog.Event(new NpcEventDefinition("promise_kept", NpcRecordCategory.Help, true, e => (e.Subject ?? "Someone") + " fulfilled their promise to " + (e.Other ?? "someone") + ".", f => f.SubjectName + " kept a promise") { CanWitness = (a, e) => a.Personality != null && a.Personality.Knowledge.Facts.Exists(f => f.EventId == e.CauseId && (f.Kind == "food_promised" || f.Kind == "medicine_promised")) });
             catalog.Event(new NpcEventDefinition("promise_broken", NpcRecordCategory.Help, false, e => (e.Other ?? "someone") + " concluded that " + (e.Subject ?? "Someone") + "'s promise was overdue.", f => f.SubjectName + " did not meet a promise's deadline", isPrivate: true) { PrivateAudience = e => e.Other });
             catalog.Event(new NpcEventDefinition("promise_released", NpcRecordCategory.Help, false, e => (e.Subject ?? "Someone") + " explicitly released " + (e.Other ?? "someone") + " from a promise.", null));
@@ -65,7 +67,6 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             catalog.On("medicine_promised", NpcObservationPhase.Relationships, OnRelationships);
             catalog.On("promise_kept", NpcObservationPhase.Relationships, OnRelationships);
             catalog.On("promise_released", NpcObservationPhase.Relationships, OnRelationships);
-            catalog.On("restitution_given", NpcObservationPhase.Relationships, OnRelationships);
             catalog.On("shared_food", NpcObservationPhase.Relationships, OnRelationships);
             catalog.On("shared_medicine", NpcObservationPhase.Relationships, OnRelationships);
         }
@@ -83,7 +84,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                     GroupName = source.Subject.SocialGroup == null ? null : source.Subject.SocialGroup.LeaderName,
                     FactionId = source.Subject.Faction.ID, FactionName = source.Subject.Faction.Name,
                     Resource = source.Kind == "food_promised" ? "food" : "medicine", DueTurn = source.Turn + 180, StoryId = source.StoryId });
-            if (owner.Personality.HasCommitments && (source.Kind == "shared_food" || source.Kind == "shared_medicine" || source.Kind == "restitution_given"))
+            if (owner.Personality.HasCommitments && (source.Kind == "shared_food" || source.Kind == "shared_medicine"))
                 foreach (NpcCommitment promise in owner.Personality.Commitments)
                     if (promise.Status == NpcCommitmentStatus.Active && source.Subject != null && source.Other != null &&
                         promise.Promisor == source.Subject.PersonalityIdentity && promise.Beneficiary == source.Other.PersonalityIdentity &&

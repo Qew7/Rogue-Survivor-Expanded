@@ -78,10 +78,10 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             if (learned && fact.OtherId != Guid.Empty && listener.Personality.Knowledge.Person(fact.OtherId) == null)
                 listener.Personality.Knowledge.LearnPerson(new NpcKnownPerson { Id = fact.OtherId, Name = fact.OtherName, Place = fact.Place,
                     SeenTurn = fact.EventTurn, Confidence = confidence, Source = NpcKnowledgeSource.Told });
-            if (learned) game.NpcContent.Hear(new NpcReportContext(listener, fact, improvement));
+            if (learned) game.NpcContent.Hear(new NpcReportContext(listener, fact, improvement, game.NpcContent));
             return learned;
         }
-        public static void HearLocation(Actor listener, Actor speaker, NpcKnownPerson report, long eventId)
+        public static void HearLocation(Actor listener, Actor speaker, NpcKnownPerson report, long eventId, NpcContentCatalog catalog)
         {
             if (listener.Personality == null) listener.Personality = new PersonalityState();
             var learned = new NpcKnownPerson { Id = report.Id, Name = report.Name, Place = report.Place, SeenTurn = report.SeenTurn,
@@ -90,7 +90,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             listener.Personality.Knowledge.Learn(new NpcFact { Kind = "person_location", EventId = eventId, SubjectId = report.Id,
                 SubjectName = report.Name, Place = report.Place, Confidence = learned.Confidence, Source = NpcKnowledgeSource.Told,
                 SourceId = speaker.PersonalityIdentity, EventTurn = report.SeenTurn, LearnedTurn = listener.Location.Map.LocalTime.TurnCounter });
-            if (accepted && learned.Dead) NpcGoalLifecycle.KnownDeath(listener, learned.Id, "companion was reported dead");
+            if (accepted && learned.Dead) NpcGoalLifecycle.KnownDeath(listener, learned.Id, "companion was reported dead", catalog);
         }
     }
 }

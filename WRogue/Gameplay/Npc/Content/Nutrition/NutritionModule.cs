@@ -10,26 +10,30 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public string Id { get { return "nutrition"; } }
         public void Register(NpcCatalogBuilder catalog)
         {
+            catalog.OperatorSource(new NpcOperatorSource("food.acquire", c => (ulong)(NpcPlanFact.Food | NpcPlanFact.SpareFood), FoodPlanOperators.Acquisition));
             catalog.Event(new NpcEventDefinition("food_cache", describeReport: f => "there was food"));
             catalog.OnReport("food_cache", c => c.RememberPlace("food"));
-            catalog.Resource(new NpcResourceDefinition("food", (g, a) => g.Rules.IsActorHungry(a), d => FoodPlanOperators.Build(d, false, true)));
+            catalog.Resource(new NpcResourceDefinition("food", (g, a) => g.Rules.IsActorHungry(a)));
             catalog.GoalSource(this);
             catalog.Value(new NpcValueDefinition("Nutrition", "Have usable food", NpcGoalValue.Nutrition, m => 70, true, "request_food") { EquivalentCapabilities = new[] { "request_food", "obtain_food" } });
             var obtain = new NpcIntentDefinition("obtain_food", "Obtain usable food",
             NpcIntentMethod.ObtainFood, 35, 20, 180, 180, 0, new NpcIntentWeight(DecisionKind.Explore, 1),
             new NpcIntentWeight(DecisionKind.Supplies, 1), new NpcIntentWeight(DecisionKind.Group, -1, 2));
-            obtain.BuildPlan = d => { FoodPlanOperators.Build(d, true, false); };
+
             obtain.Result = (c, g) => (ulong)(NpcPlanFact.Food);
             obtain.Assess = (g, a, i) => !g.Rules.IsActorHungry(a) || NpcFoodSupply.HasFood(g, a) ? new NpcIntentOutcome(NpcIntentStatus.Completed, "observed that usable food is available") : null;
+            obtain.Resource = "food";
             catalog.Capability(obtain);
             var request = new NpcIntentDefinition("request_food", "Ask for food",
             NpcIntentMethod.RequestFood, 35, 20, 60, 180, 1,
             new NpcIntentWeight(DecisionKind.Group, 1), new NpcIntentWeight(DecisionKind.Trade, 1, 2));
-            request.BuildPlan = d => { FoodPlanOperators.Build(d, true, false); };
+
             request.Result = (c, g) => (ulong)(NpcPlanFact.Food);
             request.CompleteEpisodeOnSuccess = true;
             request.WaitingAfterAnnouncement = true;
             request.Assess = (g, a, i) => !g.Rules.IsActorHungry(a) || NpcFoodSupply.HasFood(g, a) ? new NpcIntentOutcome(NpcIntentStatus.Completed, "food need was satisfied") : null;
+            request.Resource = "food";
+            request.DirectAction = NpcFoodActions.Request;
             catalog.Capability(request);
             RegisterContent(catalog);
         }
@@ -58,8 +62,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             catalog.Perception(NpcPerceptionKind.Items, PerceiveItems);
             RegisterEvents(catalog);
             catalog.PlanSeed(FoodPlanOperators.Seed);
-            catalog.Operator(new NpcOperatorDefinition("food.take", NpcPlanAction.PickupFood, c => c.PlanAction(NpcPlanExecution.FoodOnGround(c.Game, c.Owner, c.Step.Place)), "food", NpcContentActions.FoodUnavailable));
-            catalog.Operator(new NpcOperatorDefinition("food.ask", NpcPlanAction.AskFood, c => c.PlanAction()));
+            catalog.Operator(new NpcOperatorDefinition("food.take", NpcPlanAction.PickupFood, c => NpcFoodActions.Take(new NpcActionContext(c)), "food", NpcContentActions.FoodUnavailable));
+            catalog.Operator(new NpcOperatorDefinition("food.ask", NpcPlanAction.AskFood, c => NpcFoodActions.Request(new NpcActionContext(c))));
             catalog.Operator(new NpcOperatorDefinition("food.trade", NpcPlanAction.BarterFood, c => new ActionNpcBarter(c.Owner, c.Game, c.Goal, c.Step, c.Target)));
             catalog.Memory(new MemoryDefinition("traded_for_food", "Exchanged supplies for food", 2, 5,
                 new[] { new MemoryTrigger("bartered_food", (a, e) => a == e.Subject) },

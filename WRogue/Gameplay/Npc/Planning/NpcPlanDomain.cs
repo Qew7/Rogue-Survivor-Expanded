@@ -23,6 +23,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public readonly int Turn;
         public readonly IList<Actor> Visible;
         public readonly NpcContentCatalog Catalog;
+        public NpcPlanningState Desired { get { return Catalog.Capability(Goal.DefinitionId).GetResult(Catalog, Goal.Generated); } }
+        public string Resource { get { return Goal.Generated != null && Goal.Generated.Resource != null ? Goal.Generated.Resource : Catalog.Capability(Goal.DefinitionId).Resource; } }
         public NpcPlanDomain(RogueGame game, Actor owner, NpcIntent goal, IList<Actor> visible, NpcContentCatalog catalog = null)
         {
             Game = game; Owner = owner; Goal = goal; Visible = visible; plan = goal.Plan;
@@ -31,6 +33,9 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 DecisionKind.Explore, DecisionKind.Supplies, DecisionKind.Law, DecisionKind.Courage })
                 Traits = unchecked(Traits * 31 + PersonalitySystem.Bias(owner, kind, registry: Catalog.Personalities));
             foreach (Action<NpcPlanDomain> seed in Catalog.PlanSeeds) seed(this);
+            if (plan != null && plan.CompletedFacts != null) foreach (string name in plan.CompletedFacts)
+            { NpcPlanningState mask; if (Catalog.Facts.TryMask(name, out mask)) InitialState |= mask; }
+            NpcPlanComposition.Build(this);
             NpcIntentDefinition capability = Catalog.Capability(goal.DefinitionId);
             if (capability != null && capability.BuildPlan != null) capability.BuildPlan(this);
         }

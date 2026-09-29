@@ -32,6 +32,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public readonly string[] CooldownAliases;
         public string[] EquivalentCapabilities = new string[0];
         public Func<NpcGeneratedGoal, string> IdentitySuffix;
+        public Func<NpcActionContext, bool> AfterDelivery;
+        public string ArrivalEvent;
         public NpcValueDefinition(string id, string description, NpcGoalValue? legacy,
             Func<NpcMotivation, int> importance, bool completeWhenSatisfied = false, params string[] cooldownAliases)
         {

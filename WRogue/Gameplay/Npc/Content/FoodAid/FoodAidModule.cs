@@ -9,23 +9,30 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public string Id { get { return "foodaid"; } }
         public void Register(NpcCatalogBuilder catalog)
         {
+            catalog.OperatorSource(new NpcOperatorSource("food.deliver", c => (ulong)NpcPlanFact.Delivered, FoodPlanOperators.Delivery,
+                c => (ulong)NpcPlanFact.SpareFood, d => d.Resource == null || d.Resource == "food"));
             catalog.GoalSource(this);
             catalog.Value(new NpcValueDefinition("Care", "Provide needed food", NpcGoalValue.Care, m => 10 + m.Compassion + Math.Min(0, m.Trade) + m.Feeling / 4 + m.Attachment / 4 + Math.Max(0, m.Group) / 10, true));
-            catalog.Value(new NpcValueDefinition("Reciprocity", "Reduce a personal debt", NpcGoalValue.Reciprocity, m => 25 + m.Compassion + m.Trade + m.Feeling / 2, true));
+            catalog.Value(new NpcValueDefinition("Reciprocity", "Reduce a personal debt", NpcGoalValue.Reciprocity, m => 25 + m.Compassion + m.Trade + m.Feeling / 2, true)
+                { AfterDelivery = c => c.Owner.Personality.Person(c.Target.PersonalityIdentity) != null && c.Owner.Personality.Person(c.Target.PersonalityIdentity).Debt > c.Goal.Generated.Desired });
             var repay = new NpcIntentDefinition("repay_aid", "Repay remembered aid",
             NpcIntentMethod.ShareFood, 25, 20, 2 * WorldTime.TURNS_PER_DAY, WorldTime.TURNS_PER_DAY, 1,
             new NpcIntentWeight(DecisionKind.Compassion, 1), new NpcIntentWeight(DecisionKind.Trade, 1));
-            repay.BuildPlan = d => { FoodPlanOperators.Build(d, false, true); };
+
             repay.Result = (c, g) => (ulong)(NpcPlanFact.Delivered);
             repay.PauseWhenHungry = true;
             repay.SocialPriority = r => r.Debt / 2;
+            repay.Resource = "food";
+            repay.DirectAction = NpcFoodActions.Give;
             catalog.Capability(repay);
             var help = new NpcIntentDefinition("answer_food_request", "Answer a food request",
             NpcIntentMethod.ShareFood, 25, 20, 60, 60, 1,
             new NpcIntentWeight(DecisionKind.Compassion, 1), new NpcIntentWeight(DecisionKind.Trade, 1));
-            help.BuildPlan = d => { FoodPlanOperators.Build(d, false, true); };
+
             help.Result = (c, g) => (ulong)(NpcPlanFact.Delivered);
             help.PauseWhenHungry = true;
+            help.Resource = "food";
+            help.DirectAction = NpcFoodActions.Give;
             catalog.Capability(help);
             RegisterContent(catalog);
         }
@@ -54,7 +61,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         void RegisterContent(NpcCatalogBuilder catalog)
         {
             RegisterEvents(catalog);
-            catalog.Operator(new NpcOperatorDefinition("food.give", NpcPlanAction.GiveFood, c => c.PlanAction(c.Target == null ? null : NpcFoodSupply.SpareFood(c.Game, c.Owner, c.Target))));
+            catalog.Operator(new NpcOperatorDefinition("food.give", NpcPlanAction.GiveFood, c => NpcFoodActions.Give(new NpcActionContext(c))));
             catalog.Memory(new MemoryDefinition("refused_aid", "A request for aid was declined", 2, 6,
                 new[] { new MemoryTrigger("request_refused", (a, e) => a == e.Other) },
                 new MemoryOutcome(null, "mistrustful", null), new MemoryOutcome(null, null, Skills.IDs.CHARISMATIC))

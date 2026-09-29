@@ -76,7 +76,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             int turn = owner.Location.Map.LocalTime.TurnCounter;
             if (generated == null ? !owner.Personality.CanStartIntent(definition.Id, turn) : !owner.Personality.CanGenerateGoal(generated.Key, turn)) return null;
             RelationshipRecord opinion = owner.Personality.Person(target.Id); int attitude = opinion == null ? 0 : opinion.Feeling;
-            int score = generated == null ? definition.ScoreKnown(owner, attitude, owner.Leader != null && owner.Leader.PersonalityIdentity == target.Id) + definition.SocialScore(owner, target.Id) : generated.Utility;
+            int score = generated == null && definition.AssignedScore != null ? definition.AssignedScore(owner, target.Id) : generated == null ? definition.ScoreKnown(owner, attitude, owner.Leader != null && owner.Leader.PersonalityIdentity == target.Id) + definition.SocialScore(owner, target.Id) : generated.Utility;
             if (score < (generated == null ? definition.Threshold : NpcGoalGenerator.MinimumUtility)) return null;
             NpcStoryDirector director = Session.Get.NpcDirector;
             lock (director)
@@ -103,10 +103,16 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 return intent;
             }
         }
-        public static void KnownDeath(Actor owner, Guid subject, string reason)
+        public static void KnownDeath(Actor owner, Guid subject, string reason, NpcContentCatalog catalog)
         {
             foreach (NpcIntent intent in owner.Personality.Intents)
-                if (!intent.Finished && intent.TargetId == subject) Finish(owner, intent, NpcIntentStatus.Failed, reason);
+                if (!intent.Finished && intent.TargetId == subject) TargetDied(owner, intent, false, reason, catalog);
+        }
+        public static void TargetDied(Actor owner, NpcIntent intent, bool killedByOwner, string reason, NpcContentCatalog catalog)
+        {
+            NpcIntentDefinition definition = catalog.Capability(intent.DefinitionId);
+            NpcIntentOutcome outcome = definition == null || definition.OnTargetDeath == null ? null : definition.OnTargetDeath(killedByOwner);
+            Finish(owner, intent, outcome == null ? NpcIntentStatus.Failed : outcome.Status, outcome == null ? reason : outcome.Reason);
         }
         public static void Finish(Actor owner, NpcIntent intent, NpcIntentStatus status, string reason)
         {
@@ -114,9 +120,6 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             intent.Status = status; intent.Outcome = reason;
             intent.FinishedTurn = owner.Location.Map == null ? intent.StartedTurn : owner.Location.Map.LocalTime.TurnCounter;
             Session.Get.ResidentRecords.IntentChanged(owner, intent, status.ToString().ToLowerInvariant(), reason);
-            NpcStory story = Session.Get.NpcDirector.Find(intent.StoryId);
-            NpcIntentDefinition definition = story == null ? null : NpcContentCatalog.Default.Capability(story.Template);
-            if (story != null && story.CompletionGoal == null && definition != null && definition.CompleteEpisodeOnSuccess) story.CompletionGoal = definition.Id;
             Session.Get.NpcDirector.Outcome(owner, intent);
             NpcStorySystem.GoalFinished(owner, intent);
             intent.LastKnown = default(Location);

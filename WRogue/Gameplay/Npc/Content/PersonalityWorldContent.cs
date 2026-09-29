@@ -28,9 +28,9 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         {
             public readonly GameFactions.IDs Id;
             public readonly string Key, Name;
-            public readonly int Supply, Shelter;
-            public FactionSource(GameFactions.IDs id, string key, string name, int supply = 0, int shelter = 0)
-            { Id = id; Key = key; Name = name; Supply = supply; Shelter = shelter; }
+            public readonly int Supply, Shelter, Care, Security;
+            public FactionSource(GameFactions.IDs id, string key, string name, int supply = 0, int shelter = 0, int care = 0, int security = 0)
+            { Id = id; Key = key; Name = name; Supply = supply; Shelter = shelter; Care = care; Security = security; }
         }
         static Experience U(string id, string name, string trait, string label, string requires,
             DecisionKind axis, int amount, DecisionKind second, int secondAmount, Skills.IDs skill,
@@ -62,13 +62,13 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             new FactionSource(GameFactions.IDs.TheCHARCorporation, "char", "CHAR Corp.", 5, 15),
             new FactionSource(GameFactions.IDs.TheCivilians, "civilians", "Civilians"),
             new FactionSource(GameFactions.IDs.TheUndeads, "undead", "Undeads"),
-            new FactionSource(GameFactions.IDs.TheArmy, "army", "Army", 15, 5),
+            new FactionSource(GameFactions.IDs.TheArmy, "army", "Army", 15, 5, 10, 25),
             new FactionSource(GameFactions.IDs.TheBikers, "bikers", "Bikers", 10, -5),
             new FactionSource(GameFactions.IDs.TheGangstas, "gangstas", "Gangstas", 10, -5),
-            new FactionSource(GameFactions.IDs.ThePolice, "police", "Police", 15, 5),
+            new FactionSource(GameFactions.IDs.ThePolice, "police", "Police", 15, 5, 15, 25),
             new FactionSource(GameFactions.IDs.TheBlackOps, "blackops", "BlackOps", 5, 15),
             new FactionSource(GameFactions.IDs.ThePsychopaths, "psychopaths", "Psychopaths"),
-            new FactionSource(GameFactions.IDs.TheSurvivors, "survivors", "Survivors"),
+            new FactionSource(GameFactions.IDs.TheSurvivors, "survivors", "Survivors", care: 15, security: 10),
             new FactionSource(GameFactions.IDs.TheFerals, "ferals", "Ferals")
         };
         public static readonly Experience[] WorldEvents = {

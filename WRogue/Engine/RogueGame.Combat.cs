@@ -344,7 +344,7 @@ namespace djack.RogueSurvivor.Engine
             //////////////////////////////////////////////
             #region
             // The Sewers Thing
-            if (deadGuy == m_Session.UniqueActors.TheSewersThing.TheActor)
+            if (m_Session.UniqueActors.TheSewersThing != null && deadGuy == m_Session.UniqueActors.TheSewersThing.TheActor)
             {
                 if (killer == m_Player || killer.Leader == m_Player)
                 {

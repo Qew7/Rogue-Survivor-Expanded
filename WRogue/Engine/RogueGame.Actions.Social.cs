@@ -17,16 +17,20 @@ namespace djack.RogueSurvivor.Engine
             SignificantEvent source = NpcPlanExecution.Publish(this, treat ? "treated_person" : "shared_medicine", actor, target, goal);
             if (treat && previousHP < target.HitPoints && target.Personality != null)
                 foreach (NpcIntent recovery in target.Personality.Intents)
-                    if (!recovery.Finished && recovery.DefinitionId == NpcIntentContent.Recover.Id)
+                    if (!recovery.Finished && NpcContent.Capability(recovery.DefinitionId) != null &&
+                        NpcContent.Capability(recovery.DefinitionId).GetResult(NpcContent, recovery.Generated).Contains((ulong)NpcPlanFact.Healthy))
                     {
                         if (recovery.Generated != null) recovery.Generated.Causes = new[] { source.Id };
                         NpcStory episode = Session.Get.NpcDirector.Find(recovery.StoryId);
                         if (episode != null) Session.Get.NpcDirector.Link(episode, goal.StoryId, target, source.Id);
-                        if (target.HitPoints >= m_Rules.ActorMaxHPs(target)) NpcIntentSystem.Finish(target, recovery, NpcIntentStatus.Completed, "received actual treatment from another person");
+                        if (target.HitPoints >= m_Rules.ActorMaxHPs(target))
+                        {
+                            if (recovery.Plan == null) recovery.Plan = new NpcPlan { DesiredState = NpcContent.Capability(recovery.DefinitionId).GetResult(NpcContent, recovery.Generated) };
+                            new NpcActionContext(this, target, recovery).Done(default(NpcPlanningState), retain: false);
+                        }
                         else if (recovery.Plan != null) { recovery.Plan.Invalidate(); recovery.Plan.NextPlanningTurn = target.Location.Map.LocalTime.TurnCounter; }
                     }
-            if (!treat || target.HitPoints >= m_Rules.ActorMaxHPs(target)) NpcIntentSystem.Finish(actor, goal, NpcIntentStatus.Completed, treat ? "actually treated the wounds" : "actually transferred medicine");
-            else { goal.Plan.Invalidate(); goal.Plan.NextPlanningTurn = actor.Location.Map.LocalTime.TurnCounter; }
+
         }
         internal void DoNpcMedicineTrade(Actor buyer, Actor seller, Item payment, ItemMedicine medicine, NpcIntent goal)
         {

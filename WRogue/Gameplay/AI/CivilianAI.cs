@@ -194,6 +194,9 @@ namespace djack.RogueSurvivor.Gameplay.AI
             }
             // end alpha10
 
+            ActorAction personalIntervention = BehaviorNpcEmergency(game, intentVisible);
+            if (personalIntervention != null) return BehaviorFleeFromExplosives(game, FilterStacks(game, mapPercepts)) ?? personalIntervention;
+
             // 1. Follow order
             ActorAction departure = BehaviorNpcDeparture(game, intentVisible);
             if (departure != null)

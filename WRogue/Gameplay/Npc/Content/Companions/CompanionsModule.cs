@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using djack.RogueSurvivor.Data;
 using djack.RogueSurvivor.Engine;
+using djack.RogueSurvivor.Engine.Actions;
 namespace djack.RogueSurvivor.Gameplay.Personality
 {
     sealed partial class CompanionsModule : INpcContentModule, INpcGoalSource
@@ -9,13 +10,16 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public string Id { get { return "companions"; } }
         public void Register(NpcCatalogBuilder catalog)
         {
+            catalog.OperatorSource(new NpcOperatorSource("person.contact", c => (ulong)NpcPlanFact.Contact, d => CompanionPlanOperators.Build(d, false)));
             catalog.GoalSource(this);
             catalog.Value(new NpcValueDefinition("Belonging", "Restore contact", NpcGoalValue.Belonging, m => 20 + m.Group + m.Compassion / 2 + m.Attachment / 2 + m.Feeling / 2, false));
             var seek = new NpcIntentDefinition("seek_companion", "Find a missing companion",
             NpcIntentMethod.SeekPerson, 20, 35, WorldTime.TURNS_PER_DAY, 180, 1, new NpcIntentWeight(DecisionKind.Group, 1), new NpcIntentWeight(DecisionKind.Compassion, 1, 2));
-            seek.BuildPlan = d => { CompanionPlanOperators.Build(d, false); };
+
             seek.Result = (c, g) => (ulong)(NpcPlanFact.Contact);
             seek.SocialPriority = r => r.Attachment / 2;
+            seek.AllowQuestions = true;
+            seek.DirectAction = NpcContactActions.Reunite;
             catalog.Capability(seek);
             RegisterContent(catalog);
         }
@@ -38,8 +42,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         void RegisterContent(NpcCatalogBuilder catalog)
         {
             RegisterEvents(catalog);
-            catalog.Operator(new NpcOperatorDefinition("person.ask_location", NpcPlanAction.AskLocation, c => c.PlanAction()));
-            catalog.Operator(new NpcOperatorDefinition("person.reunite", NpcPlanAction.Reunite, c => c.PlanAction()));
+            catalog.Operator(new NpcOperatorDefinition("person.ask_location", NpcPlanAction.AskLocation, c => new ActionNpcAskLocation(c.Owner, c.Game, c.Target, c.Goal)));
+            catalog.Operator(new NpcOperatorDefinition("person.reunite", NpcPlanAction.Reunite, c => NpcContactActions.Reunite(new NpcActionContext(c))));
             catalog.Memory(new MemoryDefinition("found_a_companion", "Found a missing companion", 2, 5,
                 new[] { new MemoryTrigger("reunited", (a, e) => a == e.Subject) },
                 new MemoryOutcome(null, "protector", null), new MemoryOutcome(null, null, Skills.IDs.LEADERSHIP))

@@ -61,7 +61,7 @@ namespace djack.RogueSurvivor.Data
                     if (reservedActor != Guid.Empty && story.ReservedActor == reservedActor) return false;
                     if (resource.Map != null && story.Resource == resource) return false;
                 }
-                return local < 4 && total < 16;
+                return local < (key.StartsWith("group:", StringComparison.Ordinal) || key.StartsWith("faction:", StringComparison.Ordinal) ? 5 : 4) && total < 16;
             }
         }
         public NpcStory Open(string id, string template, Actor owner, long cause, int deadline,

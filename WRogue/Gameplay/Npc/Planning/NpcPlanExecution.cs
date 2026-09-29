@@ -8,6 +8,27 @@ namespace djack.RogueSurvivor.Gameplay.Personality
 {
     static class NpcPlanExecution
     {
+        public static void Succeeded(NpcActionContext context, NpcPlanningState observed, bool repeat, bool retain)
+        {
+            NpcIntent goal = context.Goal; if (goal.Finished) return;
+            if (repeat)
+            {
+                goal.Progress = 0;
+                if (goal.Plan != null) { goal.Plan.Invalidate(); if (goal.Plan.CompletedFacts != null) goal.Plan.CompletedFacts.Clear(); goal.Plan.NextPlanningTurn = context.Owner.Location.Map.LocalTime.TurnCounter; }
+                return;
+            }
+            if (goal.Plan == null) { NpcIntentSystem.Finish(context.Owner, goal, NpcIntentStatus.Completed, "performed the intended action"); return; }
+            if (retain && !observed.Empty)
+            {
+                if (goal.Plan.CompletedFacts == null) goal.Plan.CompletedFacts = new System.Collections.Generic.List<string>();
+                foreach (string name in context.Game.NpcContent.Facts.Names(observed))
+                    if (goal.Plan.CompletedFacts.Count < 32 && !goal.Plan.CompletedFacts.Contains(name)) goal.Plan.CompletedFacts.Add(name);
+            }
+            var domain = new NpcPlanDomain(context.Game, context.Owner, goal, context.Visible);
+            if ((domain.InitialState | observed).Contains(goal.Plan.DesiredState))
+                NpcIntentSystem.Finish(context.Owner, goal, NpcIntentStatus.Completed, "actually satisfied the desired state");
+            else if (context.Step != null && goal.Plan.Current == context.Step) goal.Plan.Cursor++;
+        }
         public static bool Owned(RogueGame game, Actor owner, NpcIntent goal)
         {
             if (!NpcIntentSystem.Enabled(owner) || owner.IsSleeping || goal == null || goal.Finished || goal.Status == NpcIntentStatus.Paused ||

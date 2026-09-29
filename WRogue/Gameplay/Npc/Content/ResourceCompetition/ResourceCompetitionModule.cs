@@ -7,7 +7,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
     sealed partial class ResourceCompetitionModule : INpcContentModule, INpcActionGuard
     {
         public string Id { get { return "resource-competition"; } }
-        public void Register(NpcCatalogBuilder catalog) { catalog.ActionGuard(this); RegisterContent(catalog); }
+        public void Register(NpcCatalogBuilder catalog) { catalog.AfterEvent("resource_yielded", (g, e) => { if (e.Subject != null) Session.Get.NpcDirector.ReleaseOwned(e.ResourcePlace, e.Subject.PersonalityIdentity); }); catalog.ActionGuard(this); RegisterContent(catalog); }
         public NpcActionAccess Check(NpcExecutionContext context, NpcOperatorDefinition definition)
         {
             if (definition.Resource == null) return new NpcActionAccess(true);

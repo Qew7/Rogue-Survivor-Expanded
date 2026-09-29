@@ -10,23 +10,28 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public string Id { get { return "safety"; } }
         public void Register(NpcCatalogBuilder catalog)
         {
+            catalog.OperatorSource(new NpcOperatorSource("safety.retreat", c => (ulong)NpcPlanFact.Safe, SafetyPlanOperators.Avoid));
+            catalog.OperatorSource(new NpcOperatorSource("group.leave", c => (ulong)NpcPlanFact.Left, SafetyPlanOperators.Leave));
+            catalog.OperatorSource(new NpcOperatorSource("shelter.reach", c => (ulong)NpcPlanFact.Sheltered, SafetyPlanOperators.Shelter));
             catalog.GoalSource(this);
             catalog.Value(new NpcValueDefinition("Safety", "Reach safety", NpcGoalValue.Safety, m => 20 - m.Courage + m.Fear / 2, false));
             catalog.Value(new NpcValueDefinition("Autonomy", "Leave an unsafe group", NpcGoalValue.Autonomy, m => 40 - m.Group - m.Courage / 2 - Math.Min(2 * Rules.TRUST_TRUSTING_THRESHOLD, Math.Max(0, m.Owner.TrustInLeader)) * 30 / Rules.TRUST_TRUSTING_THRESHOLD, false));
             var avoid = new NpcIntentDefinition("avoid_reported_threat", "Avoid a reported aggressor",
             NpcIntentMethod.AvoidPerson, 20, 35, 180, 180, -1, new NpcIntentWeight(DecisionKind.Courage, -1));
-            avoid.BuildPlan = d => { SafetyPlanOperators.Avoid(d); };
+
             avoid.Result = (c, g) => (ulong)(NpcPlanFact.Safe);
             avoid.AllowHostile = true;
             avoid.SocialPriority = r => r.Fear / 2;
+            avoid.DirectAction = NpcSafetyActions.Confirm;
             catalog.Capability(avoid);
             var leave = new NpcIntentDefinition("leave_unsafe_group", "Leave an unsafe leader",
             NpcIntentMethod.LeaveGroup, 40, 55, WorldTime.TURNS_PER_DAY, WorldTime.TURNS_PER_DAY, -1,
             new NpcIntentWeight(DecisionKind.Group, -1), new NpcIntentWeight(DecisionKind.Courage, -1, 2));
-            leave.BuildPlan = d => { SafetyPlanOperators.Leave(d); };
+
             leave.Result = (c, g) => (ulong)(NpcPlanFact.Left);
             leave.Departure = true; leave.AllowHostile = true;
             leave.Assess = (g, a, i) => a.Leader == null || a.Leader.PersonalityIdentity != i.TargetId ? new NpcIntentOutcome(NpcIntentStatus.Abandoned, "group membership changed") : null;
+            leave.DirectAction = NpcSafetyActions.Leave;
             catalog.Capability(leave);
             RegisterContent(catalog);
         }
@@ -55,9 +60,9 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 known.ThreatTurn = c.Turn; known.ThreatConfidence = 100;
             });
             RegisterEvents(catalog);
-            catalog.Operator(new NpcOperatorDefinition("safety.confirm", NpcPlanAction.ConfirmSafety, c => c.PlanAction()));
-            catalog.Operator(new NpcOperatorDefinition("shelter.enter", NpcPlanAction.EnterShelter, c => c.PlanAction()));
-            catalog.Operator(new NpcOperatorDefinition("group.leave", NpcPlanAction.LeaveGroup, c => new ActionNpcIntent(c.Owner, c.Game, c.Goal, c.Owner.Leader)));
+            catalog.Operator(new NpcOperatorDefinition("safety.confirm", NpcPlanAction.ConfirmSafety, c => NpcSafetyActions.Confirm(new NpcActionContext(c))));
+            catalog.Operator(new NpcOperatorDefinition("shelter.enter", NpcPlanAction.EnterShelter, c => NpcSafetyActions.Shelter(new NpcActionContext(c))));
+            catalog.Operator(new NpcOperatorDefinition("group.leave", NpcPlanAction.LeaveGroup, c => NpcSafetyActions.Leave(new NpcActionContext(c.Game, c.Owner, c.Goal, c.Owner.Leader))));
             catalog.Memory(new MemoryDefinition("left_unsafe_group", "Left an unsafe group", 2, 6,
                 new[] { new MemoryTrigger("left_group", (a, e) => a == e.Subject) },
                 new MemoryOutcome(null, "hermit", null), new MemoryOutcome(null, null, Skills.IDs.STRONG_PSYCHE))

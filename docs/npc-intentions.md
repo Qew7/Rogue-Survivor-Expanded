@@ -5,6 +5,14 @@ persistent intentions, generated desired states, action plans and real AI action
 personal goals, spoken reports, searches, shared group episodes and a bounded story director. It uses
 the existing personality, relationship, action and chronicle systems.
 
+Goals now compose registered operators by their conditions and effects. An
+NPC can maintain a lasting interest in food reserves, a chosen shelter, a
+person's safety or repairing trust, then respond again when circumstances
+change. Group and faction coordinators can propose supply, medicine and
+protection tasks to visible eligible allies. Faction tasks do not change
+follower membership. These are outcomes of needs, traits and known evidence,
+not a fixed sequence of plot scenes.
+
 ## The system as a whole
 
 ```mermaid
@@ -31,6 +39,12 @@ whether the actor can pursue a goal now. A situation may produce different goals
 for its participants: the hungry person asks for aid, the recipient considers
 helping, and either can give up when circumstances change. The player can
 intervene, but an episode can proceed without the player.
+
+Threats invite a trait-dependent reply; an apology may be accepted or refused.
+Defending someone and retaliation use ordinary melee rules, including actual
+damage and death. A leader can expel a known dangerous follower, changing
+membership immediately. Failed or unseen actions do not count as completed
+intentions. Successful acts produce private memories and saved events.
 
 An intention is private. During gameplay the player sees a person approach,
 speak, give food, fight or leave their group. Internal scores, intended actions
@@ -341,19 +355,21 @@ tiles at the remembered shelter; the scene completes after all accepted roles
 actually arrive. A refusal does not silently move the member or fail every
 other participant's goal.
 
-Existing factions contribute to the leader's choice of plan:
+Existing factions contribute to collective choices through registered policy:
 
-| Factions | Supply preference | Shelter preference |
-| --- | --- | --- |
-| Army, Police | +15 | +5 |
-| Bikers, Gangstas | +10 | −5 |
-| CHAR, Black Ops | +5 | +15 |
-| Others | 0 | 0 |
+| Factions | Supplies | Shelter | Care | Security |
+| --- | ---: | ---: | ---: | ---: |
+| Army | +15 | +5 | +10 | +25 |
+| Police | +15 | +5 | +15 | +25 |
+| Bikers, Gangstas | +10 | −5 | 0 | 0 |
+| CHAR, Black Ops | +5 | +15 | 0 | 0 |
+| Survivors | 0 | 0 | +15 | +10 |
+| Others | 0 | 0 | 0 | 0 |
 
 These are additions to personality motivation, not mandatory faction scripts.
-New numeric faction/content IDs are not introduced. Faction interests currently
-operate through their NPC leaders and groups; there is no omniscient faction
-controller issuing town-wide missions.
+A coordinator can also offer a medicine mission to a visible member of the same
+faction without making them a follower. New numeric faction/content IDs are not
+introduced. There is no omniscient faction controller issuing town-wide missions.
 
 Person relationships keep five additional values, each clamped to 0..100:
 trust, fear, attachment, grievance and debt. Needed aid builds trust, attachment
@@ -370,8 +386,9 @@ hearing violence does not create a memory of personally witnessing it.
 
 ## Director and world pacing
 
-The Session owns a saved director. New stories are limited to four concurrently
-active episodes per source map and sixteen globally, with at most eight bound
+The Session owns a saved director. New personal stories are limited to four concurrently
+active episodes per source map; a group or faction proposal can use a fifth local
+slot. The global limit is sixteen, with at most eight bound
 roles per story. Up to 64 recent stories and 128 cooldown keys are retained;
 private archive entries remain available after a director story is evicted.
 Repeating the same owner/target template or group proposal has a 180-turn
@@ -458,8 +475,8 @@ recipient's offer only at the interaction.
 The director retains admission, pacing and reservation duties. It does not
 choose a complete plot or force participants to succeed. Goals and elementary
 actions still require authored mechanics; their runtime combinations, people,
-causes and outcomes produce the story. Intimidation, rescue, reconciliation and
-new resource types are future action content. The named deterministic scenarios
+causes and outcomes produce the story. Registered actions now include real
+defense, retaliation, intimidation, apology and group expulsion. The named deterministic scenarios
 under `tests/scenarios/` verify the implementation; they are not NPC plot scripts.
 
 ## Adding content
@@ -473,8 +490,9 @@ for the contract reference and a complete extension in one file.
    subjects. Perception/report subscriptions update retained beliefs with their
    original evidence age. Common goal lifecycle code handles deduplication,
    satisfaction, cooldowns and terminal cleanup.
-2. Register the capability's desired symbolic facts and plan-building callback,
-   then bind available operators with conditions, effects and costs. A new
+2. Register the capability's desired symbolic facts and reusable operator sources;
+   the composer selects sources from their effects and prerequisites, then binds
+   available operators with conditions, effects and costs. A new
    operator supplies its legal `ActorAction` factory through the catalog;
    new content does not require enum changes or central dispatch branches.
    Publish outcomes only after actual state changes. Shared plans still require
@@ -519,6 +537,16 @@ without a triggering event, actual observed consequences, trait-dependent
 desired results, subject identity, replacement at a full budget, existing
 survival priorities, confidence, disabled/sleep boundaries and save continuation.
 
+Composition and long-run scenarios: `npc/operator-composition`,
+`npc/collective-extension`, `npc/stockpile-interest`,
+`npc/residence-interest-expiry`, `npc/interest-save`,
+`npc/intimidation-response`, `npc/reconciliation`,
+`npc/reconciliation-refusal`, `npc/group-expulsion`,
+`npc/group-protection`, `npc/group-medicine`, `npc/faction-medicine`,
+`npc/retaliation` and `npc/long-run-0/1/2`. These exercise registered
+extensions, real consequences, invalid boundaries, save continuation and
+fourteen-day simulations across three deterministic world variants.
+
 Run named scenarios with `sh tests/scenario.sh <name>`, then
-`docker build --target test .` and `bash tests/e2e.sh`. The E2E script creates an
-isolated Compose project and exercises the new record category through VNC.
+`docker build --target test .`. For startup, UI, input, rendering or asset
+changes, run `bash tests/e2e.sh` in its isolated Compose project.

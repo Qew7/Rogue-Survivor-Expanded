@@ -9,13 +9,13 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public string Id { get { return "core-events"; } }
         public void Register(NpcCatalogBuilder catalog)
         {
-            foreach (var faction in PersonalityWorldContent.Factions) catalog.FactionPolicy((int)faction.Id, new NpcFactionPolicy(faction.Supply, faction.Shelter));
+            foreach (var faction in PersonalityWorldContent.Factions) catalog.FactionPolicy((int)faction.Id, new NpcFactionPolicy(faction.Supply, faction.Shelter, faction.Care, faction.Security));
             catalog.Event(new NpcEventDefinition("craps", NpcRecordCategory.World));
             catalog.Event(new NpcEventDefinition("floods", NpcRecordCategory.World));
             catalog.OnReport("death", c => {
                 NpcKnownPerson person = c.Listener.Personality.Knowledge.Person(c.Fact.SubjectId);
                 bool accepted = person != null && person.Dead && person.Source == NpcKnowledgeSource.Told && person.SeenTurn == c.Fact.EventTurn;
-                if (accepted) NpcGoalLifecycle.KnownDeath(c.Listener, c.Fact.SubjectId, "learned of death through a report");
+                if (accepted) NpcGoalLifecycle.KnownDeath(c.Listener, c.Fact.SubjectId, "learned of death through a report", c.Catalog);
             });
             catalog.Event(new NpcEventDefinition("attack", NpcRecordCategory.Combat, true, e => (e.Other ?? "someone") + " attacked " + (e.Subject ?? "Someone") + ".", null));
             catalog.Event(new NpcEventDefinition("murder", NpcRecordCategory.Combat, true, e => (e.Other ?? "someone") + " murdered " + (e.Subject ?? "Someone") + ".", null));
@@ -48,7 +48,11 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                     if (!intent.Finished && source.Subject != null &&
                         (source.Subject == owner || (intent.Generated != null ? intent.Generated.SubjectId == source.Subject.PersonalityIdentity :
                             intent.TargetId == source.Subject.PersonalityIdentity || intent.CoordinatorId == source.Subject.PersonalityIdentity)))
-                        NpcIntentSystem.Finish(owner, intent, NpcIntentStatus.Failed, source.Subject == owner ? "owner died" : "learned that the target died");
+                        {
+                            if (source.Subject == owner || intent.CoordinatorId == source.Subject.PersonalityIdentity)
+                                NpcIntentSystem.Finish(owner, intent, NpcIntentStatus.Failed, source.Subject == owner ? "owner died" : "coordinator died");
+                            else NpcGoalLifecycle.TargetDied(owner, intent, source.Other == owner, "learned that the target died", observation.Game.NpcContent);
+                        }
                 if (source.Subject == owner) state.Reactions.Clear();
             }
         }

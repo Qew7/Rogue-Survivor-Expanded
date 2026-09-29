@@ -18,8 +18,6 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public NpcExecutionContext(RogueGame game, Actor owner, NpcIntent goal, NpcPlanStep step,
             IList<Actor> visible, Func<Location, ActorAction> route)
         { Game = game; Owner = owner; Goal = goal; Step = step; Visible = visible; Route = route; Target = NpcIntentSystem.VisibleTarget(visible, step.Target); }
-        public ActorAction PlanAction(ItemFood food = null, ActorAction movement = null)
-        { return new ActionNpcPlan(Owner, Game, Goal, Step, Target, food, movement); }
     }
 
     interface INpcActionGuard { NpcActionAccess Check(NpcExecutionContext context, NpcOperatorDefinition action); }

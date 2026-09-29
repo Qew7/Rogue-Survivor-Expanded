@@ -20,7 +20,7 @@ static class StoryDirectorScenario
             for (int i = 0; i < 4; i++) Check.Equal(true, NpcStorySystem.StartKnown(actors[i], known, NpcIntentContent.Seek) != null, "director admits bounded local stories");
             Check.Equal(null, NpcStorySystem.StartKnown(actors[4], known, NpcIntentContent.Seek), "fifth concurrent local story is rejected");
             NpcIntent first = actors[0].Personality.Intents[0];
-            Check.Equal(true, world.Try(new ActionNpcStory(actors[0], world.Game, first, target)), "real reunion completes a slot");
+            Check.Equal(true, world.Try(new ActionNpcIntent(actors[0], world.Game, first, target)), "real reunion completes a slot");
             Check.Equal("completed", Session.Get.NpcDirector.Find(first.StoryId).Stage, "completion releases the active slot");
             Check.Equal(true, NpcStorySystem.StartKnown(actors[4], known, NpcIntentContent.Seek) != null, "another story can use the released slot");
             world.Map.LocalTime.TurnCounter = WorldTime.TURNS_PER_DAY;

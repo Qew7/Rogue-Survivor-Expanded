@@ -17,7 +17,7 @@ static class PlannerBoundariesScenario
             owner.FoodPoints = Session.Get.GamePreset.HungerPoints - 1;
             ActorAction action = owner.Controller.GetAction(world.Game);
             NpcIntent goal = NpcIntentSupport.Intent(owner, "obtain_food");
-            Check.Equal(true, action is ActionNpcPlan && action.IsLegal(), "real controller selects a currently legal plan primitive");
+            Check.Equal(true, action != null && action.IsLegal() && goal.Plan.Current.Action == NpcPlanAction.PickupFood, "real controller selects a currently legal pickup primitive");
             world.Map.RemoveItemAt(food, new Point(2, 1)); int ap = owner.ActionPoints;
             action.Perform();
             Check.Equal(ap, owner.ActionPoints, "stale pickup spends no action points");

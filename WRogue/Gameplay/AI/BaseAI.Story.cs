@@ -13,7 +13,8 @@ namespace djack.RogueSurvivor.Gameplay.AI
     {
         protected ActorAction BehaviorNpcGroupPlans(RogueGame game, List<Actor> visible)
         {
-            NpcGroupPlan plan = NpcStorySystem.ProposeGroupPlan(game, m_Actor, visible); if (plan == null) return null;
+            NpcGroupPlan plan = NpcStorySystem.ProposeGroupPlan(game, m_Actor, visible) ??
+                NpcStorySystem.ProposeFactionPlan(game, m_Actor, visible); if (plan == null) return null;
             Actor listener = NpcIntentSystem.VisibleTarget(visible, plan.CollectorId);
             if (listener == m_Actor || listener == null)
                 listener = visible.Find(a => a.SocialGroup == m_Actor.SocialGroup && !a.IsSleeping);

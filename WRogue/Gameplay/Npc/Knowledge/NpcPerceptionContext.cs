@@ -17,10 +17,11 @@ namespace djack.RogueSurvivor.Gameplay.Personality
     sealed class NpcReportContext
     {
         public readonly Actor Listener;
+        public readonly NpcContentCatalog Catalog;
         public readonly NpcFact Fact;
         public readonly int Improvement;
-        public NpcReportContext(Actor listener, NpcFact fact, int improvement)
-        { Listener = listener; Fact = fact; Improvement = improvement; }
+        public NpcReportContext(Actor listener, NpcFact fact, int improvement, NpcContentCatalog catalog = null)
+        { Listener = listener; Fact = fact; Improvement = improvement; Catalog = catalog ?? NpcContentCatalog.Default; }
         public void RememberPlace(string kind, int minimumConfidence = 40)
         {
             if (Fact.Confidence >= minimumConfidence)

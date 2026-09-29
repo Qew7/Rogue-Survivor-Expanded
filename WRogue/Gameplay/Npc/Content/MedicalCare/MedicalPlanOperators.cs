@@ -8,11 +8,14 @@ namespace djack.RogueSurvivor.Gameplay.Personality
 {
     static class MedicalPlanOperators
     {
-        public static void Build(NpcPlanDomain d, bool self, bool treatment)
+        public static void Seed(NpcPlanDomain d)
         {
             foreach (Item item in d.Owner.Inventory.Items)
                 if (item is ItemMedicine && ((ItemMedicine)item).Healing > 0 && !item.IsEquipped) d.Initial |= (ulong)NpcPlanFact.Medicine;
             if (d.Owner.HitPoints >= d.Game.Rules.ActorMaxHPs(d.Owner)) d.Initial |= (ulong)NpcPlanFact.Healthy;
+        }
+        public static void Acquisition(NpcPlanDomain d)
+        {
             foreach (NpcKnownPlace place in d.Owner.Personality.Knowledge.Places)
             {
                 if (place.Kind != "medicine" || place.Units <= 0 || d.Turn - place.SeenTurn > 180) continue;
@@ -24,19 +27,21 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                     place.Risk * Math.Max(0, 6 + PersonalitySystem.Bias(d.Owner, DecisionKind.Law) / 3));
             }
             Contacts(d);
-            if (self)
-                d.Add(NpcPlanAction.UseMedicine, d.Owner.Location, d.Owner.PersonalityIdentity, (ulong)NpcPlanFact.Medicine,
-                    (ulong)NpcPlanFact.Healthy, (ulong)NpcPlanFact.Healthy, (ulong)NpcPlanFact.Medicine, 1);
-            else
-            {
-                ulong at = d.At(d.Goal.LastKnown); d.Travel(d.Goal.LastKnown, d.Goal.TargetId, at);
-                ulong desired = d.Goal.Generated == null ? (ulong)NpcPlanFact.Helped : d.Goal.Generated.Result;
-                d.Add(NpcPlanAction.GiveMedicine, d.Goal.LastKnown, d.Goal.TargetId, at | (ulong)NpcPlanFact.Medicine, desired,
-                    desired, (ulong)NpcPlanFact.Medicine, 5 + PersonalitySystem.Bias(d.Owner, DecisionKind.Supplies) / 5 - PersonalitySystem.Bias(d.Owner, DecisionKind.Trade) / 5);
-                if (treatment)
-                    d.Add(NpcPlanAction.TreatPerson, d.Goal.LastKnown, d.Goal.TargetId, at | (ulong)NpcPlanFact.Medicine, desired,
-                        desired, (ulong)NpcPlanFact.Medicine, 7 - PersonalitySystem.Bias(d.Owner, DecisionKind.Compassion) / 3 + PersonalitySystem.Bias(d.Owner, DecisionKind.Courage) / 10);
-            }
+        }
+        public static void Healing(NpcPlanDomain d)
+        {
+            d.Add(NpcPlanAction.UseMedicine, d.Owner.Location, d.Owner.PersonalityIdentity, (ulong)NpcPlanFact.Medicine,
+                (ulong)NpcPlanFact.Healthy, (ulong)NpcPlanFact.Healthy, (ulong)NpcPlanFact.Medicine, 1);
+        }
+        public static void Aid(NpcPlanDomain d)
+        {
+            ulong at = d.At(d.Goal.LastKnown); d.Travel(d.Goal.LastKnown, d.Goal.TargetId, at);
+            ulong result = (d.Desired & (ulong)NpcPlanFact.Helped).Empty ? (ulong)NpcPlanFact.Delivered : (ulong)NpcPlanFact.Helped;
+            d.Add(NpcPlanAction.GiveMedicine, d.Goal.LastKnown, d.Goal.TargetId, at | (ulong)NpcPlanFact.Medicine, result,
+                result, (ulong)NpcPlanFact.Medicine, 5 + PersonalitySystem.Bias(d.Owner, DecisionKind.Supplies) / 5 - PersonalitySystem.Bias(d.Owner, DecisionKind.Trade) / 5);
+            if (result == (ulong)NpcPlanFact.Helped)
+                d.Add(NpcPlanAction.TreatPerson, d.Goal.LastKnown, d.Goal.TargetId, at | (ulong)NpcPlanFact.Medicine, result,
+                    result, (ulong)NpcPlanFact.Medicine, 7 - PersonalitySystem.Bias(d.Owner, DecisionKind.Compassion) / 3 + PersonalitySystem.Bias(d.Owner, DecisionKind.Courage) / 10);
         }
         static void Contacts(NpcPlanDomain d)
         {

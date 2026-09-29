@@ -57,11 +57,14 @@ civilian controller selects it in `npc/content-module`.
 | `Trait`, `Memory` | Decision-axis effects, prerequisites, triggers, evidence and ordered outcomes |
 | `Value` | Stable desired-state ID, trait/opinion-based importance, identity suffix and satisfaction/cooldown policies |
 | `GoalSource` | `Evaluate(context, offers)`: current/desired state, subject, deficit, confidence and causes |
-| `Capability` | Duration, acceptance/interruption policies, desired facts and plan-building callback |
+| `Capability` | Duration, acceptance/interruption policies, desired facts, optional direct action and speech |
+| `OperatorSource` | Facts produced, prerequisite facts, availability and binding of operators to known places/people |
 | `Operator` | Stable action ID, execution factory, resource and unavailable-binding correction |
 | `Fact` | Named symbolic condition/effect used by the planner |
 | `PlanSeed` | Initial planning facts and operators available across capabilities |
-| `Resource`, `FactionPolicy` | Resource need/delivery policies and group preferences |
+| `Interest` | Long lived, bounded personal priorities refreshed from the owner's known state |
+| `Collective` | Group or faction proposal, eligible listener, speech and independent acceptance |
+| `Resource`, `FactionPolicy` | Resource needs and faction preferences for supply, shelter, care and security |
 | `Event` | Payload contract, audience, archive categories/prose, retained knowledge and story progress |
 | `Perception`, `OnReport` | Feature belief updates from visible state or a communicated fact |
 | `On`, `AfterEvent`, `Clock` | Observation-phase responses, completion hooks and expiry/maintenance |
@@ -91,13 +94,29 @@ receive a copied fact with its original evidence time and confidence. Generic
 lifecycle code handles reevaluation, deduplication, satisfaction, deadlines,
 cooldowns and terminal cleanup for both assigned and generated goals.
 
-`BuildPlan` binds existing operators to known people/places/resources through
-`NpcPlanDomain.Add`. Preconditions, forbidden facts, effects and costs describe
-available mechanics. `ResultFacts` describes the desired state. The executor
-receives an `NpcExecutionContext`, resolves visible participants and returns an
-`ActorAction`; that action must validate ownership, current binding and real
-game legality. Failure triggers rejection/replanning, not a fictitious success
-event. Existing movement operators reuse the controller's navigation callback.
+Declare `ResultFacts` on the capability and register reusable
+`NpcOperatorSource` providers for those facts. The composer follows each
+provider's prerequisites backward, then binds its actions through
+`NpcPlanDomain.Add`; a new capability can combine existing food, medicine,
+travel and social operators without its own action list. `BuildPlan` remains an
+optional compatibility hook for external content. Sources and operators must
+state stable fact IDs, real availability, costs and resource reservations.
+The executor receives `NpcExecutionContext` and returns an action that checks
+ownership, current binding and real game legality. Physical actions belong in
+their feature modules and call `NpcActionContext.Done` only after the world
+effect. A missing item or person rejects/replans the step. Movement uses the
+controller's route callback. See `npc/operator-composition` for a new goal
+using two existing resources without a custom plan builder.
+
+Register a `NpcInterestDefinition` when a need should survive a single episode:
+observe only the owner's known state, remember at most sixteen interests, and
+offer a goal while its actual need persists. Current examples are food reserve,
+a chosen home, protection of an attached person and repair of broken trust.
+Register a `NpcCollectiveDefinition` for group or faction proposals. It
+receives the coordinator's bounded knowledge and visible actors, chooses an
+eligible listener, and accepts or refuses through a real spoken event.
+Participants retain their own goals. A faction task does not silently add
+followers. See `npc/collective-extension` and `npc/faction-medicine`.
 
 ## Events, privacy and delayed memories
 

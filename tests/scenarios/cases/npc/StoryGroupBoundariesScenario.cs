@@ -27,7 +27,7 @@ static class StoryGroupBoundariesScenario
             NpcIntent gather = NpcStorySystem.StartKnown(collector, recipient, NpcIntentContent.Gather, destination: new Location(world.Map, new Point(2, 2)), groupId: leader.SocialGroup.Identity);
             var stock = new ItemFood(world.Game.GameItems.CANNED_FOOD) { Quantity = 3 }; world.Map.DropItemAt(stock, new Point(2, 2));
             world.Place(collector, 1, 2);
-            var take = new ActionNpcStory(collector, world.Game, gather, food: stock);
+            var take = new ActionNpcIntent(collector, world.Game, gather, food: stock);
             Check.Equal(true, take.IsLegal(), "remembered supplies can be taken on arrival");
             world.Map.RemoveItemAt(stock, new Point(2, 2));
             int ap = collector.ActionPoints; take.Perform();
@@ -35,7 +35,7 @@ static class StoryGroupBoundariesScenario
             Check.Equal(ap, collector.ActionPoints, "failed stale action costs no AP");
             Check.Equal(0, NpcIntentSupport.FoodUnits(collector), "missing stock is not cloned into inventory");
             leader.RemoveFollower(collector);
-            Check.Equal(false, new ActionNpcStory(collector, world.Game, gather, food: stock).IsLegal(), "former member cannot execute the group's assignment");
+            Check.Equal(false, new ActionNpcIntent(collector, world.Game, gather, food: stock).IsLegal(), "former member cannot execute the group's assignment");
         });
     }
 }

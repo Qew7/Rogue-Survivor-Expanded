@@ -113,6 +113,21 @@ and 537–538 MB for loading. Additional archived category metadata and optional
 planning fields preserve the existing fixture's residents, history and maps;
 the benchmark composition and thresholds were not reduced.
 
+After adding composable NPC goals, long-term interests and collective tasks,
+the same fixture passed the complete 254-scenario run (September 29, 2026):
+
+| Operation | Time | Sampled peak process RSS |
+| --- | ---: | ---: |
+| First complete save | 6.45 s | 293.5 MB |
+| Atomic replacements, two samples | 6.31–6.36 s | 293.7–293.8 MB |
+| Complete load, two fresh processes | 7.96–8.12 s | 590.6–592.8 MB |
+| Archive-only load | 1.53 s | 189.5 MB |
+
+Each file contained 9,980,128 bytes (9.98 MB); primary plus backup occupied
+19,960,256 bytes. All operations stayed below 10 seconds and each file below
+50,000,000 bytes. The fixture still contains 416 maps, 6,240 actors and 66,560
+historical events.
+
 ## Save diagnostics
 
 `--bench-save` profiles an existing **copied** save with three samples per case.

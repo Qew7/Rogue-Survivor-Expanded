@@ -7,7 +7,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             var modules = new System.Collections.Generic.List<INpcContentModule> {
                 new CoreEventsModule(), new KnowledgeModule(), new NutritionModule(), new FoodAidModule(), new SafetyModule(), new JusticeModule(),
                 new CompanionsModule(), new MedicalCareModule(), new PromisesModule(), new PossessionsModule(), new GroupsModule(),
-                new ResourceCompetitionModule(), new MovementModule() };
+                new ResourceCompetitionModule(), new MovementModule(), new ConflictResolutionModule(), new InterestsModule() };
             modules.AddRange(additional); return NpcCatalogBuilder.Compose(registry, modules.ToArray());
         }
     }

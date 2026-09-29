@@ -24,6 +24,10 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 if (story.Finished) director.End(story, stage, source.Turn);
                 Session.Get.ResidentRecords.StoryChanged(source.Subject, story, source.Turn, source.Id);
                 SocialGroup group = source.Subject == null ? null : source.Subject.SocialGroup;
+                NpcGroupPlan faction = source.Other != null && source.Other.Personality != null && source.Other.Personality.FactionPlan != null && source.Other.Personality.FactionPlan.StoryId == story.Id ?
+                    source.Other.Personality.FactionPlan : source.Subject != null && source.Subject.Personality != null ? source.Subject.Personality.FactionPlan : null;
+                if (faction != null && faction.StoryId == story.Id)
+                { faction.Stage = stage; if (story.Finished) faction.Destination = default(Location); }
                 if (group != null && group.Plan != null && group.Plan.StoryId == story.Id)
                 { group.Plan.Stage = stage; if (story.Finished) group.Plan.Destination = default(Location); }
             }

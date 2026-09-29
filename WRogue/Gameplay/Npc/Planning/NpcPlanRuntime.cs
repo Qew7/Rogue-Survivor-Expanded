@@ -19,6 +19,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 plan.DesiredState = capability.GetResult(catalog, goal.Generated); }
             for (int attempt = 0; attempt < 2; attempt++)
             {
+                if (domain.InitialState.Contains(plan.DesiredState))
+                { NpcIntentSystem.Finish(owner, goal, NpcIntentStatus.Completed, "observed all desired effects"); return null; }
                 NpcPlanStep step = plan.Current;
                 NpcPlanStep binding = step == null ? null : domain.Actions.Find(a => a.OperatorId == step.OperatorId &&
                     (a.OperatorId != null || a.Action == step.Action) && a.Target == step.Target && a.Place == step.Place && a.Applies(domain.InitialState));

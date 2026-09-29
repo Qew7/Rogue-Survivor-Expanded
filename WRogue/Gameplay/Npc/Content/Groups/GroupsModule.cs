@@ -9,8 +9,16 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public string Id { get { return "groups"; } }
         public void Register(NpcCatalogBuilder catalog)
         {
+            catalog.OperatorSource(new NpcOperatorSource("group.report", c => (ulong)NpcPlanFact.Reported, d => {
+                ulong at = d.At(d.Goal.CoordinatorPlace); d.Travel(d.Goal.CoordinatorPlace, d.Goal.CoordinatorId, at);
+                d.Add(NpcPlanAction.ReportDelivery, d.Goal.CoordinatorPlace, d.Goal.CoordinatorId,
+                    at | (ulong)NpcPlanFact.Delivered, 0, (ulong)NpcPlanFact.Reported, 0, 2);
+            }, c => (ulong)NpcPlanFact.Delivered, d => d.Goal.CoordinatorPlace.Map != null));
             catalog.Clock(NpcClockPhase.MapTurn, c => {
                 Actor actor = c.Owner; Map map = actor.Location.Map;
+                NpcGroupPlan faction = actor.Personality == null ? null : actor.Personality.FactionPlan;
+                if (faction != null && !faction.Finished && map.LocalTime.TurnCounter >= faction.Deadline)
+                { faction.Stage = "failed"; faction.Destination = default(Location); }
                 if (actor.SocialGroup != null && actor.SocialGroup.LeaderId == actor.PersonalityIdentity && actor.SocialGroup.Plan != null &&
                     !actor.SocialGroup.Plan.Finished && map.LocalTime.TurnCounter >= actor.SocialGroup.Plan.Deadline)
                 { actor.SocialGroup.Plan.Stage = "failed"; actor.SocialGroup.Plan.Destination = default(Location); }
@@ -18,8 +26,10 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             var gather = new NpcIntentDefinition("gather_group_supplies", "Gather supplies for a companion",
             NpcIntentMethod.GatherFood, 35, 30, WorldTime.TURNS_PER_DAY, 180, 1, new NpcIntentWeight(DecisionKind.Compassion, 1), new NpcIntentWeight(DecisionKind.Supplies, 1), new NpcIntentWeight(DecisionKind.Explore, 1, 2));
             gather.ReportAfterDelivery = true;
-            gather.BuildPlan = d => { FoodPlanOperators.Build(d, false, true, true); };
+
             gather.Result = (c, g) => (ulong)(NpcPlanFact.Delivered | NpcPlanFact.Reported);
+            gather.Resource = "food";
+            gather.DirectAction = NpcGroupSupplyActions.Stage;
             catalog.Capability(gather);
             var coordinate = new NpcIntentDefinition("coordinate_group_supplies", "Coordinate supplies for the group",
             NpcIntentMethod.Coordinate, 20, 25, WorldTime.TURNS_PER_DAY, 180, 0, new NpcIntentWeight(DecisionKind.Group, 1), new NpcIntentWeight(DecisionKind.Compassion, 1, 2));
@@ -28,18 +38,20 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             catalog.Capability(coordinate);
             var shelter = new NpcIntentDefinition("seek_group_shelter", "Reach the group's known shelter",
             NpcIntentMethod.ReachShelter, 25, 35, 180, 180, 0, new NpcIntentWeight(DecisionKind.Group, 1), new NpcIntentWeight(DecisionKind.Courage, -1, 2));
-            shelter.BuildPlan = d => { SafetyPlanOperators.Shelter(d); };
+
             shelter.Result = (c, g) => (ulong)(NpcPlanFact.Sheltered);
             shelter.TravelArrived = a => a.Location.Map.GetTileAt(a.Location.Position).IsInside;
             shelter.TravelDestination = SafetyPlanOperators.ShelterDestination;
+            shelter.DirectAction = NpcSafetyActions.Shelter;
             catalog.Capability(shelter);
+            RegisterCollectives(catalog);
             RegisterContent(catalog);
         }
         void RegisterContent(NpcCatalogBuilder catalog)
         {
             catalog.Perception(NpcPerceptionKind.Surroundings, PerceiveSurroundings);
             RegisterEvents(catalog);
-            catalog.Operator(new NpcOperatorDefinition("group.report_delivery", NpcPlanAction.ReportDelivery, c => c.PlanAction()));
+            catalog.Operator(new NpcOperatorDefinition("group.report_delivery", NpcPlanAction.ReportDelivery, c => NpcGroupSupplyActions.Report(new NpcActionContext(c))));
             catalog.Memory(new MemoryDefinition("completed_group_delivery", "Completed a group supply mission", 2, 5,
                 new[] { new MemoryTrigger("supplies_delivered", (a, e) => a == e.Subject) },
                 new MemoryOutcome(null, "selfless", null), new MemoryOutcome(null, null, Skills.IDs.LEADERSHIP))
@@ -76,8 +88,6 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             if (source.Kind == "group_succession" && source.Subject != null && source.Subject.SocialGroup != null)
             { RelationshipRecord knownGroup = owner.Personality.Group(source.Subject.SocialGroup.Identity);
                 if (knownGroup != null) knownGroup.Name = source.Subject.SocialGroup.LeaderName; }
-            if (source.Kind == "supplies_requested" && source.Other == owner && source.Task != null)
-                NpcStorySystem.AcceptTask(game, owner, source);
             if (source.Kind == "supplies_requested" && source.Task != null && source.Task.BeneficiaryId == owner.PersonalityIdentity)
                 foreach (NpcIntent goal in owner.Personality.Intents)
                     if (!goal.Finished && goal.DefinitionId == NpcIntentContent.Request.Id) goal.Deadline = Math.Max(goal.Deadline, source.Task.Deadline);
@@ -89,9 +99,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 foreach (NpcIntent goal in owner.Personality.Intents)
                     if (!goal.Finished && goal.DefinitionId == NpcIntentContent.Coordinate.Id && goal.StoryId == source.StoryId)
                         NpcIntentSystem.Finish(owner, goal, NpcIntentStatus.Failed, "collector declined the task");
-            if (source.Kind == "shelter_suggested" && owner.SocialGroup != null && source.Subject != null &&
-                owner.SocialGroup == source.Subject.SocialGroup && source.Task != null)
-                NpcStorySystem.AcceptShelter(game, owner, source);
+
         }
     }
 }

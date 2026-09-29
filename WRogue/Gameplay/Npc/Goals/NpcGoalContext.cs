@@ -11,13 +11,14 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public readonly Actor Owner;
         public readonly NpcKnownPerson Self;
         public readonly IList<NpcKnownPerson> People;
-        public readonly int Turn, MaxHP;
+        public readonly int Turn, MaxHP, FoodUnits;
         public readonly bool Hungry, HasFood;
         public readonly NpcContentCatalog Catalog;
         public NpcGoalContext(RogueGame game, Actor owner, NpcContentCatalog catalog)
         {
             Owner = owner; Catalog = catalog; Turn = owner.Location.Map.LocalTime.TurnCounter;
             MaxHP = game.Rules.ActorMaxHPs(owner); Hungry = game.Rules.IsActorHungry(owner); HasFood = NpcFoodSupply.HasFood(game, owner);
+            foreach (Item item in owner.Inventory.Items) if (item is djack.RogueSurvivor.Engine.Items.ItemFood && !game.Rules.IsFoodSpoiled((djack.RogueSurvivor.Engine.Items.ItemFood)item, Turn)) FoodUnits += item.Quantity;
             Self = new NpcKnownPerson { Id = owner.PersonalityIdentity, Name = owner.UnmodifiedName, Place = owner.Location, SeenTurn = Turn };
             var people = new List<NpcKnownPerson>(owner.Personality.Knowledge.People); people.Sort((a, b) => a.Id.CompareTo(b.Id)); People = people.AsReadOnly();
         }
@@ -38,9 +39,15 @@ namespace djack.RogueSurvivor.Gameplay.Personality
     sealed class NpcMotivation
     {
         public readonly Actor Owner;
+        public readonly int CommunityCare, CommunitySecurity;
         public readonly int Group, Compassion, Trade, Courage, Law, Supplies, Feeling, Attachment, Fear, Grievance;
-        public NpcMotivation(Actor owner, Guid subject, PersonalityRegistry registry = null)
+        public NpcMotivation(Actor owner, Guid subject, PersonalityRegistry registry = null, NpcContentCatalog catalog = null)
         {
+            NpcKnownPerson known = owner.Personality.Knowledge.Person(subject);
+            if (known != null && known.FactionId == owner.Faction.ID) {
+                NpcFactionPolicy policy = (catalog ?? NpcContentCatalog.Default).FactionPolicy(owner.Faction.ID);
+                CommunityCare = policy.Care; CommunitySecurity = policy.Security;
+            }
             Owner = owner; Group = PersonalitySystem.Bias(owner, DecisionKind.Group, registry: registry); Compassion = PersonalitySystem.Bias(owner, DecisionKind.Compassion, registry: registry);
             Trade = PersonalitySystem.Bias(owner, DecisionKind.Trade, registry: registry); Courage = PersonalitySystem.Bias(owner, DecisionKind.Courage, registry: registry);
             Law = PersonalitySystem.Bias(owner, DecisionKind.Law, registry: registry); Supplies = PersonalitySystem.Bias(owner, DecisionKind.Supplies, registry: registry);

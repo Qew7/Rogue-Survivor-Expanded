@@ -27,7 +27,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public NpcIntentDefinition(string id, string name, int duration, int cooldown = 0)
             : this(id, name, default(NpcIntentMethod), 20, 20, duration, cooldown, 0) { LegacyMethod = false; }
         public int Score(Actor owner, NpcIntent intent, PersonalityRegistry registry = null)
-        { return intent.Generated != null ? intent.Generated.Utility : ScoreKnown(owner, intent.KnownAttitude,
+        { return intent.Generated != null ? intent.Generated.Utility : AssignedScore != null ? AssignedScore(owner, intent.TargetId) : ScoreKnown(owner, intent.KnownAttitude,
             owner.Leader != null && owner.Leader.PersonalityIdentity == intent.TargetId, registry) + SocialScore(owner, intent.TargetId); }
         public int ThresholdFor(NpcIntent intent) { return intent.Generated == null ? Threshold : NpcGoalGenerator.MinimumUtility; }
         public int ScoreKnown(Actor owner, int attitude, bool isLeader, PersonalityRegistry registry = null)
@@ -39,6 +39,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 score -= Math.Min(2 * Rules.TRUST_TRUSTING_THRESHOLD, Math.Max(0, owner.TrustInLeader)) * 30 / Rules.TRUST_TRUSTING_THRESHOLD;
             return score;
         }
+        public bool AllowQuestions, ActDuringDanger;
         public bool LegacyMethod = true, Selectable = true, PauseWhenTired = true, Departure, AllowHostile, PauseWhenHungry, WaitingAfterAnnouncement, ReportAfterDelivery, CompleteEpisodeOnSuccess;
         public Func<Actor, bool> TravelArrived;
         public Func<RelationshipRecord, int> SocialPriority;
@@ -47,6 +48,11 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public NpcPlanningState GetResult(NpcContentCatalog catalog, NpcGeneratedGoal goal)
         { return ResultFacts != null ? ResultFacts(catalog, goal) : Result == null ? default(NpcPlanningState) : (NpcPlanningState)Result(catalog, goal); }
         public Action<NpcPlanDomain> BuildPlan;
+        public string Resource;
+        public string DeliveryText;
+        public Func<Actor, Guid, int> AssignedScore;
+        public Func<bool, NpcIntentOutcome> OnTargetDeath;
+        public Func<NpcActionContext, ActorAction> DirectAction;
         public Func<RogueGame, Actor, NpcIntent, NpcIntentOutcome> Assess;
         public Func<NpcExecutionContext, Location> TravelDestination;
         public int SocialScore(Actor owner, Guid target)

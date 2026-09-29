@@ -731,7 +731,7 @@ namespace djack.RogueSurvivor.Engine
             #endregion
         }
 
-        void SpendActorActionPoints(Actor actor, int actionCost)
+        internal void SpendActorActionPoints(Actor actor, int actionCost)
         {
             actor.ActionPoints -= actionCost;
             actor.LastActionTurn = actor.Location.Map.LocalTime.TurnCounter;

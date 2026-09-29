@@ -10,18 +10,27 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public string Id { get { return "justice"; } }
         public void Register(NpcCatalogBuilder catalog)
         {
+            catalog.OperatorSource(new NpcOperatorSource("person.boundary", c => (ulong)NpcPlanFact.Warned, d => CompanionPlanOperators.Build(d, true)));
             catalog.GoalSource(this);
             catalog.Value(new NpcValueDefinition("Justice", "Communicate a boundary", NpcGoalValue.Justice, m => 15 + m.Courage + m.Law + m.Grievance / 2, false));
-            catalog.Value(new NpcValueDefinition("Restitution", "Replace supplies lost through my actions", NpcGoalValue.Restitution, m => 15 + m.Law + m.Compassion + m.Feeling / 4, true));
+            catalog.Value(new NpcValueDefinition("Restitution", "Replace supplies lost through my actions", NpcGoalValue.Restitution, m => 15 + m.Law + m.Compassion + m.Feeling / 4, true) { AfterDelivery = c => {
+                NpcKnownPerson person = c.Owner.Personality.Knowledge.Person(c.Target.PersonalityIdentity);
+                if (person != null) person.LossUnits = Math.Max(0, person.LossUnits - 1);
+                c.Publish("restitution_given", c.Target); return person != null && person.LossUnits > 0;
+            } });
             var confront = new NpcIntentDefinition("confront_reported_aggressor", "Confront a reported aggressor",
             NpcIntentMethod.ConfrontPerson, 15, 35, 180, 180, -1, new NpcIntentWeight(DecisionKind.Courage, 1), new NpcIntentWeight(DecisionKind.Law, 1));
-            confront.BuildPlan = d => { CompanionPlanOperators.Build(d, true); };
+
             confront.Result = (c, g) => (ulong)(NpcPlanFact.Warned);
             confront.SocialPriority = r => r.Grievance / 2;
+            confront.AllowQuestions = true;
+            confront.DirectAction = NpcContactActions.Warn;
             catalog.Capability(confront);
             var restitution = new NpcIntentDefinition("restore_property", "Replace lost supplies", NpcIntentMethod.RestoreProperty, 30, 20, 180, 180, 1);
-            restitution.BuildPlan = d => { FoodPlanOperators.Build(d, false, true); };
+
             restitution.Result = (c, g) => (ulong)(NpcPlanFact.Delivered);
+            restitution.Resource = "food";
+            restitution.DirectAction = NpcFoodActions.Give;
             catalog.Capability(restitution);
             RegisterContent(catalog);
         }
@@ -46,7 +55,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         void RegisterContent(NpcCatalogBuilder catalog)
         {
             RegisterEvents(catalog);
-            catalog.Operator(new NpcOperatorDefinition("boundary.warn", NpcPlanAction.Warn, c => c.PlanAction()));
+            catalog.Operator(new NpcOperatorDefinition("boundary.warn", NpcPlanAction.Warn, c => NpcContactActions.Warn(new NpcActionContext(c))));
             catalog.Operator(new NpcOperatorDefinition("restitution.demand", NpcPlanAction.DemandRestitution, c => new ActionNpcRestitutionDemand(c.Owner, c.Game, c.Goal, c.Step, c.Target)));
             NpcMemoryContent.Received(catalog, "boundary_accepted", "Someone accepted a boundary", "boundary_accepted", 4, null);
             NpcMemoryContent.Received(catalog, "boundary_defied", "Someone rejected a boundary", "boundary_defied", -8, "mistrustful");

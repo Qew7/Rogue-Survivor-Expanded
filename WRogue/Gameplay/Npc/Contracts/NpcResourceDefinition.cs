@@ -8,8 +8,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
     {
         public readonly string Id;
         public readonly Func<RogueGame, Actor, bool> OwnNeed;
-        public readonly Action<NpcPlanDomain> DeliveryPlan;
-        public NpcResourceDefinition(string id, Func<RogueGame, Actor, bool> ownNeed, Action<NpcPlanDomain> deliveryPlan = null)
-        { Id = id; OwnNeed = ownNeed; DeliveryPlan = deliveryPlan; }
+        public NpcResourceDefinition(string id, Func<RogueGame, Actor, bool> ownNeed)
+        { Id = id; OwnNeed = ownNeed; }
     }
 }

@@ -728,7 +728,7 @@ namespace djack.RogueSurvivor.Engine
             clone.EquippedPart = DollPart.NONE;
         }
 
-        public void DoUseItem(Actor actor, Item it)
+        public void DoUseItem(Actor actor, Item it, NpcIntent npcGoal = null)
         {
             // alpha10 defrag ai inventories
             bool defragInventory = !actor.IsPlayer && it.Model.IsStackable;
@@ -737,7 +737,7 @@ namespace djack.RogueSurvivor.Engine
             if (it is ItemFood)
                 DoUseFoodItem(actor, it as ItemFood);
             else if (it is ItemMedicine)
-                DoUseMedicineItem(actor, it as ItemMedicine);
+                DoUseMedicineItem(actor, it as ItemMedicine, npcGoal);
             else if (it is ItemAmmo)
                 DoUseAmmoItem(actor, it as ItemAmmo);
             //else if (it is ItemSprayScent)  // alpha10 new way to use spray scent
@@ -851,7 +851,7 @@ namespace djack.RogueSurvivor.Engine
             map.GetTileAt(loc.Position.X, loc.Position.Y).AddDecoration(GameImages.DECO_VOMIT);
         }
 
-        void DoUseMedicineItem(Actor actor, ItemMedicine med)
+        void DoUseMedicineItem(Actor actor, ItemMedicine med, NpcIntent npcGoal)
         {
             //////////////////////////////////////
             // If player, prevent wasteful usage.
@@ -890,7 +890,7 @@ namespace djack.RogueSurvivor.Engine
 
             // consume it.
             actor.Inventory.Consume(med);
-            Gameplay.Personality.NpcMedicalRecovery.MedicineUsed(this, actor, previousHP);
+            Gameplay.Personality.NpcMedicalRecovery.MedicineUsed(this, actor, previousHP, npcGoal);
 
             // message.
             if (IsVisibleToPlayer(actor))

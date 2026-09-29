@@ -129,6 +129,12 @@ execution callbacks are transient. Existing intention enum values remain
 unchanged; `ObtainFood` is appended. These optional fields use format 5 without
 a new world envelope.
 
+Plans now optionally retain up to 32 named facts for effects that already
+happened during this goal (for example, delivering an item before returning to
+report). Inventory, health and location facts are always reconstructed from
+the loaded world. A catalog change invalidates the binding; no predicted
+effect becomes a world fact. New goals and operators use stable string IDs.
+
 Modular content adds optional stable value/operator IDs, cached custom value
 descriptions/identity suffixes and a deterministic catalog fingerprint. Existing
 goal cooldown keys retain their spelling. The legacy enum values
@@ -184,6 +190,15 @@ sequences distinguish a newly founded group after a split. Assigned goals save
 group identity, destination, collector progress, coordinator identity/last known
 place and original observation turn, allowing continuation between pickup,
 gift and return report.
+
+Each personality may optionally retain up to sixteen `NpcInterest` records:
+stable definition ID, subject identity, last known place, importance/need,
+evidence and expiry turns, and a causal event ID. Definitions and callbacks
+are rebuilt from the catalog. Faction coordinators optionally save one current
+`NpcGroupPlan`, proposal sequence and retry turn on their personality; this
+does not change social-group membership. The participant's ordinary goal keeps
+the coordinator and story IDs. Group and faction proposals use the same saved
+plan shape and resume from real observations after loading.
 
 Session retains the story director's bounded story/role history, source maps,
 cause IDs, stages, deadlines, role target IDs, actor/resource reservations,
@@ -242,7 +257,8 @@ Renaming fields/types needs an explicit mapping or a new format policy; preserve
 numeric and string content IDs. Run the named scenarios, then
 `docker build --target test .` and `bash tests/e2e.sh`.
 
-Relevant scenarios: `storage/compact-save`, `npc/records-reader-save`,
+Relevant scenarios: `storage/compact-save`, `npc/interest-save`,
+`npc/faction-medicine`, `npc/records-reader-save`,
 `npc/records-lifetime-items`, `npc/records-query`, `world/records-browser`,
 `npc/intent-persistence`, `npc/intent-boundaries`, `npc/story-persistence`,
 `npc/story-director`, `factions/social-group-succession`, and existing
