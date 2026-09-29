@@ -9,11 +9,12 @@ Unmarked BinaryFormatter settings are no longer accepted.
 
 ## Envelope and archive
 
-Saves record the Rogue Survivor Expanded version (`0.2.0` at
-this release). Saves from `0.1.0`, `0.1.1`, and the current release series are accepted;
+Saves record the Rogue Survivor Expanded version (`0.2.0` at the current release)
+separately from the envelope format number. Saves from `0.1.0`, `0.1.1`, and
+the current release series are accepted;
 other versions are rejected before loading their mod list or object graph. The
-error shows the saved and running versions. Older
-formats have no game version and remain readable for migration.
+error shows the saved and running versions. Older settings formats have no game
+version and remain readable for migration.
 
 Every write uses a temporary file, flushes it, and atomically replaces the
 destination, retaining the previous file as `<name>.bak`. Failed writes remove
