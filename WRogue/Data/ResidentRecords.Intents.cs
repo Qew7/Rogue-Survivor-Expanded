@@ -8,7 +8,7 @@ namespace djack.RogueSurvivor.Data
         {
             ResidentRecord record = Register(actor); if (record == null) return;
             var methods = new System.Collections.Generic.List<string>();
-            foreach (NpcPlanStep step in intent.Plan.Steps) methods.Add(step.Action.ToString());
+            foreach (NpcPlanStep step in intent.Plan.Steps) methods.Add(step.OperatorId ?? step.Action.ToString());
             int turn = actor.Location.Map.LocalTime.TurnCounter;
             record.Add("plan:" + intent.Sequence + ":" + record.Entries.Count, turn,
                 "Plan: " + System.String.Join(" → ", methods.ToArray()) + ". [story " + intent.StoryId + "]",

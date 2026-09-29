@@ -23,7 +23,7 @@ namespace djack.RogueSurvivor.Data
     {
         public Location Place;
         public Guid Other;
-        public string StoryId, OtherStory, Resource;
+        public string StoryId, Resource;
         public long CauseId;
         public int Turn;
         public string Response;

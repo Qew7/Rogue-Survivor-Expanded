@@ -82,7 +82,7 @@ namespace djack.RogueSurvivor.Engine
                 List<string> traitNames = new List<string>();
                 foreach (TraitInstance trait in actor.Personality.Traits)
                 {
-                    TraitDefinition definition = PersonalitySystem.Registry.Trait(trait.Id);
+                    TraitDefinition definition = NpcContent.Personalities.Trait(trait.Id);
                     if (definition == null) continue;
                     string name = definition.Name;
                     if (trait.ItemModelId >= 0 && trait.ItemModelId < (int)GameItems.IDs._COUNT &&

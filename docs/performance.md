@@ -97,6 +97,22 @@ for saving and 527 MB for loading. Retained heap increases after collection were
 2.7 MB for the first save, effectively zero for replacements and 115 MB for the
 loaded world. These figures describe this workload, not a production maximum.
 
+After the NPC module refactor, the same fixture passed all operation/file
+limits in the complete 238-scenario test build (September 29, 2026):
+
+| Operation | Time | Sampled peak process RSS |
+| --- | ---: | ---: |
+| First complete save | 6.05 s | 284.1 MB |
+| Atomic replacements, two samples | 6.03–6.05 s | 284.1–284.2 MB |
+| Complete load, two fresh processes | 7.42–7.52 s | 590.5–592.1 MB |
+| Archive-only load | 1.32 s | 187.3 MB |
+
+Each file contained 9,978,825 bytes (9.98 MB); primary plus backup occupied
+19,957,650 bytes. Peak managed-memory increases were 146–149 MB for saving
+and 537–538 MB for loading. Additional archived category metadata and optional
+planning fields preserve the existing fixture's residents, history and maps;
+the benchmark composition and thresholds were not reduced.
+
 ## Save diagnostics
 
 `--bench-save` profiles an existing **copied** save with three samples per case.

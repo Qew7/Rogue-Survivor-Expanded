@@ -32,7 +32,7 @@ namespace djack.RogueSurvivor.Engine
                 return;
             }
             // Transfer one unit directly: ground stacking must not duplicate the gift or discard existing loot.
-            ItemFood gift = NpcIntentSystem.OneFood(food);
+            ItemFood gift = NpcFoodSupply.OneFood(food);
             bool needed = m_Rules.IsActorHungry(target);
             if (!target.Inventory.AddAll(gift))
             { NpcIntentSystem.Finish(actor, intent, NpcIntentStatus.Failed, "food transfer failed"); return; }
@@ -43,7 +43,6 @@ namespace djack.RogueSurvivor.Engine
                 DoSay(actor, target, intent.DefinitionId == NpcIntentContent.Repay.Id ?
                     "You helped me before. Here, take this food." : "Here, I can spare some food.", Sayflags.IS_FREE_ACTION);
             SignificantEvent transferred = NpcPlanExecution.Publish(this, "shared_food", actor, target, intent);
-            NpcSocialSystem.Delivery(this, actor, target, "food", transferred.Id, intent.StoryId);
             if (intent.Generated != null && intent.Generated.Value == NpcGoalValue.Restitution)
             {
                 NpcKnownPerson owner = actor.Personality.Knowledge.Person(target.PersonalityIdentity);

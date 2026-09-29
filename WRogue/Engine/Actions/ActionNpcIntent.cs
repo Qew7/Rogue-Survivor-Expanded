@@ -24,8 +24,8 @@ namespace djack.RogueSurvivor.Engine.Actions
                 m_Game.Rules.GridDistance(m_Actor.Location.Position, target.Location.Position) > 1 ||
                 m_Game.Rules.AreEnemies(m_Actor, target)) return false;
             if (definition.Method == NpcIntentMethod.RequestFood)
-                return !intent.Announced && m_Game.Rules.IsActorHungry(m_Actor) && !NpcIntentSystem.HasFood(m_Game, m_Actor);
-            return food != null && m_Actor.Inventory.Contains(food) && NpcIntentSystem.SpareFood(m_Game, m_Actor, target) == food;
+                return !intent.Announced && m_Game.Rules.IsActorHungry(m_Actor) && !NpcFoodSupply.HasFood(m_Game, m_Actor);
+            return food != null && m_Actor.Inventory.Contains(food) && NpcFoodSupply.SpareFood(m_Game, m_Actor, target) == food;
         }
         public override void Perform()
         {

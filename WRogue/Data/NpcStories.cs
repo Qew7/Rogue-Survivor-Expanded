@@ -35,6 +35,8 @@ namespace djack.RogueSurvivor.Data
         public Guid ReservedActor;
         public readonly List<NpcStoryRole> Roles = new List<NpcStoryRole>();
         public readonly List<string> Parents = new List<string>();
+        [System.Runtime.Serialization.OptionalField] public string CompletionGoal;
+        [System.Runtime.Serialization.OptionalField] public bool RequiresDeliveryReport;
         public bool Finished { get { return Stage == "completed" || Stage == "failed" || Stage == "abandoned"; } }
     }
     [Serializable]
@@ -105,13 +107,12 @@ namespace djack.RogueSurvivor.Data
                 if (story.Finished) return;
                 if (story.Roles.Count > 0 && story.Roles.TrueForAll(r => r.Status == NpcIntentStatus.Completed))
                 { End(story, "completed", intent.FinishedTurn); Session.Get.ResidentRecords.StoryChanged(actor, story, intent.FinishedTurn, 0); return; }
-                if (intent.Status == NpcIntentStatus.Completed && story.Template == NpcIntentContentIdRequest && intent.DefinitionId == NpcIntentContentIdRequest)
+                if (intent.Status == NpcIntentStatus.Completed && story.CompletionGoal != null && intent.DefinitionId == story.CompletionGoal)
                 { End(story, "completed", intent.FinishedTurn); Session.Get.ResidentRecords.StoryChanged(actor, story, intent.FinishedTurn, 0); return; }
                 if (intent.Status != NpcIntentStatus.Completed && story.Roles.TrueForAll(r => r.Status >= NpcIntentStatus.Completed))
                 { End(story, "failed", intent.FinishedTurn); Session.Get.ResidentRecords.StoryChanged(actor, story, intent.FinishedTurn, 0); }
             }
         }
-        const string NpcIntentContentIdRequest = "request_food";
         public void End(NpcStory story, string stage, int turn)
         { lock (this) { story.Stage = stage; story.FinishedTurn = turn; story.Place = default(Location);
             story.Resource = default(Location); story.ReservedActor = Guid.Empty; } }

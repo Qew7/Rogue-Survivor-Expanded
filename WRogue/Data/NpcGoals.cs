@@ -8,40 +8,42 @@ namespace djack.RogueSurvivor.Data
     sealed class NpcGeneratedGoal
     {
         public NpcGoalValue Value;
+        [System.Runtime.Serialization.OptionalField] public string DefinitionId;
+        [System.Runtime.Serialization.OptionalField] public string DefinitionDescription;
+        [System.Runtime.Serialization.OptionalField] public string IdentitySuffix;
         public Guid SubjectId;
         public int Current, Desired, Deficit, Importance, Confidence, Utility, EvaluatedTurn;
         public ulong Result;
+        [System.Runtime.Serialization.OptionalField] public NpcPlanningResult ExtendedResult;
+        public NpcPlanningState ResultState
+        { get { return (NpcPlanningState)Result | (ExtendedResult == null ? default(NpcPlanningState) : ExtendedResult.State); }
+            set { Result = value.Low; ExtendedResult = NpcPlanningResult.Extra(value); } }
         public string Resource;
         public long ObligationId;
         public int ModelId = -1;
         public Location ObjectPlace;
         public Guid ItemId;
         public long[] Causes;
-        public string Key { get { return Value + ":" + SubjectId.ToString("N") + (Resource == null ? "" : ":" + Resource) +
-            (ObligationId == 0 ? "" : ":" + ObligationId) + (Value == NpcGoalValue.Possession ? ":" + ModelId + ":" + ItemId.ToString("N") : ""); } }
+        public string Key { get { return (DefinitionId ?? Value.ToString()) + ":" + SubjectId.ToString("N") + (Resource == null ? "" : ":" + Resource) +
+            (ObligationId == 0 ? "" : ":" + ObligationId) + KeySuffix; } }
+        string KeySuffix
+        {
+            get
+            {
+                if (IdentitySuffix != null) return IdentitySuffix;
+                var definition = Gameplay.Personality.NpcContentCatalog.Default.Value(this);
+                return definition == null || definition.IdentitySuffix == null ? "" : definition.IdentitySuffix(this);
+            }
+        }
         public string Description
         {
             get
             {
-                switch (Value)
-                {
-                    case NpcGoalValue.Nutrition: return "Have usable food";
-                    case NpcGoalValue.Recovery: return "Recover health";
-                    case NpcGoalValue.Care: return "Provide needed food";
-                    case NpcGoalValue.Reciprocity: return "Reduce a personal debt";
-                    case NpcGoalValue.Safety: return "Reach safety";
-                    case NpcGoalValue.Justice: return "Communicate a boundary";
-                    case NpcGoalValue.Belonging: return "Restore contact";
-                    case NpcGoalValue.MedicalCare: return "Meet a person's medical need";
-                    case NpcGoalValue.Commitment: return "Fulfil an outstanding promise";
-                    case NpcGoalValue.Restitution: return "Replace supplies lost through my actions";
-                    case NpcGoalValue.Possession: return "Recover a valued kind of item";
-                    case NpcGoalValue.ProtectHome: return "Return to threatened shelter";
-                    default: return "Leave an unsafe group";
-                }
+                var definition = Gameplay.Personality.NpcContentCatalog.Default.Value(Value);
+                return DefinitionDescription ?? (definition == null ? Value.ToString() : definition.Description);
             }
         }
-        public string Explanation { get { return Value + ": " + Current + " → " + Desired +
+        public string Explanation { get { return (DefinitionId ?? Value.ToString()) + ": " + Current + " → " + Desired +
             "; deficit " + Deficit + ", importance " + Importance + ", confidence " + Confidence + ", utility " + Utility; } }
     }
     sealed partial class PersonalityState
@@ -59,10 +61,8 @@ namespace djack.RogueSurvivor.Data
         { int until; return m_GoalCooldowns == null || !m_GoalCooldowns.TryGetValue(key, out until) || turn >= until; }
         internal bool LegacyCooldownReady(string definition, int turn)
         { int until; return m_IntentCooldowns == null || !m_IntentCooldowns.TryGetValue(definition, out until) || turn >= until; }
-        internal NpcIntent StartGeneratedGoal(string id, Actor owner, NpcKnownPerson target,
-            NpcGeneratedGoal goal, int turn, int duration, int cooldown, long cause, string story)
+        internal void RememberGoalCooldown(string key, int until)
         {
-            if (!CanGenerateGoal(goal.Key, turn)) return null;
             if (m_GoalCooldowns == null) m_GoalCooldowns = new Dictionary<string, int>();
             if (m_GoalCooldowns.Count >= 64)
             {
@@ -70,12 +70,7 @@ namespace djack.RogueSurvivor.Data
                 foreach (var pair in m_GoalCooldowns) if (pair.Value < earliest) { earliest = pair.Value; oldest = pair.Key; }
                 if (oldest != null) m_GoalCooldowns.Remove(oldest);
             }
-            m_GoalCooldowns[goal.Key] = turn + cooldown;
-            var intent = new NpcIntent(++m_IntentSequence, id, owner, target, turn, duration, goal.Utility, cause, story, 0) { Generated = goal };
-            IntentList.Add(intent);
-            while (IntentList.Count > 12)
-            { int index = IntentList.FindIndex(i => i.Finished); if (index < 0) break; IntentList.RemoveAt(index); }
-            return intent;
+            m_GoalCooldowns[key] = until;
         }
     }
 }

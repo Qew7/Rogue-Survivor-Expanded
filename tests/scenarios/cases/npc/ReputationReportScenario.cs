@@ -16,7 +16,7 @@ static class ReputationReportScenario
             NpcIntentSupport.Turn(world, recipient); NpcIntentSupport.Turn(world, helper);
             Actor listener = NpcIntentSupport.Actor(world, "listener", 2, 0, "loyal");
             listener.Personality.Knowledge.See(helper, 0);
-            world.Map.LocalTime.TurnCounter = 180; NpcSocialSystem.Expire(recipient);
+            world.Map.LocalTime.TurnCounter = 180; NpcPromises.Expire(recipient);
             NpcFact fact = recipient.Personality.Knowledge.Facts.Find(f => f.Kind == "promise_broken");
             Check.Equal(false, NpcIntentSupport.HasEvent(listener, "promise_broken"), "private disappointment is not publicly broadcast");
             Check.Equal(true, world.Try(new ActionNpcTell(recipient, world.Game, listener, fact)), "recipient actually tells another person their assessment");

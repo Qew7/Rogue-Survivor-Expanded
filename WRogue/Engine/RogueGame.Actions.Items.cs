@@ -497,7 +497,6 @@ namespace djack.RogueSurvivor.Engine
                 var shared = new Gameplay.Personality.SignificantEvent(gift is ItemFood ? "shared_food" : "shared_medicine", actor, target,
                     actor.Location.Map, actor.Location.Position, actor.Location.Map.LocalTime.TurnCounter) { Units = (int)(target.Inventory.TotalReceived - receivedBefore), Resource = resource };
                 Gameplay.Personality.PersonalitySystem.Report(this, shared);
-                if (actor.Personality != null) Gameplay.Personality.NpcSocialSystem.Delivery(this, actor, target, resource, shared.Id, null);
             }
 
             // message.
@@ -891,7 +890,7 @@ namespace djack.RogueSurvivor.Engine
 
             // consume it.
             actor.Inventory.Consume(med);
-            Gameplay.Personality.NpcGoalGenerator.MedicineUsed(this, actor, previousHP);
+            Gameplay.Personality.NpcMedicalRecovery.MedicineUsed(this, actor, previousHP);
 
             // message.
             if (IsVisibleToPlayer(actor))

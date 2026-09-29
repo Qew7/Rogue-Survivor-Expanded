@@ -464,29 +464,29 @@ under `tests/scenarios/` verify the implementation; they are not NPC plot script
 
 ## Adding content
 
-1. Identify a valued state that the real mechanics can improve. Reuse or extend
-   `NpcValues` and bind its current/desired values and known subject in
-   `NpcGoalGenerator.State.cs`. New perception/communication sources update
-   typed beliefs in `NpcKnowledgeSystem`; keep evidence time and confidence.
-   Add a stable execution ID in `NpcIntentContent.cs` only when a new capability
-   is needed, with duration and cooldown. Do not route an event kind directly
-   to a plot or goal.
-2. Reuse existing desired states and planner actions where possible. A new
-   result belongs in `NpcGoalPlanner.Desired`; new primitives require stable
-   `NpcPlanAction` values, bindings/conditions/effects/costs in `NpcPlanDomain`
-   and a legal action with real state changes in the execution layer. Publish an
-   outcome after that change, rather than writing predicted effects into the world.
-   Keep current perception, interruption and retry rules explicit.
-   State evaluation must use known snapshots, evidence age/confidence and
-   current traits. `NpcStoryContent.cs` registers acquired memories.
-   Shared plans must bind independent goals after real communication and reserve
-   their contested resource/role through `NpcStoryDirector`.
-3. Register meaningful acquired memories through the personality registry.
-   Check which participant owns each memory and relationship; avoid starting
-   memories for events that can only happen during the game.
-4. Add named deterministic scenarios for different traits, actual AI actions,
-   an invalid/boundary case, perception, and save/load continuation. Register new
-   production C# files in the original Windows project too.
+Use a feature module under `WRogue/Gameplay/Npc/Content/<feature>/` and register
+it once in `NpcContentDefaults`. See [npc-content-modules.md](npc-content-modules.md)
+for the contract reference and a complete extension in one file.
+
+1. Define the valued state and its importance from `NpcMotivation`. A registered
+   `INpcGoalSource` offers current/desired values, deficit, confidence and known
+   subjects. Perception/report subscriptions update retained beliefs with their
+   original evidence age. Common goal lifecycle code handles deduplication,
+   satisfaction, cooldowns and terminal cleanup.
+2. Register the capability's desired symbolic facts and plan-building callback,
+   then bind available operators with conditions, effects and costs. A new
+   operator supplies its legal `ActorAction` factory through the catalog;
+   new content does not require enum changes or central dispatch branches.
+   Publish outcomes only after actual state changes. Shared plans still require
+   real communication and director admission/reservations.
+3. Register event descriptions/categories, observer-phase callbacks, private
+   acquired memories and their outcomes in the same module. Ordinary memories
+   and inferred memories share creation/evidence/relationship attribution.
+4. Add named scenarios covering actual controller actions, different traits,
+   visibility/invalid boundaries and saved continuation. Keep stable content
+   IDs and existing serialized type names, register production files in the
+   Windows project, and bump the module's catalog revision when changing plan
+   parameters without changing IDs.
 
 ## Verification
 

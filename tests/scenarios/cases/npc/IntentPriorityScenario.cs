@@ -18,7 +18,7 @@ static class IntentPriorityScenario
             NpcIntent intent = owner.Personality.Intents[0];
             NpcIntentSystem.Maintain(world.Game, owner, new[] { helper }, false, true);
             Check.Equal(NpcIntentStatus.Paused, intent.Status, "explicit order pauses the personal goal");
-            var gift = new ActionNpcIntent(owner, world.Game, intent, helper, NpcIntentSystem.SpareFood(world.Game, owner, helper));
+            var gift = new ActionNpcIntent(owner, world.Game, intent, helper, NpcFoodSupply.SpareFood(world.Game, owner, helper));
             Check.Equal(false, gift.IsLegal(), "paused intention cannot be performed through a stale action");
             NpcIntentSystem.Maintain(world.Game, owner, new[] { helper }, false, false);
             Check.Equal(NpcIntentStatus.Active, intent.Status, "goal resumes after the order");

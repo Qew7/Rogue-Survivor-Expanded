@@ -14,7 +14,7 @@ static class ThreatenedHomeScenario
             world.Map.GetTileAt(1, 1).IsInside = true;
             world.Map.GetTileAt(2, 1).IsInside = true;
             var claim = new XpdBase(owner, new[] { new Point(1, 1), new Point(2, 1) }); world.Map.AddXpdBase(claim);
-            NpcSocialSystem.RememberHome(owner);
+            NpcHomeObservation.RememberHome(owner);
             Check.Equal(1, owner.Personality.Attachments.Count, "own visited home establishes a lasting place attachment");
             world.Map.RemoveActor(owner); world.Place(owner, 4, 1);
             Actor threat = NpcIntentSupport.Actor(world, "threat", 0, 1);

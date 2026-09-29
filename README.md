@@ -90,6 +90,8 @@ specific people, their leader's group, and their faction when trading or
 considering a leader. Inspecting an NPC shows traits, but not private memories.
 The catalog and extension points are described in
 [docs/npc-personality.md](docs/npc-personality.md).
+Developer contracts and a complete single-file extension are in
+[docs/npc-content-modules.md](docs/npc-content-modules.md).
 Press Shift+I in game to see your relationships with people, groups, and factions.
 Use Read Records below Load Game to browse format-5 NPC histories together or individually.
 Search names, filter life metrics, sort residents, or press I to read the most interesting NPC;

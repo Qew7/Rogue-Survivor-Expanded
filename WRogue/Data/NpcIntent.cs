@@ -52,7 +52,7 @@ namespace djack.RogueSurvivor.Data
         public readonly int Deadline;
         public readonly NpcKnownPerson ReportedPerson;
         public Location ResourcePlace;
-        public string Resource, OtherStory;
+        public string Resource;
         public NpcReaction(Actor target, string text, long causeId, int turn, string kind = "aid_acknowledged", string storyId = null, NpcKnownPerson report = null)
         { TargetId = target.PersonalityIdentity; Text = text; CauseId = causeId; Deadline = turn + 30; Kind = kind; StoryId = storyId; ReportedPerson = report; }
     }
@@ -80,17 +80,17 @@ namespace djack.RogueSurvivor.Data
             { if (!intent.Finished) { active++; if (intent.DefinitionId == id) return false; } }
             return active < 4;
         }
-        internal NpcIntent StartIntent(string id, Actor owner, Actor target, int turn, int duration,
-            int cooldown, int priority, long causeId, string storyId, int knownAttitude)
-        { return StartKnownIntent(id, owner, new NpcKnownPerson { Id = target.PersonalityIdentity, Name = target.UnmodifiedName,
-            Place = target.Location }, turn, duration, cooldown, priority, causeId, storyId, knownAttitude); }
-        internal NpcIntent StartKnownIntent(string id, Actor owner, NpcKnownPerson target, int turn, int duration,
-            int cooldown, int priority, long causeId, string storyId, int knownAttitude)
+        internal NpcIntent StartGoal(string id, Actor owner, NpcKnownPerson target, int turn, int duration,
+            int cooldown, int priority, long causeId, string storyId, int knownAttitude, NpcGeneratedGoal generated = null)
         {
-            if (!CanStartIntent(id, turn)) return null;
-            if (m_IntentCooldowns == null) m_IntentCooldowns = new Dictionary<string, int>();
-            m_IntentCooldowns[id] = turn + cooldown;
-            NpcIntent intent = new NpcIntent(++m_IntentSequence, id, owner, target, turn, duration, priority, causeId, storyId, knownAttitude);
+            if (generated == null ? !CanStartIntent(id, turn) : !CanGenerateGoal(generated.Key, turn)) return null;
+            if (generated == null)
+            {
+                if (m_IntentCooldowns == null) m_IntentCooldowns = new Dictionary<string, int>();
+                m_IntentCooldowns[id] = turn + cooldown;
+            }
+            else RememberGoalCooldown(generated.Key, turn + cooldown);
+            var intent = new NpcIntent(++m_IntentSequence, id, owner, target, turn, duration, priority, causeId, storyId, knownAttitude) { Generated = generated };
             IntentList.Add(intent);
             while (IntentList.Count > 12)
             { int index = IntentList.FindIndex(i => i.Finished); if (index < 0) break; IntentList.RemoveAt(index); }

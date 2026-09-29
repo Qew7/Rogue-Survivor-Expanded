@@ -30,6 +30,8 @@ namespace djack.RogueSurvivor.Data
         public readonly Guid OtherId;
         public readonly long EventId, CauseId;
         public readonly string StoryId;
+        [System.Runtime.Serialization.OptionalField] public int RecordCategories;
+        [System.Runtime.Serialization.OptionalField] public string RecordText;
 
         public ObservedEvent(string kind, int turn, string subject, string other, bool direct,
             bool relatedToSubject = false, Guid subjectId = default(Guid),

@@ -5,77 +5,6 @@ using djack.RogueSurvivor.Gameplay.Personality;
 
 namespace djack.RogueSurvivor.Engine.Actions
 {
-    sealed class ActionNpcTell : ActorAction
-    {
-        readonly Actor target;
-        readonly NpcFact fact;
-        public ActionNpcTell(Actor actor, RogueGame game, Actor target, NpcFact fact) : base(actor, game) { this.target = target; this.fact = fact; }
-        public override bool IsLegal()
-        { return NpcIntentSystem.Enabled(m_Actor) && !m_Actor.IsSleeping && target != null && !target.IsSleeping && fact != null &&
-            target.Model.Abilities.IsIntelligent && !target.Model.Abilities.IsUndead && NpcIntentSystem.CanSee(m_Game, m_Actor, target) &&
-            m_Game.Rules.GridDistance(m_Actor.Location.Position, target.Location.Position) <= 4 && !m_Game.Rules.AreEnemies(m_Actor, target) &&
-            m_Actor.Personality.Knowledge.Facts.Contains(fact) && fact.Confidence >= 40 && fact.Hops < 3 &&
-            m_Actor.Location.Map.LocalTime.TurnCounter - fact.EventTurn <= 2 * WorldTime.TURNS_PER_DAY &&
-            !m_Actor.Personality.Knowledge.WasTold(fact.EventId, target.PersonalityIdentity); }
-        public override void Perform()
-        {
-            if (!IsLegal()) return;
-            string social = fact.Kind == "promise_broken" ? fact.SubjectName + " did not meet a promise's deadline" :
-                fact.Kind == "promise_kept" ? fact.SubjectName + " kept a promise" : fact.Kind == "base_theft" || fact.Kind == "contested_taken" ? fact.SubjectName + " took disputed supplies" :
-                fact.Kind == "boundary_defied" ? fact.SubjectName + " rejected a warning" : fact.Kind == "requested_medicine" ? fact.SubjectName + " asked for medicine" : null;
-            string report = social ?? (fact.Kind == "medicine_cache" ? "there was medicine" : fact.Kind == "death" ? fact.SubjectName + " died" : fact.Kind == "requested_food" ?
-                fact.SubjectName + " asked for food" : fact.Kind == "food_cache" ? "there was food" :
-                fact.OtherId == Guid.Empty ? "there was " + fact.Kind.Replace('_', ' ') : fact.OtherName + " was involved in violence against " + fact.SubjectName);
-            m_Game.DoSay(m_Actor, target, (fact.Source == NpcKnowledgeSource.Told ? "I was told that " : fact.Source == NpcKnowledgeSource.Inferred ? "As far as I know, " : "I saw that ") + report +
-                " near " + fact.Place.Map.Name + ".", RogueGame.Sayflags.NONE);
-            if (target.Personality == null) target.Personality = new PersonalityState();
-            NpcKnowledgeSystem.Hear(m_Game, target, m_Actor, fact);
-            int turn = m_Actor.Location.Map.LocalTime.TurnCounter;
-            m_Actor.Personality.Knowledge.Told(fact.EventId, target.PersonalityIdentity, turn);
-            m_Actor.Personality.Knowledge.NextTalkTurn = turn + 30;
-            NpcIntentSystem.Publish(m_Game, "rumor_shared", m_Actor, target, fact.EventId, fact.StoryId);
-        }
-    }
-    sealed class ActionNpcGroupPlan : ActorAction
-    {
-        readonly Actor listener;
-        readonly NpcGroupPlan plan;
-        public ActionNpcGroupPlan(Actor actor, RogueGame game, Actor listener, NpcGroupPlan plan) : base(actor, game) { this.listener = listener; this.plan = plan; }
-        public override bool IsLegal()
-        { return NpcIntentSystem.Enabled(m_Actor) && !m_Actor.IsSleeping && plan != null && plan.Destination.Map != null &&
-            m_Actor.Location.Map.LocalTime.TurnCounter < plan.Deadline && listener != null && !listener.IsSleeping &&
-            m_Actor.SocialGroup != null && m_Actor.SocialGroup.LeaderId == m_Actor.PersonalityIdentity && listener.SocialGroup == m_Actor.SocialGroup &&
-            (plan.Kind == "group_shelter" || (plan.Kind == "group_supplies" && listener.PersonalityIdentity == plan.CollectorId && NpcIntentSystem.Enabled(listener))) &&
-            (m_Actor.SocialGroup.Plan == null || m_Actor.SocialGroup.Plan.Finished) && NpcIntentSystem.CanSee(m_Game, m_Actor, listener) &&
-            m_Game.Rules.GridDistance(m_Actor.Location.Position, listener.Location.Position) <= 4 &&
-            !m_Game.Rules.AreEnemies(m_Actor, listener) &&
-            Session.Get.NpcDirector.CanOpen(m_Actor.Location.Map, m_Actor.Location.Map.LocalTime.TurnCounter,
-                "group:" + m_Actor.SocialGroup.Identity, plan.Destination, plan.CollectorId); }
-        public override void Perform()
-        {
-            if (!IsLegal()) return;
-            SocialGroup group = m_Actor.SocialGroup;
-            string id = "group:" + group.Identity.ToString("N") + ":" + (group.PlanSequence + 1);
-            NpcStory story = Session.Get.NpcDirector.Open(id, plan.Kind, m_Actor, plan.CauseId, plan.Deadline,
-                "group:" + group.Identity, plan.Destination, plan.CollectorId);
-            if (story == null) return;
-            group.PlanSequence++; plan.StoryId = id; group.Plan = plan; group.NextPlanTurn = m_Actor.Location.Map.LocalTime.TurnCounter + 180;
-            NpcKnownPerson beneficiary = m_Actor.Personality.Knowledge.Person(plan.BeneficiaryId);
-            m_Game.DoSay(m_Actor, listener, plan.Kind == "group_supplies" ?
-                "Fetch the food near " + plan.Destination.Map.Name + " for " + (beneficiary == null ? "our companion" : beneficiary.Name) + ". Then report back." :
-                "Let's take shelter near " + plan.Destination.Map.Name + ".", RogueGame.Sayflags.NONE);
-            if (plan.Kind == "group_supplies")
-            {
-                NpcIntent coordination = NpcStorySystem.StartKnown(m_Actor, beneficiary, NpcIntentContent.Coordinate,
-                    plan.CauseId, id, groupId: group.Identity);
-                if (coordination != null) coordination.Status = NpcIntentStatus.Waiting;
-            }
-            var source = new SignificantEvent(plan.Kind == "group_supplies" ? "supplies_requested" : "shelter_suggested",
-                m_Actor, listener, m_Actor.Location.Map, m_Actor.Location.Position, m_Actor.Location.Map.LocalTime.TurnCounter,
-                causeId: plan.CauseId, storyId: id) { Task = plan };
-            PersonalitySystem.Report(m_Game, source);
-        }
-    }
     sealed class ActionNpcStory : ActorAction
     {
         readonly NpcIntent intent;
@@ -106,7 +35,7 @@ namespace djack.RogueSurvivor.Engine.Actions
             Guid id = definition.Method == NpcIntentMethod.GatherFood && intent.Progress == 2 ? intent.CoordinatorId : intent.TargetId;
             if (target == null || target.PersonalityIdentity != id || target.IsSleeping || !NpcIntentSystem.CanSee(m_Game, m_Actor, target) ||
                 m_Game.Rules.GridDistance(m_Actor.Location.Position, target.Location.Position) > 1 || m_Game.Rules.AreEnemies(m_Actor, target)) return false;
-            return definition.Method != NpcIntentMethod.GatherFood || intent.Progress == 2 || (food != null && NpcIntentSystem.SpareFood(m_Game, m_Actor, target) == food);
+            return definition.Method != NpcIntentMethod.GatherFood || intent.Progress == 2 || (food != null && NpcFoodSupply.SpareFood(m_Game, m_Actor, target) == food);
         }
         public override void Perform()
         {
@@ -118,7 +47,7 @@ namespace djack.RogueSurvivor.Engine.Actions
                 m_Game.DoTakeItem(m_Actor, intent.Destination.Position, food);
                 if (m_Actor.Inventory.TotalReceived <= before) { NpcIntentSystem.Finish(m_Actor, intent, NpcIntentStatus.Failed, "could not acquire the observed supplies"); return; }
                 intent.Progress = 1;
-                NpcIntentSystem.Publish(m_Game, "supplies_acquired", m_Actor, null, intent.CauseId, intent.StoryId); return;
+                NpcEvents.Publish(m_Game, "supplies_acquired", m_Actor, null, intent.CauseId, intent.StoryId); return;
             }
             if (method == NpcIntentMethod.GatherFood && intent.Progress == 1) { m_Game.DoNpcIntent(m_Actor, target, intent, food); return; }
             string kind = method == NpcIntentMethod.GatherFood ? "supplies_delivered" : method == NpcIntentMethod.SeekPerson ? "reunited" :
@@ -130,7 +59,7 @@ namespace djack.RogueSurvivor.Engine.Actions
                     "You promised to help. What happened?" : "I know what happened. Leave us and our belongings alone.", RogueGame.Sayflags.NONE);
             else m_Game.DoWait(m_Actor);
             NpcIntentSystem.Finish(m_Actor, intent, NpcIntentStatus.Completed, kind == "withdrew" ? "withdrew from the last reported location" : kind);
-            NpcIntentSystem.Publish(m_Game, kind, m_Actor, target, intent.CauseId, intent.StoryId);
+            NpcEvents.Publish(m_Game, kind, m_Actor, target, intent.CauseId, intent.StoryId);
         }
     }
 }

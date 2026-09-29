@@ -103,16 +103,20 @@ extension points, including faction preferences and director admission rules.
 
 ## Extending the catalog
 
-Definitions live in `WRogue/Gameplay/Personality/PersonalityContent.cs` and
-`PersonalityWorldContent.cs`; acquired intention/conversation memories are also
-registered through `NpcIntentContent.cs` and `NpcStoryContent.cs`. They are
-registered in `PersonalityRegistry`. A `TraitDefinition` has a stable string ID,
+Definitions live in feature modules under `WRogue/Gameplay/Npc/Content/`.
+The base and world catalogs remain in `PersonalityContent.cs` and
+`PersonalityWorldContent.cs`; modules register additional definitions through
+`NpcCatalogBuilder` into `PersonalityRegistry`. See
+[npc-content-modules.md](npc-content-modules.md) for contracts, ownership,
+observation order and a complete extension in one file.
+A `TraitDefinition` has a stable string ID,
 display name, starting/advanced flag, optional required trait, optional item
 model parameter, and one or more `TraitEffect`s. Standard effects change common
 AI decision axes: item value, courage, group trust, law enforcement, trade,
 exploration, compassion, and supply value. Conflicting starting traits can be
-registered as a pair. A new trait that needs a new action should add its action
-at the relevant AI or rule boundary and query `PersonalitySystem.HasTrait` there.
+registered as a pair. A trait needing new goals/actions can register its
+interest, goal source and operator in its module; common orchestration resolves
+these contracts without branching on the trait's ID.
 Group trust uses both the leader's traits and the follower's desire for company;
 a solitary follower can lose trust over time while a sociable one gains it faster.
 

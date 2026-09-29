@@ -18,6 +18,13 @@ and enforces a 10-second limit per save/load and a 50,000,000-byte limit per fil
 It prints RAM measurements and verifies restored state. This case takes tens of
 seconds; see [performance.md](performance.md#automated-save-and-load-budget).
 
+NPC module contracts are exercised by `npc/content-module`,
+`npc/content-module-persistence`, `npc/content-catalog-validation`, `npc/content-catalog-rebind` and
+`npc/private-content-event`. They cover a complete extension selected by real
+AI, extended planning facts, saved execution, archive-only event filtering,
+invalid registration/payloads and private audiences. See
+[npc-content-modules.md](npc-content-modules.md) for the extension API.
+
 Add each new scenario in its own file under the matching topic directory in
 `tests/scenarios/cases/`. Living and undead skills have separate directories.
 Give its static class a name ending in `Scenario` and a public `Register()`

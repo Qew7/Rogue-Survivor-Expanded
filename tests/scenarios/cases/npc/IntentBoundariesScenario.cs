@@ -27,12 +27,12 @@ static class IntentBoundariesScenario
             wrongReaction.Perform();
             Check.Equal(1, grateful.Personality.Reactions.Count, "invalid reaction remains queued for its actual recipient");
             NpcIntentSystem.Block(grateful, intent, "temporary obstruction");
-            var delayedAction = new ActionNpcIntent(grateful, world.Game, intent, player, NpcIntentSystem.SpareFood(world.Game, grateful, player));
+            var delayedAction = new ActionNpcIntent(grateful, world.Game, intent, player, NpcFoodSupply.SpareFood(world.Game, grateful, player));
             Check.Equal(false, delayedAction.IsLegal(), "selected action cannot bypass retry delay");
             world.Map.LocalTime.TurnCounter = intent.NextAttempt;
             // A stale action is rejected when the recipient can no longer receive food.
             player.Inventory.MaxCapacity = 0;
-            var action = new ActionNpcIntent(grateful, world.Game, intent, player, NpcIntentSystem.SpareFood(world.Game, grateful, player));
+            var action = new ActionNpcIntent(grateful, world.Game, intent, player, NpcFoodSupply.SpareFood(world.Game, grateful, player));
             int points = grateful.ActionPoints, food = NpcIntentSupport.FoodUnits(grateful);
             Check.Equal(false, action.IsLegal(), "full recipient inventory prevents social transfer");
             action.Perform();

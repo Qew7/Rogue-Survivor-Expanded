@@ -48,7 +48,7 @@ static class IntentPersistenceScenario
                 SignificantEvent replay = new SignificantEvent("helped", actor, player, restored.Map, actor.Location.Position, 0); replay.Id = source.Id;
                 PersonalitySystem.Report(restored.Game, replay);
                 Check.Equal(1, actor.Personality.Intents.Count, "old source cannot restart a completed intention after load");
-                SignificantEvent next = NpcIntentSystem.Publish(restored.Game, "raid", actor, null);
+                SignificantEvent next = NpcEvents.Publish(restored.Game, "raid", actor, null);
                 Check.Equal(true, next.Id > source.Id, "event sequence continues after loading");
             }
             finally { if (File.Exists(path)) File.Delete(path); if (File.Exists(path + ".bak")) File.Delete(path + ".bak"); }

@@ -28,7 +28,7 @@ static class SocialBoundariesScenario
             Check.Equal(1, carer.Inventory.CountItems, "invalid aid consumes no medicine");
             Check.Equal(false, NpcIntentSupport.HasEvent(carer, "treated_person"), "invalid aid emits no consequence");
             Session.Get.GamePreset.NpcPersonalitiesEnabled = false;
-            NpcSocialSystem.Expire(carer); NpcGoalGenerator.Refresh(world.Game, carer);
+            NpcPromises.Expire(carer); NpcGoalGenerator.Refresh(world.Game, carer);
             Check.Equal(false, action.IsLegal(), "disabled personality preset prevents social actions");
             Session.Get.GamePreset.NpcPersonalitiesEnabled = true;
             Actor listener = NpcIntentSupport.Actor(world, "listener", 2, 1);

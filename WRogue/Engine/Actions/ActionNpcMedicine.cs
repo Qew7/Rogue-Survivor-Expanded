@@ -33,7 +33,7 @@ namespace djack.RogueSurvivor.Engine.Actions
                 long before = m_Actor.Inventory.TotalReceived;
                 m_Game.DoTakeItem(m_Actor, step.Place.Position, medicine, causeId: goal.CauseId, storyId: goal.StoryId);
                 if (before == m_Actor.Inventory.TotalReceived) return;
-                NpcSocialSystem.Taken(m_Game, m_Actor, goal, step.Place, "medicine");
+                NpcResourceCompetition.Taken(m_Game, m_Actor, goal, step.Place, "medicine");
                 NpcPlanExecution.Publish(m_Game, "medicine_acquired", m_Actor, null, goal);
             }
             if (!goal.Finished) { goal.Plan.Invalidate(); goal.Plan.NextPlanningTurn = m_Actor.Location.Map.LocalTime.TurnCounter; }

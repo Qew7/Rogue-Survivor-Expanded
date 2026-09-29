@@ -9,7 +9,7 @@ namespace djack.RogueSurvivor.Engine
         internal void DoNpcBarter(Actor buyer, Actor seller, Item payment, ItemFood food, NpcIntent goal)
         {
             // Both complete additions were checked by the action; inventories belong to distinct actors.
-            ItemFood gift = NpcIntentSystem.OneFood(food); gift.Quantity = 2;
+            ItemFood gift = NpcFoodSupply.OneFood(food); gift.Quantity = 2;
             if (!buyer.Inventory.CanAddAll(gift) || !seller.Inventory.CanAddAll(payment)) return;
             if (!buyer.Inventory.AddAll(gift)) return;
             seller.Inventory.AddAll(payment); buyer.Inventory.RemoveAllQuantity(payment);

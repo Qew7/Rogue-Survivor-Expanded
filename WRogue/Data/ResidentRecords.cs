@@ -18,11 +18,12 @@ namespace djack.RogueSurvivor.Data
         public readonly long EventId, CauseId;
         public readonly string StoryId;
         public readonly long[] SupportingCauses;
+        [System.Runtime.Serialization.OptionalField] public int RecordCategories;
         public ResidentEntry(int turn, string text, int sequence, string kind = "note", bool direct = false,
             Guid subjectId = default(Guid), Guid otherId = default(Guid), bool gainedTrait = false,
             long eventId = 0, long causeId = 0, string storyId = null, long[] supportingCauses = null)
         { Turn = turn; Text = text; Sequence = sequence; Kind = kind; Direct = direct; SubjectId = subjectId; OtherId = otherId; GainedTrait = gainedTrait;
-            EventId = eventId; CauseId = causeId; StoryId = storyId; SupportingCauses = supportingCauses; }
+            EventId = eventId; CauseId = causeId; StoryId = storyId; SupportingCauses = supportingCauses; RecordCategories = NpcRecordDescriptions.Categories(kind); }
     }
 
     [Serializable]
@@ -46,10 +47,12 @@ namespace djack.RogueSurvivor.Data
             if (m_Keys.ContainsKey(key)) return;
             m_Keys.Add(key, true);
             string kind = key.Split(':')[0];
-            m_Entries.Add(new ResidentEntry(turn, text, m_Entries.Count, observed == null ? kind : observed.Kind,
+            var entry = new ResidentEntry(turn, text, m_Entries.Count, observed == null ? kind : observed.Kind,
                 observed != null && observed.Direct, observed == null ? Guid.Empty : observed.SubjectId,
                 observed == null ? Guid.Empty : observed.OtherId, gainedTrait,
-                observed == null ? 0 : observed.EventId, observed == null ? 0 : observed.CauseId, observed == null ? null : observed.StoryId, supportingCauses));
+                observed == null ? 0 : observed.EventId, observed == null ? 0 : observed.CauseId, observed == null ? null : observed.StoryId, supportingCauses);
+            if (observed != null && observed.RecordCategories != 0) entry.RecordCategories = observed.RecordCategories;
+            m_Entries.Add(entry);
         }
     }
 
@@ -112,19 +115,20 @@ namespace djack.RogueSurvivor.Data
             return memory.Id + ":" + memory.StartTurn + ":" + memory.SubjectId + ":" +
                 memory.RelatedPersonId + ":" + memory.Subject;
         }
-        public void MemoryStarted(Actor actor, MemoryInstance memory)
+        public void MemoryStarted(Actor actor, MemoryInstance memory, MemoryDefinition definition = null)
         {
             ResidentRecord record = Register(actor);
             if (record != null) record.Add("memory:" + MemoryKey(memory), memory.StartTurn,
-                "Memory: " + MemoryName(memory.Id) +
+                "Memory: " + (definition == null ? MemoryName(memory.Id) : definition.Name) +
                 (String.IsNullOrEmpty(memory.Subject) ? "" : " (" + memory.Subject + ")") + ".");
         }
-        public void MemoryResolved(Actor actor, MemoryInstance memory)
+        public void MemoryResolved(Actor actor, MemoryInstance memory, PersonalityRegistry registry = null)
         {
             ResidentRecord record = Register(actor);
             if (record == null) return;
             string outcome = memory.OutcomeId ?? "none";
-            if (outcome.StartsWith("trait:")) outcome = "gained trait " + TraitName(outcome.Substring(6));
+            if (outcome.StartsWith("trait:"))
+            { TraitDefinition trait = registry == null ? null : registry.Trait(outcome.Substring(6)); outcome = "gained trait " + (trait == null ? TraitName(outcome.Substring(6)) : trait.Name); }
             else if (outcome.StartsWith("skill:"))
             {
                 string skill = outcome.Substring(6);
@@ -134,7 +138,7 @@ namespace djack.RogueSurvivor.Data
             }
             else outcome = "no new trait or skill";
             record.Add("resolved:" + MemoryKey(memory), memory.ResolvedTurn,
-                "Resolved memory: " + MemoryName(memory.Id) + "; " + outcome + ".", null,
+                "Resolved memory: " + (registry == null || registry.Memory(memory.Id) == null ? MemoryName(memory.Id) : registry.Memory(memory.Id).Name) + "; " + outcome + ".", null,
                 memory.OutcomeId != null && memory.OutcomeId.StartsWith("trait:", StringComparison.Ordinal));
         }
         public void Observe(Actor actor, ObservedEvent observed)
@@ -151,53 +155,7 @@ namespace djack.RogueSurvivor.Data
         }
         static string EventText(ObservedEvent e)
         {
-            string social = SocialText(e); if (social != null) return social;
-            string special = PersonalityWorldContent.EventName(e.Kind);
-            if (special != null) return special +
-                (e.Subject == null ? "." : ": " + e.Subject + ".");
-            string subject = e.Subject ?? "Someone";
-            string other = e.Other ?? "someone";
-            switch (e.Kind)
-            {
-                case "death": return subject + " died" + (e.Other == null ? "." : "; killed by " + other + ".");
-                case "murder": return other + " murdered " + subject + ".";
-                case "kill_human": return other + " killed " + subject + ".";
-                case "attack": return other + " attacked " + subject + ".";
-                case "helped": return other + " helped " + subject + ".";
-                case "requested_food": return subject + " asked " + other + " for food.";
-                case "request_refused": return subject + " declined " + other + "'s request.";
-                case "shared_food": return subject + " shared food with " + other + ".";
-                case "left_group": return subject + " chose to leave " + other + "'s group.";
-                case "rumor_shared": return subject + " told " + other + " a report about an earlier event.";
-                case "asked_location": return subject + " asked " + other + " about a missing companion.";
-                case "location_reported": return subject + " answered " + other + " about a companion's last known location.";
-                case "supplies_requested": return subject + " asked " + other + " to gather supplies for the group.";
-                case "supplies_acquired": return subject + " acquired the supplies they were seeking.";
-                case "medicine_acquired": return subject + " acquired medicine to treat their wounds.";
-                case "treated_wounds": return subject + " treated their wounds with real medicine.";
-                case "supplies_delivered": return subject + " reported the completed delivery to " + other + ".";
-                case "task_declined": return subject + " declined " + other + "'s task.";
-                case "shelter_suggested": return subject + " proposed moving the group to known shelter.";
-                case "shelter_declined": return subject + " declined " + other + "'s shelter proposal.";
-                case "food_offered": return subject + " offered to exchange food with " + other + ".";
-                case "bartered_food": return subject + " obtained food by exchanging supplies with " + other + ".";
-                case "shelter_reached": return subject + " reached the agreed shelter.";
-                case "reunited": return subject + " found " + other + " after searching.";
-                case "confronted": return subject + " warned " + other + " about known misconduct.";
-                case "withdrew": return subject + " withdrew from the last reported danger location.";
-                case "group_succession": return subject + " succeeded " + other + " as group leader.";
-                case "aid_acknowledged": return subject + " acknowledged aid from " + other + ".";
-                case "joined_group": return subject + " joined " + other + "'s group.";
-                case "abandoned": return subject + " was abandoned by " + other + ".";
-                case "base_theft": return subject + " stole from " + other + "'s base.";
-                case "base_loss": return subject + " lost a base.";
-                case "supplies_lost": return subject + " lost supplies.";
-                case "zombified": return other + " turned into " + subject + ".";
-                case "starvation": return subject + " faced starvation.";
-                case "raid": return "A raid occurred.";
-                case "unique_arrival": return subject + " arrived.";
-                default: return e.Kind + ": " + subject + (e.Other == null ? "." : "; " + other + ".");
-            }
+            return e.RecordText ?? NpcRecordDescriptions.Describe(e);
         }
 
         public static ResidentRecords Recover(Session session)

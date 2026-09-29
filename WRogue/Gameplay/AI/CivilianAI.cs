@@ -195,7 +195,7 @@ namespace djack.RogueSurvivor.Gameplay.AI
             // end alpha10
 
             // 1. Follow order
-            ActorAction departure = BehaviorNpcDeparture(game);
+            ActorAction departure = BehaviorNpcDeparture(game, intentVisible);
             if (departure != null)
                 return BehaviorFleeFromExplosives(game, FilterStacks(game, mapPercepts)) ?? departure;
             #region

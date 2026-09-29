@@ -25,7 +25,6 @@ namespace djack.RogueSurvivor.Engine
                         if (target.HitPoints >= m_Rules.ActorMaxHPs(target)) NpcIntentSystem.Finish(target, recovery, NpcIntentStatus.Completed, "received actual treatment from another person");
                         else if (recovery.Plan != null) { recovery.Plan.Invalidate(); recovery.Plan.NextPlanningTurn = target.Location.Map.LocalTime.TurnCounter; }
                     }
-            if (!treat) NpcSocialSystem.Delivery(this, actor, target, "medicine", source.Id, goal.StoryId);
             if (!treat || target.HitPoints >= m_Rules.ActorMaxHPs(target)) NpcIntentSystem.Finish(actor, goal, NpcIntentStatus.Completed, treat ? "actually treated the wounds" : "actually transferred medicine");
             else { goal.Plan.Invalidate(); goal.Plan.NextPlanningTurn = actor.Location.Map.LocalTime.TurnCounter; }
         }

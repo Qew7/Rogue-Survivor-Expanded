@@ -128,6 +128,26 @@ execution callbacks are transient. Existing intention enum values remain
 unchanged; `ObtainFood` is appended. These optional fields use format 5 without
 a new world envelope.
 
+Modular content adds optional stable value/operator IDs, cached custom value
+descriptions/identity suffixes and a deterministic catalog fingerprint. Existing
+goal cooldown keys retain their spelling. The legacy enum values
+and low-word condition/effect masks keep their encodings. Extended symbolic
+planning masks use optional `NpcPlanningResult`/`NpcPlanningExtension` objects;
+ordinary plans allocate neither. The 256-bit runtime state reserves separate
+ranges for existing facts, local places/questions and named catalog facts.
+Loading a plan against a changed catalog revision/layout invalidates its steps
+and recomputes the desired state from registered content and current knowledge.
+Callbacks and search nodes remain transient. Existing types keep their full
+`Gameplay.Personality` names despite the source-directory move to `Gameplay/Npc`.
+
+Stories optionally retain their completion-goal and delivery-report policies,
+so the director does not need to dispatch on a content ID. Observed events and
+resident entries retain optional category metadata; custom observations also
+cache prose for archive recovery. Resident entries always retain their text.
+The archive-only reader therefore displays and filters extension events without
+restoring runtime modules. Absent optional metadata falls back to the built-in
+event definitions. See [npc-content-modules.md](npc-content-modules.md).
+
 Generated intentions also store `NpcGeneratedGoal`: value kind, permanent
 subject ID, current/desired values, normalized deficit, importance, confidence,
 utility, evaluation turn and desired result flags. Their cooldown keys combine

@@ -24,7 +24,7 @@ namespace djack.RogueSurvivor.Engine.Actions
             if (step.Action == NpcPlanAction.PickupFood)
             {
                 string reason;
-                return (plan.Desired != (ulong)NpcPlanFact.Food || !NpcIntentSystem.HasFood(m_Game, m_Actor)) &&
+                return (plan.Desired != (ulong)NpcPlanFact.Food || !NpcFoodSupply.HasFood(m_Game, m_Actor)) &&
                     food != null && NpcPlanExecution.Near(m_Game, m_Actor, step.Place) && NpcPlanExecution.FoodOnGround(m_Game, m_Actor, step.Place) == food &&
                     m_Game.Rules.CanActorGetItem(m_Actor, food, out reason);
             }
@@ -35,9 +35,9 @@ namespace djack.RogueSurvivor.Engine.Actions
                 !target.Model.Abilities.IsIntelligent || m_Game.Rules.AreEnemies(m_Actor, target) || !NpcPlanExecution.Near(m_Game, m_Actor, target.Location)) return false;
             if (step.Action == NpcPlanAction.AskFood)
                 return !m_Actor.Personality.Knowledge.WasTold(-goal.Sequence, target.PersonalityIdentity) &&
-                    (plan.Desired != (ulong)NpcPlanFact.Food || !NpcIntentSystem.HasFood(m_Game, m_Actor));
+                    (plan.Desired != (ulong)NpcPlanFact.Food || !NpcFoodSupply.HasFood(m_Game, m_Actor));
             if (step.Action == NpcPlanAction.GiveFood) return target.PersonalityIdentity == goal.TargetId && food != null &&
-                NpcIntentSystem.SpareFood(m_Game, m_Actor, target) == food && goal.Progress < 2;
+                NpcFoodSupply.SpareFood(m_Game, m_Actor, target) == food && goal.Progress < 2;
             if (step.Action == NpcPlanAction.ReportDelivery) return goal.Progress >= 2 && target.PersonalityIdentity == goal.CoordinatorId;
             return new ActionNpcStory(m_Actor, m_Game, goal, target).IsLegal();
         }
@@ -50,7 +50,8 @@ namespace djack.RogueSurvivor.Engine.Actions
                 movement.Perform();
                 bool arrived = step.Action == NpcPlanAction.Travel ? NpcPlanExecution.Near(m_Game, m_Actor, step.Place) :
                     m_Actor.Location.Map != goal.LastKnown.Map || m_Game.Rules.GridDistance(m_Actor.Location.Position, goal.LastKnown.Position) >= 5;
-                if (arrived && (NpcIntentContent.Find(goal.DefinitionId).Method != NpcIntentMethod.ReachShelter || m_Actor.Location.Map.GetTileAt(m_Actor.Location.Position).IsInside)) plan.Cursor++;
+                NpcIntentDefinition capability = m_Game.NpcContent.Capability(goal.DefinitionId);
+                if (arrived && (capability.TravelArrived == null || capability.TravelArrived(m_Actor))) plan.Cursor++;
                 return;
             }
             if (step.Action == NpcPlanAction.PickupFood)
@@ -59,9 +60,9 @@ namespace djack.RogueSurvivor.Engine.Actions
                 m_Game.DoTakeItem(m_Actor, step.Place.Position, food, causeId: plan.LastEventId > 0 ? plan.LastEventId : goal.CauseId, storyId: goal.StoryId);
                 if (m_Actor.Inventory.TotalReceived <= before) { plan.Reject(step, turn); return; }
                 if (goal.Progress < 1) goal.Progress = 1;
-                NpcSocialSystem.Taken(m_Game, m_Actor, goal, step.Place, "food");
+                NpcResourceCompetition.Taken(m_Game, m_Actor, goal, step.Place, "food");
                 NpcPlanExecution.Publish(m_Game, "supplies_acquired", m_Actor, null, goal);
-                if (plan.Desired == (ulong)NpcPlanFact.Food && NpcIntentSystem.HasFood(m_Game, m_Actor))
+                if (plan.Desired == (ulong)NpcPlanFact.Food && NpcFoodSupply.HasFood(m_Game, m_Actor))
                     NpcIntentSystem.Finish(m_Actor, goal, NpcIntentStatus.Completed, "actually acquired usable food");
             }
             else if (step.Action == NpcPlanAction.AskFood)

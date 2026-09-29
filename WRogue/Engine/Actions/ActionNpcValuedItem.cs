@@ -25,7 +25,7 @@ namespace djack.RogueSurvivor.Engine.Actions
             long before = m_Actor.Inventory.TotalReceived;
             m_Game.DoTakeItem(m_Actor, step.Place.Position, item, causeId: goal.CauseId, storyId: goal.StoryId);
             if (m_Actor.Inventory.TotalReceived == before) return;
-            NpcSocialSystem.Taken(m_Game, m_Actor, goal, step.Place, "item");
+            NpcResourceCompetition.Taken(m_Game, m_Actor, goal, step.Place, "item");
             NpcPlanExecution.Publish(m_Game, "valued_item_acquired", m_Actor, null, goal);
             NpcIntentSystem.Finish(m_Actor, goal, NpcIntentStatus.Completed, "actually acquired the valued item model");
         }

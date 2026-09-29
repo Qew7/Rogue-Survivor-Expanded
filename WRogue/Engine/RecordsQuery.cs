@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using djack.RogueSurvivor.Data;
+using djack.RogueSurvivor.Gameplay.Personality;
 
 namespace djack.RogueSurvivor.Engine
 {
@@ -39,7 +40,7 @@ namespace djack.RogueSurvivor.Engine
                 if (entry.Direct) DirectEvents++;
                 if (entry.Kind == "kill_human" && entry.OtherId == resident.Identity) Kills++;
                 if (entry.Kind == "helped" && entry.OtherId == resident.Identity) Help++;
-                if (IsWorld(entry.Kind)) WorldEvents++;
+                if (NpcRecordDescriptions.Matches(entry, NpcRecordCategory.World)) WorldEvents++;
                 if (entry.SubjectId != Guid.Empty && entry.SubjectId != resident.Identity) people.Add(entry.SubjectId);
                 if (entry.OtherId != Guid.Empty && entry.OtherId != resident.Identity) people.Add(entry.OtherId);
             }
@@ -48,11 +49,6 @@ namespace djack.RogueSurvivor.Engine
             Score = 8 * Math.Min(Diversity, 12) + 2 * Math.Min(DirectEvents, 40) +
                 5 * Math.Min(Memories, 20) + 6 * Math.Min(Resolved, 12) + 8 * Math.Min(TraitChanges, 10) +
                 3 * Math.Min(Encounters, 15) + 4 * Math.Min(WorldEvents, 15) + 4 * Math.Min(Help, 12);
-        }
-        internal static bool IsWorld(string kind)
-        {
-            return !String.IsNullOrEmpty(kind) && (kind.EndsWith("_raid", StringComparison.Ordinal) || kind.EndsWith("_arrival", StringComparison.Ordinal) ||
-                kind == "raid" || kind == "zombie_invasion" || kind == "army_supplies" || kind == "floods" || kind == "craps");
         }
         public string Summary()
         {
