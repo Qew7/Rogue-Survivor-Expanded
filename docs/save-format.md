@@ -236,6 +236,11 @@ physical-event counts and the interesting-life score. Private missing-contact
 inferences, generated `goal_plan` action lists and story-stage entries use the
 same typed archive path and **Intentions and outcomes** filter, and also do not
 inflate those counts.
+Read Records builds a temporary index of archived event IDs and resolves a
+record's `CauseId` and `SupportingCauses` into up to two readable antecedents.
+Only prior, present archive entries are shown; missing links produce no text.
+The explanation and its searchable words are derived at read time, so this
+change adds no persistent fields or save-format version.
 Resident snapshots retain stable group identity alongside the current leader
 label. Searching a story tag links its independent participants without loading
 the world.
@@ -258,10 +263,11 @@ numeric and string content IDs. Run the named scenarios, then
 `docker build --target test .` and `bash tests/e2e.sh`.
 
 Relevant scenarios: `storage/compact-save`, `npc/interest-save`,
-`npc/faction-medicine`, `npc/records-reader-save`,
+`npc/faction-medicine`, `npc/records-reader-save`, `npc/records-causes`,
 `npc/records-lifetime-items`, `npc/records-query`, `world/records-browser`,
 `npc/intent-persistence`, `npc/intent-boundaries`, `npc/story-persistence`,
-`npc/story-director`, `factions/social-group-succession`, and existing
+`npc/story-director`, `factions/social-group-succession`,
+`factions/social-group-nested-succession`, and existing
 personality/relationship/base persistence cases. The E2E test
 generates a world, writes/loads format 5, then uses search, filters, sorting and
 the interesting-NPC selector through the real VNC UI.

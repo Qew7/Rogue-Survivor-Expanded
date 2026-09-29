@@ -59,7 +59,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 if (victim == null || victim.Dead || aggressor == null || aggressor.Dead) continue;
                 RelationshipRecord attachment = owner.Personality.Person(victim.Id);
                 bool close = attachment != null && attachment.Attachment >= 20 || victim.GroupId != Guid.Empty && owner.SocialGroup != null && victim.GroupId == owner.SocialGroup.Identity;
-                if (close || victim.FactionId == owner.Faction.ID && c.Catalog.FactionPolicy(owner.Faction.ID).Security > 0) offers.Add(aggressor, "Protection", "defend_person", 0, 1, 100, fact.Confidence, fact.EventId,
+                if (close || owner.Faction != null && victim.FactionId == owner.Faction.ID && c.Catalog.FactionPolicy(owner.Faction.ID).Security > 0) offers.Add(aggressor, "Protection", "defend_person", 0, 1, 100, fact.Confidence, fact.EventId,
                     fact.StoryId, obligation: fact.EventId);
             }
         }

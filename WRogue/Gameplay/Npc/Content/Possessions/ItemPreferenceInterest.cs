@@ -19,7 +19,10 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         {
             if (trait.ItemModelId < 0) return;
             int count = 0; foreach (Item item in items.Items) if (item.Model.ID == trait.ItemModelId) count += item.Quantity;
-            owner.Personality.Knowledge.RememberPlace(new NpcKnownPlace(place, "item:" + trait.ItemModelId, place.Map.LocalTime.TurnCounter, count, risk));
+            NpcKnowledge knowledge = owner.Personality.Knowledge;
+            string kind = "item:" + trait.ItemModelId;
+            if (count > 0 || knowledge.Places.Exists(p => p.Kind == kind && p.Place == place))
+                knowledge.RememberPlace(new NpcKnownPlace(place, kind, place.Map.LocalTime.TurnCounter, count, risk));
         }
     }
 }

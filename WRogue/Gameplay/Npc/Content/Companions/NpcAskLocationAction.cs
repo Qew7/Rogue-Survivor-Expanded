@@ -28,6 +28,7 @@ namespace djack.RogueSurvivor.Engine.Actions
             {
                 NpcKnownPerson report = known == null ? null : new NpcKnownPerson { Id = known.Id, Name = known.Name, Place = known.Place,
                     SeenTurn = known.SeenTurn, Dead = known.Dead, Confidence = known.Confidence, Source = known.Source };
+                if (report != null && !report.Dead && report.Place.Map == null) report = null;
                 listener.Personality.Reactions.Add(new NpcReaction(m_Actor, report == null ? "I don't know where they are." :
                     report.Dead ? "I'm sorry. They died." : "I last saw them near " + report.Place.Map.Name + ".",
                     source.Id, source.Turn, "location_reported", intent.StoryId, report));

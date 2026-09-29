@@ -260,6 +260,11 @@ and its trait/skill outcome, and death. It is a chronological history of the
 personality system's significant events, not a log of every movement or action.
 Unlike the short AI observation journal, this archive does not evict early events.
 It therefore adds to save size as a world grows older.
+For entries with an actual archived cause, Read Records adds a short
+**Prompted by** or **Connected to** explanation, such as a compensation demand
+linked to a witnessed theft. Search also matches that explanation. No motive
+is inferred from a trait alone: a refusal is linked to revenge only if the
+decision was really caused by a recorded grievance or goal.
 
 This main-menu reader reveals saved NPC records outside gameplay. Format-5
 saves carry a separate compressed archive, so reading does not load the world,

@@ -17,7 +17,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                     if (units > 0 && (old == null || old.Units != units || turn - old.SeenTurn > 180))
                         knowledge.Learn(new NpcFact { Kind = "food_cache", EventId = Session.Get.NextPersonalityEventId(), EventTurn = turn, LearnedTurn = turn,
                             Confidence = 90, Source = NpcKnowledgeSource.Witness, SourceId = actor.PersonalityIdentity, Place = place, Units = units, Risk = risk });
-                    knowledge.RememberPlace(new NpcKnownPlace(place, "food", turn, units, risk));
+                    if (old != null || units > 0) knowledge.RememberPlace(new NpcKnownPlace(place, "food", turn, units, risk));
         }
     }
 }

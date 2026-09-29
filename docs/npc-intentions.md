@@ -259,6 +259,13 @@ the goal, target, generated action sequence, result and story tag; physical
 events retain the same tag.
 This lets a reader search an episode across several residents. Ordinary events
 can also carry cause/story metadata without belonging to an intention.
+Where a stored cause ID resolves to an earlier archived event, the reader
+shows its prose as **Prompted by** for a goal start or **Connected to** for
+another entry. These words are searchable. The display uses only recorded
+links, so a trait alone does not become a claimed motive.
+For a shared group plan, the director's terminal story result determines the
+group plan's stage. One participant abandoning a goal leaves the group's
+destination available to participants whose goals are still active.
 
 Format 5 saves preserve intention sequence, cause/story IDs, target identity and
 name snapshot, last known map/position and attitude, status, deadline, retry

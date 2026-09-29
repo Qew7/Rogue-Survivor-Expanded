@@ -21,7 +21,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                     int willing = PersonalitySystem.Bias(owner, DecisionKind.Compassion) + PersonalitySystem.Bias(owner, DecisionKind.Trade) / 2 -
                         PersonalitySystem.Bias(owner, DecisionKind.Supplies) / 2 + NpcValues.KnownAttitude(owner, source.Subject.PersonalityIdentity) / 4;
                     NpcResourceDefinition resource = game.NpcContent.Resource(source.Resource);
-                    bool ownNeed = resource != null && resource.OwnNeed(game, owner);
+                    bool ownNeed = resource != null && resource.OwnNeed(game, owner, source);
                     NpcReplies.Reply(owner, source.Subject, source, willing >= 15 && !ownNeed ? "resource_yielded" : "resource_refused",
                         "You can have those supplies. I'll find another way.", "I need those supplies too.");
                     NpcReaction reply = owner.Personality.Reactions.FindLast(r => r.CauseId == source.Id);

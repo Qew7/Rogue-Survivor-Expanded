@@ -150,6 +150,23 @@ Give events `Categories`, `Describe` and, when shareable, `DescribeReport` in
 their definition. Archive entries persist prose/categories, so Read Records
 can display/filter custom content without constructing the game catalog or
 restoring the world. It remains an out-of-game chronicle.
+Pass the actual triggering event ID through `CauseId`; generated goals may
+also retain additional evidence IDs in `Causes`. Read Records resolves at most
+two of those links to saved event prose, labels goal starts **Prompted by**
+and other entries **Connected to**, and can search that prose. An unresolved
+ID adds no explanation. Do not label a trait, memory or coincidence as a
+cause unless the decision rule actually used it. If an event can be retold,
+provide `DescribeReport`; the generic fallback is deliberately neutral.
+
+Perception callbacks should remember a resource place only when the resource
+is present or the place was already known and must be updated to empty. Empty
+unrelated inventories otherwise displace useful entries from the bounded
+16-place knowledge list. Resource definitions can inspect the contested event
+when deciding whether a holder needs a specific item.
+When adding a plan operator for a remembered place, check that `NpcPlanDomain.At`
+returned a nonzero location flag before adding the operator; the map may be
+unknown or the 32-place planning table may already be full. A known person can
+also lack a mapped place, so spoken location reports must handle that case.
 
 ## Registration and persistence
 

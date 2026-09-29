@@ -44,7 +44,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public NpcMotivation(Actor owner, Guid subject, PersonalityRegistry registry = null, NpcContentCatalog catalog = null)
         {
             NpcKnownPerson known = owner.Personality.Knowledge.Person(subject);
-            if (known != null && known.FactionId == owner.Faction.ID) {
+            if (known != null && owner.Faction != null && known.FactionId == owner.Faction.ID) {
                 NpcFactionPolicy policy = (catalog ?? NpcContentCatalog.Default).FactionPolicy(owner.Faction.ID);
                 CommunityCare = policy.Care; CommunitySecurity = policy.Security;
             }

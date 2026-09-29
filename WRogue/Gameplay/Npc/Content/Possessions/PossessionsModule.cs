@@ -12,7 +12,9 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         {
             catalog.OperatorSource(new NpcOperatorSource("item.acquire", c => (ulong)NpcPlanFact.ValuedItem, PossessionPlanOperators.Build,
                 available: d => d.Goal.Generated != null && d.Goal.Generated.ModelId >= 0));
-            catalog.Resource(new NpcResourceDefinition("item", (g, a) => a.HitPoints < g.Rules.ActorMaxHPs(a)));
+            catalog.Resource(new NpcResourceDefinition("item", (g, a, source) => a.Personality != null && a.Personality.HasAttachments &&
+                a.Personality.Attachments.Exists(x => x.Kind == "item" && (source.ModelId < 0 || x.ModelId == source.ModelId) &&
+                    (source.ItemId == Guid.Empty || x.ItemId == Guid.Empty || x.ItemId == source.ItemId))));
             catalog.GoalSource(this);
             catalog.Value(new NpcValueDefinition("Possession", "Recover a valued kind of item", NpcGoalValue.Possession, m => 30 + m.Supplies, false)
                 { IdentitySuffix = g => ":" + g.ModelId + ":" + g.ItemId.ToString("N") });

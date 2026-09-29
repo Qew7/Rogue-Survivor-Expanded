@@ -14,7 +14,9 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                     if (actor.Personality.HasAttachments) foreach (NpcAttachment attachment in actor.Personality.Attachments)
                         if (attachment.Kind == "item" && attachment.ItemId != Guid.Empty)
                         { int count = 0; foreach (Item item in items.Items) if (item.Model.ID == attachment.ModelId && item.StoryIdentity == attachment.ItemId) count += item.Quantity;
-                            knowledge.RememberPlace(new NpcKnownPlace(place, "item:" + attachment.ItemId.ToString("N"), turn, count, risk)); }
+                            string kind = "item:" + attachment.ItemId.ToString("N");
+                            if (count > 0 || knowledge.Places.Exists(p => p.Kind == kind && p.Place == place))
+                                knowledge.RememberPlace(new NpcKnownPlace(place, kind, turn, count, risk)); }
             NpcHomeObservation.RememberHome(actor);
         }
     }

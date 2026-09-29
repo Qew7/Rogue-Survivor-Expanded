@@ -144,11 +144,8 @@ namespace djack.RogueSurvivor.Engine
             if (deadGuy == m_Player)
                 PlayerDied(killer, reason);
 
-            // Remove followers.
-            Gameplay.Personality.NpcStorySystem.Succession(this, deadGuy);
-            deadGuy.RemoveAllFollowers();
-
-            // Remove from leader.
+            // Detach a nested leader before succession can transfer its branch.
+            // Otherwise the successor can overwrite the parent's shared group.
             #region
             if (deadGuy.Leader != null)
             {
@@ -166,6 +163,10 @@ namespace djack.RogueSurvivor.Engine
                 deadGuy.Leader.RemoveFollower(deadGuy);
             }
             #endregion
+
+            // Remove followers.
+            Gameplay.Personality.NpcStorySystem.Succession(this, deadGuy);
+            deadGuy.RemoveAllFollowers();
 
             // Remove aggressor & self defence relations.
             deadGuy.RemoveAllAgressorSelfDefenceRelations();

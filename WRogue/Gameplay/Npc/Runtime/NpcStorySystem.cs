@@ -38,8 +38,6 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             NpcStory story = Session.Get.NpcDirector.Find(intent.StoryId);
             if (group != null && group.Plan != null && group.Plan.StoryId == intent.StoryId && story != null && story.Finished)
             { group.Plan.Stage = story.Stage; group.Plan.Destination = default(Location); }
-            if (group != null && group.Plan != null && group.Plan.StoryId == intent.StoryId && intent.Status != NpcIntentStatus.Completed)
-            { group.Plan.Stage = "failed"; group.Plan.Destination = default(Location); }
         }
         public static void Succession(RogueGame game, Actor leader)
         {

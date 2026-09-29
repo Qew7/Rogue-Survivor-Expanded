@@ -21,8 +21,8 @@ static class IntimidationResponseScenario
             Check.Equal(true, NpcIntentSupport.HasEvent(enforcer, "threat_accepted"), "the frightened target replies from its own traits");
             Check.Equal(false, enforcer.Personality.Knowledge.Person(witness.PersonalityIdentity).Violation > 0,
                 "observed submission changes the speaker's belief");
-            int count = enforcer.Personality.Events.Count; NpcIntentSupport.Turn(world, enforcer);
-            Check.Equal(true, enforcer.Personality.Events.Count >= count, "the interaction leaves an ordered record");
+            Check.Equal(NpcIntentStatus.Completed, NpcIntentSupport.Intent(enforcer, "intimidate").Status,
+                "the spoken threat actually completes the enforcer's goal");
         });
     }
 }

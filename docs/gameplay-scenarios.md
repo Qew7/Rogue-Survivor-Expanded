@@ -24,6 +24,13 @@ NPC module contracts are exercised by `npc/content-module`,
 AI, extended planning facts, saved execution, archive-only event filtering,
 invalid registration/payloads and private audiences. See
 [npc-content-modules.md](npc-content-modules.md) for the extension API.
+`npc/records-causes` checks archive-only causal explanations and a missing
+cause, while `npc/knowledge-empty-caches`, `npc/resource-item-need`,
+`npc/report-prose` and `factions/social-group-nested-succession` cover the
+related review boundaries with real perception, reactions, speech and death.
+`npc/ask-location-unknown-place`, `npc/protection-missing-faction`,
+`npc/planner-barter-place-limit` and `npc/group-plan-participant-exit` cover
+unknown map data, bounded planner locations and shared-goal lifecycle.
 
 Add each new scenario in its own file under the matching topic directory in
 `tests/scenarios/cases/`. Living and undead skills have separate directories.

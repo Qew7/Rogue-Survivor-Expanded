@@ -30,7 +30,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                     NpcKnownPerson seller = d.Owner.Personality.Knowledge.Person(offer.SubjectId); if (seller == null || seller.Dead) continue;
                     bool hasPayment = false; foreach (Item item in d.Owner.Inventory.Items) if (!(item is ItemFood) && !item.IsEquipped && !item.IsUnique) hasPayment = true;
                     if (!hasPayment) continue;
-                    ulong at = d.At(seller.Place); d.Travel(seller.Place, seller.Id, at);
+                    ulong at = d.At(seller.Place); if (at == 0) continue;
+                    d.Travel(seller.Place, seller.Id, at);
                     d.Add(NpcPlanAction.BarterFood, seller.Place, seller.Id, at, 0,
                         (ulong)(NpcPlanFact.Food | NpcPlanFact.SpareFood), 0, 12 - PersonalitySystem.Bias(d.Owner, DecisionKind.Trade) / 3);
                 }

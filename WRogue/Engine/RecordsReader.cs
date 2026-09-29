@@ -22,7 +22,7 @@ namespace djack.RogueSurvivor.Engine
         { Path = path; Turn = turn; Records = records; }
     }
 
-    static class RecordsReader
+    static partial class RecordsReader
     {
         public static RecordsSave Load(string path)
         {
@@ -50,11 +50,14 @@ namespace djack.RogueSurvivor.Engine
             return saves;
         }
 
-        static bool EntryMatches(ResidentEntry entry, string search, RecordsEventFilter filter)
+        static bool EntryMatches(ResidentEntry entry, string search, RecordsEventFilter filter,
+            Dictionary<long, ResidentEntry> causes)
         {
-            if (!String.IsNullOrEmpty(search) && entry.Text.IndexOf(search, StringComparison.OrdinalIgnoreCase) < 0) return false;
-            if (filter == RecordsEventFilter.All) return true;
-            return NpcRecordDescriptions.Matches(entry, (NpcRecordCategory)(1 << ((int)filter - 1)));
+            if (filter != RecordsEventFilter.All &&
+                !NpcRecordDescriptions.Matches(entry, (NpcRecordCategory)(1 << ((int)filter - 1)))) return false;
+            if (String.IsNullOrEmpty(search) || entry.Text.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0) return true;
+            string context = CauseContext(entry, causes);
+            return context != null && context.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         public static List<ResidentRecord> Residents(RecordsSave save)
@@ -75,12 +78,13 @@ namespace djack.RogueSurvivor.Engine
         {
             List<KeyValuePair<ResidentRecord, ResidentEntry>> entries =
                 new List<KeyValuePair<ResidentRecord, ResidentEntry>>();
+            Dictionary<long, ResidentEntry> causes = CauseIndex(save);
             IEnumerable<ResidentRecord> people = selected == null
                 ? (IEnumerable<ResidentRecord>)(query == null ? new List<ResidentRecord>(save.Records.Residents) :
                     query.Select(save).ConvertAll(p => p.Resident)) : new[] { selected };
             foreach (ResidentRecord resident in people)
                 foreach (ResidentEntry entry in resident.Entries)
-                    if (entry.Turn <= save.Turn && EntryMatches(entry, search, filter))
+                    if (entry.Turn <= save.Turn && EntryMatches(entry, search, filter, causes))
                         entries.Add(new KeyValuePair<ResidentRecord, ResidentEntry>(resident, entry));
             entries.Sort((a, b) => {
                 int turn = a.Value.Turn.CompareTo(b.Value.Turn);
@@ -95,6 +99,8 @@ namespace djack.RogueSurvivor.Engine
             {
                 string line = new WorldTime(entry.Value.Turn) + " | " + entry.Key.Name +
                     " [" + entry.Key.Identity.ToString("N").Substring(0, 8) + "] | " + entry.Value.Text;
+                string context = CauseContext(entry.Value, causes);
+                if (context != null) line += " | " + context;
                 const string indent = "    ";
                 bool continuation = false;
                 while (line.Length > 120)

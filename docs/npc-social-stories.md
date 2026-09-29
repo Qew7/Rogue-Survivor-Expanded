@@ -116,6 +116,11 @@ Read Records retains readable social events, private conclusions, supporting
 cause IDs and `story_link` entries. It reads the archive without restoring the
 running simulation. During play, observers see actions and hear speech;
 another person's memories remain private.
+When an archived ID resolves to a real earlier event, the reader shows that
+event beside the goal or action as **Prompted by** or **Connected to**. It
+shows at most two distinct links and never invents an explanation for a
+missing cause. These links describe recorded evidence and sequence; a claim
+about an NPC's motive requires the corresponding gameplay rule and causal link.
 
 Each personality retains at most 16 commitments, 16 resource disputes and 16
 attachments. Finished commitments can be displaced; active ones are retained.
