@@ -126,10 +126,11 @@ the theft becomes hostile to the thief.
 
 ## Develop and test
 
-For a new release, run `python3 tools/release_version.py X.Y.Z` before committing
+For a new release, run `ruby tools/release_version.rb X.Y.Z` before committing
 and tagging `vX.Y.Z`. This updates the executable, Windows file metadata,
 bundled mod, README, and save format documentation together. CI checks that
-every copy matches `VERSION` and that release tags use the same number.
+every copy matches `VERSION` and that release tags use the same number on push;
+this version check is skipped for pull requests.
 
 ```sh
 docker build --target test .
