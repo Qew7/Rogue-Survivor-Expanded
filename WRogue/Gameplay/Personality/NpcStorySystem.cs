@@ -32,44 +32,6 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 return intent;
             }
         }
-        public static void Consider(RogueGame game, Actor owner, IList<Actor> visible)
-        {
-            int turn = owner.Location.Map.LocalTime.TurnCounter;
-            NpcKnowledge knowledge = owner.Personality.Knowledge;
-            if (turn < knowledge.NextPlanTurn) return;
-            knowledge.NextPlanTurn = turn + 15;
-            foreach (NpcFact fact in knowledge.Facts)
-            {
-                NpcSituationDefinition situation = NpcStoryContent.ForFact(fact.Kind);
-                if (situation == null || turn - fact.EventTurn > situation.MaxAge || fact.OtherId == owner.PersonalityIdentity ||
-                    fact.OtherId == Guid.Empty || fact.Confidence < situation.Confidence) continue;
-                NpcKnownPerson target = knowledge.Person(fact.OtherId) ?? new NpcKnownPerson { Id = fact.OtherId, Name = fact.OtherName, Place = fact.Place, SeenTurn = fact.EventTurn };
-                NpcIntentDefinition method = null; int best = Int32.MinValue;
-                foreach (NpcIntentDefinition candidate in situation.Methods)
-                { int score = candidate.ScoreKnown(owner, 0, false) + candidate.SocialScore(owner, target.Id);
-                    if (score >= candidate.Threshold && score > best) { method = candidate; best = score; } }
-                if (method == null) continue;
-                if (method.ScoreKnown(owner, 0, false) + method.SocialScore(owner, target.Id) < method.Threshold ||
-                    !owner.Personality.CanStartIntent(method.Id, turn)) continue;
-                if (!Session.Get.NpcDirector.OfferDue(owner.Location.Map, turn)) return;
-                StartKnown(owner, target, method, fact.EventId); return;
-            }
-            if (owner.SocialGroup == null) return;
-            foreach (NpcKnownPerson person in knowledge.People)
-                if (owner.SocialGroup.Members.Contains(person.Id) && person.Id != owner.PersonalityIdentity && !person.Dead &&
-                    turn - person.SeenTurn >= 30 && NpcIntentSystem.VisibleTarget(visible, person.Id) == null &&
-                    owner.Personality.CanStartIntent(NpcIntentContent.Seek.Id, turn) &&
-                    NpcIntentContent.Seek.ScoreKnown(owner, 0, false) + NpcIntentContent.Seek.SocialScore(owner, person.Id) >= NpcIntentContent.Seek.Threshold)
-                {
-                    if (!Session.Get.NpcDirector.OfferDue(owner.Location.Map, turn)) return;
-                    // Missing is an inference from old contact, not knowledge of current movement/death.
-                    NpcFact inference = new NpcFact { Kind = "missing_companion", EventId = Session.Get.NextPersonalityEventId(),
-                        SubjectId = person.Id, SubjectName = person.Name, Place = person.Place, EventTurn = turn,
-                        LearnedTurn = turn, Confidence = 60, Source = NpcKnowledgeSource.Inferred, SourceId = owner.PersonalityIdentity };
-                    knowledge.Learn(inference); Session.Get.ResidentRecords.InferredMissing(owner, inference);
-                    StartKnown(owner, person, NpcIntentContent.Seek, inference.EventId); return;
-                }
-        }
         public static void EventFinished(RogueGame game, SignificantEvent source)
         {
             if (source.StoryId == null) return;

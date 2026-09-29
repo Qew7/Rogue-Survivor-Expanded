@@ -12,27 +12,6 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         { return Session.Get.GamePreset.NpcPersonalitiesEnabled && actor != null && !actor.IsPlayer && !actor.IsDead &&
             actor.Personality != null && actor.Model != null && actor.Controller is Gameplay.AI.OrderableAI &&
             actor.Model.Abilities.IsIntelligent && !actor.Model.Abilities.IsUndead; }
-        static NpcIntent Start(RogueGame game, Actor owner, Actor target, NpcIntentDefinition definition,
-            int turn, long cause = 0, string story = null)
-        {
-            if (!Enabled(owner) || target == null || target == owner || target.IsDead ||
-                target.Model.Abilities.IsUndead || !target.Model.Abilities.IsIntelligent) return null;
-            int score = definition.Score(owner, target); if (score < definition.Threshold) return null;
-            if (!owner.Personality.CanStartIntent(definition.Id, turn)) return null;
-            string storyId = story ?? owner.PersonalityIdentity.ToString("N") + ":" + owner.Personality.NextIntentSequence;
-            NpcStoryDirector director = Session.Get.NpcDirector;
-            lock (director)
-            {
-                NpcStory episode = director.Open(storyId, definition.Id, owner, cause, turn + definition.Duration,
-                    definition.Id + ":" + owner.PersonalityIdentity + ":" + target.PersonalityIdentity);
-                if (episode == null || episode.Roles.Count >= 8) return null;
-                NpcIntent intent = owner.Personality.StartIntent(definition.Id, owner, target, turn,
-                    definition.Duration, definition.Cooldown, score, cause, storyId, PersonalitySystem.Attitude(owner, target));
-                if (intent != null) director.Bind(episode, owner, intent);
-                if (intent != null) Session.Get.ResidentRecords.IntentChanged(owner, intent, "started", definition.Name);
-                return intent;
-            }
-        }
         public static void Observe(RogueGame game, Actor observer, SignificantEvent source)
         {
             if (!Enabled(observer)) return;
@@ -43,7 +22,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             {
                 foreach (NpcIntent intent in state.Intents)
                     if (!intent.Finished && source.Subject != null &&
-                        (source.Subject == observer || intent.TargetId == source.Subject.PersonalityIdentity || intent.CoordinatorId == source.Subject.PersonalityIdentity))
+                        (source.Subject == observer || (intent.Generated != null ? intent.Generated.SubjectId == source.Subject.PersonalityIdentity :
+                            intent.TargetId == source.Subject.PersonalityIdentity || intent.CoordinatorId == source.Subject.PersonalityIdentity)))
                         Finish(observer, intent, NpcIntentStatus.Failed, source.Subject == observer ? "owner died" : "learned that the target died");
                 if (source.Subject == observer) state.Reactions.Clear();
             }
@@ -69,19 +49,15 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                         if (intent.Plan == null) Finish(observer, intent, NpcIntentStatus.Failed, "request was declined");
                         else { intent.Plan.Invalidate(); intent.Plan.NextPlanningTurn = source.Turn; intent.NextAttempt = source.Turn + 1; intent.Status = NpcIntentStatus.Active; }
                     }
-            NpcIntent answer = null;
             if (NpcPlanExecution.OfferTrade(game, observer, source)) return;
-            foreach (NpcIntentDefinition definition in NpcIntentContent.ForEvent(source.Kind))
-            {
-                Actor target = definition.Bind(observer, source);
-                if (target == null || (definition.Method != NpcIntentMethod.LeaveGroup && game.Rules.AreEnemies(observer, target))) continue;
-                NpcIntent intent = Start(game, observer, target, definition, source.Turn, source.Id, source.StoryId);
-                if (definition == NpcIntentContent.Help) answer = intent;
-            }
+            NpcGoalGenerator.Refresh(game, observer);
             if (source.Kind == "requested_food" && source.Other == observer && source.Subject != null &&
                 !game.Rules.AreEnemies(observer, source.Subject))
             {
-                if (answer == null && state.Reactions.Count < 4)
+                bool answering = false;
+                foreach (NpcIntent intent in state.Intents)
+                    if (!intent.Finished && intent.DefinitionId == NpcIntentContent.Help.Id && intent.TargetId == source.Subject.PersonalityIdentity) answering = true;
+                if (!answering && state.Reactions.Count < 4)
                     state.Reactions.Add(new NpcReaction(source.Subject, "I'm keeping my supplies.", source.Id,
                         source.Turn, "request_refused", source.StoryId));
             }
@@ -106,25 +82,6 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 if (item is ItemFood && item.Quantity > 0 && !game.Rules.IsFoodSpoiled((ItemFood)item,
                     actor.Location.Map.LocalTime.TurnCounter)) return true;
             return false;
-        }
-        public static void ConsiderFoodRequest(RogueGame game, Actor actor, IList<Actor> visible)
-        {
-            if (actor != null && actor.Personality != null)
-                foreach (NpcIntent goal in actor.Personality.Intents)
-                    if (!goal.Finished && goal.DefinitionId == NpcIntentContent.Obtain.Id) return;
-            if (!Enabled(actor) || !game.Rules.IsActorHungry(actor) || HasFood(game, actor) ||
-                !actor.Personality.CanStartIntent(NpcIntentContent.Request.Id, actor.Location.Map.LocalTime.TurnCounter)) return;
-            Actor best = null; int bestScore = Int32.MinValue;
-            foreach (Actor candidate in visible)
-            {
-                if (candidate == actor || candidate.IsDead || candidate.IsSleeping || candidate.Model.Abilities.IsUndead ||
-                    !candidate.Model.Abilities.IsIntelligent || game.Rules.AreEnemies(actor, candidate)) continue;
-                int score = NpcIntentContent.Request.Score(actor, candidate) - game.Rules.GridDistance(actor.Location.Position, candidate.Location.Position);
-                if (candidate == actor.Leader) score += 10;
-                if (best == null || score > bestScore || (score == bestScore && candidate.PersonalityIdentity.CompareTo(best.PersonalityIdentity) < 0))
-                { best = candidate; bestScore = score; }
-            }
-            if (best != null) Start(game, actor, best, NpcIntentContent.Request, actor.Location.Map.LocalTime.TurnCounter);
         }
         public static SignificantEvent Publish(RogueGame game, string kind, Actor subject, Actor other, long cause = 0, string story = null)
         {

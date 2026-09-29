@@ -171,6 +171,8 @@ namespace djack.RogueSurvivor.Data
                 case "location_reported": return subject + " answered " + other + " about a companion's last known location.";
                 case "supplies_requested": return subject + " asked " + other + " to gather supplies for the group.";
                 case "supplies_acquired": return subject + " acquired the supplies they were seeking.";
+                case "medicine_acquired": return subject + " acquired medicine to treat their wounds.";
+                case "treated_wounds": return subject + " treated their wounds with real medicine.";
                 case "supplies_delivered": return subject + " reported the completed delivery to " + other + ".";
                 case "task_declined": return subject + " declined " + other + "'s task.";
                 case "shelter_suggested": return subject + " proposed moving the group to known shelter.";
@@ -179,7 +181,7 @@ namespace djack.RogueSurvivor.Data
                 case "bartered_food": return subject + " obtained food by exchanging supplies with " + other + ".";
                 case "shelter_reached": return subject + " reached the agreed shelter.";
                 case "reunited": return subject + " found " + other + " after searching.";
-                case "confronted": return subject + " warned " + other + " about reported violence.";
+                case "confronted": return subject + " warned " + other + " about known misconduct.";
                 case "withdrew": return subject + " withdrew from the last reported danger location.";
                 case "group_succession": return subject + " succeeded " + other + " as group leader.";
                 case "aid_acknowledged": return subject + " acknowledged aid from " + other + ".";

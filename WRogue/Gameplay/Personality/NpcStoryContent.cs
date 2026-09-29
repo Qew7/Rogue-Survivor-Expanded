@@ -4,23 +4,8 @@ using djack.RogueSurvivor.Data;
 
 namespace djack.RogueSurvivor.Gameplay.Personality
 {
-    sealed class NpcSituationDefinition
-    {
-        public readonly string Id;
-        public readonly int Confidence, MaxAge;
-        public readonly NpcIntentDefinition[] Methods;
-        public NpcSituationDefinition(string id, int confidence, int age, params NpcIntentDefinition[] methods)
-        { Id = id; Confidence = confidence; MaxAge = age; Methods = methods; }
-    }
     static class NpcStoryContent
     {
-        static readonly Dictionary<string, NpcSituationDefinition> byFact = new Dictionary<string, NpcSituationDefinition>
-        {
-            { "attack", new NpcSituationDefinition("reported_violence", 40, 180, NpcIntentContent.Avoid, NpcIntentContent.Confront) },
-            { "murder", new NpcSituationDefinition("reported_murder", 40, 180, NpcIntentContent.Avoid, NpcIntentContent.Confront) }
-        };
-        public static NpcSituationDefinition ForFact(string kind)
-        { NpcSituationDefinition definition; return byFact.TryGetValue(kind, out definition) ? definition : null; }
         public static void RegisterMemories(PersonalityRegistry registry)
         {
             registry.Register(new MemoryDefinition("traded_for_food", "Exchanged supplies for food", 2, 5,

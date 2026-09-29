@@ -112,6 +112,14 @@ Elementary goals and actions remain authored mechanics. Plans and causal links
 survive saving and appear retrospectively in Read Records. See
 [docs/npc-intentions.md](docs/npc-intentions.md) for behavior and limits.
 
+An integrated state evaluator now generates goals from unmet needs and personal
+values: food, health, care, debt, safety, justice, contact and group autonomy.
+Traits, relationships and evidence confidence determine their importance.
+Existing injury or debt can motivate action without a new scripted incident;
+new urgent needs can replace weaker generated goals. Recovery uses remembered
+medicine and actual treatment. Read Records retains each goal's state and utility
+explanation, and saves preserve its subject and cooldown.
+
 The **Expanded** preset enables claimable bases. Stand inside an enclosed
 building and press **Ctrl+B** to preview its boundaries; press **Y** to claim
 it. Hostile actors and undead block their rooms. Fortified passages can connect

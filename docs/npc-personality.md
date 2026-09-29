@@ -80,6 +80,15 @@ food, and witnessing another participant's successful delivery can remove a
 redundant step. Plans stay private during gameplay and are retained in Read
 Records alongside their actual outcomes.
 
+`NpcGoalGenerator` creates those desired results by evaluating deficits in the
+NPC's current needs and remembered conditions. Nutrition, recovery, care,
+reciprocity, safety, justice, belonging and autonomy use trait-driven importance
+and evidence confidence. It accepts no event kind: observations first update
+beliefs, and changed state then motivates a goal. Existing debt or injury can
+produce a goal without a new significant event. New urgent needs can replace a
+weaker generated goal at the decision boundary. Private starts record the
+current/desired values and utility explanation in Read Records.
+
 An actual food exchange creates the acquired `traded_for_food` memory, attributed
 to the trading partner. Its resolution can grant CHARISMATIC skill. An offer or
 an invalid transaction alone creates no memory of successful negotiation.

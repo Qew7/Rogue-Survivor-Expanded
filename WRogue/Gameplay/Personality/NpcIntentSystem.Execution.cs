@@ -34,7 +34,9 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         { foreach (Actor actor in visible) if (actor.PersonalityIdentity == id) return actor; return null; }
         public static void Maintain(RogueGame game, Actor owner, IList<Actor> visible, bool danger, bool followingOrder)
         {
-            if (!Enabled(owner) || !owner.Personality.HasPendingSocialState) return;
+            if (!Enabled(owner)) return;
+            NpcGoalGenerator.Refresh(game, owner, true);
+            if (!owner.Personality.HasPendingSocialState) return;
             int turn = owner.Location.Map.LocalTime.TurnCounter;
             owner.Personality.Reactions.RemoveAll(r => turn > r.Deadline);
             foreach (NpcIntent intent in owner.Personality.IntentList)
@@ -45,6 +47,9 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 NpcIntentDefinition definition = NpcIntentContent.Find(intent.DefinitionId);
                 if (definition == null) { Finish(owner, intent, NpcIntentStatus.Abandoned, "unknown intent definition"); continue; }
                 if (turn >= intent.Deadline) { Finish(owner, intent, NpcIntentStatus.Failed, "deadline expired"); continue; }
+                if (intent.Generated != null && intent.Generated.Deficit == 0 &&
+                    (intent.Generated.Value == NpcGoalValue.Care || intent.Generated.Value == NpcGoalValue.Reciprocity || intent.Generated.Value == NpcGoalValue.Recovery))
+                { Finish(owner, intent, NpcIntentStatus.Completed, "observed that the desired state was satisfied"); continue; }
                 if (definition.Method == NpcIntentMethod.LeaveGroup &&
                     (owner.Leader == null || owner.Leader.PersonalityIdentity != intent.TargetId))
                 { Finish(owner, intent, NpcIntentStatus.Abandoned, "group membership changed"); continue; }
@@ -63,10 +68,11 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                     intent.LastKnown = target.Location;
                     intent.LastKnownTurn = turn;
                     intent.KnownAttitude = PersonalitySystem.Attitude(owner, target);
-                    if (definition.Method != NpcIntentMethod.LeaveGroup && game.Rules.AreEnemies(owner, target))
+                    if (definition.Method != NpcIntentMethod.LeaveGroup && definition.Method != NpcIntentMethod.AvoidPerson &&
+                        (intent.Generated == null || intent.Generated.SubjectId != owner.PersonalityIdentity) && game.Rules.AreEnemies(owner, target))
                     { Finish(owner, intent, NpcIntentStatus.Abandoned, "target became hostile"); continue; }
                 }
-                if (definition.Score(owner, intent) < definition.Threshold)
+                if (definition.Score(owner, intent) < definition.ThresholdFor(intent))
                 { Finish(owner, intent, NpcIntentStatus.Abandoned, "motivation changed"); continue; }
                 bool pause = definition.Method != NpcIntentMethod.LeaveGroup && (danger || followingOrder ||
                     game.Rules.IsActorTired(owner) || (definition.Method == NpcIntentMethod.ShareFood && game.Rules.IsActorHungry(owner)));

@@ -13,7 +13,7 @@ namespace djack.RogueSurvivor.Gameplay.AI
     {
         protected ActorAction BehaviorNpcPlan(RogueGame game, NpcIntent goal, List<Actor> visible)
         {
-            if (goal.Plan == null) goal.Plan = new NpcPlan { Desired = NpcGoalPlanner.Desired(NpcIntentContent.Find(goal.DefinitionId).Method) };
+            if (goal.Plan == null) goal.Plan = new NpcPlan { Desired = goal.Generated != null ? goal.Generated.Result : NpcGoalPlanner.Desired(NpcIntentContent.Find(goal.DefinitionId).Method) };
             NpcPlan plan = goal.Plan; int turn = m_Actor.Location.Map.LocalTime.TurnCounter;
             var domain = new NpcPlanDomain(game, m_Actor, goal, visible);
             if (plan.Traits != domain.Traits) { plan.Invalidate(); plan.NextPlanningTurn = turn; }
@@ -68,6 +68,14 @@ namespace djack.RogueSurvivor.Gameplay.AI
                 else if (step.Action == NpcPlanAction.PickupFood)
                     food = NpcPlanExecution.FoodOnGround(game, m_Actor, step.Place);
                 else if (step.Action == NpcPlanAction.GiveFood && person != null) food = NpcIntentSystem.SpareFood(game, m_Actor, person);
+                if (step.Action == NpcPlanAction.PickupMedicine || step.Action == NpcPlanAction.UseMedicine)
+                {
+                    var medicine = new ActionNpcMedicine(m_Actor, game, goal, step);
+                    if (medicine.IsLegal() && (step.Action != NpcPlanAction.PickupMedicine || Session.Get.NpcDirector.Reserve(goal.StoryId, step.Place))) return medicine;
+                    if (step.Action == NpcPlanAction.PickupMedicine && NpcKnowledgeSystem.Visible(game, m_Actor, step.Place) &&
+                        NpcPlanExecution.Medicine(game, m_Actor, step.Place) == null)
+                        m_Actor.Personality.Knowledge.RememberPlace(new NpcKnownPlace(step.Place, "medicine", turn));
+                }
                 var action = new ActionNpcPlan(m_Actor, game, goal, step, person, food, movement);
                 if (step.Action == NpcPlanAction.BarterFood)
                 {

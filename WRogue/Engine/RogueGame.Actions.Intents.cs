@@ -44,6 +44,9 @@ namespace djack.RogueSurvivor.Engine
             NpcPlanExecution.Publish(this, "shared_food", actor, target, intent);
             if (definition.Method == NpcIntentMethod.GatherFood)
             { intent.Progress = 2; return; }
+            if (intent.Generated != null && intent.Generated.Value == NpcGoalValue.Reciprocity &&
+                actor.Personality.Person(target.PersonalityIdentity).Debt > intent.Generated.Desired)
+            { if (intent.Plan != null) { intent.Plan.Invalidate(); intent.Plan.NextPlanningTurn = actor.Location.Map.LocalTime.TurnCounter; } return; }
             NpcIntentSystem.Finish(actor, intent, NpcIntentStatus.Completed, "transferred one food unit");
         }
     }

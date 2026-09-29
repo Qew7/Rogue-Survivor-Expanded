@@ -59,6 +59,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 case NpcIntentMethod.GatherFood: return (ulong)(NpcPlanFact.Delivered | NpcPlanFact.Reported);
                 case NpcIntentMethod.ReachShelter: return (ulong)NpcPlanFact.Sheltered;
                 case NpcIntentMethod.ObtainFood: return (ulong)NpcPlanFact.Food;
+                case NpcIntentMethod.RestoreHealth: return (ulong)NpcPlanFact.Healthy;
                 default: return 0;
             }
         }

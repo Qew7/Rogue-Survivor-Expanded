@@ -1,7 +1,7 @@
 # Trait-driven NPC intentions
 
 The system connects local knowledge, perceived events and survival needs to
-persistent intentions, generated action plans and real AI actions. It includes
+persistent intentions, generated desired states, action plans and real AI actions. It includes
 personal goals, spoken reports, searches, shared group episodes and a bounded story director. It uses
 the existing personality, relationship, action and chronicle systems.
 
@@ -14,7 +14,8 @@ flowchart TD
     B --> D[Known situation]
     C --> E[Traits, needs and motivation]
     D --> E
-    E --> F[Personal intention]
+    E --> V[Value unmet states]
+    V --> F[Personal intention]
     F --> P[Desired state]
     P --> Q[Search available action combinations]
     Q --> G[Execute and revalidate a step]
@@ -36,7 +37,74 @@ speak, give food, fight or leave their group. Internal scores, intended actions
 and another person's memories are not added to inspection screens. Read Records
 provides retrospective access to the saved story outside gameplay.
 
-## Implemented situations
+## Generating goals from state
+
+`NpcGoalGenerator` evaluates current needs, bounded personal knowledge and
+relationships. It does not receive a significant-event kind. Observation and
+conversation adapters in `NpcKnowledgeSystem` first update beliefs about a
+person's food need, danger or unaddressed wrongdoing, with time, confidence and
+actual causal IDs. The same perceived condition can come from different sources.
+Looking at a visible enemy establishes risk without inventing an attack.
+Independent danger and wrongdoing confidence prevent later sight of a person
+from turning an uncertain accusation into witnessed evidence.
+
+The generator binds desirable states to known subjects and available execution
+capabilities. It records current/desired values, normalized deficit, importance,
+confidence and expected utility. No new event is required: hunger, injury, an
+existing debt or lost contact can already make a state worth improving.
+
+All arithmetic is integer:
+
+`utility = deficit * importance * confidence / 10000`
+
+Deficit and confidence are clamped to 0..100 and importance to 0..200. Utility
+must reach 20 for an autonomous goal. The strongest eligible states are admitted
+first; their stable value/subject keys break ties. Existing goal scores are
+refreshed before action selection. Changed traits, needs and knowledge can
+change the preferred result as well as the method used to achieve it.
+
+| Value | Desired improvement | Importance inputs |
+| --- | --- | --- |
+| Nutrition | The hungry owner has usable food | Survival need |
+| Recovery | The owner reaches their actual maximum HP | Supplies and courage |
+| Care | A known person with a credible food need receives food | Compassion, attachment, feeling, group preference and reluctance to give |
+| Reciprocity | Reduce a known debt by one food gift's contribution | Compassion, trade and feeling |
+| Safety | Withdraw from a remembered nearby danger | Courage and fear |
+| Justice | Communicate a boundary about known unaddressed misconduct | Law, courage and grievance |
+| Belonging | Restore contact with a known missing group member | Group preference, compassion, attachment and feeling |
+| Autonomy | Leave membership under a known dangerous leader | Group preference, courage and leader trust |
+
+These values and game actions are authored mechanics. Subjects, current
+shortfalls, importance, competing desires and action sequences are bound during
+play. The stable intention IDs remain execution/record labels; their former
+event triggers and the attack/murder situation-to-goal table have been removed.
+Explicit spoken group assignments still create actual commitments and use their
+existing acceptance rules.
+
+Each value/subject pair has its own saved cooldown, allowing two aid goals for
+different people even when their names match. At most four goals are active and
+twelve are retained. When all four slots are occupied, a newly eligible state
+with at least ten more utility points can replace the weakest generated goal.
+Explicit group commitments are not replacement candidates. Replacement and
+abandonment happen at the decision boundary, allowing an action already being
+performed to finish its actual outcome first. Legacy cooldowns from loaded or
+explicit intentions are respected. Director admission can still reject a goal.
+
+Evaluation uses the owner's state and at most 32 remembered people, producing
+at most 192 candidates. It never scans the town or unknown inventories. Food
+needs retain their original time/confidence; expired requests, known enemies and
+known deaths cannot motivate new aid. Replies in a shared episode defer new
+reciprocity goals for one day; existing repayment targets remain stable when a
+new debt is incurred. Ordinary combat, eating, medicine use and explicit orders
+retain their existing priorities.
+
+Goal starts privately record their state/utility explanation in Read Records.
+Generation itself emits no physical event, adds no item and resolves no memory.
+State changes can motivate independent goals in other observers: actual theft,
+for example, establishes unaddressed wrongdoing that a lawful owner may want to
+address. Hostility and immediate combat still determine which actions are legal.
+
+## Observable examples
 
 CivilianAI, GangAI, SoldierAI and CHARGuardAI participate when NPC traits and
 memories are enabled. Intelligent living actors with these controllers can act;
@@ -47,6 +115,7 @@ do not generate autonomous intentions.
 | --- | --- | --- |
 | Received needed aid | Repay the helper | Thanks, approach the last known location, give one food unit |
 | Hungry with no usable food | Obtain usable food | Collect known supplies, ask someone, or accept a spoken trade offer |
+| Wounded with known medicine available | Recover health | Approach and acquire real medicine, then use it with existing medicine rules |
 | Received a food request | Help the requester | Give one food unit if supplies permit |
 | Food request does not produce a help intention | Decline | Speak a refusal; the requester records the known outcome |
 | Receives a food request and prefers trade over charity | Offer an exchange | Speak an offer; exchange two food units for supplies if both inventories permit |
@@ -72,17 +141,19 @@ memories. Their eventual outcomes use existing eligible advanced traits
 the resolved memories. Leaving voluntarily has its own `left_group` event;
 existing abandonment events retain their original meaning.
 
-### Motivation and timing
+### Explicit intentions, compatibility and timing
 
-Scores use integer arithmetic:
+The registry still supplies stable execution IDs, durations and cooldowns.
+Explicit group assignments and loaded intentions without a generated-state
+payload retain the original motivation calculation:
 
 `base + relationWeight * attitude / 2 + sum(traitBias * numerator / denominator)`
 
 Remembered debt adds to repayment, fear to avoidance, grievance to confrontation,
 and attachment to searching, each at half its current value. All are integer
-scores. The strongest eligible method is selected for a known violent situation;
-the same report can motivate a timid person to withdraw and a lawful person to
-approach and warn its reported aggressor. A warning changes no HP and creates no
+scores. Autonomous intentions instead use the state utility above. The same
+known situation can motivate a timid person to withdraw and a lawful person to
+approach and communicate a boundary. A warning changes no HP and creates no
 invented attack or crime.
 
 Attitude is the existing combined person/group/faction assessment. During
@@ -95,6 +166,7 @@ Departure additionally subtracts a leader-trust penalty from 0 to 60.
 | `repay_aid` | 25 / 20 | Compassion + Trade | 2 days | 1 day |
 | `request_food` | 35 / 20 | Group + Trade / 2 | 60 turns | 180 turns |
 | `obtain_food` | 35 / 20 | Explore + Supplies − Group / 2 | 180 turns | 180 turns |
+| `restore_health` | 40 / 20 | Generated recovery utility | 180 turns | 180 turns |
 | `answer_food_request` | 25 / 20 | Compassion + Trade | 60 turns | 60 turns |
 | `leave_unsafe_group` | 40 / 55 | −Group − Courage / 2 | 1 day | 1 day |
 | `seek_companion` | 20 / 35 | Group + Compassion / 2 | 1 day | 180 turns |
@@ -147,8 +219,8 @@ others' inventories.
   blocked attempts fail the intention. The deadline also advances on map turns
   while an actor sleeps or follows an order.
 - A maximum of four pending spoken reactions expire after thirty turns. Helping
-  within an existing story does not start a new repayment story, preventing
-  endless reciprocal gifts.
+  within an existing story defers new reciprocity goals for one day, preventing
+  an immediate cycle of reciprocal gifts. Existing repayment targets stay stable.
 
 ## Causality, records and saving
 
@@ -168,7 +240,10 @@ can also carry cause/story metadata without belonging to an intention.
 
 Format 5 saves preserve intention sequence, cause/story IDs, target identity and
 name snapshot, last known map/position and attitude, status, deadline, retry
-progress, announcement state, outcome, cooldowns and pending reactions. Terminal
+progress, announcement state, outcome, cooldowns and pending reactions. Generated
+states retain their subject, current/desired values, deficit, importance,
+confidence, utility, evaluation turn and desired planner result; per-state
+cooldowns retain the same keys after loading. Terminal
 intentions release their map references, including plan steps and rejected
 bindings. Plans save their desired state, cursor, costs, conditions and effects,
 knowledge/trait cache, retry turn and last actual causal event. They never retain
@@ -217,9 +292,9 @@ end a search without consulting the unseen actor's current state.
 
 Each NPC retains at most 48 facts, 32 people, 16 places, 32 exits and 64
 conversation/query deduplication entries. Facts and places expire after two days
-from the original observation. New knowledge-based situation checks run at most
-once per 15 local turns. Situation definitions are indexed by event kind and work with these
-bounded lists and current local perceptions.
+from the original observation. Goal evaluation runs after accepted observations
+and before decisions, using these bounded lists. The director continues to pace
+complex group proposals independently.
 
 ## Groups, faction interests and shared episodes
 
@@ -321,7 +396,8 @@ shelter or departure. There is no authored complete action chain for a plot.
 Available primitives are travel, pickup, food request, offered barter, food
 transfer, delivery report, location question, reunion, warning, retreat, safety
 confirmation, entering shelter and leaving a group. Movement uses existing
-navigation and remembered exits. Trait biases for group preference, compassion,
+navigation and remembered exits. Recovery also uses medicine pickup and use.
+Trait biases for group preference, compassion,
 trade, exploration, supplies, law and courage change action costs. Actual
 attitude and leader preference change whom an NPC asks. Supplies in a visibly
 claimed foreign base carry remembered risk: lawful actors penalize that method;
@@ -354,6 +430,14 @@ received-unit counters and the `bartered_food` event reflect the real exchange.
 The acquired `traded_for_food` memory can resolve to the existing CHARISMATIC
 skill; speech alone grants no negotiation experience.
 
+Recovery plans bind remembered healing medicine. Pickup does not change HP;
+the existing medicine action consumes the real item and applies the ordinary
+healing rules. Successful use emits `treated_wounds` with the active goal's
+causal metadata, including when the ordinary urgent medicine behavior acts
+before the planner. Partial treatment causes reassessment, rather than writing
+predicted full health into state. Vanished visible medicine invalidates its
+remembered availability. Acquisition and treatment appear in the Life category.
+
 Each search expands at most 128 states, keeps at most 512 pending states and
 returns at most ten steps. A domain contains at most 64 bound actions, 32 place
 bindings and eight possible listeners. Failed bindings are avoided for 30 turns,
@@ -372,19 +456,21 @@ under `tests/scenarios/` verify the implementation; they are not NPC plot script
 
 ## Adding content
 
-1. Add a stable string ID and definition in
-   `WRogue/Gameplay/Personality/NpcIntentContent.cs`. Specify motivation weights,
-   threshold, duration and cooldown. Attach event conditions and the target role
-   with `.On(...)` before registering the definition. Survival needs may initiate
-   goals from the existing local AI perception path instead.
+1. Identify a valued state that the real mechanics can improve. Reuse or extend
+   `NpcValues` and bind its current/desired values and known subject in
+   `NpcGoalGenerator.State.cs`. New perception/communication sources update
+   typed beliefs in `NpcKnowledgeSystem`; keep evidence time and confidence.
+   Add a stable execution ID in `NpcIntentContent.cs` only when a new capability
+   is needed, with duration and cooldown. Do not route an event kind directly
+   to a plot or goal.
 2. Reuse existing desired states and planner actions where possible. A new
    result belongs in `NpcGoalPlanner.Desired`; new primitives require stable
    `NpcPlanAction` values, bindings/conditions/effects/costs in `NpcPlanDomain`
    and a legal action with real state changes in the execution layer. Publish an
    outcome after that change, rather than writing predicted effects into the world.
    Keep current perception, interruption and retry rules explicit.
-   Knowledge-based situations belong in `NpcStoryContent.cs`; route them by
-   event kind, set an evidence age/confidence threshold and use known snapshots.
+   State evaluation must use known snapshots, evidence age/confidence and
+   current traits. `NpcStoryContent.cs` registers acquired memories.
    Shared plans must bind independent goals after real communication and reserve
    their contested resource/role through `NpcStoryDirector`.
 3. Register meaningful acquired memories through the personality registry.
@@ -416,6 +502,14 @@ Planner scenarios: `npc/planner-methods`, `npc/planner-replan`,
 `npc/planner-persistence`. These cover different methods for the same goal,
 independent causal chains, uncertain replies, changed resources, theft risk,
 capacity and stale-action boundaries, bounded search and saved continuation.
+
+Goal-generation scenarios: `npc/goal-state`, `npc/goal-values`,
+`npc/goal-reevaluation`, `npc/goal-medicine`, `npc/goal-subjects`,
+`npc/goal-persistence`, `npc/goal-boundaries`, `npc/goal-consequence`,
+`npc/goal-priority`, `npc/goal-visible-threat` and `npc/goal-beliefs`. They exercise goal creation
+without a triggering event, actual observed consequences, trait-dependent
+desired results, subject identity, replacement at a full budget, existing
+survival priorities, confidence, disabled/sleep boundaries and save continuation.
 
 Run named scenarios with `sh tests/scenario.sh <name>`, then
 `docker build --target test .` and `bash tests/e2e.sh`. The E2E script creates an

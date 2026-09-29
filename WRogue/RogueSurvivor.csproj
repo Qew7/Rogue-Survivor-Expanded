@@ -367,6 +367,13 @@
     <Compile Include="Gameplay\Personality\PersonalityWorldContent.cs" />
     <Compile Include="Data\NpcIntent.cs" />
     <Compile Include="Data\NpcPlan.cs" />
+    <Compile Include="Data\NpcGoals.cs" />
+    <Compile Include="Gameplay\Personality\NpcValues.cs" />
+    <Compile Include="Gameplay\Personality\NpcGoalGenerator.cs" />
+    <Compile Include="Gameplay\Personality\NpcGoalGenerator.State.cs" />
+    <Compile Include="Gameplay\Personality\NpcKnowledgeSystem.Conditions.cs" />
+    <Compile Include="Gameplay\Personality\NpcPlanDomain.Medicine.cs" />
+    <Compile Include="Engine\Actions\ActionNpcMedicine.cs" />
     <Compile Include="Gameplay\Personality\NpcGoalPlanner.cs" />
     <Compile Include="Gameplay\Personality\NpcPlanDomain.cs" />
     <Compile Include="Gameplay\Personality\NpcPlanExecution.cs" />

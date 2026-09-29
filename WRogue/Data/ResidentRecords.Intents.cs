@@ -19,11 +19,12 @@ namespace djack.RogueSurvivor.Data
         {
             ResidentRecord record = Register(actor); if (record == null) return;
             int turn = state == "started" ? intent.StartedTurn : intent.FinishedTurn;
-            ObservedEvent entry = new ObservedEvent("goal_" + state, turn, actor.UnmodifiedName, intent.TargetName,
-                true, false, actor.PersonalityIdentity, intent.TargetId, causeId: intent.CauseId, storyId: intent.StoryId);
+            string targetName = intent.Generated != null && intent.Generated.SubjectId == actor.PersonalityIdentity ? actor.UnmodifiedName : intent.TargetName;
+            ObservedEvent entry = new ObservedEvent("goal_" + state, turn, actor.UnmodifiedName, targetName,
+                true, false, actor.PersonalityIdentity, intent.Generated == null ? intent.TargetId : intent.Generated.SubjectId, causeId: intent.CauseId, storyId: intent.StoryId);
             NpcIntentDefinition definition = NpcIntentContent.Find(intent.DefinitionId);
             record.Add("goal:" + intent.Sequence + ":" + state, turn,
-                "Intent " + state + ": " + (definition == null ? intent.DefinitionId : definition.Name) + "; target " + intent.TargetName +
+                "Intent " + state + ": " + (intent.Generated != null ? intent.Generated.Description : definition == null ? intent.DefinitionId : definition.Name) + "; target " + targetName +
                 "; " + reason + ". [story " + intent.StoryId + "]", entry);
         }
     }

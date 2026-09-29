@@ -6,7 +6,7 @@ using djack.RogueSurvivor.Engine.Items;
 
 namespace djack.RogueSurvivor.Gameplay.Personality
 {
-    sealed class NpcPlanDomain
+    sealed partial class NpcPlanDomain
     {
         public readonly List<NpcPlanStep> Actions = new List<NpcPlanStep>();
         public ulong Initial;
@@ -33,6 +33,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 DecisionKind.Explore, DecisionKind.Supplies, DecisionKind.Law, DecisionKind.Courage })
                 Traits = unchecked(Traits * 31 + PersonalitySystem.Bias(owner, kind));
             NpcIntentMethod method = NpcIntentContent.Find(goal.DefinitionId).Method;
+            if (method == NpcIntentMethod.RestoreHealth) { Medicine(); return; }
             bool supply = method == NpcIntentMethod.GatherFood || method == NpcIntentMethod.ShareFood || method == NpcIntentMethod.ObtainFood ||
                 method == NpcIntentMethod.RequestFood;
             if (supply)

@@ -18,7 +18,7 @@ namespace djack.RogueSurvivor.Engine.Actions
                 m_Actor.Location.Map.LocalTime.TurnCounter < intent.NextAttempt) return false;
             NpcIntentDefinition definition = NpcIntentContent.Find(intent.DefinitionId);
             if (definition == null || target == null || target.PersonalityIdentity != intent.TargetId) return false;
-            if (definition.Score(m_Actor, target) < definition.Threshold) return false;
+            if (definition.Score(m_Actor, intent) < definition.ThresholdFor(intent)) return false;
             if (definition.Method == NpcIntentMethod.LeaveGroup) return m_Actor.Leader == target;
             if (!NpcIntentSystem.CanSee(m_Game, m_Actor, target) || target.IsSleeping ||
                 m_Game.Rules.GridDistance(m_Actor.Location.Position, target.Location.Position) > 1 ||

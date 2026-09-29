@@ -872,6 +872,7 @@ namespace djack.RogueSurvivor.Engine
             SpendActorActionPoints(actor, Rules.BASE_ACTION_COST);
 
             // recover HPs, STA, SLP, INF, SAN.
+            int previousHP = actor.HitPoints;
             actor.HitPoints = Math.Min(actor.HitPoints + m_Rules.ActorMedicineEffect(actor, med.Healing), m_Rules.ActorMaxHPs(actor));
             actor.StaminaPoints = Math.Min(actor.StaminaPoints + m_Rules.ActorMedicineEffect(actor, med.StaminaBoost), m_Rules.ActorMaxSTA(actor));
             actor.SleepPoints = Math.Min(actor.SleepPoints + m_Rules.ActorMedicineEffect(actor, med.SleepBoost), m_Rules.ActorMaxSleep(actor));
@@ -880,6 +881,7 @@ namespace djack.RogueSurvivor.Engine
 
             // consume it.
             actor.Inventory.Consume(med);
+            Gameplay.Personality.NpcGoalGenerator.MedicineUsed(this, actor, previousHP);
 
             // message.
             if (IsVisibleToPlayer(actor))

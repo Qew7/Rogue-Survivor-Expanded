@@ -20,7 +20,7 @@ namespace djack.RogueSurvivor.Engine.Actions
         public override void Perform()
         {
             if (!IsLegal()) return;
-            string report = fact.Kind == "death" ? fact.SubjectName + " died" : fact.Kind == "requested_food" ?
+            string report = fact.Kind == "medicine_cache" ? "there was medicine" : fact.Kind == "death" ? fact.SubjectName + " died" : fact.Kind == "requested_food" ?
                 fact.SubjectName + " asked for food" : fact.Kind == "food_cache" ? "there was food" :
                 fact.OtherId == Guid.Empty ? "there was " + fact.Kind.Replace('_', ' ') : fact.OtherName + " was involved in violence against " + fact.SubjectName;
             m_Game.DoSay(m_Actor, target, (fact.Source == NpcKnowledgeSource.Told ? "I was told that " : "I saw that ") + report +
@@ -86,7 +86,7 @@ namespace djack.RogueSurvivor.Engine.Actions
                 intent.Status == NpcIntentStatus.Paused || !m_Actor.Personality.Intents.Contains(intent)) return false;
             int turn = m_Actor.Location.Map.LocalTime.TurnCounter;
             NpcIntentDefinition definition = NpcIntentContent.Find(intent.DefinitionId);
-            if (definition == null || turn >= intent.Deadline || turn < intent.NextAttempt || definition.Score(m_Actor, intent) < definition.Threshold) return false;
+            if (definition == null || turn >= intent.Deadline || turn < intent.NextAttempt || definition.Score(m_Actor, intent) < definition.ThresholdFor(intent)) return false;
             if (definition.Method < NpcIntentMethod.SeekPerson || definition.Method == NpcIntentMethod.Coordinate) return false;
             if (intent.GroupId != Guid.Empty && (m_Actor.SocialGroup == null || m_Actor.SocialGroup.Identity != intent.GroupId)) return false;
             if (definition.Method == NpcIntentMethod.ReachShelter)
@@ -121,7 +121,7 @@ namespace djack.RogueSurvivor.Engine.Actions
             string kind = method == NpcIntentMethod.GatherFood ? "supplies_delivered" : method == NpcIntentMethod.SeekPerson ? "reunited" :
                 method == NpcIntentMethod.ConfrontPerson ? "confronted" : method == NpcIntentMethod.ReachShelter ? "shelter_reached" : "withdrew";
             if (target != null) m_Game.DoSay(m_Actor, target, method == NpcIntentMethod.GatherFood ? "The food was delivered." :
-                method == NpcIntentMethod.SeekPerson ? "There you are. I was looking for you." : "I heard about the violence. Stay away from us.", RogueGame.Sayflags.NONE);
+                method == NpcIntentMethod.SeekPerson ? "There you are. I was looking for you." : "I know what happened. Leave us and our belongings alone.", RogueGame.Sayflags.NONE);
             else m_Game.DoWait(m_Actor);
             NpcIntentSystem.Finish(m_Actor, intent, NpcIntentStatus.Completed, kind == "withdrew" ? "withdrew from the last reported location" : kind);
             NpcIntentSystem.Publish(m_Game, kind, m_Actor, target, intent.CauseId, intent.StoryId);

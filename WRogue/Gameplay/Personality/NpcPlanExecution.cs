@@ -14,7 +14,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 !owner.Personality.Intents.Contains(goal)) return false;
             int turn = owner.Location.Map.LocalTime.TurnCounter;
             NpcIntentDefinition definition = NpcIntentContent.Find(goal.DefinitionId);
-            return definition != null && definition.Score(owner, goal) >= definition.Threshold && turn < goal.Deadline && turn >= goal.NextAttempt &&
+            return definition != null && definition.Score(owner, goal) >= definition.ThresholdFor(goal) && turn < goal.Deadline && turn >= goal.NextAttempt &&
                 (goal.GroupId == Guid.Empty || owner.SocialGroup != null && owner.SocialGroup.Identity == goal.GroupId);
         }
         public static ItemFood FoodOnGround(RogueGame game, Actor owner, Location place)
@@ -27,21 +27,20 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         }
         public static bool Near(RogueGame game, Actor owner, Location place)
         { return owner.Location.Map == place.Map && game.Rules.GridDistance(owner.Location.Position, place.Position) <= 1; }
+        public static ItemMedicine Medicine(RogueGame game, Actor owner, Location place, bool owned = false)
+        {
+            if (!owned && !NpcKnowledgeSystem.Visible(game, owner, place)) return null;
+            Inventory items = owned ? owner.Inventory : place.Map.GetItemsAt(place.Position);
+            if (items != null) foreach (Item item in items.Items)
+                if (item is ItemMedicine && ((ItemMedicine)item).Healing > 0 && !item.IsEquipped) return (ItemMedicine)item;
+            return null;
+        }
         public static SignificantEvent Publish(RogueGame game, string kind, Actor owner, Actor other, NpcIntent goal)
         {
             long cause = goal.Plan != null && goal.Plan.LastEventId > 0 ? goal.Plan.LastEventId : goal.CauseId;
             SignificantEvent source = NpcIntentSystem.Publish(game, kind, owner, other, cause, goal.StoryId);
             if (goal.Plan != null) goal.Plan.LastEventId = source.Id;
             return source;
-        }
-        public static void ConsiderNeed(RogueGame game, Actor owner)
-        {
-            if (!NpcIntentSystem.Enabled(owner) || !game.Rules.IsActorHungry(owner) || NpcIntentSystem.HasFood(game, owner)) return;
-            if (!owner.Personality.CanStartIntent(NpcIntentContent.Request.Id, owner.Location.Map.LocalTime.TurnCounter)) return;
-            foreach (NpcIntent goal in owner.Personality.Intents)
-                if (!goal.Finished && (goal.DefinitionId == NpcIntentContent.Request.Id || goal.DefinitionId == NpcIntentContent.Obtain.Id)) return;
-            if (owner.Personality.HasKnowledge && owner.Location.Map.LocalTime.TurnCounter < owner.Personality.Knowledge.NextPlanTurn) return;
-            NpcStorySystem.StartKnown(owner, new NpcKnownPerson { Id = owner.PersonalityIdentity, Name = owner.UnmodifiedName, Place = owner.Location }, NpcIntentContent.Obtain);
         }
         public static bool OfferTrade(RogueGame game, Actor owner, SignificantEvent source)
         {

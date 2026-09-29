@@ -30,6 +30,13 @@ namespace djack.RogueSurvivor.Data
         public int Confidence;
         public NpcKnowledgeSource Source;
         public bool Dead;
+        public bool Hostile;
+        public int FoodNeed, FoodNeedTurn, FoodConfidence, Danger, Violation, ThreatTurn, ThreatConfidence, ReciprocityTurn;
+        public long NeedCause, ThreatCause, SocialCause;
+        public string NeedStory;
+        public int ViolationTurn, ViolationConfidence;
+        public long ViolationCause;
+        public long AcknowledgedViolation;
     }
     [Serializable]
     sealed class NpcKnownPlace
@@ -85,7 +92,17 @@ namespace djack.RogueSurvivor.Data
         {
             NpcKnownPerson old = Person(person.Id);
             if (old != null && (old.SeenTurn > person.SeenTurn || (old.SeenTurn == person.SeenTurn && old.Confidence >= person.Confidence))) return false;
-            if (old != null) People.Remove(old);
+            if (old != null)
+            {
+                person.Hostile = old.Hostile; person.FoodNeed = old.FoodNeed; person.FoodNeedTurn = old.FoodNeedTurn;
+                person.FoodConfidence = old.FoodConfidence; person.NeedCause = old.NeedCause; person.NeedStory = old.NeedStory;
+                person.Danger = old.Danger; person.Violation = old.Violation; person.ThreatTurn = old.ThreatTurn;
+                person.ThreatConfidence = old.ThreatConfidence; person.ThreatCause = old.ThreatCause;
+                person.ViolationTurn = old.ViolationTurn; person.ViolationConfidence = old.ViolationConfidence; person.ViolationCause = old.ViolationCause;
+                person.AcknowledgedViolation = old.AcknowledgedViolation;
+                person.SocialCause = old.SocialCause; person.ReciprocityTurn = old.ReciprocityTurn;
+                People.Remove(old);
+            }
             People.Add(person); Trim(People, 32); Revision++; return true;
         }
         public bool WasTold(long eventId, Guid recipient) { return told.ContainsKey(eventId + ":" + recipient); }

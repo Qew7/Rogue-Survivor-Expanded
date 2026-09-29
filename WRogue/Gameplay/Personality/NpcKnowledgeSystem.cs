@@ -7,7 +7,7 @@ using djack.RogueSurvivor.Engine.Items;
 
 namespace djack.RogueSurvivor.Gameplay.Personality
 {
-    static class NpcKnowledgeSystem
+    static partial class NpcKnowledgeSystem
     {
         public static bool Visible(RogueGame game, Actor actor, Location place)
         { return place.Map == actor.Location.Map && game.Rules.GridDistance(actor.Location.Position, place.Position) <=
@@ -30,6 +30,9 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             bool seesOther = source.Other != null && (owner == source.Other || Visible(game, owner, source.Other.Location));
             if (seesSubject) knowledge.See(source.Subject, source.Turn);
             if (seesOther) knowledge.See(source.Other, source.Turn);
+            Conditions(owner, source, seesSubject, seesOther, direct);
+            if (seesSubject) knowledge.Person(source.Subject.PersonalityIdentity).Hostile = game.Rules.AreEnemies(owner, source.Subject);
+            if (seesOther) knowledge.Person(source.Other.PersonalityIdentity).Hostile = game.Rules.AreEnemies(owner, source.Other);
             if (source.Kind == "shared_food" && seesSubject && seesOther && source.Subject != owner && source.StoryId != null)
                 foreach (NpcIntent goal in owner.Personality.Intents)
                     if (!goal.Finished && goal.TargetId == source.Other.PersonalityIdentity && goal.StoryId == source.StoryId)
@@ -87,7 +90,17 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             if (percepts != null) foreach (Percept percept in percepts)
             {
                 if (percept.Turn != turn || !Visible(game, actor, percept.Location)) continue;
-                Actor person = percept.Percepted as Actor; if (person != null) knowledge.See(person, turn);
+                Actor person = percept.Percepted as Actor;
+                if (person != null)
+                {
+                    knowledge.See(person, turn); NpcKnownPerson known = knowledge.Person(person.PersonalityIdentity);
+                    known.Hostile = game.Rules.AreEnemies(actor, person);
+                    if (known.Hostile)
+                    {
+                        if (known.Danger < 70) { known.Danger = 70; knowledge.Revision++; }
+                        known.ThreatTurn = turn; known.ThreatConfidence = 100;
+                    }
+                }
                 Inventory items = percept.Percepted as Inventory;
                 if (items != null)
                 {
@@ -100,6 +113,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                         knowledge.Learn(new NpcFact { Kind = "food_cache", EventId = Session.Get.NextPersonalityEventId(), EventTurn = turn, LearnedTurn = turn,
                             Confidence = 90, Source = NpcKnowledgeSource.Witness, SourceId = actor.PersonalityIdentity, Place = percept.Location, Units = units, Risk = risk });
                     knowledge.RememberPlace(new NpcKnownPlace(percept.Location, "food", turn, units, risk));
+                    RememberMedicine(actor, knowledge, items, percept.Location, turn, risk);
                 }
             }
             Map map = actor.Location.Map;
@@ -120,8 +134,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 Math.Min(0, PersonalitySystem.Bias(listener, DecisionKind.Group)) / 2));
             NpcFact fact = source.Retell(speaker.PersonalityIdentity, listener.Location.Map.LocalTime.TurnCounter, confidence);
             bool learned = listener.Personality.Knowledge.Learn(fact);
-            if (learned && fact.Kind == "food_cache" && confidence >= 40)
-                listener.Personality.Knowledge.RememberPlace(new NpcKnownPlace(fact.Place, "food", fact.EventTurn, fact.Units, fact.Risk));
+            if (learned && (fact.Kind == "food_cache" || fact.Kind == "medicine_cache") && confidence >= 40)
+                listener.Personality.Knowledge.RememberPlace(new NpcKnownPlace(fact.Place, fact.Kind == "food_cache" ? "food" : "medicine", fact.EventTurn, fact.Units, fact.Risk));
             if (learned && fact.SubjectId != Guid.Empty)
                 listener.Personality.Knowledge.LearnPerson(new NpcKnownPerson { Id = fact.SubjectId, Name = fact.SubjectName, Place = fact.Place,
                     SeenTurn = fact.EventTurn, Confidence = confidence, Source = NpcKnowledgeSource.Told, Dead = fact.Kind == "death" && confidence >= 60 });
@@ -135,6 +149,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 if (accepted) foreach (NpcIntent intent in listener.Personality.Intents)
                     if (!intent.Finished && intent.TargetId == fact.SubjectId) NpcIntentSystem.Finish(listener, intent, NpcIntentStatus.Failed, "learned of death through a report");
             }
+            if (learned) ReportConditions(listener, fact);
             return learned;
         }
         public static void HearLocation(Actor listener, Actor speaker, NpcKnownPerson report, long eventId)

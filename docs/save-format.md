@@ -119,6 +119,15 @@ execution callbacks are transient. Existing intention enum values remain
 unchanged; `ObtainFood` is appended. These optional fields use format 5 without
 a new world envelope.
 
+Generated intentions also store `NpcGeneratedGoal`: value kind, permanent
+subject ID, current/desired values, normalized deficit, importance, confidence,
+utility, evaluation turn and desired result flags. Their cooldown keys combine
+value and subject, bounded to 64 entries per personality; separate subjects can
+retain separate goals under the same execution ID. These keys and remaining
+cooldowns survive loading. Earlier intentions without this optional payload
+retain their original execution/acceptance rules. `RestoreHealth` and medicine
+plan actions are appended without changing existing enum values.
+
 Knowledge retains bounded facts with original event IDs/time, source IDs,
 confidence, retelling hops, named participant IDs and remembered positions;
 known people, supplies, shelter and exits; remembered ownership risk, a change
@@ -126,6 +135,16 @@ revision; and conversation/query deduplication
 and next planning/speaking turns. Pending location replies contain copied
 knowledge snapshots, so a reply after loading reports the same observation.
 The original event is not recreated as a witnessed event for a listener.
+Known people retain perceived hostility, food-need magnitude/time/confidence,
+its cause/story, danger and unaddressed-wrongdoing evidence, and social cause and
+reciprocity eligibility turn. Danger and wrongdoing have independent evidence
+time/confidence, so seeing a person does not strengthen an uncertain accusation.
+The cause of an addressed incident is retained to prevent a retelling from
+reopening the same desired response.
+New location reports preserve existing conditions; weaker contemporaneous
+reports cannot overwrite stronger evidence. Medicine places retain the same
+shared Map references, units, ownership risk and original observation age as
+food places. These are remembered snapshots, not references to unseen actors.
 
 Person relationships retain trust, fear, attachment, grievance and debt.
 Actors in a group share one serialized `SocialGroup`: permanent identity,

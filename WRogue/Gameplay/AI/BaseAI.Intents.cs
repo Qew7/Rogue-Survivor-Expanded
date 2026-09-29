@@ -36,8 +36,6 @@ namespace djack.RogueSurvivor.Gameplay.AI
         {
             if (!NpcIntentSystem.Enabled(m_Actor)) return null;
             if (visible == null) return null;
-            NpcIntentSystem.ConsiderFoodRequest(game, m_Actor, visible);
-            NpcPlanExecution.ConsiderNeed(game, m_Actor);
             foreach (NpcReaction reaction in m_Actor.Personality.Reactions)
             {
                 Actor target = NpcIntentSystem.VisibleTarget(visible, reaction.TargetId);
@@ -46,7 +44,6 @@ namespace djack.RogueSurvivor.Gameplay.AI
                 if (action.IsLegal()) return action;
             }
             ActorAction groupPlan = BehaviorNpcGroupPlans(game, visible); if (groupPlan != null) return groupPlan;
-            NpcStorySystem.Consider(game, m_Actor, visible);
             NpcIntent intent = NpcIntentSystem.Select(m_Actor); if (intent == null) return BehaviorNpcRumors(game, visible);
             return BehaviorNpcPlan(game, intent, visible);
         }
