@@ -11,8 +11,91 @@ The runner warms each case, runs five timed samples, and prints the median.
 `--bench-ai` runs just the AI and generation cases for quicker iteration.
 The test UI omits actual graphics driver work, so the minimap case measures
 game-side traversal and dispatch.
-Timings are diagnostic, not CI pass/fail thresholds. Compare runs on the same
+These general benchmarks are diagnostic. The save/load budget below is an
+automated pass/fail gate. Compare measurements on the same
 machine, Docker configuration, and runtime.
+
+## Automated save and load budget
+
+The regular `docker build --target test .` and `--all` scenario run include
+`storage/save-budget`. Run it independently with:
+
+```sh
+sh tests/scenario.sh storage/save-budget
+```
+
+Each measured operation must take **at most 10 seconds**, and the compressed
+save must contain **at most 50,000,000 bytes** (50 decimal MB). All samples must
+pass; a median cannot hide a slow sample. These are regression limits on the
+specified workload and test machine, not a guarantee for arbitrarily large
+worlds or slower hardware. Memory usage is reported without a RAM limit.
+
+The deterministic day-12 fixture uses current production models and contains
+416 distinct 52×52 maps (1,124,864 tiles), 6,240 civilian actors with inventories,
+2,080 personality states, 6,240 traits, 4,160 pending memories, 66,560 historical
+events, and commitments, disputes, attachments, knowledge and active plans.
+Tile flags/decorations vary; maps share exit, knowledge, attachment and plan
+references. This is a synthetic workload near the scale of the profiled day-12
+world below, with its composition fixed to make regressions comparable.
+
+The save worker measures three real `Session.Save` calls: the first write with
+a cold serializer, then two atomic replacements. Timings include presave world
+traversal, resident snapshot refresh, both compressed sections, file flushing
+and replacement. Two additional fresh workers measure `Session.Load`, including
+archive/world decoding and rebuilding every map's auxiliary indexes. A final
+fresh worker measures the archive-only Read Records path. Loading verifies map
+and actor counts, tile flags/independence, inventories, traits, memories,
+obligations, active plan references, clocks, all historical events and exit
+alias identity. Fixture construction, model loading, subprocess startup and
+post-operation validation are outside the measured intervals. OS file caches
+are not flushed; a fresh process isolates JIT/codec state, not cold disk access.
+Simulation-worker waiting, mod asset switching and UI redraws are also outside
+these headless operation timings.
+
+`SAVE BUDGET` lines report operation time, file bytes, managed-memory baseline,
+sampled peak and peak increase, retained heap change after collection, process
+RSS baseline/peak/increase, and per-generation GC counts. A background thread
+samples every 10 ms; brief spikes may be missed. Explicit collections run before
+and after timing, never inside it; natural collections during the operation are
+included. RAM sampling overhead is included in wall time. Child processes keep
+prior scenarios and previously loaded worlds out of load-memory measurements.
+
+The disk limit applies to each primary/backup file separately. The retained
+primary-plus-backup total is printed; replacement also temporarily needs space
+for the new file. The test removes its private temporary directory. A worker
+watchdog fails stalled subprocesses after 60 seconds.
+
+To enforce the same limits on an existing **copied format-5** save:
+
+```sh
+docker build --target scenarios -t rogue-survivor-save-budget .
+docker run --rm \
+  --mount type=bind,source=/private/tmp/rogue-save-profile,target=/profile,readonly \
+  rogue-survivor-save-budget --check-save-budget /profile/current-save.dat
+```
+
+The input is copied to a private temporary directory and remains untouched.
+This measures a fresh-process load, three full saves and two further
+fresh-process loads. The built-in catalogs must provide the save's models;
+mod asset restoration is outside this headless runner. Personality-disabled
+saves can be checked too; the copied-save mode does not require Read Records.
+The diagnostic `--bench-save` below remains available for detailed codec
+comparisons without thresholds. Neither command restarts the running game.
+
+Local Docker/Mono run of this fixture (unrestricted CPU, September 29, 2026):
+
+| Operation | Time | Sampled peak process RSS |
+| --- | ---: | ---: |
+| First complete save | 6.03 s | 283.4 MB |
+| Atomic replacements, two samples | 5.89–5.93 s | 283.6 MB |
+| Complete load, two fresh processes | 7.18–7.37 s | 578.0–580.2 MB |
+| Archive-only load | 1.23 s | 180.8 MB |
+
+Each saved file was 9,918,302 bytes (9.92 MB); primary plus backup occupied
+19,836,604 bytes. Peak managed-memory increases were approximately 146–149 MB
+for saving and 527 MB for loading. Retained heap increases after collection were
+2.7 MB for the first save, effectively zero for replacements and 115 MB for the
+loaded world. These figures describe this workload, not a production maximum.
 
 ## Save diagnostics
 

@@ -172,6 +172,7 @@ docker build --target test .
 bash tests/e2e.sh
 sh tests/scenario.sh --list
 sh tests/scenario.sh --bench-ai
+sh tests/scenario.sh storage/save-budget
 ```
 
 Gameplay scenarios and how to run one are documented in
@@ -181,3 +182,8 @@ Gameplay scenarios and how to run one are documented in
 [AGENTS.md](AGENTS.md) for contributor guidance and
 [docs/save-format.md](docs/save-format.md) for save compatibility. GitHub
 Actions runs the automated checks.
+
+The regular test target includes a large save/load performance gate: each
+operation must finish within 10 seconds and each save must fit in 50 MB.
+It also reports sampled RAM peaks; see the workload and copied-save command in
+[docs/performance.md](docs/performance.md#automated-save-and-load-budget).

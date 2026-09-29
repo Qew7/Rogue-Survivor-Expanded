@@ -13,6 +13,11 @@ Later runs reuse Docker's build cache. A failed scenario exits nonzero and
 prints its name, random seed, exception, and final map. Regular
 `docker build --target test .` also runs every scenario alongside unit tests.
 
+`storage/save-budget` measures a large fixed world in isolated child processes
+and enforces a 10-second limit per save/load and a 50,000,000-byte limit per file.
+It prints RAM measurements and verifies restored state. This case takes tens of
+seconds; see [performance.md](performance.md#automated-save-and-load-budget).
+
 Add each new scenario in its own file under the matching topic directory in
 `tests/scenarios/cases/`. Living and undead skills have separate directories.
 Give its static class a name ending in `Scenario` and a public `Register()`
