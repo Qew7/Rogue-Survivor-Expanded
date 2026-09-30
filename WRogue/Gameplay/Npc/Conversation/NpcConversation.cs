@@ -51,8 +51,9 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public static void Reply(RogueGame game, Actor player, Actor target, NpcReaction pending, bool yes)
         {
             NpcEventDefinition definition = game.NpcContent.Event(pending.Kind);
-            NpcPlayerReply reply = definition.PlayerReply;
+            NpcPlayerReply reply = definition == null ? null : definition.PlayerReply;
             player.Personality.Reactions.Remove(pending);
+            if (reply == null) return;
             game.DoSay(player, target, yes ? reply.YesText : reply.NoText, RogueGame.Sayflags.IS_STORY,
                 pending.CauseId, pending.StoryId);
             NpcEvents.Publish(game, yes ? reply.YesKind : reply.NoKind, player, target, pending.CauseId, pending.StoryId);

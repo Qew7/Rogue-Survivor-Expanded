@@ -24,7 +24,8 @@ static class GroupExpulsionScenario
             Actor outsider = NpcIntentSupport.Actor(world, "outsider", 3, 1);
             var target = new NpcKnownPerson { Id = outsider.PersonalityIdentity, Name = outsider.UnmodifiedName, Place = outsider.Location };
             NpcIntent invalid = NpcStorySystem.StartKnown(leader, target, world.Game.NpcContent.Capability("expel_member"));
-            if (invalid != null) Check.Equal(false, new djack.RogueSurvivor.Engine.Actions.ActionNpcIntent(leader, world.Game, invalid, outsider).IsLegal(),
+            Check.Equal(true, invalid == null ||
+                !new djack.RogueSurvivor.Engine.Actions.ActionNpcIntent(leader, world.Game, invalid, outsider).IsLegal(),
                 "an unrelated person cannot be expelled from a group");
         });
     }

@@ -41,6 +41,15 @@ namespace djack.RogueSurvivor.Engine
                 target.Model.Abilities.IsUndead || m_Rules.AreEnemies(player, target))
             { AddMessage(MakeErrorMessage("No one willing to talk there.")); return false; }
             NpcReaction pending = NpcConversation.Pending(player, target);
+            if (pending != null)
+            {
+                NpcEventDefinition request = NpcContent.Event(pending.Kind);
+                if (request == null || request.PlayerReply == null)
+                {
+                    player.Personality.Reactions.Remove(pending);
+                    pending = null;
+                }
+            }
             bool? answer = null;
             if (pending != null)
             {

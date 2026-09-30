@@ -582,6 +582,11 @@ namespace djack.RogueSurvivor.Engine
                                 break;
 
                             case PlayerCommand.TALK:
+                                if (TryPlayerInsanity())
+                                {
+                                    loop = false;
+                                    break;
+                                }
                                 loop = !HandlePlayerTalk(player);
                                 break;
 

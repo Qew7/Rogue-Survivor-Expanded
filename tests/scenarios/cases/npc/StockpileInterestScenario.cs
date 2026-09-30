@@ -20,8 +20,16 @@ static class StockpileInterestScenario
             Check.Equal(true, planner.Personality.Interest("food_reserve", planner.PersonalityIdentity) != null,
                 "interest persists independently from one completed plan");
             var stale = new ItemFood(world.Game.GameItems.CANNED_FOOD); world.Map.DropItemAt(stale, new Point(6, 1));
+            world.Map.LocalTime.TurnCounter = 25; NpcIntentSupport.Turn(world, planner);
+            var stalePlace = new Location(world.Map, new Point(6, 1));
+            Check.Equal(true, planner.Personality.Knowledge.Places.Exists(p => p.Kind == "food" && p.Place == stalePlace && p.Units > 0),
+                "planner actually observes the cache before it disappears");
+            int interestsBeforeRemoval = planner.Personality.Interests.Count;
             world.Map.RemoveItemAt(stale, new Point(6, 1));
-            Check.Equal(true, planner.Personality.Interests.Count <= 16, "inactive or repeated observations do not expand saved interests");
+            world.Map.LocalTime.TurnCounter = 26; NpcIntentSupport.Turn(world, planner);
+            Check.Equal(interestsBeforeRemoval, planner.Personality.Interests.Count,
+                "removing observed food does not create another lasting interest");
+            Check.Equal(true, planner.Personality.Interests.Count <= 16, "saved interests stay bounded");
         });
     }
 }
