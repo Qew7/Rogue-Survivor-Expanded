@@ -29,6 +29,9 @@ static class OverheardConversationScenario
                     !message.Text.Contains("speaker")) playerHeard = true;
             Check.Equal(true, playerHeard, "player hears the request through a wall without learning the speaker's identity");
             SignificantEvent request = NpcEvents.Publish(world.Game, "requested_food", speaker, target);
+            NpcReaction opportunity = NpcConversation.Pending(player, speaker);
+            Check.Equal(true, opportunity != null && opportunity.Overheard && opportunity.CauseId == request.Id,
+                "player can answer a request addressed to another NPC after overhearing it");
             Check.Equal(true, hidden.Personality.Knowledge.Facts.Exists(f => f.EventId == request.Id &&
                 f.Source == NpcKnowledgeSource.Told), "heard request becomes hearsay in NPC knowledge");
             Check.Equal(false, NpcIntentSupport.HasEvent(hidden, "requested_food"),
@@ -52,6 +55,10 @@ static class OverheardConversationScenario
                     if (resident.Identity == hidden.PersonalityIdentity) saved = resident;
                 Check.Equal(true, saved != null && HasHeard(saved, "Could you find food"),
                     "Read Records loads the NPC's heard request from the save");
+                Session savedWorld = BinarySaveStore.Load<Session>(path);
+                Actor savedPlayer = NpcIntentSupport.Find(savedWorld.World[0, 0].EntryMap, player.PersonalityIdentity);
+                Check.Equal(true, savedPlayer.Personality.Reactions.Exists(r => r.CauseId == request.Id && r.Overheard),
+                    "overheard response opportunity persists through save and load");
                 bool searchable = false;
                 foreach (string line in RecordsReader.Lines(archive, saved, null, "Could you find food", RecordsEventFilter.Encounters))
                     if (line.Contains("Could you find food")) searchable = true;

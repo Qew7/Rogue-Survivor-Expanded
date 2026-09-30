@@ -94,6 +94,25 @@ static class PlayerConversationScenario
             NpcEvents.Publish(world.Game, "requested_food", requester, player);
             Check.Equal(null, NpcConversation.Pending(player, requester), "disabled personality system offers no social request");
             Session.Get.GamePreset = GamePreset.BuiltIn(GameMode.GM_STANDARD);
+            world.Place(stranger, 3, 1);
+            world.Map.LocalTime.TurnCounter = 35;
+            SignificantEvent overheard = NpcEvents.Publish(world.Game, "requested_food", requester, stranger);
+            Check.Equal(true, NpcConversation.Pending(player, requester).Overheard,
+                "player hears the NPC ask another person");
+            player.ActionPoints = Rules.BASE_ACTION_COST;
+            new ActionPlayerTalk(player, world.Game, requester, true).Perform();
+            Check.Equal(0, player.ActionPoints, "answer to an overheard request spends a turn");
+            Check.Equal(true, player.Personality.Commitments.Exists(c => c.CauseId == overheard.Id),
+                "volunteering to help a third party creates a real linked promise");
+            world.Map.LocalTime.TurnCounter = 36;
+            SignificantEvent overheardMedicine = NpcEvents.Publish(world.Game, "requested_medicine", requester, stranger);
+            player.ActionPoints = Rules.BASE_ACTION_COST;
+            new ActionPlayerTalk(player, world.Game, requester, false).Perform();
+            bool declinedOverheard = false;
+            foreach (ObservedEvent entry in requester.Personality.Events)
+                if (entry.Kind == "request_refused" && entry.CauseId == overheardMedicine.Id)
+                    declinedOverheard = true;
+            Check.Equal(true, declinedOverheard, "declining an overheard request is a causal event for its requester");
         });
     }
 }

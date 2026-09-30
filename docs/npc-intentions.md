@@ -62,8 +62,9 @@ residents receive no heard-speech entry.
 Public food, medicine and restitution requests also reach audible NPCs as
 hearsay, so their later goals can respond to a need they heard through a wall.
 
-When an NPC asks the player for food, medicine or compensation, talking to that
-NPC offers Y or N. Y records a time-limited promise linked to the request;
+When an NPC asks the player or another person for food, medicine or
+compensation, an audible player can later talk to that NPC and answer Y or N.
+Y records a time-limited promise linked to the request;
 giving the promised resource later fulfils it. N records a refusal and can
 change the requester's opinion or plan. Esc leaves the request pending for a
 short time. The request event's `PlayerReply` contract supplies the prompt,

@@ -44,7 +44,8 @@ namespace djack.RogueSurvivor.Engine
             bool? answer = null;
             if (pending != null)
             {
-                AddMessage(new Message(target.TheName + " asked for " + pending.Text + ". Y: agree, N: decline, ESC: later.",
+                AddMessage(new Message(target.TheName + (pending.Overheard ? " asked someone for " : " asked you for ") +
+                    pending.Text + ". Y: agree, N: decline, ESC: later.",
                     m_Session.WorldTime.TurnCounter));
                 RedrawPlayScreen();
                 while (true)

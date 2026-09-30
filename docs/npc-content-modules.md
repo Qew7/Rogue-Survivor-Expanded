@@ -142,7 +142,8 @@ promises module handles completion without an extra call in the food action.
 A public spoken request can set `AudibleReport` on its `NpcEventDefinition`.
 After ordinary observers are processed, awake people within audio range learn
 its retained fact as hearsay, even without line of sight. Set `PlayerReply`
-on a request addressed to the player to declare its prompt, Y/N phrases and
+on a request the player may hear, including one addressed to someone else, to
+declare its prompt, Y/N phrases and
 registered outcome event IDs. The catalog validates those IDs at build time;
 the conversation action publishes the selected outcome with the request's
 causal ID. Mark the actual `DoSay` call with `IS_STORY | IS_REQUEST` (or

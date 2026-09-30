@@ -241,7 +241,9 @@ Heard speech uses existing resident entries with kinds `heard_rumor`,
 gain an entry; seeing the speaker is not required. Text, event ID and any known
 cause/story ID survive archive-only load, under the **Encounters** filter.
 Unanswered player requests reuse saved `NpcReaction` state and expire after 30
-turns. Player promises use the existing `NpcCommitment` state and deadline.
+turns. Its optional `Overheard` field distinguishes requests made to someone
+else from requests addressed to the player. Player promises use the existing
+`NpcCommitment` state and deadline.
 Read Records builds a temporary index of archived event IDs and resolves a
 record's `CauseId` and `SupportingCauses` into up to two readable antecedents.
 Only prior, present archive entries are shown; missing links produce no text.

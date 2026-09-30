@@ -36,6 +36,19 @@ static class PlayerTalkInputScenario
                 "direction selects the intended person when two are adjacent");
             Check.Equal(true, NpcIntentSupport.HasEvent(second, "request_refused"), "N declines the selected request");
             Check.Equal(0, player.ActionPoints, "N costs one action");
+
+            SignificantEvent overheard = NpcEvents.Publish(world.Game, "requested_food", requester, second);
+            Check.Equal(true, NpcConversation.Pending(player, requester).Overheard,
+                "UI can offer an answer to a request made to someone else");
+            player.ActionPoints = Rules.BASE_ACTION_COST;
+            ui.QueueKey(Keys.NumPad6);
+            ui.QueueWaitKey(Keys.N);
+            Check.Equal(true, Check.Call(world.Game, "HandlePlayerTalk", new[] { typeof(Actor) }, player),
+                "direction and N answer an overheard request");
+            bool refusal = false;
+            foreach (ObservedEvent entry in requester.Personality.Events)
+                if (entry.Kind == "request_refused" && entry.CauseId == overheard.Id) refusal = true;
+            Check.Equal(true, refusal, "heard request and spoken refusal share a cause");
         });
     }
 }

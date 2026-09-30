@@ -24,15 +24,19 @@ namespace djack.RogueSurvivor.Gameplay.Personality
 
         public static void OfferPlayerReply(RogueGame game, SignificantEvent source, NpcEventDefinition definition)
         {
-            Actor player = source.Other;
+            Actor player = source.Other != null && source.Other.IsPlayer ? source.Other : game.Player;
             if (definition == null || definition.PlayerReply == null || player == null || !player.IsPlayer ||
-                player.IsSleeping || source.Subject == null || source.Subject == player) return;
+                player.IsSleeping || source.Subject == null || source.Subject == player || player.Location.Map != source.Map)
+                return;
+            bool overheard = player != source.Other;
+            if (overheard && (!definition.AudibleReport ||
+                game.Rules.StdDistance(player.Location.Position, source.Position) > player.AudioRange)) return;
             if (player.Personality == null) player.Personality = new PersonalityState();
             player.Personality.Reactions.RemoveAll(r => r.Deadline < source.Turn);
             if (player.Personality.Reactions.Count >= 4 ||
                 player.Personality.Reactions.Exists(r => r.CauseId == source.Id)) return;
             player.Personality.Reactions.Add(new NpcReaction(source.Subject, definition.PlayerReply.Prompt,
-                source.Id, source.Turn, source.Kind, source.StoryId));
+                source.Id, source.Turn, source.Kind, source.StoryId, overheard: overheard));
         }
 
         public static NpcReaction Pending(Actor player, Actor target)
