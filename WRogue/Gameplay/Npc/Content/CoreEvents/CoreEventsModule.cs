@@ -25,9 +25,15 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             catalog.Event(new NpcEventDefinition("zombified", NpcRecordCategory.Life, false, e => (e.Other ?? "someone") + " turned into " + (e.Subject ?? "Someone") + ".", null));
             catalog.Event(new NpcEventDefinition("base_loss", NpcRecordCategory.None, false, e => (e.Subject ?? "Someone") + " lost a base.", null));
             catalog.Event(new NpcEventDefinition("raid", NpcRecordCategory.World, false, e => "A raid occurred.", null));
-            catalog.Event(new NpcEventDefinition("spawn", NpcRecordCategory.Life, false, null, null));
-            catalog.Event(new NpcEventDefinition("unique_arrival", NpcRecordCategory.World, false, e => (e.Subject ?? "Someone") + " arrived.", null));
+            catalog.Event(new NpcEventDefinition("spawn", NpcRecordCategory.Life, false, null, null) { CanObserve = (a, e) => a != e.Subject });
+            catalog.Event(new NpcEventDefinition("unique_arrival", NpcRecordCategory.World, false, e => (e.Subject ?? "Someone") + " arrived.", null) { CanObserve = (a, e) => a != e.Subject });
             catalog.Event(new NpcEventDefinition("met_unique", NpcRecordCategory.Encounters, false, null, null));
+            catalog.Event(new NpcEventDefinition("chat", NpcRecordCategory.Encounters, false,
+                e => (e.Subject ?? "Someone") + " talked with " + (e.Other ?? "someone") + "."));
+            catalog.Event(new NpcEventDefinition("traded", NpcRecordCategory.Encounters, false,
+                e => (e.Subject ?? "Someone") + " traded with " + (e.Other ?? "someone") + "."));
+            catalog.On("chat", NpcObservationPhase.Relationships, RememberContact);
+            catalog.On("traded", NpcObservationPhase.Relationships, RememberContact);
             catalog.On("death", NpcObservationPhase.Goals, OnGoals);
             foreach (var source in PersonalityWorldContent.Uniques)
                 catalog.Event(new NpcEventDefinition(source.Kind, NpcRecordCategory.Encounters, describe: e => source.Name + (e.Subject == null ? "." : ": " + e.Subject + ".")) { OncePerSubject = true, CanObserve = (a, e) => a != e.Subject });
@@ -37,6 +43,15 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         }
         static NpcRecordCategory WorldCategory(string kind)
         { return kind.EndsWith("_raid") || kind.EndsWith("_arrival") || kind == "zombie_invasion" || kind == "army_supplies" ? NpcRecordCategory.World : NpcRecordCategory.None; }
+        static void RememberContact(NpcObservation observation)
+        {
+            Actor partner = observation.Owner == observation.Source.Subject ? observation.Source.Other :
+                observation.Owner == observation.Source.Other ? observation.Source.Subject : null;
+            if (partner == null || !observation.Direct) return;
+            RelationshipRecord record = observation.Owner.Personality.Opinion(partner.PersonalityIdentity,
+                partner.UnmodifiedName);
+            if (observation.Source.Kind == "traded") record.AdjustSocial(trust: 2);
+        }
         static void OnGoals(NpcObservation observation)
         {
             Actor owner = observation.Owner;

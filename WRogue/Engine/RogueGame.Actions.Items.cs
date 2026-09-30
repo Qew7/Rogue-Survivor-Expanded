@@ -28,6 +28,7 @@ namespace djack.RogueSurvivor.Engine
         {
             // spend APs.
             SpendActorActionPoints(speaker, Rules.BASE_ACTION_COST);
+            ReportPersonalityEvent("chat", speaker, target, speaker.Location.Map, speaker.Location.Position);
 
             // message
             bool isSpeakerVisible = IsVisibleToPlayer(speaker);
@@ -277,6 +278,7 @@ namespace djack.RogueSurvivor.Engine
 
             a.Inventory.AddAll(itB);
             b.Inventory.AddAll(itA);
+            ReportPersonalityEvent("traded", a, b, a.Location.Map, a.Location.Position);
         }
 
         [Flags]
@@ -348,13 +350,19 @@ namespace djack.RogueSurvivor.Engine
                     if (listener == speaker || listener.IsDead || listener.IsSleeping || listener.Model.Abilities.IsUndead ||
                         !listener.Model.Abilities.IsIntelligent ||
                         m_Rules.StdDistance(listener.Location.Position, speaker.Location.Position) > listener.AudioRange) continue;
-                    ResidentRecord record = Session.Get.ResidentRecords.Register(listener);
-                    if (record == null) continue;
                     bool identified = listener == target || (m_Rules.GridDistance(listener.Location.Position, speaker.Location.Position) <=
                         m_Rules.ActorFOV(listener, speaker.Location.Map.LocalTime, m_Session.World.Weather) &&
                         LOS.CanTraceViewLine(listener.Location, speaker.Location.Position));
                     string kind = (flags & Sayflags.IS_RUMOR) != 0 ? "heard_rumor" :
                         (flags & Sayflags.IS_REQUEST) != 0 ? "heard_request" : "heard_reply";
+                    if (listener.IsPlayer)
+                    {
+                        if (listener.Personality == null) listener.Personality = new PersonalityState();
+                        listener.Personality.HearSpeech(new HeardJournalEntry(turn, kind,
+                            identified ? speaker.UnmodifiedName : "someone", text, causeId));
+                    }
+                    ResidentRecord record = Session.Get.ResidentRecords.Register(listener);
+                    if (record == null) continue;
                     var observed = new ObservedEvent(kind, turn, identified ? speaker.UnmodifiedName : null, null,
                         listener == target, subjectId: identified ? speaker.PersonalityIdentity : Guid.Empty,
                         eventId: speechId, causeId: causeId, storyId: storyId);

@@ -531,7 +531,9 @@ namespace djack.RogueSurvivor.Engine
         void PlayerDied(Actor killer, string reason)
         {
             // stop sim thread.
-            StopSimThread(true);   // alpha10 abort allowed when dying
+            // The caller still holds the current district lock. Joining the simulation
+            // worker here can deadlock if it is waiting for that district.
+            if (m_SimWorker != null) m_SimWorker.RequestStop();
 
             // mouse.
             m_UI.UI_SetCursor(null);

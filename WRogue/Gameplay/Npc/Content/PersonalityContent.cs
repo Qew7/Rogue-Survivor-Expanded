@@ -57,12 +57,14 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             MemoryOutcome second, Skills.IDs fallback, Skills.IDs alternative,
             string evidenceKind = null, MemoryRelationRole person = MemoryRelationRole.None,
             int feeling = 0, MemoryRelationRole group = MemoryRelationRole.None,
-            int? fallbackFeeling = null)
+            int? fallbackFeeling = null, string earnedTrait = null)
         {
+            MemoryOutcome[] outcomes = earnedTrait == null ?
+                new[] { first, second, Learn(fallback), Learn(alternative) } :
+                new[] { first, second, Gain(earnedTrait, null), Learn(fallback), Learn(alternative) };
             r.Register(new MemoryDefinition(id, name, 2, 6,
                 new[] { new MemoryTrigger(eventKind, trigger) },
-                evidenceKind == null ? new string[0] : new[] { evidenceKind }, first, second,
-                Learn(fallback), Learn(alternative)).Relate(person, feeling, group,
+                evidenceKind == null ? new string[0] : new[] { evidenceKind }, outcomes).Relate(person, feeling, group,
                 fallbackFeeling), true);
         }
 
@@ -152,6 +154,10 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             A(r, "predator", "Predator", "selfish", DecisionKind.Courage, 30, DecisionKind.Compassion, -30);
             A(r, "survivor", "Survivor", "adaptable", DecisionKind.Supplies, 25, DecisionKind.Courage, 15);
             A(r, "pacifist", "Pacifist", "peacemaker", DecisionKind.Courage, -30, DecisionKind.Compassion, 25);
+            r.Register(new TraitDefinition("battle_scarred", "Battle scarred", true, false, null,
+                E(DecisionKind.Courage, -8), E(DecisionKind.Supplies, 5)).AsEarnedOnly());
+            r.Register(new TraitDefinition("scarcity_hardened", "Scarcity hardened", true, false, null,
+                E(DecisionKind.Supplies, 12), E(DecisionKind.Trade, -5)).AsEarnedOnly());
 
             // Memory outcomes are ordered: specific paths first, general skill last.
             M(r, "leader_loss", "Loss of a leader", "death", (a,e) => e.Subject == a.Leader,
@@ -173,7 +179,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             M(r, "survived_attack", "Survived an attack", "attack", (a,e) => a == e.Subject,
                 Gain("berserker", (a,m) => Has(a,"hotheaded")),
                 Gain("hardened", (a,m) => Has(a,"brave")), Skills.IDs.TOUGH, Skills.IDs.STRONG_PSYCHE,
-                person: MemoryRelationRole.Other, feeling: -35);
+                person: MemoryRelationRole.Other, feeling: -35, earnedTrait: "battle_scarred");
             M(r, "base_theft", "Theft from home", "base_theft", (a,e) => a != e.Subject && e.Other != null && (a == e.Other || a.Leader == e.Other),
                 Gain("kleptomaniac", (a,m) => Has(a,"opportunist")),
                 Gain("paranoid", (a,m) => Has(a,"suspicious")), Skills.IDs.UNSUSPICIOUS, Skills.IDs.STRONG_PSYCHE,
@@ -199,7 +205,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 Gain("predator", (a,m) => Has(a,"selfish")), Skills.IDs.FIREARMS, Skills.IDs.TOUGH);
             M(r, "starvation", "Faced starvation", "starvation", (a,e) => a == e.Subject,
                 Gain("cannibal", (a,m) => Has(a,"pragmatic")),
-                Gain("survivor", (a,m) => Has(a,"adaptable")), Skills.IDs.LIGHT_EATER, Skills.IDs.STRONG_PSYCHE);
+                Gain("survivor", (a,m) => Has(a,"adaptable")), Skills.IDs.LIGHT_EATER, Skills.IDs.STRONG_PSYCHE,
+                earnedTrait: "scarcity_hardened");
             M(r, "stockpile", "Lost supplies", "supplies_lost", (a,e) => a == e.Subject,
                 Gain("obsessive_collector", (a,m) => Has(a,"hoarder")),
                 Gain("paranoid", (a,m) => Has(a,"suspicious")), Skills.IDs.HAULER, Skills.IDs.CARPENTRY,

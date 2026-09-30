@@ -6,7 +6,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
     static class NpcRelationshipValue
     {
         // Callers choose observed membership or remembered membership explicitly.
-        public static int Calculate(Actor owner, Guid personId, Guid groupId, int factionId, bool social, PersonalityRegistry registry = null)
+        public static int Calculate(Actor owner, Guid personId, Guid groupId, int factionId, bool social, PersonalityRegistry registry = null,
+            string excludeTrait = null)
         {
             if (owner == null || owner.Personality == null) return 0;
             registry = registry ?? PersonalitySystem.Registry;
@@ -16,6 +17,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             feeling += (group == null ? 0 : group.Feeling) + (faction == null ? 0 : faction.Feeling);
             if (factionId >= 0) foreach (TraitInstance trait in owner.Personality.Traits)
             {
+                if (trait.Id == excludeTrait) continue;
                 TraitDefinition definition = registry.Trait(trait.Id);
                 if (definition != null && definition.RelationFactionId == factionId) feeling += definition.RelationBias;
             }

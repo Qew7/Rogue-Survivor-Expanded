@@ -93,14 +93,16 @@ The catalog and extension points are described in
 Developer contracts and a complete single-file extension are in
 [docs/npc-content-modules.md](docs/npc-content-modules.md).
 Press Shift+I in game to see your relationships with people, groups, and factions.
-Press Ctrl+T to talk to a nearby person. With one possible listener the exchange starts
+Press V to talk to a nearby person. With one possible listener the exchange starts
 immediately; with several, choose a direction. They may tell you a report they know.
 If they asked you or you overheard them ask someone else for food, medicine or
-replacement supplies, Ctrl+T lets you answer Y or N (Esc postpones).
+replacement supplies, V lets you answer Y or N (Esc postpones).
 Y promises delivery within 180 turns; give the item to
 fulfil the promise. N is an actual refusal that can change their next action and
 opinion. You also hear nearby NPC conversations through walls within hearing range;
 unseen speakers stay anonymous. Their private memories remain hidden.
+Press J to review rumors, requests and replies you actually heard. Conversations
+and completed trades add contacts to Shift+I; disputes and attacks can change them.
 Use Read Records below Load Game to browse format-5 NPC histories together or individually.
 Search names, filter life metrics, sort residents, or press I to read the most interesting NPC;
 S/F also search and filter events inside a timeline.

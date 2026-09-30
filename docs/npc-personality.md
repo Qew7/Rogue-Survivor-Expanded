@@ -156,11 +156,17 @@ events build the player's own relationship records; resolving these memories
 keeps their history but does not grant NPC trait or skill outcomes. Press
 `Shift+I` (rebindable as Relationships) to view personal, leader-group, and
 faction feelings. Groups are named after their leader. The screen displays
-only the player's records and qualitative feelings, never another actor's
+only the player's records, qualitative feelings and known trust, fear or
+grievance, never another actor's
 private memories or opinions. The list persists in the saved player actor.
+Direct conversations add a neutral contact; completed trades add trust. A
+dispute over supplies or an attack can create a wary or hostile relationship.
+Press `J` to read the exact rumors, requests and replies the player heard.
 
-The catalog contains 50 starting and 64 advanced traits. Advanced traits
-are available only through memory resolution and require an existing trait.
+The catalog contains 50 starting and 66 advanced traits. Advanced traits
+are available only through memory resolution. Most require an existing trait;
+two earned-only traits, Battle scarred and Scarcity hardened, can arise from
+surviving an attack or starvation without an unrelated starting prerequisite.
 `likes_items` and `dislikes_items` each take an item model ID; pistol, shotgun,
 magazine, or any other defined item model uses the same trait definition.
 
@@ -265,6 +271,10 @@ For entries with an actual archived cause, Read Records adds a short
 linked to a witnessed theft. Search also matches that explanation. No motive
 is inferred from a trait alone: a refusal is linked to revenge only if the
 decision was really caused by a recorded grievance or goal.
+For a generated goal, a recorded trait reason states the measured increase in
+that goal's importance when the trait is present. Traits unrelated to the goal
+are omitted. The archive records the actual gained trait when a memory resolves;
+a skill appears only if the eligible trait outcomes were unavailable.
 
 This main-menu reader reveals saved NPC records outside gameplay. Format-5
 saves carry a separate compressed archive, so reading does not load the world,

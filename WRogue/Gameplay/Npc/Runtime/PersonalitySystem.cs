@@ -96,13 +96,15 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             return NpcRelationshipValue.Calculate(observer, target.PersonalityIdentity, group, target.Faction == null ? -1 : target.Faction.ID, false);
         }
 
-        public static int Bias(Actor actor, DecisionKind decision, Item item = null, PersonalityRegistry registry = null)
+        public static int Bias(Actor actor, DecisionKind decision, Item item = null, PersonalityRegistry registry = null,
+            string excludeTrait = null)
         {
             if (actor == null || actor.Personality == null || !Session.Get.GamePreset.NpcPersonalitiesEnabled)
                 return 0;
             int total = 0;
             foreach (TraitInstance instance in actor.Personality.Traits)
             {
+                if (instance.Id == excludeTrait) continue;
                 TraitDefinition definition = (registry ?? s_Registry).Trait(instance.Id);
                 if (definition == null) continue;
                 if (definition.ItemParameter && (item == null || item.Model.ID != instance.ItemModelId))

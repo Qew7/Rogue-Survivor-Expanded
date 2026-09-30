@@ -19,8 +19,8 @@ static class PlayerConversationScenario
             Actor requester = NpcIntentSupport.Actor(world, "requester", 2, 1);
             Actor stranger = NpcIntentSupport.Actor(world, "stranger", 7, 1);
             RogueGame.KeyBindings.ResetToDefaults();
-            Check.Equal(PlayerCommand.TALK, InputTranslator.KeyToCommand(new KeyEventArgs(Keys.T | Keys.Control)),
-                "Ctrl+T opens the talk command");
+            Check.Equal(PlayerCommand.TALK, InputTranslator.KeyToCommand(new KeyEventArgs(Keys.V)),
+                "V opens the talk command without a browser shortcut");
             player.ActionPoints = Rules.BASE_ACTION_COST;
             var illegal = new ActionPlayerTalk(player, world.Game, stranger, null);
             Check.Equal(false, illegal.IsLegal(), "talking through a distance is illegal");

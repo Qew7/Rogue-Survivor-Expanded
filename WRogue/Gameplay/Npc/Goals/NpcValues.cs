@@ -11,11 +11,30 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             NpcValueDefinition definition = NpcContentCatalog.Default.Value(value);
             return definition == null ? 0 : definition.Importance(new NpcMotivation(owner, subject));
         }
-        public static int KnownAttitude(Actor owner, Guid subject, PersonalityRegistry registry = null)
+        public static int KnownAttitude(Actor owner, Guid subject, PersonalityRegistry registry = null,
+            string excludeTrait = null)
         {
             NpcKnownPerson known = owner.Personality.Knowledge.Person(subject);
             return NpcRelationshipValue.Calculate(owner, subject, known == null ? Guid.Empty : known.GroupId,
-                known == null ? -1 : known.FactionId, true, registry);
+                known == null ? -1 : known.FactionId, true, registry, excludeTrait);
+        }
+        public static string TraitInfluence(Actor owner, NpcGeneratedGoal goal, NpcContentCatalog catalog)
+        {
+            if (goal == null || owner.Personality == null) return null;
+            NpcValueDefinition value = catalog.Value(goal);
+            if (value == null) return null;
+            string strongest = null;
+            int largest = 0;
+            foreach (TraitInstance trait in owner.Personality.Traits)
+            {
+                TraitDefinition definition = catalog.Personalities.Trait(trait.Id);
+                if (definition == null) continue;
+                int without = Math.Max(0, Math.Min(200, value.Importance(
+                    new NpcMotivation(owner, goal.SubjectId, catalog.Personalities, catalog, trait.Id))));
+                int increase = goal.Importance - without;
+                if (increase > largest) { largest = increase; strongest = definition.Name; }
+            }
+            return strongest == null ? null : "because trait " + strongest + " raised this goal's importance by " + largest;
         }
         public static NpcGeneratedGoal Evaluate(Actor owner, NpcGoalValue value, Guid subject,
             int current, int desired, int deficit, int confidence, ulong result)

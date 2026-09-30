@@ -69,6 +69,7 @@ namespace djack.RogueSurvivor.Engine
         MOUSE_MOVE_MODE,
         XPD_BASE,
         RELATIONSHIPS,
-        TALK
+        TALK,
+        HEARD_JOURNAL
     }
 }

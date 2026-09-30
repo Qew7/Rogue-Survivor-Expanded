@@ -99,7 +99,10 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                     foreach (NpcFact fact in owner.Personality.Knowledge.Facts)
                         if (generated.Causes != null && Array.IndexOf(generated.Causes, fact.EventId) >= 0) director.Link(story, fact.StoryId, owner, fact.EventId);
                 }
-                Session.Get.ResidentRecords.IntentChanged(owner, intent, "started", generated == null ? definition.Name : generated.Explanation);
+                string reason = generated == null ? definition.Name : generated.Explanation;
+                string influence = NpcValues.TraitInfluence(owner, generated, NpcContentCatalog.Default);
+                if (influence != null) reason += "; " + influence;
+                Session.Get.ResidentRecords.IntentChanged(owner, intent, "started", reason);
                 return intent;
             }
         }

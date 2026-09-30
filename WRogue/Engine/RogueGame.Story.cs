@@ -572,8 +572,8 @@ namespace djack.RogueSurvivor.Engine
             m_MusicManager.Play(music, MusicPriority.PRIORITY_EVENT);
 
             // restart sim thread.
-            StopSimThread(false);  // alpha10 stop-start
-            StartSimThread();
+            // AdvancePlay still owns the district lock; restart after it returns.
+            m_RestartSimulationAfterReincarnation = true;
         }
 
         string DescribeAvatar(Actor a)

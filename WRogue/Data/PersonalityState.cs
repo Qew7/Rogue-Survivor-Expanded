@@ -50,6 +50,16 @@ namespace djack.RogueSurvivor.Data
     }
 
     [Serializable]
+    sealed class HeardJournalEntry
+    {
+        public readonly int Turn;
+        public readonly string Kind, Speaker, Text;
+        public readonly long CauseId;
+        public HeardJournalEntry(int turn, string kind, string speaker, string text, long causeId)
+        { Turn = turn; Kind = kind; Speaker = speaker; Text = text; CauseId = causeId; }
+    }
+
+    [Serializable]
     sealed class MemoryInstance
     {
         public readonly string Id;
@@ -132,6 +142,7 @@ namespace djack.RogueSurvivor.Data
         readonly List<TraitInstance> m_Traits = new List<TraitInstance>(4);
         readonly List<MemoryInstance> m_Memories = new List<MemoryInstance>(2);
         readonly List<ObservedEvent> m_Events = new List<ObservedEvent>(8);
+        [System.Runtime.Serialization.OptionalField] List<HeardJournalEntry> m_HeardJournal;
         // Lazily initialized so personalities from older saves also have an empty tree.
         Dictionary<Guid, RelationshipRecord> m_People;
         Dictionary<Guid, RelationshipRecord> m_Groups;
@@ -153,6 +164,15 @@ namespace djack.RogueSurvivor.Data
         public IList<TraitInstance> Traits { get { return m_Traits.AsReadOnly(); } }
         public IList<MemoryInstance> Memories { get { return m_Memories.AsReadOnly(); } }
         public IList<ObservedEvent> Events { get { return m_Events.AsReadOnly(); } }
+        public IList<HeardJournalEntry> HeardJournal
+        { get { return (m_HeardJournal ?? (m_HeardJournal = new List<HeardJournalEntry>())).AsReadOnly(); } }
+        public void HearSpeech(HeardJournalEntry entry)
+        {
+            if (entry == null) return;
+            if (m_HeardJournal == null) m_HeardJournal = new List<HeardJournalEntry>();
+            m_HeardJournal.Add(entry);
+            if (m_HeardJournal.Count > 128) m_HeardJournal.RemoveAt(0);
+        }
         public ICollection<RelationshipRecord> People { get { return PersonRecords.Values; } }
         public ICollection<RelationshipRecord> Groups { get { return GroupRecords.Values; } }
         public ICollection<RelationshipRecord> Factions { get { return FactionRecords.Values; } }

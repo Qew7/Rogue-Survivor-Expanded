@@ -84,7 +84,8 @@ namespace djack.RogueSurvivor.Engine
                     query.Select(save).ConvertAll(p => p.Resident)) : new[] { selected };
             foreach (ResidentRecord resident in people)
                 foreach (ResidentEntry entry in resident.Entries)
-                    if (entry.Turn <= save.Turn && EntryMatches(entry, search, filter, causes))
+                    if (entry.Turn <= save.Turn && !SelfEncounter(resident, entry) &&
+                        EntryMatches(entry, search, filter, causes))
                         entries.Add(new KeyValuePair<ResidentRecord, ResidentEntry>(resident, entry));
             entries.Sort((a, b) => {
                 int turn = a.Value.Turn.CompareTo(b.Value.Turn);
@@ -117,6 +118,13 @@ namespace djack.RogueSurvivor.Engine
             }
             if (entries.Count == 0) lines.Add("No recorded events before this save.");
             return lines;
+        }
+
+        static bool SelfEncounter(ResidentRecord resident, ResidentEntry entry)
+        {
+            return !entry.Direct && entry.SubjectId == resident.Identity &&
+                (entry.Kind == "unique_arrival" || entry.Kind == "met_unique" ||
+                    entry.Kind.StartsWith("met_", StringComparison.Ordinal));
         }
     }
 }

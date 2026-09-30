@@ -51,7 +51,7 @@ speak, give food, fight or leave their group. Internal scores, intended actions
 and another person's memories are not added to inspection screens. Read Records
 provides retrospective access to the saved story outside gameplay.
 
-Ctrl+T starts a short exchange with a nearby person (or selects one by direction
+V starts a short exchange with a nearby person (or selects one by direction
 when several are adjacent). A person with a fresh fact can report it. Spoken
 rumors and requests are audible without line of sight, within the listener's
 audio range; an unseen speaker is unnamed in the player's message log. NPCs who
@@ -59,6 +59,12 @@ actually hear a rumor can learn it as hearsay, not as a witnessed event. Read
 Records stores the exact rumor, request or reply an awake NPC heard, including
 causal and story IDs when the speaker had them. Deaf, sleeping and distant
 residents receive no heard-speech entry.
+J opens the player's bounded journal of spoken rumors, requests and replies they
+actually heard. Unseen speakers remain anonymous there. The journal survives
+saving, while Shift+I lists people met through chat or a completed trade even
+when the relationship is still neutral. Read Records records measurable positive
+trait contributions to a generated goal's importance at goal start; it never
+labels unrelated actions as caused by that trait.
 Public food, medicine and restitution requests also reach audible NPCs as
 hearsay, so their later goals can respond to a need they heard through a wall.
 

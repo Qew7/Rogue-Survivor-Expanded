@@ -51,9 +51,9 @@ static class PersonalityCatalogScenario
             {
                 Check.Equal(true, trait.Effects.Length > 0, "every trait has a behavior effect");
                 if (!trait.Advanced) continue;
-                Check.Equal(true, trait.RequiresTrait != null &&
-                    catalog.Trait(trait.RequiresTrait) != null,
-                    "advanced trait has a registered prerequisite");
+                Check.Equal(true, trait.EarnedOnly ? trait.RequiresTrait == null :
+                    trait.RequiresTrait != null && catalog.Trait(trait.RequiresTrait) != null,
+                    "advanced trait has a prerequisite or is explicitly earned only");
                 Check.Equal(true, awardableTraits.Contains(trait.Id),
                     "advanced trait can be awarded by a memory");
             }
