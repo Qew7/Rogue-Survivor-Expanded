@@ -82,7 +82,7 @@ namespace djack.RogueSurvivor.Engine
                 }
                 DrawFootnote(Color.White, "Up/Down, PgUp/PgDn to choose, ENTER to read, ESC to return");
                 m_UI.UI_Repaint();
-                Keys key = m_UI.UI_WaitKey().KeyCode;
+                Keys key = m_UI.UI_WaitMenuKey().KeyCode;
                 if (key == Keys.Escape) return -1;
                 if (key == Keys.Enter && entries.Length > 0) return selected;
                 if (key == Keys.Up) selected = Math.Max(0, selected - 1);
@@ -110,7 +110,7 @@ namespace djack.RogueSurvivor.Engine
                 }
                 DrawFootnote(Color.White, "Up/Down, PgUp/PgDn to scroll, Home/End, ESC to return");
                 m_UI.UI_Repaint();
-                Keys key = m_UI.UI_WaitKey().KeyCode;
+                Keys key = m_UI.UI_WaitMenuKey().KeyCode;
                 if (key == Keys.Escape) return;
                 int last = Math.Max(0, lines.Count - pageSize);
                 if (key == Keys.Up) first = Math.Max(0, first - 1);

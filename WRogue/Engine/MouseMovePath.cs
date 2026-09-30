@@ -15,8 +15,28 @@ namespace djack.RogueSurvivor.Engine
 
         public static List<Point> Find(Point start, Point goal, Rectangle bounds, Func<Point, bool> canEnter)
         {
+            return Find(start, goal, bounds, canEnter, point => false);
+        }
+
+        public static List<Point> Find(Point start, Point goal, Rectangle bounds,
+            Func<Point, bool> canEnter, Func<Point, bool> isHazard)
+        {
+            if (canEnter == null) throw new ArgumentNullException("canEnter");
+            if (isHazard == null) throw new ArgumentNullException("isHazard");
+            // Prefer any safe route. If hazards cannot be avoided, choose the
+            // shortest route with as few hazardous tiles as possible.
+            List<Point> safe = FindCore(start, goal, bounds,
+                point => canEnter(point) && !isHazard(point), isHazard);
+            return safe ?? FindCore(start, goal, bounds, canEnter, isHazard);
+        }
+
+        static List<Point> FindCore(Point start, Point goal, Rectangle bounds,
+            Func<Point, bool> canEnter, Func<Point, bool> isHazard)
+        {
             if (canEnter == null)
                 throw new ArgumentNullException("canEnter");
+            if (isHazard == null)
+                throw new ArgumentNullException("isHazard");
             if (!bounds.Contains(start) || !bounds.Contains(goal))
                 return null;
             if (start == goal)
@@ -30,6 +50,9 @@ namespace djack.RogueSurvivor.Engine
             int capacity = width * bounds.Height;
             int[] frontier = new int[capacity];
             int[] previous = new int[capacity]; // parent index + 1; zero means unseen.
+            int[] distance = new int[capacity];
+            int[] hazards = new int[capacity];
+            long[] deviation = new long[capacity];
             int head = 0;
             int tail = 0;
             int startIndex = (start.Y - bounds.Top) * width + start.X - bounds.Left;
@@ -48,22 +71,37 @@ namespace djack.RogueSurvivor.Engine
                     if (!bounds.Contains(next))
                         continue;
                     int nextIndex = (next.Y - bounds.Top) * width + next.X - bounds.Left;
-                    if (previous[nextIndex] != 0 || !canEnter(next))
+                    if (distance[nextIndex] == 0 && nextIndex != startIndex && !canEnter(next))
+                        continue;
+                    int nextDistance = distance[currentIndex] + 1;
+                    if (nextIndex == startIndex ||
+                        (distance[nextIndex] != 0 && distance[nextIndex] < nextDistance))
+                        continue;
+                    // Compare routes only within the shortest-path layer.
+                    int nextHazards = hazards[currentIndex] + (isHazard(next) ? 1 : 0);
+                    long cross = (long)(next.X - start.X) * (goal.Y - start.Y) -
+                        (long)(next.Y - start.Y) * (goal.X - start.X);
+                    long nextDeviation = deviation[currentIndex] + cross * cross;
+                    if (distance[nextIndex] == nextDistance &&
+                        (hazards[nextIndex] < nextHazards ||
+                        (hazards[nextIndex] == nextHazards && deviation[nextIndex] <= nextDeviation)))
                         continue;
                     previous[nextIndex] = currentIndex + 1;
-                    if (nextIndex == goalIndex)
+                    hazards[nextIndex] = nextHazards;
+                    deviation[nextIndex] = nextDeviation;
+                    if (distance[nextIndex] == 0)
                     {
-                        List<Point> path = new List<Point>();
-                        for (int step = goalIndex; step != startIndex; step = previous[step] - 1)
-                            path.Add(new Point(bounds.Left + step % width,
-                                bounds.Top + step / width));
-                        path.Reverse();
-                        return path;
+                        distance[nextIndex] = nextDistance;
+                        frontier[tail++] = nextIndex;
                     }
-                    frontier[tail++] = nextIndex;
                 }
             }
-            return null;
+            if (previous[goalIndex] == 0) return null;
+            List<Point> path = new List<Point>();
+            for (int step = goalIndex; step != startIndex; step = previous[step] - 1)
+                path.Add(new Point(bounds.Left + step % width, bounds.Top + step / width));
+            path.Reverse();
+            return path;
         }
     }
 }

@@ -126,7 +126,7 @@ namespace djack.RogueSurvivor.Engine
                 m_UI.UI_Repaint();
 
                 // get menu action.
-                KeyEventArgs key = m_UI.UI_WaitKey();
+                KeyEventArgs key = m_UI.UI_WaitMenuKey();
                 switch (key.KeyCode)
                 {
                     case Keys.Up:       // move up
@@ -219,7 +219,7 @@ namespace djack.RogueSurvivor.Engine
                 m_UI.UI_Repaint();
 
                 // get menu action.
-                KeyEventArgs key = m_UI.UI_WaitKey();
+                KeyEventArgs key = m_UI.UI_WaitMenuKey();
                 switch (key.KeyCode)
                 {
                     case Keys.Up:       // move up
@@ -321,7 +321,7 @@ namespace djack.RogueSurvivor.Engine
                 DrawMenuOrOptions(selected, Color.White, menuEntries, Color.LightGray, descs, gx, ref gy);
                 DrawFootnote(Color.White, "cursor to move, ENTER to select, ESC to cancel");
                 m_UI.UI_Repaint();
-                KeyEventArgs key = m_UI.UI_WaitKey();
+                KeyEventArgs key = m_UI.UI_WaitMenuKey();
                 if (key.KeyCode == Keys.Escape) return false;
                 if (key.KeyCode == Keys.Up) selected = (selected + menuEntries.Length - 1) % menuEntries.Length;
                 if (key.KeyCode == Keys.Down) selected = (selected + 1) % menuEntries.Length;
@@ -381,7 +381,7 @@ namespace djack.RogueSurvivor.Engine
                 m_UI.UI_Repaint();
 
                 // get menu action.
-                KeyEventArgs key = m_UI.UI_WaitKey();
+                KeyEventArgs key = m_UI.UI_WaitMenuKey();
                 switch (key.KeyCode)
                 {
                     case Keys.Up:       // move up

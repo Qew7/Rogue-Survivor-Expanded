@@ -14,6 +14,7 @@ namespace djack.RogueSurvivor.Engine
     {
         #region Input
         KeyEventArgs UI_WaitKey();
+        KeyEventArgs UI_WaitMenuKey();
         KeyEventArgs UI_PeekKey();
         void UI_PostKey(KeyEventArgs e);
 

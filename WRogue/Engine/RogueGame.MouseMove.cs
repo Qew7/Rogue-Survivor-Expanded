@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Windows.Forms;
 using djack.RogueSurvivor.Data;
 using djack.RogueSurvivor.Engine.Actions;
+using djack.RogueSurvivor.Engine.Items;
 using Message = djack.RogueSurvivor.Data.Message;
 
 namespace djack.RogueSurvivor.Engine
@@ -39,7 +40,26 @@ namespace djack.RogueSurvivor.Engine
                 {
                     return IsVisibleToPlayer(map, point) &&
                         m_Rules.IsWalkableFor(player, map, point.X, point.Y);
+                }, delegate(Point point)
+                {
+                    Inventory items = map.GetItemsAt(point);
+                    if (items == null) return false;
+                    foreach (Item item in items.Items)
+                    {
+                        ItemTrap trap = item as ItemTrap;
+                        if (trap != null && trap.IsActivated && !m_Rules.IsSafeFromTrap(trap, player))
+                            return true;
+                    }
+                    return false;
                 });
+        }
+
+        bool HasVisibleMouseMoveEnemy(Actor player)
+        {
+            foreach (Actor other in player.Location.Map.Actors)
+                if (other != player && IsVisibleToPlayer(other) && m_Rules.AreEnemies(player, other))
+                    return true;
+            return false;
         }
 
         bool IsAdjacentMouseBump(Actor player, Point goal)
@@ -111,6 +131,15 @@ namespace djack.RogueSurvivor.Engine
         {
             if (m_MouseMoveSteps == null || m_MouseMoveSteps.Count == 0)
                 return false;
+            if (HasVisibleMouseMoveEnemy(player))
+            {
+                m_MouseMoveSteps = null;
+                m_MouseMovePreview = null;
+                m_MouseMoveHover = null;
+                AddMessage(new Message("Mouse movement stopped: enemy in sight.",
+                    m_Session.WorldTime.TurnCounter, Color.Red));
+                return false;
+            }
             KeyEventArgs interruption = m_UI.UI_PeekKey();
             if (interruption != null)
             {

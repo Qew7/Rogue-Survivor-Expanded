@@ -82,6 +82,12 @@ namespace djack.RogueSurvivor.UI
             m_RogueForm.UI_PostKey(e);
         }
 
+        protected override void OnKeyUp(KeyEventArgs e)
+        {
+            base.OnKeyUp(e);
+            m_RogueForm.UI_ReleaseKey(e);
+        }
+
         protected override void OnMouseMove(MouseEventArgs e)
         {
             base.OnMouseMove(e);

@@ -111,9 +111,19 @@ namespace djack.RogueSurvivor
         #region Input
         bool m_HasKey = false;
         KeyEventArgs m_InKey;
+        Keys m_HeldMenuKey = Keys.None;
+        int m_NextMenuRepeat;
+        bool m_MenuKeyRepeat;
+
+        static bool IsMenuNavigationKey(Keys key)
+        {
+            return key == Keys.Up || key == Keys.Down || key == Keys.Left ||
+                key == Keys.Right || key == Keys.PageUp || key == Keys.PageDown;
+        }
 
         public KeyEventArgs UI_WaitKey()
         {
+            m_MenuKeyRepeat = false;
             m_HasKey = false;
             while (true)
             {
@@ -123,6 +133,34 @@ namespace djack.RogueSurvivor
                 Thread.Sleep(1);
             }
             return m_InKey;
+        }
+
+        public KeyEventArgs UI_WaitMenuKey()
+        {
+            m_MenuKeyRepeat = true;
+            m_HasKey = false;
+            while (true)
+            {
+                Application.DoEvents();
+                if (m_HasKey)
+                {
+                    m_HasKey = false;
+                    return m_InKey;
+                }
+                if (m_HeldMenuKey != Keys.None &&
+                    unchecked(Environment.TickCount - m_NextMenuRepeat) >= 0)
+                {
+                    m_NextMenuRepeat = unchecked(Environment.TickCount + 65);
+                    return new KeyEventArgs(m_HeldMenuKey);
+                }
+                Thread.Sleep(1);
+            }
+        }
+
+        public void UI_ReleaseKey(KeyEventArgs e)
+        {
+            if (e.KeyCode == m_HeldMenuKey)
+                m_HeldMenuKey = Keys.None;
         }
 
         public KeyEventArgs UI_PeekKey()
@@ -140,6 +178,12 @@ namespace djack.RogueSurvivor
 
         public void UI_PostKey(KeyEventArgs e)
         {
+            if (m_MenuKeyRepeat && IsMenuNavigationKey(e.KeyCode))
+            {
+                if (m_HeldMenuKey == e.KeyCode) return;
+                m_HeldMenuKey = e.KeyCode;
+                m_NextMenuRepeat = unchecked(Environment.TickCount + 300);
+            }
             // ignore Shift/Ctrl/Alt alone.
             switch (e.KeyCode)
             {

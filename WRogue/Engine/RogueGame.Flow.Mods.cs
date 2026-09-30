@@ -117,7 +117,7 @@ namespace djack.RogueSurvivor.Engine
                 DrawFootnote(Color.White,
                     "UP/DOWN choose, SPACE toggle, LEFT/RIGHT priority, ENTER apply, ESC cancel");
                 m_UI.UI_Repaint();
-                KeyEventArgs key = m_UI.UI_WaitKey();
+                KeyEventArgs key = m_UI.UI_WaitMenuKey();
                 if (mods.Count > 0)
                 {
                     if (key.KeyCode == Keys.Up) selected = (selected + mods.Count - 1) % mods.Count;

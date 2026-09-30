@@ -277,7 +277,7 @@ namespace djack.RogueSurvivor.Engine
                 }
 
                 // get menu action.
-                KeyEventArgs key = m_UI.UI_WaitKey();
+                KeyEventArgs key = m_UI.UI_WaitMenuKey();
                 switch (key.KeyCode)
                 {
                     case Keys.Up:       // move up

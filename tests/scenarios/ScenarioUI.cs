@@ -23,6 +23,7 @@ sealed class ScenarioUI : IRogueUI
         if (waitKeys.Count == 0) throw new InvalidOperationException("Scenario requested keyboard input");
         return waitKeys.Dequeue();
     }
+    public KeyEventArgs UI_WaitMenuKey() { return UI_WaitKey(); }
     public KeyEventArgs UI_PeekKey() { return keys.Count == 0 ? null : keys.Dequeue(); }
     public void UI_PostKey(KeyEventArgs e) { }
     public Point UI_GetMousePosition() { return MousePosition; }

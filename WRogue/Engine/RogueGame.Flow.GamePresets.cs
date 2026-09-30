@@ -93,7 +93,7 @@ namespace djack.RogueSurvivor.Engine
                 }
                 DrawFootnote(Color.White, "arrows choose/preview, ENTER load, DEL remove custom, ESC return");
                 m_UI.UI_Repaint();
-                KeyEventArgs key = m_UI.UI_WaitKey();
+                KeyEventArgs key = m_UI.UI_WaitMenuKey();
                 if (key.KeyCode == Keys.Escape) return false;
                 if (key.KeyCode == Keys.Up) selected = (selected + presets.Count - 1) % presets.Count;
                 if (key.KeyCode == Keys.Down) selected = (selected + 1) % presets.Count;
@@ -399,7 +399,7 @@ namespace djack.RogueSurvivor.Engine
                 m_UI.UI_DrawStringBold(Color.White, "Name: " + name + "_", 0, 2 * BOLD_LINE_SPACING);
                 DrawFootnote(Color.White, "letters, digits and spaces; ENTER saves, ESC cancels");
                 m_UI.UI_Repaint();
-                KeyEventArgs key = m_UI.UI_WaitKey();
+                KeyEventArgs key = m_UI.UI_WaitMenuKey();
                 if (key.KeyCode == Keys.Escape) return null;
                 if (key.KeyCode == Keys.Enter) return name.Trim();
                 if (key.KeyCode == Keys.Back && name.Length > 0) name = name.Substring(0, name.Length - 1);

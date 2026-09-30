@@ -186,7 +186,7 @@ namespace djack.RogueSurvivor.Engine
 
                 // handle
                 // get menu action.
-                KeyEventArgs key = m_UI.UI_WaitKey();
+                KeyEventArgs key = m_UI.UI_WaitMenuKey();
                 switch (key.KeyCode)
                 {
                     case Keys.Up:       // move up
@@ -374,7 +374,7 @@ namespace djack.RogueSurvivor.Engine
 
                 // handle
                 // get menu action.
-                KeyEventArgs key = m_UI.UI_WaitKey();
+                KeyEventArgs key = m_UI.UI_WaitMenuKey();
                 switch (key.KeyCode)
                 {
                     case Keys.Up:       // move up
@@ -402,7 +402,7 @@ namespace djack.RogueSurvivor.Engine
                         Keys newKeyData = Keys.None;
                         do
                         {
-                            KeyEventArgs newKey = m_UI.UI_WaitKey();
+                            KeyEventArgs newKey = m_UI.UI_WaitMenuKey();
                             // ignore Shift and Control alone.
                             if (newKey.KeyCode == Keys.ShiftKey || newKey.KeyCode == Keys.ControlKey)
                                 continue;
