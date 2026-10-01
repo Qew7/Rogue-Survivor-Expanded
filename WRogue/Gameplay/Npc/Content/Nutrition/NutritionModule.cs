@@ -7,6 +7,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
 {
     sealed partial class NutritionModule : INpcContentModule, INpcGoalSource
     {
+        public const string ObtainFoodId = "obtain_food";
+        public const string RequestFoodId = "request_food";
         public string Id { get { return "nutrition"; } }
         public void Register(NpcCatalogBuilder catalog)
         {
@@ -15,8 +17,9 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             catalog.OnReport("food_cache", c => c.RememberPlace("food"));
             catalog.Resource(new NpcResourceDefinition("food", (g, a) => g.Rules.IsActorHungry(a)));
             catalog.GoalSource(this);
-            catalog.Value(new NpcValueDefinition("Nutrition", "Have usable food", NpcGoalValue.Nutrition, m => 70, true, "request_food") { EquivalentCapabilities = new[] { "request_food", "obtain_food" } });
-            var obtain = new NpcIntentDefinition("obtain_food", "Obtain usable food",
+            catalog.Value(new NpcValueDefinition("Nutrition", "Have usable food", NpcGoalValue.Nutrition, m => 70, true, RequestFoodId)
+                { EquivalentCapabilities = new[] { RequestFoodId, ObtainFoodId } });
+            var obtain = new NpcIntentDefinition(ObtainFoodId, "Obtain usable food",
             NpcIntentMethod.ObtainFood, 35, 20, 180, 180, 0, new NpcIntentWeight(DecisionKind.Explore, 1),
             new NpcIntentWeight(DecisionKind.Supplies, 1), new NpcIntentWeight(DecisionKind.Group, -1, 2));
 
@@ -24,7 +27,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             obtain.Assess = (g, a, i) => !g.Rules.IsActorHungry(a) || NpcFoodSupply.HasFood(g, a) ? new NpcIntentOutcome(NpcIntentStatus.Completed, "observed that usable food is available") : null;
             obtain.Resource = "food";
             catalog.Capability(obtain);
-            var request = new NpcIntentDefinition("request_food", "Ask for food",
+            var request = new NpcIntentDefinition(RequestFoodId, "Ask for food",
             NpcIntentMethod.RequestFood, 35, 20, 60, 180, 1,
             new NpcIntentWeight(DecisionKind.Group, 1), new NpcIntentWeight(DecisionKind.Trade, 1, 2));
 
@@ -40,20 +43,22 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public void Evaluate(NpcGoalContext context, NpcGoalOffers offers)
         {
             Actor owner = context.Owner; NpcKnownPerson self = context.Self;
-            IList<NpcKnownPerson> people = context.People; int turn = context.Turn, maxHP = context.MaxHP;
+            IList<NpcKnownPerson> people = context.People; int turn = context.Turn;
             if (context.Hungry || context.Pending(NpcGoalValue.Nutrition, self.Id))
             {
                 NpcKnownPerson listener = null; int best = Int32.MinValue;
                 foreach (NpcKnownPerson person in people)
                 {
                     if (person.Id == self.Id || person.Hostile || person.Dead || person.SeenTurn != turn || person.Place.Map != owner.Location.Map) continue;
-                    int preference = NpcValues.Importance(owner, NpcGoalValue.Belonging, person.Id) - NpcGoalContext.Distance(owner.Location, person.Place);
+                    int preference = NpcValues.Importance(context.Catalog, owner, NpcGoalValue.Belonging, person.Id) -
+                        NpcGoalContext.Distance(owner.Location, person.Place);
                     if (owner.Leader != null && owner.Leader.PersonalityIdentity == person.Id) preference += 10;
                     if (preference > best) { best = preference; listener = person; }
                 }
                 bool social = listener != null && 35 + PersonalitySystem.Bias(owner, DecisionKind.Group) + PersonalitySystem.Bias(owner, DecisionKind.Trade) / 2 >= 20;
                 int available = context.HasFood || !context.Hungry ? 100 : 0;
-                offers.Add(social ? listener : self, NpcGoalValue.Nutrition, social ? context.Catalog.Capability("request_food") : context.Catalog.Capability("obtain_food"),
+                offers.Add(social ? listener : self, NpcGoalValue.Nutrition,
+                    context.Catalog.Capability(social ? RequestFoodId : ObtainFoodId),
                     available, 100, 100 - available, 100, self: true);
             }
         }
@@ -90,7 +95,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             int confidence = direct ? 100 : 90;
             if (source.Kind == "food_offered" && source.Other == owner)
                 foreach (NpcIntent goal in owner.Personality.Intents)
-                    if (!goal.Finished && goal.DefinitionId == NpcIntentContent.Request.Id && goal.StoryId == source.StoryId && goal.Plan != null)
+                    if (!goal.Finished && goal.DefinitionId == RequestFoodId && goal.StoryId == source.StoryId && goal.Plan != null)
                     { goal.Plan.Desired = (ulong)NpcPlanFact.Food; goal.Plan.Invalidate(); goal.Plan.NextPlanningTurn = source.Turn; }
             if (source.Kind == "requested_food" && subject != null)
             {

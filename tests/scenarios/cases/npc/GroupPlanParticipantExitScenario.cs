@@ -17,8 +17,8 @@ static class GroupPlanParticipantExitScenario
             Actor target = NpcIntentSupport.Actor(world, "target", 4, 1);
             leader.AddFollower(helper);
             var known = new NpcKnownPerson { Id = target.PersonalityIdentity, Name = target.UnmodifiedName, Place = target.Location };
-            NpcIntent first = NpcStorySystem.StartKnown(leader, known, NpcIntentContent.Seek, storyId: "shared-exit");
-            NpcIntent second = NpcStorySystem.StartKnown(helper, known, NpcIntentContent.Seek, storyId: "shared-exit");
+            NpcIntent first = NpcStorySystem.StartKnown(leader, known, world.Game.NpcContent.Capability("seek_companion"), storyId: "shared-exit");
+            NpcIntent second = NpcStorySystem.StartKnown(helper, known, world.Game.NpcContent.Capability("seek_companion"), storyId: "shared-exit");
             Check.Equal(true, first != null && second != null, "two real goals share one director episode");
             Location destination = new Location(world.Map, new Point(6, 1));
             var plan = new NpcGroupPlan { StoryId = "shared-exit", Kind = "group_shelter", Stage = "seeking", Destination = destination };

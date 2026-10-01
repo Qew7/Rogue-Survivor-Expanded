@@ -66,7 +66,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                         (intent.Generated == null || intent.Generated.SubjectId != owner.PersonalityIdentity) && game.Rules.AreEnemies(owner, target))
                     { Finish(owner, intent, NpcIntentStatus.Abandoned, "target became hostile"); continue; }
                 }
-                if (definition.Score(owner, intent, game.NpcContent.Personalities) < definition.ThresholdFor(intent))
+                if (definition.Score(owner, intent, game.NpcContent) < definition.ThresholdFor(intent))
                 { Finish(owner, intent, NpcIntentStatus.Abandoned, "motivation changed"); continue; }
                 bool pause = !definition.Departure && (danger && !definition.ActDuringDanger || followingOrder ||
                     (definition.PauseWhenTired && game.Rules.IsActorTired(owner)) || (definition.PauseWhenHungry && game.Rules.IsActorHungry(owner)));
@@ -87,7 +87,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                     (definition.WaitingAfterAnnouncement && intent.Announced &&
                         (intent.Plan == null || !intent.Plan.DesiredState.Equals(definition.GetResult(catalog, intent.Generated))))) continue;
                 if (departureOnly && !definition.Departure || dangerOnly && !definition.ActDuringDanger) continue;
-                int score = definition.Score(owner, intent, catalog.Personalities);
+                int score = definition.Score(owner, intent, catalog);
                 if (best == null || score > bestScore || (score == bestScore && intent.Sequence < best.Sequence))
                 { best = intent; bestScore = score; }
             }

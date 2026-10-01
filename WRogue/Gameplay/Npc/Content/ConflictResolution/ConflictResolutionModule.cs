@@ -28,7 +28,9 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         {
             c.Fact(fact); c.Value(new NpcValueDefinition(value, description, null, importance));
             c.Capability(new NpcIntentDefinition(id, description, 180, 360) { ResultFacts = (catalog, g) => catalog.Facts.Mask(fact),
-                DirectAction = action, AssignedScore = (owner, target) => importance(new NpcMotivation(owner, target)), AllowHostile = combat, ActDuringDanger = combat, AllowQuestions = true });
+                DirectAction = action, AssignedScore = (catalog, owner, target) =>
+                    importance(new NpcMotivation(owner, target, catalog.Personalities, catalog)),
+                AllowHostile = combat, ActDuringDanger = combat, AllowQuestions = true });
             c.Operator(new NpcOperatorDefinition(id, null, context => action(new NpcActionContext(context))));
             c.OperatorSource(new NpcOperatorSource(id, catalog => catalog.Facts.Mask(fact), d => {
                 ulong at = d.At(d.Goal.LastKnown); if (at == 0) return;

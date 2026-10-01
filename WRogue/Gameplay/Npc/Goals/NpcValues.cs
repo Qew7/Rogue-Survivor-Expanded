@@ -6,10 +6,10 @@ namespace djack.RogueSurvivor.Gameplay.Personality
     // Values describe desirable states. They never dispatch on event kinds.
     static class NpcValues
     {
-        public static int Importance(Actor owner, NpcGoalValue value, Guid subject)
+        public static int Importance(NpcContentCatalog catalog, Actor owner, NpcGoalValue value, Guid subject)
         {
-            NpcValueDefinition definition = NpcContentCatalog.Default.Value(value);
-            return definition == null ? 0 : definition.Importance(new NpcMotivation(owner, subject));
+            NpcValueDefinition definition = catalog.Value(value);
+            return definition == null ? 0 : definition.Importance(new NpcMotivation(owner, subject, catalog.Personalities, catalog));
         }
         public static int KnownAttitude(Actor owner, Guid subject, PersonalityRegistry registry = null,
             string excludeTrait = null)
@@ -35,11 +35,6 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 if (increase > largest) { largest = increase; strongest = definition.Name; }
             }
             return strongest == null ? null : "because trait " + strongest + " raised this goal's importance by " + largest;
-        }
-        public static NpcGeneratedGoal Evaluate(Actor owner, NpcGoalValue value, Guid subject,
-            int current, int desired, int deficit, int confidence, ulong result)
-        {
-            return Evaluate(owner, NpcContentCatalog.Default.Value(value), subject, current, desired, deficit, confidence, result);
         }
         public static NpcGeneratedGoal Evaluate(Actor owner, NpcValueDefinition definition, Guid subject,
             int current, int desired, int deficit, int confidence, ulong result, PersonalityRegistry registry = null, NpcContentCatalog catalog = null)

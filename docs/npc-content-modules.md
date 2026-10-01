@@ -44,6 +44,12 @@ directory. Keep registration together; split larger action/perception helpers
 by responsibility. Add the module once in `Content/NpcContentDefaults.cs`.
 New definitions do not require adding branches to the generator, planner,
 event dispatcher or records reader.
+Keep a stable capability ID beside its owning module's registration and reuse
+that constant when another module must inspect the ID. Goal admission and
+motivation receive the game's active `NpcContentCatalog`; pass that catalog to
+`NpcStorySystem.StartKnown` for assigned goals so custom traits and capability
+descriptions are used in scoring and Read Records. Scenarios should resolve
+capabilities from the game catalog too.
 
 For a complete working example, see
 [`NpcRestContent.cs`](../tests/scenarios/NpcRestContent.cs). In one file it

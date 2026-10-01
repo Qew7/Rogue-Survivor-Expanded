@@ -6,6 +6,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
 {
     sealed partial class FoodAidModule : INpcContentModule, INpcGoalSource
     {
+        public const string AnswerFoodRequestId = "answer_food_request";
         public string Id { get { return "foodaid"; } }
         public void Register(NpcCatalogBuilder catalog)
         {
@@ -25,7 +26,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             repay.Resource = "food";
             repay.DirectAction = NpcFoodActions.Give;
             catalog.Capability(repay);
-            var help = new NpcIntentDefinition("answer_food_request", "Answer a food request",
+            var help = new NpcIntentDefinition(AnswerFoodRequestId, "Answer a food request",
             NpcIntentMethod.ShareFood, 25, 20, 60, 60, 1,
             new NpcIntentWeight(DecisionKind.Compassion, 1), new NpcIntentWeight(DecisionKind.Trade, 1));
 
@@ -39,13 +40,13 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public void Evaluate(NpcGoalContext context, NpcGoalOffers offers)
         {
             Actor owner = context.Owner; NpcKnownPerson self = context.Self;
-            IList<NpcKnownPerson> people = context.People; int turn = context.Turn, maxHP = context.MaxHP;
+            IList<NpcKnownPerson> people = context.People; int turn = context.Turn;
             foreach (NpcKnownPerson person in people)
             {
                 if (person.Id == self.Id || person.Dead) continue;
                 RelationshipRecord opinion = owner.Personality.Person(person.Id);
                 if (!person.Hostile && (turn - person.FoodNeedTurn <= 60 || context.Pending(NpcGoalValue.Care, person.Id)))
-                    offers.Add(person, NpcGoalValue.Care, context.Catalog.Capability("answer_food_request"), 100 - person.FoodNeed, 100,
+                    offers.Add(person, NpcGoalValue.Care, context.Catalog.Capability(AnswerFoodRequestId), 100 - person.FoodNeed, 100,
                         turn - person.FoodNeedTurn <= 60 ? person.FoodNeed : 0, person.FoodConfidence, person.NeedCause, person.NeedStory);
                 if (!person.Hostile && opinion != null && (turn >= person.ReciprocityTurn || context.Pending(NpcGoalValue.Reciprocity, person.Id)) &&
                     (opinion.Debt > 0 || context.Pending(NpcGoalValue.Reciprocity, person.Id)))
@@ -84,17 +85,17 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         static void OnKnowledge(NpcObservation observation)
         {
             Actor owner = observation.Owner;
-            SignificantEvent source = observation.Source; bool direct = observation.Direct;
+            SignificantEvent source = observation.Source;
             bool seesSubject = observation.SeesSubject, seesOther = observation.SeesOther;
-            PersonalityState state = owner.Personality; NpcKnowledge knowledge = state.Knowledge;
+            NpcKnowledge knowledge = owner.Personality.Knowledge;
             NpcKnownPerson other = !seesOther ? null : knowledge.Person(source.Other.PersonalityIdentity);
             if (source.Kind == "shared_food" && seesSubject && seesOther && source.Subject != owner && source.StoryId != null)
                 foreach (NpcIntent goal in owner.Personality.Intents)
                     if (!goal.Finished && goal.TargetId == source.Other.PersonalityIdentity && goal.StoryId == source.StoryId)
                     {
-                        if (goal.DefinitionId == NpcIntentContent.Help.Id)
+                        if (goal.DefinitionId == AnswerFoodRequestId)
                             NpcIntentSystem.Finish(owner, goal, NpcIntentStatus.Completed, "observed that the recipient received food");
-                        else if (goal.DefinitionId == NpcIntentContent.Gather.Id)
+                        else if (goal.DefinitionId == GroupsModule.GatherSuppliesId)
                         {
                             goal.Progress = 2; goal.NextAttempt = source.Turn;
                             if (goal.Plan != null) { goal.Plan.LastEventId = source.Id; goal.Plan.Invalidate(); goal.Plan.NextPlanningTurn = source.Turn; }
@@ -109,8 +110,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         {
             Actor owner = observation.Owner;
             bool seesOther = observation.SeesOther;
-            SignificantEvent source = observation.Source; bool direct = observation.Direct;
-            PersonalityState state = owner.Personality; NpcKnowledge knowledge = state.Knowledge;
+            SignificantEvent source = observation.Source;
+            NpcKnowledge knowledge = owner.Personality.Knowledge;
             NpcKnownPerson subject = source.Subject == null ? null : knowledge.Person(source.Subject.PersonalityIdentity);
             NpcKnownPerson other = source.Other == null ? null : knowledge.Person(source.Other.PersonalityIdentity);
             if (seesOther && source.Kind == "helped" && source.Subject == owner && source.Other != null)
@@ -124,12 +125,13 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         {
             RogueGame game = observation.Game; Actor owner = observation.Owner;
             bool seesOther = observation.SeesOther;
-            SignificantEvent source = observation.Source; bool direct = observation.Direct;
-            PersonalityState state = owner.Personality; NpcKnowledge knowledge = state.Knowledge;
+            SignificantEvent source = observation.Source;
+            PersonalityState state = owner.Personality;
             if (seesOther && source.Kind == "helped" && source.Subject == owner && source.Other != null)
             {
                 foreach (NpcIntent intent in state.Intents)
-                    if (!intent.Finished && (intent.DefinitionId == NpcIntentContent.Request.Id || intent.DefinitionId == NpcIntentContent.Obtain.Id) &&
+                    if (!intent.Finished && (intent.DefinitionId == NutritionModule.RequestFoodId ||
+                        intent.DefinitionId == NutritionModule.ObtainFoodId) &&
                         (NpcFoodSupply.HasFood(game, owner) || !game.Rules.IsActorHungry(owner)))
                         NpcIntentSystem.Finish(owner, intent, NpcIntentStatus.Completed, "received needed supplies");
                 if (state.Reactions.Count < 4)
@@ -142,7 +144,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             }
             if (source.Kind == "request_refused" && source.Other == owner && source.Subject != null)
                 foreach (NpcIntent intent in state.Intents)
-                    if (!intent.Finished && intent.DefinitionId == NpcIntentContent.Request.Id &&
+                    if (!intent.Finished && intent.DefinitionId == NutritionModule.RequestFoodId &&
                         intent.TargetId == source.Subject.PersonalityIdentity && intent.StoryId == source.StoryId)
                     {
                         if (intent.Plan == null) NpcIntentSystem.Finish(owner, intent, NpcIntentStatus.Failed, "request was declined");
@@ -152,14 +154,14 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         static void OnReplies(NpcObservation observation)
         {
             RogueGame game = observation.Game; Actor owner = observation.Owner;
-            SignificantEvent source = observation.Source; bool direct = observation.Direct;
-            PersonalityState state = owner.Personality; NpcKnowledge knowledge = state.Knowledge;
+            SignificantEvent source = observation.Source;
+            PersonalityState state = owner.Personality;
             if (source.Kind == "requested_food" && source.Other == owner && source.Subject != null &&
                 !game.Rules.AreEnemies(owner, source.Subject))
             {
                 bool answering = state.Reactions.Exists(r => r.CauseId == source.Id && r.TargetId == source.Subject.PersonalityIdentity && r.Kind == "food_promised");
                 foreach (NpcIntent intent in state.Intents)
-                    if (!intent.Finished && intent.DefinitionId == NpcIntentContent.Help.Id && intent.TargetId == source.Subject.PersonalityIdentity) answering = true;
+                    if (!intent.Finished && intent.DefinitionId == AnswerFoodRequestId && intent.TargetId == source.Subject.PersonalityIdentity) answering = true;
                 if (!answering && state.Reactions.Count < 4)
                     state.Reactions.Add(new NpcReaction(source.Subject, "I'm keeping my supplies.", source.Id,
                         source.Turn, "request_refused", source.StoryId));

@@ -17,7 +17,7 @@ static class ResourceRespectScenario
             Location cache = new Location(world.Map, new Point(1, 2));
             var food = new ItemFood(world.Game.GameItems.CANNED_FOOD) { Quantity = 2 }; world.Map.DropItemAt(food, cache.Position);
             NpcIntent reservation = NpcStorySystem.StartKnown(holder, new NpcKnownPerson { Id = seeker.PersonalityIdentity, Name = seeker.UnmodifiedName,
-                Place = seeker.Location }, NpcIntentContent.Seek);
+                Place = seeker.Location }, world.Game.NpcContent.Capability("seek_companion"));
             Session.Get.NpcDirector.Reserve(reservation.StoryId, cache);
             NpcIntentSupport.Turn(world, seeker); NpcIntentSupport.Turn(world, holder);
             NpcIntent goal = NpcIntentSupport.Intent(seeker, "obtain_food");

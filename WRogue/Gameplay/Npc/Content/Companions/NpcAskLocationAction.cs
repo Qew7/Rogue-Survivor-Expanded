@@ -13,7 +13,7 @@ namespace djack.RogueSurvivor.Engine.Actions
         { return NpcIntentSystem.Enabled(m_Actor) && !m_Actor.IsSleeping && intent != null && !intent.Finished && intent.Status != NpcIntentStatus.Paused &&
             m_Actor.Personality.Intents.Contains(intent) && m_Game.NpcContent.Capability(intent.DefinitionId) != null && m_Game.NpcContent.Capability(intent.DefinitionId).AllowQuestions &&
             m_Actor.Location.Map.LocalTime.TurnCounter < intent.Deadline && m_Actor.Location.Map.LocalTime.TurnCounter >= intent.NextAttempt &&
-            m_Game.NpcContent.Capability(intent.DefinitionId).Score(m_Actor, intent, m_Game.NpcContent.Personalities) >= m_Game.NpcContent.Capability(intent.DefinitionId).ThresholdFor(intent) &&
+            m_Game.NpcContent.Capability(intent.DefinitionId).Score(m_Actor, intent, m_Game.NpcContent) >= m_Game.NpcContent.Capability(intent.DefinitionId).ThresholdFor(intent) &&
             listener != null && !listener.IsPlayer && !listener.IsSleeping && listener.Personality != null && listener.PersonalityIdentity != intent.TargetId &&
             NpcIntentSystem.CanSee(m_Game, m_Actor, listener) && m_Game.Rules.GridDistance(m_Actor.Location.Position, listener.Location.Position) <= 4 &&
             !m_Game.Rules.AreEnemies(m_Actor, listener) && !m_Actor.Personality.Knowledge.WasTold(-intent.Sequence, listener.PersonalityIdentity); }

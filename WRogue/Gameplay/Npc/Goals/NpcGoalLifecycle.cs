@@ -49,7 +49,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                         !owner.Personality.GoalCooldownReady(candidate.State.Key, owner.Location.Map.LocalTime.TurnCounter)) continue;
                     NpcIntentSystem.Finish(owner, weakest, NpcIntentStatus.Abandoned, "a more important state became unsatisfied");
                 }
-                Start(owner, candidate.Target, candidate.Capability, candidate.Cause, candidate.Story, candidate.State);
+                Start(catalog, owner, candidate.Target, candidate.Capability, candidate.Cause, candidate.Story, candidate.State);
             }
         }
         static bool HasEquivalent(Actor owner, NpcGoalCandidate candidate, NpcContentCatalog catalog)
@@ -68,15 +68,21 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 if (!owner.Personality.LegacyCooldownReady(alias, turn)) return false;
             return true;
         }
-        public static NpcIntent Start(Actor owner, NpcKnownPerson target, NpcIntentDefinition definition,
+        public static NpcIntent Start(NpcContentCatalog catalog, Actor owner, NpcKnownPerson target, NpcIntentDefinition definition,
             long cause = 0, string parent = null, NpcGeneratedGoal generated = null,
             Location destination = default(Location), Guid groupId = default(Guid))
         {
-            if (!NpcIntentSystem.Enabled(owner) || target == null || target.Dead || target.Place.Map == null) return null;
+            if (catalog == null) throw new ArgumentNullException("catalog");
+            if (definition == null || !NpcIntentSystem.Enabled(owner) || target == null || target.Dead || target.Place.Map == null) return null;
             int turn = owner.Location.Map.LocalTime.TurnCounter;
             if (generated == null ? !owner.Personality.CanStartIntent(definition.Id, turn) : !owner.Personality.CanGenerateGoal(generated.Key, turn)) return null;
             RelationshipRecord opinion = owner.Personality.Person(target.Id); int attitude = opinion == null ? 0 : opinion.Feeling;
-            int score = generated == null && definition.AssignedScore != null ? definition.AssignedScore(owner, target.Id) : generated == null ? definition.ScoreKnown(owner, attitude, owner.Leader != null && owner.Leader.PersonalityIdentity == target.Id) + definition.SocialScore(owner, target.Id) : generated.Utility;
+            int score;
+            if (generated != null) score = generated.Utility;
+            else if (definition.AssignedScore != null) score = definition.AssignedScore(catalog, owner, target.Id);
+            else score = definition.ScoreKnown(owner, attitude,
+                owner.Leader != null && owner.Leader.PersonalityIdentity == target.Id, catalog.Personalities) +
+                definition.SocialScore(owner, target.Id);
             if (score < (generated == null ? definition.Threshold : NpcGoalGenerator.MinimumUtility)) return null;
             NpcStoryDirector director = Session.Get.NpcDirector;
             lock (director)
@@ -100,9 +106,9 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                         if (generated.Causes != null && Array.IndexOf(generated.Causes, fact.EventId) >= 0) director.Link(story, fact.StoryId, owner, fact.EventId);
                 }
                 string reason = generated == null ? definition.Name : generated.Explanation;
-                string influence = NpcValues.TraitInfluence(owner, generated, NpcContentCatalog.Default);
+                string influence = NpcValues.TraitInfluence(owner, generated, catalog);
                 if (influence != null) reason += "; " + influence;
-                Session.Get.ResidentRecords.IntentChanged(owner, intent, "started", reason);
+                Session.Get.ResidentRecords.IntentChanged(owner, intent, "started", reason, catalog);
                 return intent;
             }
         }

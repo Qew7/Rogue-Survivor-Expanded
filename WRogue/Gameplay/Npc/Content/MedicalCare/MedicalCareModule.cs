@@ -7,6 +7,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
 {
     sealed partial class MedicalCareModule : INpcContentModule, INpcGoalSource
     {
+        public const string RestoreHealthId = "restore_health";
         public string Id { get { return "medicalcare"; } }
         public void Register(NpcCatalogBuilder catalog)
         {
@@ -22,7 +23,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             catalog.GoalSource(this);
             catalog.Value(new NpcValueDefinition("Recovery", "Recover health", NpcGoalValue.Recovery, m => 160 + m.Supplies - m.Courage / 2, true));
             catalog.Value(new NpcValueDefinition("MedicalCare", "Meet a person's medical need", NpcGoalValue.MedicalCare, m => 15 + m.Compassion + m.Attachment / 3 + m.Feeling / 3 + m.CommunityCare, true));
-            var recover = new NpcIntentDefinition("restore_health", "Recover health",
+            var recover = new NpcIntentDefinition(RestoreHealthId, "Recover health",
             NpcIntentMethod.RestoreHealth, 40, 20, 180, 180, 0);
 
             recover.Result = (c, g) => (ulong)(NpcPlanFact.Healthy);
@@ -40,7 +41,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             Actor owner = context.Owner; NpcKnownPerson self = context.Self;
             IList<NpcKnownPerson> people = context.People; int turn = context.Turn, maxHP = context.MaxHP;
             if (owner.HitPoints < maxHP || context.Pending(NpcGoalValue.Recovery, self.Id))
-                offers.Add(self, NpcGoalValue.Recovery, context.Catalog.Capability("restore_health"), owner.HitPoints, maxHP,
+                offers.Add(self, NpcGoalValue.Recovery, context.Catalog.Capability(RestoreHealthId), owner.HitPoints, maxHP,
                     Math.Max(0, maxHP - owner.HitPoints) * 100 / Math.Max(1, maxHP), 100);
             foreach (NpcKnownPerson person in people)
             {
@@ -90,7 +91,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             PersonalityState state = owner.Personality; NpcKnowledge knowledge = state.Knowledge;
             if (source.Kind == "medicine_offered" && source.Other == owner)
                 foreach (NpcIntent goal in owner.Personality.Intents)
-                    if (!goal.Finished && goal.Plan != null && (goal.DefinitionId == NpcIntentContent.Recover.Id || goal.Generated != null && goal.Generated.Resource == "medicine"))
+                    if (!goal.Finished && goal.Plan != null && (goal.DefinitionId == RestoreHealthId || goal.Generated != null && goal.Generated.Resource == "medicine"))
                     { goal.Plan.Invalidate(); goal.NextAttempt = source.Turn + 1; goal.Plan.NextPlanningTurn = source.Turn + 1; }
         }
         static void OnRelationships(NpcObservation observation)

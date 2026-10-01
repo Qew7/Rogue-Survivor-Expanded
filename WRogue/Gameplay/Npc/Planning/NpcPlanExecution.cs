@@ -35,7 +35,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 !owner.Personality.Intents.Contains(goal)) return false;
             int turn = owner.Location.Map.LocalTime.TurnCounter;
             NpcIntentDefinition definition = game.NpcContent.Capability(goal.DefinitionId);
-            return definition != null && definition.Score(owner, goal) >= definition.ThresholdFor(goal) && turn < goal.Deadline && turn >= goal.NextAttempt &&
+            return definition != null && definition.Score(owner, goal, game.NpcContent) >= definition.ThresholdFor(goal) && turn < goal.Deadline && turn >= goal.NextAttempt &&
                 (goal.GroupId == Guid.Empty || owner.SocialGroup != null && owner.SocialGroup.Identity == goal.GroupId);
         }
         public static ItemFood FoodOnGround(RogueGame game, Actor owner, Location place)

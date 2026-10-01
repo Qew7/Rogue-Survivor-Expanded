@@ -17,7 +17,7 @@ static class ResourceRefusalScenario
             Location cache = new Location(world.Map, new Point(1, 2));
             world.Map.DropItemAt(new ItemFood(world.Game.GameItems.CANNED_FOOD) { Quantity = 2 }, cache.Position);
             NpcIntent reservation = NpcStorySystem.StartKnown(holder, new NpcKnownPerson { Id = taker.PersonalityIdentity, Name = taker.UnmodifiedName,
-                Place = taker.Location }, NpcIntentContent.Seek);
+                Place = taker.Location }, world.Game.NpcContent.Capability("seek_companion"));
             Session.Get.NpcDirector.Reserve(reservation.StoryId, cache);
             NpcIntentSupport.Turn(world, taker); NpcIntentSupport.Turn(world, holder);
             Check.Equal(true, NpcIntentSupport.HasEvent(taker, "resource_refused"), "holder's values produce a real refusal");

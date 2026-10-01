@@ -39,7 +39,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                     if (member.IsPlayer || member.IsSleeping || member == c.Leader || member.SocialGroup != c.Group ||
                         member.PersonalityIdentity == fact.SubjectId || !NpcIntentSystem.Enabled(member)) continue;
                     NpcIntentDefinition capability = c.Game.NpcContent.Capability("defend_person");
-                    if (capability.AssignedScore(member, threat.Id) < capability.Threshold) continue;
+                    if (capability.AssignedScore(c.Game.NpcContent, member, threat.Id) < capability.Threshold) continue;
                     return new NpcCollectiveOffer(new NpcGroupPlan { Kind = "group_protection", Stage = "proposed", CauseId = fact.EventId,
                         CollectorId = member.PersonalityIdentity, BeneficiaryId = fact.SubjectId, Destination = threat.Place, Deadline = c.Turn + 180 }, priority);
                 }
@@ -64,7 +64,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 source.Task.Stage = "responding"; return;
             }
             NpcIntent goal = NpcStorySystem.StartKnown(owner, threat, game.NpcContent.Capability("defend_person"), source.Id,
-                source.StoryId, groupId: owner.SocialGroup.Identity);
+                source.StoryId, groupId: owner.SocialGroup.Identity, catalog: game.NpcContent);
             if (goal != null) source.Task.Stage = "responding";
             else if (owner.Personality.Reactions.Count < 4) owner.Personality.Reactions.Add(new NpcReaction(source.Subject,
                 "I won't fight for that task.", source.Id, source.Turn, "task_declined", source.StoryId));

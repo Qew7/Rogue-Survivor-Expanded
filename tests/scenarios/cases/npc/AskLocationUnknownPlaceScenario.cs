@@ -18,7 +18,7 @@ static class AskLocationUnknownPlaceScenario
             Actor listener = NpcIntentSupport.Actor(world, "listener", 2, 1);
             NpcKnownPerson target = new NpcKnownPerson { Id = missing.PersonalityIdentity, Name = missing.UnmodifiedName,
                 Place = new Location(world.Map, new Point(5, 1)) };
-            NpcIntent goal = NpcStorySystem.StartKnown(seeker, target, NpcIntentContent.Seek);
+            NpcIntent goal = NpcStorySystem.StartKnown(seeker, target, world.Game.NpcContent.Capability("seek_companion"));
             Check.Equal(true, goal != null, "a genuine search goal starts for a known person");
             listener.Personality.Knowledge.People.Add(new NpcKnownPerson { Id = missing.PersonalityIdentity,
                 Name = missing.UnmodifiedName, Place = default(Location), Confidence = 60 });

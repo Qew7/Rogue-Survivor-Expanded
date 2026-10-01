@@ -17,7 +17,7 @@ namespace djack.RogueSurvivor.Engine
             SpendActorActionPoints(buyer, Rules.BASE_ACTION_COST);
             DoSay(buyer, seller, "Agreed. These supplies for your food.", Sayflags.IS_FREE_ACTION);
             NpcPlanExecution.Publish(this, "bartered_food", buyer, seller, goal);
-            if (goal.DefinitionId == NpcIntentContent.Obtain.Id || goal.DefinitionId == NpcIntentContent.Request.Id)
+            if (goal.DefinitionId == NutritionModule.ObtainFoodId || goal.DefinitionId == NutritionModule.RequestFoodId)
                 NpcIntentSystem.Finish(buyer, goal, NpcIntentStatus.Completed, "actually exchanged supplies for food");
         }
     }

@@ -16,7 +16,7 @@ static class PlannerSuppliesOwnedScenario
             leader.AddFollower(collector); leader.AddFollower(hungry);
             NpcIntentSupport.Food(world, collector, 3); hungry.FoodPoints = Session.Get.GamePreset.HungerPoints - 1;
             NpcIntent goal = NpcStorySystem.StartKnown(collector, new NpcKnownPerson { Id = hungry.PersonalityIdentity, Name = hungry.UnmodifiedName, Place = hungry.Location },
-                NpcIntentContent.Gather, destination: new Location(world.Map, new Point(5, 1)), groupId: leader.SocialGroup.Identity);
+                world.Game.NpcContent.Capability("gather_group_supplies"), destination: new Location(world.Map, new Point(5, 1)), groupId: leader.SocialGroup.Identity);
             goal.CoordinatorId = leader.PersonalityIdentity; goal.CoordinatorPlace = leader.Location;
             NpcIntentSupport.Turn(world, collector);
             Check.Equal(1, NpcIntentSupport.FoodUnits(hungry), "owned supplies are delivered immediately");

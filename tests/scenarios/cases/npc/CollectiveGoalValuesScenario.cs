@@ -16,17 +16,17 @@ static class CollectiveGoalValuesScenario
             helper.Personality.Knowledge.See(recipient, 0);
             NpcKnownPerson known = helper.Personality.Knowledge.Person(recipient.PersonalityIdentity);
             known.FoodNeed = known.FoodConfidence = 100;
-            Check.Equal(10, NpcValues.Importance(helper, NpcGoalValue.Care, recipient.PersonalityIdentity), "neutral actor has little autonomous inclination to donate");
+            Check.Equal(10, NpcValues.Importance(world.Game.NpcContent, helper, NpcGoalValue.Care, recipient.PersonalityIdentity), "neutral actor has little autonomous inclination to donate");
             var memory = new MemoryInstance("collective-test", 0, 100, "Army");
             helper.Personality.RememberFaction(recipient.Faction.ID, recipient.Faction.Name, memory, 80);
             NpcGoalGenerator.Refresh(world.Game, helper);
             Check.Equal(true, NpcIntentSupport.Intent(helper, "answer_food_request") != null, "remembered faction sympathy affects goal admission");
-            Check.Equal(30, NpcValues.Importance(helper, NpcGoalValue.Care, recipient.PersonalityIdentity), "collective history is included in perceived personal value");
+            Check.Equal(30, NpcValues.Importance(world.Game.NpcContent, helper, NpcGoalValue.Care, recipient.PersonalityIdentity), "collective history is included in perceived personal value");
             helper.Personality.RememberGroup(recipient.SocialGroup.Identity, leader.UnmodifiedName, new MemoryInstance("group-test", 0, 100, "group"), -80);
-            Check.Equal(10, NpcValues.Importance(helper, NpcGoalValue.Care, recipient.PersonalityIdentity), "known group reputation can offset faction sympathy");
+            Check.Equal(10, NpcValues.Importance(world.Game.NpcContent, helper, NpcGoalValue.Care, recipient.PersonalityIdentity), "known group reputation can offset faction sympathy");
             Actor stranger = NpcIntentSupport.Actor(world, "stranger", 4, 1);
             helper.Personality.Knowledge.See(stranger, 0);
-            Check.Equal(10, NpcValues.Importance(helper, NpcGoalValue.Care, stranger.PersonalityIdentity), "unrelated faction and group are unaffected");
+            Check.Equal(10, NpcValues.Importance(world.Game.NpcContent, helper, NpcGoalValue.Care, stranger.PersonalityIdentity), "unrelated faction and group are unaffected");
         });
     }
 }

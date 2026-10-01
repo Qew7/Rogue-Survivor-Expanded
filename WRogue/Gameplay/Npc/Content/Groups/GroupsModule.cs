@@ -6,6 +6,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
 {
     sealed partial class GroupsModule : INpcContentModule
     {
+        public const string GatherSuppliesId = "gather_group_supplies";
+        public const string CoordinateSuppliesId = "coordinate_group_supplies";
         public string Id { get { return "groups"; } }
         public void Register(NpcCatalogBuilder catalog)
         {
@@ -23,7 +25,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                     !actor.SocialGroup.Plan.Finished && map.LocalTime.TurnCounter >= actor.SocialGroup.Plan.Deadline)
                 { actor.SocialGroup.Plan.Stage = "failed"; actor.SocialGroup.Plan.Destination = default(Location); }
             });
-            var gather = new NpcIntentDefinition("gather_group_supplies", "Gather supplies for a companion",
+            var gather = new NpcIntentDefinition(GatherSuppliesId, "Gather supplies for a companion",
             NpcIntentMethod.GatherFood, 35, 30, WorldTime.TURNS_PER_DAY, 180, 1, new NpcIntentWeight(DecisionKind.Compassion, 1), new NpcIntentWeight(DecisionKind.Supplies, 1), new NpcIntentWeight(DecisionKind.Explore, 1, 2));
             gather.ReportAfterDelivery = true;
 
@@ -31,7 +33,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             gather.Resource = "food";
             gather.DirectAction = NpcGroupSupplyActions.Stage;
             catalog.Capability(gather);
-            var coordinate = new NpcIntentDefinition("coordinate_group_supplies", "Coordinate supplies for the group",
+            var coordinate = new NpcIntentDefinition(CoordinateSuppliesId, "Coordinate supplies for the group",
             NpcIntentMethod.Coordinate, 20, 25, WorldTime.TURNS_PER_DAY, 180, 0, new NpcIntentWeight(DecisionKind.Group, 1), new NpcIntentWeight(DecisionKind.Compassion, 1, 2));
             coordinate.Selectable = false;
             coordinate.Result = (c, g) => (ulong)(NpcPlanFact.None);
@@ -82,24 +84,22 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         }
         static void OnKnowledge(NpcObservation observation)
         {
-            RogueGame game = observation.Game; Actor owner = observation.Owner;
-            SignificantEvent source = observation.Source; bool direct = observation.Direct;
-            PersonalityState state = owner.Personality; NpcKnowledge knowledge = state.Knowledge;
+            Actor owner = observation.Owner;
+            SignificantEvent source = observation.Source;
             if (source.Kind == "group_succession" && source.Subject != null && source.Subject.SocialGroup != null)
             { RelationshipRecord knownGroup = owner.Personality.Group(source.Subject.SocialGroup.Identity);
                 if (knownGroup != null) knownGroup.Name = source.Subject.SocialGroup.LeaderName; }
             if (source.Kind == "supplies_requested" && source.Task != null && source.Task.BeneficiaryId == owner.PersonalityIdentity)
                 foreach (NpcIntent goal in owner.Personality.Intents)
-                    if (!goal.Finished && goal.DefinitionId == NpcIntentContent.Request.Id) goal.Deadline = Math.Max(goal.Deadline, source.Task.Deadline);
+                    if (!goal.Finished && goal.DefinitionId == NutritionModule.RequestFoodId) goal.Deadline = Math.Max(goal.Deadline, source.Task.Deadline);
             if (source.Kind == "supplies_delivered" && source.Other == owner)
                 foreach (NpcIntent goal in owner.Personality.Intents)
-                    if (!goal.Finished && goal.DefinitionId == NpcIntentContent.Coordinate.Id && goal.StoryId == source.StoryId)
+                    if (!goal.Finished && goal.DefinitionId == CoordinateSuppliesId && goal.StoryId == source.StoryId)
                         NpcIntentSystem.Finish(owner, goal, NpcIntentStatus.Completed, "collector reported successful delivery");
             if (source.Kind == "task_declined" && source.Other == owner)
                 foreach (NpcIntent goal in owner.Personality.Intents)
-                    if (!goal.Finished && goal.DefinitionId == NpcIntentContent.Coordinate.Id && goal.StoryId == source.StoryId)
+                    if (!goal.Finished && goal.DefinitionId == CoordinateSuppliesId && goal.StoryId == source.StoryId)
                         NpcIntentSystem.Finish(owner, goal, NpcIntentStatus.Failed, "collector declined the task");
-
         }
     }
 }

@@ -157,7 +157,6 @@
     <Compile Include="Gameplay\Npc\Content\Movement\MovementModule.cs" />
     <Compile Include="Gameplay\Npc\Content\NpcContentActions.cs" />
     <Compile Include="Gameplay\Npc\Content\NpcContentDefaults.cs" />
-    <Compile Include="Gameplay\Npc\Content\NpcIntentContent.cs" />
     <Compile Include="Gameplay\Npc\Content\Nutrition\NutritionModule.Perception.cs" />
     <Compile Include="Gameplay\Npc\Content\Nutrition\NutritionModule.Reports.cs" />
     <Compile Include="Gameplay\Npc\Content\Nutrition\NutritionModule.cs" />

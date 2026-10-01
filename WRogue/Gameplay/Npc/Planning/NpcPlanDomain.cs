@@ -56,17 +56,17 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         }
         public void Add(NpcPlanAction kind, Location place, Guid person, ulong requires, ulong forbids, ulong adds, ulong removes, int cost)
         {
-            if (place.Map == null || Actions.Count >= 64) return;
+            if (!CanAdd(place)) return;
             var step = new NpcPlanStep { Action = kind, Place = place, Target = person, Requires = requires, Forbids = forbids,
                 Adds = adds, Removes = removes, Cost = Math.Max(1, cost) };
-            if (plan == null || !plan.Blocked(step, Turn)) Actions.Add(step);
+            AddBound(step);
         }
         public void Add(string operatorId, Location place, Guid person, ulong requires, ulong forbids, ulong adds, ulong removes, int cost)
         { Add(operatorId, place, person, (NpcPlanningState)requires, (NpcPlanningState)forbids, (NpcPlanningState)adds, (NpcPlanningState)removes, cost); }
         public void Add(string operatorId, Location place, Guid person, NpcPlanningState requires, NpcPlanningState forbids, NpcPlanningState adds, NpcPlanningState removes, int cost)
         {
             if (Catalog.Operator(operatorId) == null) throw new ArgumentException("Unknown plan operator: " + operatorId);
-            if (place.Map == null || Actions.Count >= 64) return;
+            if (!CanAdd(place)) return;
             var step = new NpcPlanStep { OperatorId = operatorId, Place = place, Target = person, Requires = requires.Low,
                 Forbids = forbids.Low, Adds = adds.Low, Removes = removes.Low, Cost = Math.Max(1, cost) };
             if (requires.Extended || forbids.Extended || adds.Extended || removes.Extended)
@@ -74,7 +74,13 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 requires.Low = forbids.Low = adds.Low = removes.Low = 0;
                 step.Extension = new NpcPlanningExtension { Requires = requires, Forbids = forbids, Adds = adds, Removes = removes };
             }
-            if (plan == null || !plan.Blocked(step, Turn)) Actions.Add(step);
+            AddBound(step);
         }
+        void AddBound(NpcPlanStep step)
+        {
+            if (plan != null && plan.Blocked(step, Turn)) return;
+            Actions.Add(step);
+        }
+        bool CanAdd(Location place) { return place.Map != null && Actions.Count < 64; }
     }
 }

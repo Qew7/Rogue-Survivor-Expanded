@@ -8,8 +8,10 @@ namespace djack.RogueSurvivor.Gameplay.Personality
     static partial class NpcStorySystem
     {
         public static NpcIntent StartKnown(Actor owner, NpcKnownPerson target, NpcIntentDefinition definition,
-            long cause = 0, string storyId = null, Location destination = default(Location), Guid groupId = default(Guid))
-        { return NpcGoalLifecycle.Start(owner, target, definition, cause, storyId, destination: destination, groupId: groupId); }
+            long cause = 0, string storyId = null, Location destination = default(Location), Guid groupId = default(Guid),
+            NpcContentCatalog catalog = null)
+        { return NpcGoalLifecycle.Start(catalog ?? NpcContentCatalog.Default, owner, target, definition, cause, storyId,
+            destination: destination, groupId: groupId); }
         public static void EventFinished(RogueGame game, SignificantEvent source)
         {
             if (source.StoryId == null) return;

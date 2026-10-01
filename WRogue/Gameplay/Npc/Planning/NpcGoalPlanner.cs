@@ -50,10 +50,5 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             }
             return null;
         }
-        public static ulong Desired(NpcIntentMethod method)
-        {
-            NpcIntentDefinition capability = NpcContentCatalog.Default.Capability(method);
-            return capability == null || capability.Result == null ? 0 : capability.Result(NpcContentCatalog.Default, null);
-        }
     }
 }

@@ -15,14 +15,14 @@ namespace djack.RogueSurvivor.Data
                 new ObservedEvent("goal_plan", turn, actor.UnmodifiedName, intent.TargetName, true,
                     causeId: intent.CauseId, storyId: intent.StoryId));
         }
-        public void IntentChanged(Actor actor, NpcIntent intent, string state, string reason)
+        public void IntentChanged(Actor actor, NpcIntent intent, string state, string reason, NpcContentCatalog catalog = null)
         {
             ResidentRecord record = Register(actor); if (record == null) return;
             int turn = state == "started" ? intent.StartedTurn : intent.FinishedTurn;
             string targetName = intent.Generated != null && intent.Generated.SubjectId == actor.PersonalityIdentity ? actor.UnmodifiedName : intent.TargetName;
             ObservedEvent entry = new ObservedEvent("goal_" + state, turn, actor.UnmodifiedName, targetName,
                 true, false, actor.PersonalityIdentity, intent.Generated == null ? intent.TargetId : intent.Generated.SubjectId, causeId: intent.CauseId, storyId: intent.StoryId);
-            NpcIntentDefinition definition = NpcIntentContent.Find(intent.DefinitionId);
+            NpcIntentDefinition definition = (catalog ?? NpcContentCatalog.Default).Capability(intent.DefinitionId);
             record.Add("goal:" + intent.Sequence + ":" + state, turn,
                 "Intent " + state + ": " + (intent.Generated != null ? intent.Generated.Description : definition == null ? intent.DefinitionId : definition.Name) + "; target " + targetName +
                 "; " + reason + ". [story " + intent.StoryId + "]", entry, supportingCauses: intent.Generated == null ? null : intent.Generated.Causes);

@@ -12,7 +12,13 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public void Add(NpcKnownPerson target, NpcGoalValue value, NpcIntentDefinition capability,
             int current, int desired, int deficit, int confidence, long cause = 0, string story = null,
             string resource = null, long obligation = 0, int model = -1, Location objectPlace = default(Location), Guid itemId = default(Guid), bool self = false)
-        { Add(target, context.Catalog.Value(value).Id, capability.Id, current, desired, deficit, confidence, cause, story, resource, obligation, model, objectPlace, itemId, self); }
+        {
+            NpcValueDefinition definition = context.Catalog.Value(value);
+            if (definition == null) throw new ArgumentException("Unknown goal value: " + value);
+            if (capability == null) throw new ArgumentException("Missing capability for goal value: " + value);
+            Add(target, definition.Id, capability.Id, current, desired, deficit, confidence,
+                cause, story, resource, obligation, model, objectPlace, itemId, self);
+        }
         public void Add(NpcKnownPerson target, string valueId, string capabilityId,
             int current, int desired, int deficit, int confidence, long cause = 0, string story = null,
             string resource = null, long obligation = 0, int model = -1, Location objectPlace = default(Location), Guid itemId = default(Guid), bool self = false)

@@ -26,7 +26,7 @@ static class TraitGoalReasonScenario
                 "unrelated nutrition goal gets no invented trait cause");
             NpcKnownPerson target = new NpcKnownPerson { Id = neighbor.PersonalityIdentity,
                 Name = neighbor.UnmodifiedName, Place = neighbor.Location, SeenTurn = 0 };
-            NpcIntent started = NpcGoalLifecycle.Start(helper, target,
+            NpcIntent started = NpcGoalLifecycle.Start(world.Game.NpcContent, helper, target,
                 world.Game.NpcContent.Capability("answer_food_request"), generated: goal);
             Check.Equal(true, started != null, "goal starts with adequate utility");
             bool recorded = false;

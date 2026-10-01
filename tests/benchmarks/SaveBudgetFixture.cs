@@ -77,7 +77,7 @@ static class SaveBudgetFixture
         var generated = new NpcGeneratedGoal { Value = NpcGoalValue.Commitment, SubjectId = peer.PersonalityIdentity,
             Desired = 1, Deficit = 100, Importance = 80, Confidence = 100, Utility = 80, Resource = "food", ObligationId = eventBase + 1,
             Result = (ulong)NpcPlanFact.Delivered, Causes = new long[] { eventBase + 1 } };
-        NpcIntent intent = state.StartGoal(NpcIntentContent.Promise.Id, actor, state.Knowledge.Person(peer.PersonalityIdentity),
+        NpcIntent intent = state.StartGoal("fulfil_promise", actor, state.Knowledge.Person(peer.PersonalityIdentity),
             Turn, 180, 180, generated.Utility, eventBase + 1, "budget:" + eventBase, 0, generated);
         intent.Plan = new NpcPlan { Desired = generated.Result };
         intent.Plan.Steps.Add(new NpcPlanStep { Action = NpcPlanAction.GiveFood, Target = peer.PersonalityIdentity, Place = peer.Location });
