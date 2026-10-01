@@ -572,8 +572,8 @@ namespace djack.RogueSurvivor.Engine
             m_MusicManager.Play(music, MusicPriority.PRIORITY_EVENT);
 
             // restart sim thread.
-            StopSimThread(false);  // alpha10 stop-start
-            StartSimThread();
+            // AdvancePlay still owns the district lock; restart after it returns.
+            m_RestartSimulationAfterReincarnation = true;
         }
 
         string DescribeAvatar(Actor a)
@@ -1288,17 +1288,6 @@ namespace djack.RogueSurvivor.Engine
             /// Exclude map with the IsSecret property.
             /// </summary>
             EXCLUDE_SECRET_MAPS = (1 << 0)
-        }
-
-        List<Actor> ListWorldActors(Predicate<Actor> pred, MapListFlags flags)
-        {
-            List<Actor> list = new List<Actor>();
-
-            for (int dx = 0; dx < m_Session.World.Size; dx++)
-                for (int dy = 0; dy < m_Session.World.Size; dy++)
-                    list.AddRange(ListDistrictActors(m_Session.World[dx, dy], flags, pred));
-
-            return list;
         }
 
         List<Actor> ListDistrictActors(District d, MapListFlags flags, Predicate<Actor> pred)

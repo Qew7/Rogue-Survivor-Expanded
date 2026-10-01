@@ -162,6 +162,7 @@ namespace djack.RogueSurvivor.Gameplay.AI
         protected override ActorAction SelectAction(RogueGame game, List<Percept> percepts)
         {
             List<Percept> mapPercepts = FilterSameMap(game, percepts);
+            List<Actor> intentVisible = PrepareNpcIntents(game, mapPercepts);
 
             // DEBUG BOT
 #if DEBUG
@@ -193,7 +194,13 @@ namespace djack.RogueSurvivor.Gameplay.AI
             }
             // end alpha10
 
+            ActorAction personalIntervention = BehaviorNpcEmergency(game, intentVisible);
+            if (personalIntervention != null) return BehaviorFleeFromExplosives(game, FilterStacks(game, mapPercepts)) ?? personalIntervention;
+
             // 1. Follow order
+            ActorAction departure = BehaviorNpcDeparture(game, intentVisible);
+            if (departure != null)
+                return BehaviorFleeFromExplosives(game, FilterStacks(game, mapPercepts)) ?? departure;
             #region
             if (this.Order != null)
             {
@@ -487,6 +494,11 @@ namespace djack.RogueSurvivor.Gameplay.AI
             #endregion
 
             // 10 drop useless light/tracker/spray
+            if (!hasEnemies)
+            {
+                ActorAction intentAction = BehaviorNpcIntents(game, intentVisible);
+                if (intentAction != null) return intentAction;
+            }
             #region
             ActorAction dropUseless = BehaviorDropUselessItem(game);
             if (dropUseless != null)
@@ -582,7 +594,9 @@ namespace djack.RogueSurvivor.Gameplay.AI
                             Actor other = p.Percepted as Actor;
                             // dont bother player or someone we can't trade with or already did trade.
                             if (other.IsPlayer) return true;
-                            if (PersonalitySystem.Attitude(m_Actor, other) <= -30) return true;
+                            if (PersonalitySystem.Attitude(m_Actor, other) <= -30 &&
+                                !(other == m_Actor.Leader && game.Rules.IsActorTrustingLeader(m_Actor)))
+                                return true;
                             if (!game.Rules.CanActorInitiateTradeWith(m_Actor, other)) return true;
                             if (IsActorTabooTrade(other)) return true;
                             // alpha10 dont bother someone who is fighting or fleeing

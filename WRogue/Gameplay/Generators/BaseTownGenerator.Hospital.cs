@@ -137,7 +137,7 @@ namespace djack.RogueSurvivor.Gameplay.Generators
                 });
 
             // Zone.
-            surfaceMap.AddZone(MakeUniqueZone("Hospital", block.BuildingRect));
+            surfaceMap.AddZone(MakeUniqueZone("Hospital", block.BuildingRect, BuildingKind.Hospital));
             MakeWalkwayZones(surfaceMap, block);
         }
 

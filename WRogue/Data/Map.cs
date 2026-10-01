@@ -173,6 +173,7 @@ namespace djack.RogueSurvivor.Data
         {
             get { return m_Exits.Values; }
         }
+        public IEnumerable<KeyValuePair<Point, Exit>> ExitEntries { get { return m_Exits; } }
 
         public int CountExits
         {

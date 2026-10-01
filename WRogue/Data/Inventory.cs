@@ -9,9 +9,11 @@ namespace djack.RogueSurvivor.Data
         #region Fields
         List<Item> m_Items;
         int m_MaxCapacity;
+        long m_TotalReceived;
         #endregion
 
         #region Properties
+        public long TotalReceived { get { return m_TotalReceived; } }
         public IEnumerable<Item> Items
         {
             get { return m_Items; }
@@ -110,6 +112,7 @@ namespace djack.RogueSurvivor.Data
                     if (quantityLeft <= 0)
                         break;
                 }
+                m_TotalReceived += it.Quantity;
                 return true;
             }
 
@@ -120,6 +123,7 @@ namespace djack.RogueSurvivor.Data
 
             // One slot free, add.
             m_Items.Add(it);
+            m_TotalReceived += it.Quantity;
             return true;
         }
 
@@ -168,6 +172,7 @@ namespace djack.RogueSurvivor.Data
                 }
 
                 // Done.
+                m_TotalReceived += quantityAdded;
                 return true;
             }
 
@@ -181,6 +186,7 @@ namespace djack.RogueSurvivor.Data
             // Add to free slot.
             quantityAdded = it.Quantity;
             m_Items.Add(it);
+            m_TotalReceived += quantityAdded;
             return true;
         }
 
@@ -204,6 +210,13 @@ namespace djack.RogueSurvivor.Data
             /*int stackedQuantity;
             return GetItemsStackableWith(it, out stackedQuantity) != null;*/
         }
+        public bool CanAddAll(Item item)
+        {
+            if (item == null) throw new ArgumentNullException("item");
+            if (!IsFull) return true;
+            int quantity; GetItemsStackableWith(item, out quantity);
+            return quantity == item.Quantity;
+        }
 
 #if false
         obsolete
@@ -219,33 +232,6 @@ namespace djack.RogueSurvivor.Data
             while (q > 0 && !Contains(it));
 
             return true;
-        }
-#endif
-
-#if false
-        /// <summary>
-        /// Remove one quantity of item.
-        /// </summary>
-        /// <param name="it"></param>
-        public void Remove(Item it)
-        {
-            if (it == null)
-                throw new ArgumentNullException("it");
-            if (!m_Items.Contains(it))
-                return;
-
-            // Try destacking first.
-            Item destackFrom = GetBestDestackable(it);
-            if (destackFrom != null && destackFrom.Quantity > 1)
-            {
-                --destackFrom.Quantity;
-                if (destackFrom.Quantity <= 0)
-                    m_Items.Remove(destackFrom);
-                return;
-            }
-
-            // Cant destack, remove it.
-            m_Items.Remove(it);
         }
 #endif
 
@@ -338,27 +324,6 @@ namespace djack.RogueSurvivor.Data
             }
 
             return false;
-        }
-
-        /// <summary>
-        /// Gets smallest stack this item can be destacked from.
-        /// </summary>
-        /// <param name="it"></param>
-        /// <returns></returns>
-        Item GetBestDestackable(Item it)
-        {
-            if (!it.Model.IsStackable)
-                return null;
-
-            Item smallestStack = null;
-            foreach(Item other in m_Items)
-                if (other.Model == it.Model)
-                {
-                    if (smallestStack == null || other.Quantity < smallestStack.Quantity)
-                        smallestStack = other;
-                }
-
-            return smallestStack;
         }
 
         public bool Contains(Item it)

@@ -9,3 +9,9 @@ insert_final_newline = true
 
 [*.csproj]
 indent_size = 2
+
+[*.cs]
+# Roslyn IDE hints; legacy xbuild does not run these analyzers in CI.
+dotnet_diagnostic.IDE0051.severity = suggestion
+dotnet_diagnostic.IDE0052.severity = suggestion
+dotnet_diagnostic.IDE0060.severity = suggestion

@@ -1,6 +1,6 @@
 using System;
 using System.IO;
-using System.Runtime.Serialization.Formatters.Binary;
+using System.IO.Compression;
 using djack.RogueSurvivor;
 using djack.RogueSurvivor.Engine;
 
@@ -18,10 +18,25 @@ static class HintsSaveTests
             Check.Equal(true, GameHintsStatus.Load(path).IsAdvisorHintGiven(AdvisorHint._FIRST),
                 "new hint save restores status");
 
-            using (FileStream legacy = File.Create(path))
-                new BinaryFormatter().Serialize(legacy, hints);
+            using (FileStream file = File.Create(path))
+            {
+                BinaryWriter header = new BinaryWriter(file);
+                header.Write(new byte[] { (byte)'R', (byte)'S', (byte)'E', (byte)'1', 4 });
+                header.Write(SetupConfig.GAME_VERSION); header.Write(0);
+                using (GZipStream gzip = new GZipStream(file, CompressionMode.Compress))
+                {
+                    BinaryWriter old = new BinaryWriter(gzip); old.Write(1); old.Write(1);
+                    old.Write(typeof(GameHintsStatus).AssemblyQualifiedName); old.Write((byte)0);
+                    old.Write(1); old.Write("m_AdvisorHints"); old.Write((byte)1); old.Write(2);
+                    old.Write(2); old.Write(typeof(bool[]).AssemblyQualifiedName); old.Write((byte)1);
+                    old.Write(1); old.Write((int)AdvisorHint._COUNT);
+                    for (int i = 0; i < (int)AdvisorHint._COUNT; i++)
+                    { old.Write((byte)2); old.Write(typeof(bool).AssemblyQualifiedName); old.Write(i == 0); }
+                    old.Write(0);
+                }
+            }
             Check.Equal(true, GameHintsStatus.Load(path).IsAdvisorHintGiven(AdvisorHint._FIRST),
-                "legacy hint save restores status");
+                "version-4 settings survive format upgrade without supporting old worlds");
         }
         finally
         {

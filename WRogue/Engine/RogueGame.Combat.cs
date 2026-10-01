@@ -144,10 +144,8 @@ namespace djack.RogueSurvivor.Engine
             if (deadGuy == m_Player)
                 PlayerDied(killer, reason);
 
-            // Remove followers.
-            deadGuy.RemoveAllFollowers();
-
-            // Remove from leader.
+            // Detach a nested leader before succession can transfer its branch.
+            // Otherwise the successor can overwrite the parent's shared group.
             #region
             if (deadGuy.Leader != null)
             {
@@ -165,6 +163,10 @@ namespace djack.RogueSurvivor.Engine
                 deadGuy.Leader.RemoveFollower(deadGuy);
             }
             #endregion
+
+            // Remove followers.
+            Gameplay.Personality.NpcStorySystem.Succession(this, deadGuy);
+            deadGuy.RemoveAllFollowers();
 
             // Remove aggressor & self defence relations.
             deadGuy.RemoveAllAgressorSelfDefenceRelations();
@@ -343,7 +345,7 @@ namespace djack.RogueSurvivor.Engine
             //////////////////////////////////////////////
             #region
             // The Sewers Thing
-            if (deadGuy == m_Session.UniqueActors.TheSewersThing.TheActor)
+            if (m_Session.UniqueActors.TheSewersThing != null && deadGuy == m_Session.UniqueActors.TheSewersThing.TheActor)
             {
                 if (killer == m_Player || killer.Leader == m_Player)
                 {
@@ -529,7 +531,9 @@ namespace djack.RogueSurvivor.Engine
         void PlayerDied(Actor killer, string reason)
         {
             // stop sim thread.
-            StopSimThread(true);   // alpha10 abort allowed when dying
+            // The caller still holds the current district lock. Joining the simulation
+            // worker here can deadlock if it is waiting for that district.
+            if (m_SimWorker != null) m_SimWorker.RequestStop();
 
             // mouse.
             m_UI.UI_SetCursor(null);

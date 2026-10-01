@@ -13,6 +13,29 @@ Later runs reuse Docker's build cache. A failed scenario exits nonzero and
 prints its name, random seed, exception, and final map. Regular
 `docker build --target test .` also runs every scenario alongside unit tests.
 
+`storage/save-budget` measures a large fixed world in isolated child processes
+and enforces a 10-second limit per save/load and a 50,000,000-byte limit per file.
+It prints RAM measurements and verifies restored state. This case takes tens of
+seconds; see [performance.md](performance.md#automated-save-and-load-budget).
+
+NPC module contracts are exercised by `npc/content-module`,
+`npc/content-module-persistence`, `npc/content-catalog-validation`, `npc/content-catalog-rebind` and
+`npc/private-content-event`. They cover a complete extension selected by real
+AI, extended planning facts, saved execution, archive-only event filtering,
+invalid registration/payloads and private audiences. See
+[npc-content-modules.md](npc-content-modules.md) for the extension API.
+`npc/records-causes` checks archive-only causal explanations and a missing
+cause, while `npc/knowledge-empty-caches`, `npc/resource-item-need`,
+`npc/report-prose` and `factions/social-group-nested-succession` cover the
+related review boundaries with real perception, reactions, speech and death.
+`npc/ask-location-unknown-place`, `npc/protection-missing-faction`,
+`npc/planner-barter-place-limit` and `npc/group-plan-participant-exit` cover
+unknown map data, bounded planner locations and shared-goal lifecycle.
+`npc/player-conversation`, `npc/player-talk-input`, `npc/overheard-conversation` and
+`npc/overheard-rumor` cover the talk command, Y/N consequences, audio range,
+walls, rumor learning and archive-only heard-speech search. The first also
+checks persistent promises; `world/talk-keybinding-migration` checks old keys.
+
 Add each new scenario in its own file under the matching topic directory in
 `tests/scenarios/cases/`. Living and undead skills have separate directories.
 Give its static class a name ending in `Scenario` and a public `Register()`

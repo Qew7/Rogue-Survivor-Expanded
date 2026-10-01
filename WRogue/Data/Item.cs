@@ -14,6 +14,8 @@ namespace djack.RogueSurvivor.Data
         DollPart m_EquipedPart;
         // Lets an actor reclaim an item it just left on somebody else's base.
         Actor m_LastDroppedBy;
+        Guid m_StoryIdentity;
+        public Guid StoryIdentity { get { if (m_StoryIdentity == Guid.Empty) m_StoryIdentity = Guid.NewGuid(); return m_StoryIdentity; } }
         #endregion
 
         #region Properties

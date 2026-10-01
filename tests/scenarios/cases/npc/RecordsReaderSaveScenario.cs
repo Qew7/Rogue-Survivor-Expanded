@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Reflection;
 using djack.RogueSurvivor.Data;
 using djack.RogueSurvivor.Engine;
@@ -29,6 +30,7 @@ static class RecordsReaderSaveScenario
                 string path = Path.Combine(directory, "chronicle.dat");
                 world.Map.RemoveActor(actor);
                 BinarySaveStore.Save(path, original);
+                AssertArchiveStoredOnce(path, original);
                 RecordsSave saved = RecordsReader.Load(path);
                 Check.Same(original, Session.Get, "reading records leaves active session untouched");
                 Check.Same(world.Map, original.CurrentMap,
@@ -49,6 +51,9 @@ static class RecordsReaderSaveScenario
                 disabled.NpcPersonalitiesEnabled = false;
                 original.GamePreset = disabled;
                 BinarySaveStore.Save(Path.Combine(directory, "disabled.dat"), original);
+                Check.Equal(original.ResidentRecords.Residents.Count,
+                    BinarySaveStore.LoadExact<Session>(Path.Combine(directory, "disabled.dat")).ResidentRecords.Residents.Count,
+                    "disabled preset still preserves existing archive on full load");
                 File.WriteAllText(Path.Combine(directory, "broken.dat"), "not a save");
                 File.Copy(path, Path.Combine(directory, "broken.dat.bak"));
                 bool rejected = false;
@@ -63,5 +68,28 @@ static class RecordsReaderSaveScenario
             }
             finally { Directory.Delete(directory, true); }
         });
+    }
+
+    static void AssertArchiveStoredOnce(string path, Session original)
+    {
+        using (FileStream file = File.OpenRead(path))
+        {
+            BinaryReader reader = new BinaryReader(file);
+            reader.ReadBytes(5); reader.ReadString();
+            int mods = reader.ReadInt32();
+            for (int i = 0; i < mods; i++) { reader.ReadString(); reader.ReadString(); }
+            Check.Equal(true, reader.ReadBoolean(), "session has an independent records section");
+            Check.Equal(true, reader.ReadBoolean(), "records section is enabled");
+            reader.ReadInt32(); long length = reader.ReadInt64(); file.Position += length;
+            using (GZipStream gzip = new GZipStream(file, CompressionMode.Decompress))
+            {
+                Session graph = (Session)ObjectGraphStore.Read(gzip);
+                Check.Equal(null, typeof(Session).GetField("m_ResidentRecords",
+                    BindingFlags.Instance | BindingFlags.NonPublic).GetValue(graph),
+                    "world graph does not duplicate the resident archive");
+            }
+            Check.Equal(1, original.ResidentRecords.Residents.Count,
+                "writing the independent section keeps the live archive");
+        }
     }
 }

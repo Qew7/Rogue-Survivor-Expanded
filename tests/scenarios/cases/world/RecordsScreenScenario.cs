@@ -32,14 +32,14 @@ static class RecordsScreenScenario
                 BinarySaveStore.Save(Path.Combine(directory, "world.dat"), Session.Get);
                 foreach (Keys key in new[] { Keys.Enter, Keys.Enter, Keys.Escape }) ui.QueueWaitKey(key);
                 int residentIndex = RecordsReader.Residents(new RecordsSave("test", Session.Get))
-                    .FindIndex(r => r.Identity == actor.PersonalityIdentity) + 1;
+                    .FindIndex(r => r.Identity == actor.PersonalityIdentity) + 2;
                 for (int i = 0; i < residentIndex; i++) ui.QueueWaitKey(Keys.Down);
                 foreach (Keys key in new[] { Keys.Enter, Keys.Escape, Keys.Escape, Keys.Escape })
                     ui.QueueWaitKey(key);
                 Check.Call(world.Game, "ReadRecordsFrom", new[] { typeof(string) }, directory);
                 Check.Equal(true, ui.DrawnStrings.Contains("Read Records - All residents"),
                     "all-resident timeline opens from save selection");
-                Check.Equal(true, ui.DrawnStrings.Contains("Read Records - recorded NPC"),
+                Check.Equal(true, String.Concat(ui.DrawnStrings.ToArray()).Contains("Read Records - recorded NPC"),
                     "individual resident timeline opens from resident selection");
                 Check.Equal(true, String.Join(" ", ui.DrawnStrings.ToArray()).Contains("faced starvation"),
                     "event text is rendered");

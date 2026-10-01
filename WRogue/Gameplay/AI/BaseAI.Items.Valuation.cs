@@ -390,11 +390,11 @@ namespace djack.RogueSurvivor.Gameplay.AI
         /// <see cref="TRADE_RATING_MATRIX"/>
         public TradeRating RateTradeOffer(RogueGame game, Actor tradingWith, Item offered, Item asked)
         {
-            int attitude = PersonalitySystem.Attitude(m_Actor, tradingWith);
-            if (attitude <= -30) return TradeRating.REFUSE;
-            // always accept deals with trusted leader
+            // Accumulated leader trust takes precedence; memories affect how that trust changes.
             if (tradingWith == m_Actor.Leader && game.Rules.IsActorTrustingLeader(m_Actor))
                 return TradeRating.ACCEPT;
+            int attitude = PersonalitySystem.Attitude(m_Actor, tradingWith);
+            if (attitude <= -30) return TradeRating.REFUSE;
 
             // handle special case of trading items of the same type. eg: trading melee weapons.
             if (offered.GetType() == asked.GetType())

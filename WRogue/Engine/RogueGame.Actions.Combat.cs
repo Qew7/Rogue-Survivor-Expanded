@@ -173,11 +173,11 @@ namespace djack.RogueSurvivor.Engine
         }
 #endif
 
-        public void DoMeleeAttack(Actor attacker, Actor defender)
+        public void DoMeleeAttack(Actor attacker, Actor defender, NpcIntent npcGoal = null)
         {
             // An unexpected attack is significant; routine blows in an ongoing fight are not.
             if (!m_Rules.AreEnemies(attacker, defender))
-                ReportPersonalityEvent("attack", defender, attacker, defender.Location.Map, defender.Location.Position);
+                ReportPersonalityEvent("attack", defender, attacker, defender.Location.Map, defender.Location.Position, causeId: npcGoal == null ? 0 : npcGoal.CauseId, storyId: npcGoal == null ? null : npcGoal.StoryId);
             // set activiy & target.
             attacker.Activity = Activity.FIGHTING;
             attacker.TargetActor = defender;

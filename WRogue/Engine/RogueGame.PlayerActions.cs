@@ -174,7 +174,7 @@ namespace djack.RogueSurvivor.Engine
                         if (HandleQuitGame())
                         {
                             // stop sim thread.
-                            StopSimThread(true);  // alpha10 abort allowed when quitting
+                            if (m_SimWorker != null) m_SimWorker.RequestStop();
                             // quit asap.
                             RedrawPlayScreen();
                             m_IsGameRunning = false;
@@ -189,7 +189,7 @@ namespace djack.RogueSurvivor.Engine
                             case PlayerCommand.ABANDON_GAME:
                                 if (HandleAbandonGame())
                                 {
-                                    StopSimThread(true); // alpha10 abort allowed when quitting
+                                    if (m_SimWorker != null) m_SimWorker.RequestStop();
                                     loop = false;
                                     KillActor(null, m_Player, "suicide");
                                 }
@@ -255,6 +255,9 @@ namespace djack.RogueSurvivor.Engine
                                 break;
                             case PlayerCommand.RELATIONSHIPS:
                                 HandleRelationships();
+                                break;
+                            case PlayerCommand.HEARD_JOURNAL:
+                                HandleHeardJournal();
                                 break;
                             #endregion
 
@@ -576,6 +579,15 @@ namespace djack.RogueSurvivor.Engine
                                     break;
                                 }
                                 loop = !HandlePlayerNegociateTrade(player); // alpha10
+                                break;
+
+                            case PlayerCommand.TALK:
+                                if (TryPlayerInsanity())
+                                {
+                                    loop = false;
+                                    break;
+                                }
+                                loop = !HandlePlayerTalk(player);
                                 break;
 
                             case PlayerCommand.MARK_ENEMIES_MODE:

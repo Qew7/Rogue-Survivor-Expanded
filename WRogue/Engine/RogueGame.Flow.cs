@@ -155,6 +155,14 @@ namespace djack.RogueSurvivor.Engine
                 // play.
                 m_HasLoadedGame = false;
                 AdvancePlay(m_Session.CurrentMap.District, SimFlags.NOT_SIMULATING);
+                if (m_RestartSimulationAfterReincarnation)
+                {
+                    m_RestartSimulationAfterReincarnation = false;
+                    StopSimThread(false);
+                    StartSimThread();
+                }
+                if (m_Player != null && m_Player.IsDead) StopSimThread(false);
+                if (!m_IsGameRunning) StopSimThread(false);
 
                 // if quit, don't bother.
                 if (!m_IsGameRunning)
@@ -731,7 +739,7 @@ namespace djack.RogueSurvivor.Engine
             #endregion
         }
 
-        void SpendActorActionPoints(Actor actor, int actionCost)
+        internal void SpendActorActionPoints(Actor actor, int actionCost)
         {
             actor.ActionPoints -= actionCost;
             actor.LastActionTurn = actor.Location.Map.LocalTime.TurnCounter;
@@ -767,11 +775,6 @@ namespace djack.RogueSurvivor.Engine
         void RegenActorHitPoints(Actor actor, int hpRegen)
         {
             actor.HitPoints = Math.Min(m_Rules.ActorMaxHPs(actor), actor.HitPoints + hpRegen);
-        }
-
-        void RegenActorSleep(Actor actor, int sleepRegen)
-        {
-            actor.SleepPoints = Math.Min(m_Rules.ActorMaxSleep(actor), actor.SleepPoints + sleepRegen);
         }
 
         void SpendActorSanity(Actor actor, int sanCost)

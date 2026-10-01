@@ -110,17 +110,6 @@ namespace djack.RogueSurvivor.Engine
             return groundNutrition + carriedNutrition;
         }
 
-        bool HasActorOfModelID(Map map, GameActors.IDs actorModelID)
-        {
-            if (map == null)
-                throw new ArgumentNullException("map");
-
-            foreach (Actor a in map.Actors)
-                if (a.Model.ID == (int)actorModelID)
-                    return true;
-
-            return false;
-        }
         #endregion
         #region New day/night, Scoring, Advancement
         void OnNewNight()

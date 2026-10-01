@@ -16,7 +16,7 @@ namespace djack.RogueSurvivor.Data
     }
 
     [Serializable]
-    class Actor
+    partial class Actor
     {
         #region Flags
         [Flags]
@@ -572,6 +572,8 @@ namespace djack.RogueSurvivor.Data
         {
             if (other == null)
                 throw new ArgumentNullException("other");
+            for (Actor ancestor = this; ancestor != null; ancestor = ancestor.Leader)
+                if (ancestor == other) throw new ArgumentException("Follower links cannot form a cycle.");
             if (m_Followers != null && m_Followers.Contains(other))
                 throw new ArgumentException("other is already a follower");
 
@@ -582,6 +584,7 @@ namespace djack.RogueSurvivor.Data
             if (other.Leader != null)
                 other.Leader.RemoveFollower(other);
             other.m_Leader = this;
+            JoinSocialGroup(other);
         }
 
         public void RemoveFollower(Actor other)
@@ -590,12 +593,14 @@ namespace djack.RogueSurvivor.Data
                 throw new ArgumentNullException("other");
             if (m_Followers == null)
                 throw new InvalidOperationException("no followers");
+            if (!m_Followers.Contains(other)) throw new ArgumentException("Actor is not a follower.");
 
             m_Followers.Remove(other);
             if (m_Followers.Count == 0)
                 m_Followers = null;
 
             other.m_Leader = null;
+            LeaveSocialGroup(other);
 
             // reset directives & order.
             AIController ai = other.Controller as AIController;
@@ -1032,8 +1037,6 @@ namespace djack.RogueSurvivor.Data
         #region Flags helpers
         private bool GetFlag(Flags f) { return (m_Flags & f) != 0; }
         private void SetFlag(Flags f, bool value) { if (value) m_Flags |= f; else m_Flags &= ~f; }
-        private void OneFlag(Flags f) { m_Flags |= f; }
-        private void ZeroFlag(Flags f) { m_Flags &= ~f; }
         #endregion
 
         #region Pre-save

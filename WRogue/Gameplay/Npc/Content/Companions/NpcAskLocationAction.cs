@@ -1,0 +1,40 @@
+using djack.RogueSurvivor.Data;
+using djack.RogueSurvivor.Gameplay.Personality;
+
+namespace djack.RogueSurvivor.Engine.Actions
+{
+    sealed class ActionNpcAskLocation : ActorAction
+    {
+        readonly Actor listener;
+        readonly NpcIntent intent;
+        public ActionNpcAskLocation(Actor actor, RogueGame game, Actor listener, NpcIntent intent) : base(actor, game)
+        { this.listener = listener; this.intent = intent; }
+        public override bool IsLegal()
+        { return NpcIntentSystem.Enabled(m_Actor) && !m_Actor.IsSleeping && intent != null && !intent.Finished && intent.Status != NpcIntentStatus.Paused &&
+            m_Actor.Personality.Intents.Contains(intent) && m_Game.NpcContent.Capability(intent.DefinitionId) != null && m_Game.NpcContent.Capability(intent.DefinitionId).AllowQuestions &&
+            m_Actor.Location.Map.LocalTime.TurnCounter < intent.Deadline && m_Actor.Location.Map.LocalTime.TurnCounter >= intent.NextAttempt &&
+            m_Game.NpcContent.Capability(intent.DefinitionId).Score(m_Actor, intent, m_Game.NpcContent) >= m_Game.NpcContent.Capability(intent.DefinitionId).ThresholdFor(intent) &&
+            listener != null && !listener.IsPlayer && !listener.IsSleeping && listener.Personality != null && listener.PersonalityIdentity != intent.TargetId &&
+            NpcIntentSystem.CanSee(m_Game, m_Actor, listener) && m_Game.Rules.GridDistance(m_Actor.Location.Position, listener.Location.Position) <= 4 &&
+            !m_Game.Rules.AreEnemies(m_Actor, listener) && !m_Actor.Personality.Knowledge.WasTold(-intent.Sequence, listener.PersonalityIdentity); }
+        public override void Perform()
+        {
+            if (!IsLegal()) return;
+            m_Game.DoSay(m_Actor, listener, "Have you seen " + intent.TargetName + "?", RogueGame.Sayflags.IS_STORY | RogueGame.Sayflags.IS_REQUEST,
+                intent.CauseId, intent.StoryId);
+            SignificantEvent source = NpcEvents.Publish(m_Game, "asked_location", m_Actor, listener, intent.CauseId, intent.StoryId);
+            m_Actor.Personality.Knowledge.Told(-intent.Sequence, listener.PersonalityIdentity, source.Turn);
+            NpcKnownPerson known = listener.Personality.Knowledge.Person(intent.TargetId);
+            if (listener.Personality.Reactions.Count < 4)
+            {
+                NpcKnownPerson report = known == null ? null : new NpcKnownPerson { Id = known.Id, Name = known.Name, Place = known.Place,
+                    SeenTurn = known.SeenTurn, Dead = known.Dead, Confidence = known.Confidence, Source = known.Source };
+                if (report != null && !report.Dead && report.Place.Map == null) report = null;
+                listener.Personality.Reactions.Add(new NpcReaction(m_Actor, report == null ? "I don't know where they are." :
+                    report.Dead ? "I'm sorry. They died." : "I last saw them near " + report.Place.Map.Name + ".",
+                    source.Id, source.Turn, "location_reported", intent.StoryId, report));
+            }
+            intent.NextAttempt = source.Turn + 8;
+        }
+    }
+}

@@ -28,6 +28,7 @@ namespace djack.RogueSurvivor.Engine
         {
             // spend APs.
             SpendActorActionPoints(speaker, Rules.BASE_ACTION_COST);
+            ReportPersonalityEvent("chat", speaker, target, speaker.Location.Map, speaker.Location.Position);
 
             // message
             bool isSpeakerVisible = IsVisibleToPlayer(speaker);
@@ -277,6 +278,7 @@ namespace djack.RogueSurvivor.Engine
 
             a.Inventory.AddAll(itB);
             b.Inventory.AddAll(itA);
+            ReportPersonalityEvent("traded", a, b, a.Location.Map, a.Location.Position);
         }
 
         [Flags]
@@ -297,10 +299,13 @@ namespace djack.RogueSurvivor.Engine
             /// <summary>
             /// A warning or menace, should be highlighted.
             /// </summary>
-            IS_DANGER = (1 << 2)
+            IS_DANGER = (1 << 2),
+            IS_STORY = (1 << 3),
+            IS_RUMOR = (1 << 4),
+            IS_REQUEST = (1 << 5)
         }
 
-        public void DoSay(Actor speaker, Actor target, string text, Sayflags flags)
+        public void DoSay(Actor speaker, Actor target, string text, Sayflags flags, long causeId = 0, string storyId = null)
         {
             Color sayColor = ((flags & Sayflags.IS_DANGER) != 0) ? SAYOREMOTE_DANGER_COLOR : SAYOREMOTE_NORMAL_COLOR;
 
@@ -309,7 +314,12 @@ namespace djack.RogueSurvivor.Engine
                 SpendActorActionPoints(speaker, Rules.BASE_ACTION_COST);
 
             // message.
-            if (IsVisibleToPlayer(speaker) || (IsVisibleToPlayer(target) && !(m_Player.IsSleeping && target == m_Player)))
+            bool story = (flags & Sayflags.IS_STORY) != 0;
+            bool audible = m_Player != null && !m_Player.IsSleeping && m_Player.Location.Map == speaker.Location.Map &&
+                m_Rules.StdDistance(m_Player.Location.Position, speaker.Location.Position) <= m_Player.AudioRange;
+            bool visible = m_Player != null && ((IsVisibleToPlayer(speaker) && (!story || audible)) ||
+                (!story && IsVisibleToPlayer(target) && !(m_Player.IsSleeping && target == m_Player)));
+            if (visible)
             {
                 bool isPlayer = target.IsPlayer;
                 bool isBot = target.IsBotPlayer; // alpha10.1 handle bot
@@ -325,6 +335,40 @@ namespace djack.RogueSurvivor.Engine
                     ClearOverlays();
                     RemoveLastMessage();
                     RedrawPlayScreen();
+                }
+            }
+            else if (story && audible)
+                AddMessageIfAudibleForPlayer(speaker.Location,
+                    new Message("You overhear: \"" + text + "\"", m_Session.WorldTime.TurnCounter, sayColor));
+
+            if ((flags & Sayflags.IS_STORY) != 0 && Session.Get.GamePreset.NpcPersonalitiesEnabled)
+            {
+                long speechId = Session.Get.NextPersonalityEventId();
+                int turn = speaker.Location.Map.LocalTime.TurnCounter;
+                foreach (Actor listener in speaker.Location.Map.Actors)
+                {
+                    if (listener == speaker || listener.IsDead || listener.IsSleeping || listener.Model.Abilities.IsUndead ||
+                        !listener.Model.Abilities.IsIntelligent ||
+                        m_Rules.StdDistance(listener.Location.Position, speaker.Location.Position) > listener.AudioRange) continue;
+                    bool identified = listener == target || (m_Rules.GridDistance(listener.Location.Position, speaker.Location.Position) <=
+                        m_Rules.ActorFOV(listener, speaker.Location.Map.LocalTime, m_Session.World.Weather) &&
+                        LOS.CanTraceViewLine(listener.Location, speaker.Location.Position));
+                    string kind = (flags & Sayflags.IS_RUMOR) != 0 ? "heard_rumor" :
+                        (flags & Sayflags.IS_REQUEST) != 0 ? "heard_request" : "heard_reply";
+                    if (listener.IsPlayer)
+                    {
+                        if (listener.Personality == null) listener.Personality = new PersonalityState();
+                        listener.Personality.HearSpeech(new HeardJournalEntry(turn, kind,
+                            identified ? speaker.UnmodifiedName : "someone", text, causeId));
+                    }
+                    ResidentRecord record = Session.Get.ResidentRecords.Register(listener);
+                    if (record == null) continue;
+                    var observed = new ObservedEvent(kind, turn, identified ? speaker.UnmodifiedName : null, null,
+                        listener == target, subjectId: identified ? speaker.PersonalityIdentity : Guid.Empty,
+                        eventId: speechId, causeId: causeId, storyId: storyId);
+                    observed.RecordCategories = (int)Gameplay.Personality.NpcRecordCategory.Encounters;
+                    record.Add("heard_speech:" + speechId, turn,
+                        "Heard " + (identified ? speaker.UnmodifiedName : "someone") + " say: \"" + text + "\".", observed);
                 }
             }
         }
@@ -385,7 +429,7 @@ namespace djack.RogueSurvivor.Engine
             DoTakeItem(actor, position, it);
         }
 
-        public void DoTakeItem(Actor actor, Point position, Item it, bool noticeTheft = true)
+        public void DoTakeItem(Actor actor, Point position, Item it, bool noticeTheft = true, long causeId = 0, string storyId = null)
         {
             Map map = actor.Location.Map;
             Inventory ground = map.GetItemsAt(position);
@@ -416,7 +460,7 @@ namespace djack.RogueSurvivor.Engine
 
             if (quantityAdded > 0 && noticeTheft && baseClaim != null &&
                 !baseClaim.Owns(actor) && it.LastDroppedBy != actor)
-                NoticeXpdBaseTheft(actor, baseClaim, position, it);
+                NoticeXpdBaseTheft(actor, baseClaim, position, it, causeId, storyId, quantityAdded);
 
             // message
             if (IsVisibleToPlayer(actor) || IsVisibleToPlayer(new Location(map, position)))
@@ -429,15 +473,16 @@ namespace djack.RogueSurvivor.Engine
                 DoEquipItem(actor, it);
         }
 
-        void NoticeXpdBaseTheft(Actor thief, XpdBase baseClaim, Point position, Item item)
+        void NoticeXpdBaseTheft(Actor thief, XpdBase baseClaim, Point position, Item item, long causeId = 0, string storyId = null, int units = 1)
         {
             Map map = thief.Location.Map;
-            ReportPersonalityEvent("base_theft", thief, baseClaim.GroupLeader, map, position, false);
+            Gameplay.Personality.PersonalitySystem.Report(this, new Gameplay.Personality.SignificantEvent("base_theft", thief, baseClaim.GroupLeader,
+                map, position, map.LocalTime.TurnCounter, false, causeId: causeId, storyId: storyId) { Units = units, ModelId = item.Model.ID, Resource = item is ItemFood ? "food" : item is ItemMedicine ? "medicine" : "item" });
             if ((baseClaim.FoodRoom.HasValue && baseClaim.FoodRoom.Value.Contains(position) && item is ItemFood) ||
                 (baseClaim.WeaponRoom.HasValue && baseClaim.WeaponRoom.Value.Contains(position) &&
                     (item is ItemMeleeWeapon || item is ItemRangedWeapon || item is ItemAmmo)))
-                ReportPersonalityEvent("supplies_lost", baseClaim.GroupLeader, thief, map, position,
-                    false, false);
+                Gameplay.Personality.PersonalitySystem.Report(this, new Gameplay.Personality.SignificantEvent("supplies_lost", baseClaim.GroupLeader, thief,
+                    map, position, map.LocalTime.TurnCounter, false, false, causeId, storyId) { Units = units, ModelId = item.Model.ID, Resource = item is ItemFood ? "food" : "item" });
             foreach (Actor witness in map.Actors)
             {
                 if (witness == thief || witness.IsDead || witness.IsSleeping ||
@@ -456,8 +501,6 @@ namespace djack.RogueSurvivor.Engine
             bool neededFood = gift is ItemFood && m_Rules.IsActorHungry(target);
             bool neededMedicine = gift is ItemMedicine &&
                 (target.HitPoints < m_Rules.ActorMaxHPs(target) / 2 || target.Infection > 0);
-            if (neededFood || neededMedicine)
-                ReportPersonalityEvent("helped", target, actor, target.Location.Map, target.Location.Position);
 
             // if leader give to follower, improve trust.
             if (target.Leader == actor)
@@ -486,8 +529,19 @@ namespace djack.RogueSurvivor.Engine
             }
 
             // transfer item : drop then take (solves problem of partial quantities transfer).
+            long receivedBefore = target.Inventory == null ? 0 : target.Inventory.TotalReceived;
             DropItem(actor, gift);
             DoTakeItem(target, actor.Location.Position, gift, false);
+            if ((neededFood || neededMedicine) && target.Inventory != null && target.Inventory.TotalReceived > receivedBefore)
+                ReportPersonalityEvent("helped", target, actor, target.Location.Map, target.Location.Position);
+            if (target.Inventory != null && target.Inventory.TotalReceived > receivedBefore && m_Session.GamePreset.NpcPersonalitiesEnabled &&
+                (gift is ItemFood && !m_Rules.IsFoodSpoiled((ItemFood)gift, actor.Location.Map.LocalTime.TurnCounter) || gift is ItemMedicine && ((ItemMedicine)gift).Healing > 0))
+            {
+                string resource = gift is ItemFood ? "food" : "medicine";
+                var shared = new Gameplay.Personality.SignificantEvent(gift is ItemFood ? "shared_food" : "shared_medicine", actor, target,
+                    actor.Location.Map, actor.Location.Position, actor.Location.Map.LocalTime.TurnCounter) { Units = (int)(target.Inventory.TotalReceived - receivedBefore), Resource = resource };
+                Gameplay.Personality.PersonalitySystem.Report(this, shared);
+            }
 
             // message.
             if (IsVisibleToPlayer(actor) || IsVisibleToPlayer(target))
@@ -718,7 +772,7 @@ namespace djack.RogueSurvivor.Engine
             clone.EquippedPart = DollPart.NONE;
         }
 
-        public void DoUseItem(Actor actor, Item it)
+        public void DoUseItem(Actor actor, Item it, NpcIntent npcGoal = null)
         {
             // alpha10 defrag ai inventories
             bool defragInventory = !actor.IsPlayer && it.Model.IsStackable;
@@ -727,7 +781,7 @@ namespace djack.RogueSurvivor.Engine
             if (it is ItemFood)
                 DoUseFoodItem(actor, it as ItemFood);
             else if (it is ItemMedicine)
-                DoUseMedicineItem(actor, it as ItemMedicine);
+                DoUseMedicineItem(actor, it as ItemMedicine, npcGoal);
             else if (it is ItemAmmo)
                 DoUseAmmoItem(actor, it as ItemAmmo);
             //else if (it is ItemSprayScent)  // alpha10 new way to use spray scent
@@ -841,7 +895,7 @@ namespace djack.RogueSurvivor.Engine
             map.GetTileAt(loc.Position.X, loc.Position.Y).AddDecoration(GameImages.DECO_VOMIT);
         }
 
-        void DoUseMedicineItem(Actor actor, ItemMedicine med)
+        void DoUseMedicineItem(Actor actor, ItemMedicine med, NpcIntent npcGoal)
         {
             //////////////////////////////////////
             // If player, prevent wasteful usage.
@@ -871,6 +925,7 @@ namespace djack.RogueSurvivor.Engine
             SpendActorActionPoints(actor, Rules.BASE_ACTION_COST);
 
             // recover HPs, STA, SLP, INF, SAN.
+            int previousHP = actor.HitPoints;
             actor.HitPoints = Math.Min(actor.HitPoints + m_Rules.ActorMedicineEffect(actor, med.Healing), m_Rules.ActorMaxHPs(actor));
             actor.StaminaPoints = Math.Min(actor.StaminaPoints + m_Rules.ActorMedicineEffect(actor, med.StaminaBoost), m_Rules.ActorMaxSTA(actor));
             actor.SleepPoints = Math.Min(actor.SleepPoints + m_Rules.ActorMedicineEffect(actor, med.SleepBoost), m_Rules.ActorMaxSleep(actor));
@@ -879,6 +934,7 @@ namespace djack.RogueSurvivor.Engine
 
             // consume it.
             actor.Inventory.Consume(med);
+            Gameplay.Personality.NpcMedicalRecovery.MedicineUsed(this, actor, previousHP, npcGoal);
 
             // message.
             if (IsVisibleToPlayer(actor))

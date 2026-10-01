@@ -28,11 +28,16 @@ namespace djack.RogueSurvivor.Data
         public readonly bool RelatedToSubject;
         public readonly Guid SubjectId;
         public readonly Guid OtherId;
+        public readonly long EventId, CauseId;
+        public readonly string StoryId;
+        [System.Runtime.Serialization.OptionalField] public int RecordCategories;
+        [System.Runtime.Serialization.OptionalField] public string RecordText;
 
         public ObservedEvent(string kind, int turn, string subject, string other, bool direct,
             bool relatedToSubject = false, Guid subjectId = default(Guid),
-            Guid otherId = default(Guid))
+            Guid otherId = default(Guid), long eventId = 0, long causeId = 0, string storyId = null)
         {
+            EventId = eventId; CauseId = causeId; StoryId = storyId;
             Kind = kind;
             Turn = turn;
             Subject = subject;
@@ -42,6 +47,16 @@ namespace djack.RogueSurvivor.Data
             SubjectId = subjectId;
             OtherId = otherId;
         }
+    }
+
+    [Serializable]
+    sealed class HeardJournalEntry
+    {
+        public readonly int Turn;
+        public readonly string Kind, Speaker, Text;
+        public readonly long CauseId;
+        public HeardJournalEntry(int turn, string kind, string speaker, string text, long causeId)
+        { Turn = turn; Kind = kind; Speaker = speaker; Text = text; CauseId = causeId; }
     }
 
     [Serializable]
@@ -92,8 +107,15 @@ namespace djack.RogueSurvivor.Data
     {
         public readonly Guid Identity;
         public readonly int FactionId;
-        public readonly string Name;
+        public string Name;
         public int Feeling;
+        public int Trust, Fear, Attachment, Grievance, Debt;
+        public void AdjustSocial(int trust = 0, int fear = 0, int attachment = 0, int grievance = 0, int debt = 0)
+        {
+            Trust = Clamp(Trust + trust); Fear = Clamp(Fear + fear); Attachment = Clamp(Attachment + attachment);
+            Grievance = Clamp(Grievance + grievance); Debt = Clamp(Debt + debt);
+        }
+        static int Clamp(int value) { return Math.Max(0, Math.Min(100, value)); }
         readonly List<MemoryInstance> m_Memories = new List<MemoryInstance>();
 
         public IList<MemoryInstance> Memories { get { return m_Memories.AsReadOnly(); } }
@@ -115,11 +137,12 @@ namespace djack.RogueSurvivor.Data
 
     // This is the only new per-actor object in the saved world graph.
     [Serializable]
-    sealed class PersonalityState
+    sealed partial class PersonalityState
     {
         readonly List<TraitInstance> m_Traits = new List<TraitInstance>(4);
         readonly List<MemoryInstance> m_Memories = new List<MemoryInstance>(2);
         readonly List<ObservedEvent> m_Events = new List<ObservedEvent>(8);
+        [System.Runtime.Serialization.OptionalField] List<HeardJournalEntry> m_HeardJournal;
         // Lazily initialized so personalities from older saves also have an empty tree.
         Dictionary<Guid, RelationshipRecord> m_People;
         Dictionary<Guid, RelationshipRecord> m_Groups;
@@ -141,6 +164,15 @@ namespace djack.RogueSurvivor.Data
         public IList<TraitInstance> Traits { get { return m_Traits.AsReadOnly(); } }
         public IList<MemoryInstance> Memories { get { return m_Memories.AsReadOnly(); } }
         public IList<ObservedEvent> Events { get { return m_Events.AsReadOnly(); } }
+        public IList<HeardJournalEntry> HeardJournal
+        { get { return (m_HeardJournal ?? (m_HeardJournal = new List<HeardJournalEntry>())).AsReadOnly(); } }
+        public void HearSpeech(HeardJournalEntry entry)
+        {
+            if (entry == null) return;
+            if (m_HeardJournal == null) m_HeardJournal = new List<HeardJournalEntry>();
+            m_HeardJournal.Add(entry);
+            if (m_HeardJournal.Count > 128) m_HeardJournal.RemoveAt(0);
+        }
         public ICollection<RelationshipRecord> People { get { return PersonRecords.Values; } }
         public ICollection<RelationshipRecord> Groups { get { return GroupRecords.Values; } }
         public ICollection<RelationshipRecord> Factions { get { return FactionRecords.Values; } }
@@ -176,6 +208,7 @@ namespace djack.RogueSurvivor.Data
             if (id == Guid.Empty || memory == null) return;
             RelationshipRecord record = Group(id);
             if (record == null) GroupRecords.Add(id, record = new RelationshipRecord(id, -1, name));
+            record.Name = name;
             record.Remember(memory, change);
         }
 
@@ -218,20 +251,24 @@ namespace djack.RogueSurvivor.Data
 
         public void RemoveMemory(MemoryInstance memory) { m_Memories.Remove(memory); }
 
-        public void Remember(ObservedEvent lifeEvent)
+        long m_LastObservedEventId;
+        public bool Remember(ObservedEvent lifeEvent)
         {
-            if (lifeEvent == null) return;
+            if (lifeEvent == null || (lifeEvent.EventId > 0 && lifeEvent.EventId <= m_LastObservedEventId)) return false;
             foreach (ObservedEvent old in m_Events)
-                if (old.Kind == lifeEvent.Kind && old.Turn == lifeEvent.Turn &&
+                if (old.EventId != 0 && lifeEvent.EventId != 0 ? old.EventId == lifeEvent.EventId :
+                    old.Kind == lifeEvent.Kind && old.Turn == lifeEvent.Turn &&
                     (old.SubjectId != Guid.Empty || lifeEvent.SubjectId != Guid.Empty
                         ? old.SubjectId == lifeEvent.SubjectId
                         : old.Subject == lifeEvent.Subject) &&
                     (old.OtherId != Guid.Empty || lifeEvent.OtherId != Guid.Empty
                         ? old.OtherId == lifeEvent.OtherId
-                        : old.Other == lifeEvent.Other)) return;
+                        : old.Other == lifeEvent.Other)) return false;
             m_Events.Add(lifeEvent);
+            if (lifeEvent.EventId > 0) m_LastObservedEventId = lifeEvent.EventId;
             // Keep the journal bounded even when a district sees many deaths or raids.
             if (m_Events.Count > 32) m_Events.RemoveAt(0);
+            return true;
         }
     }
 }

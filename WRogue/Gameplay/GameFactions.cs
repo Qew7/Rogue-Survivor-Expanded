@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Drawing;
 
 using djack.RogueSurvivor.Data;
 using djack.RogueSurvivor.Engine;
@@ -10,6 +11,37 @@ namespace djack.RogueSurvivor.Gameplay
 {
     class GameFactions : FactionDB
     {
+        public static readonly Color CivilianRecordColor = Color.LightSkyBlue;
+        public static readonly Color SurvivorRecordColor = Color.LightGreen;
+        public static readonly Color PoliceRecordColor = Color.CornflowerBlue;
+        public static readonly Color ArmyRecordColor = Color.Khaki;
+        public static readonly Color BikerRecordColor = Color.Orange;
+        public static readonly Color GangstaRecordColor = Color.Orchid;
+        public static readonly Color CharRecordColor = Color.Cyan;
+        public static readonly Color BlackOpsRecordColor = Color.Silver;
+        public static readonly Color PsychopathRecordColor = Color.OrangeRed;
+        public static readonly Color UndeadRecordColor = Color.PaleGreen;
+        public static readonly Color FeralRecordColor = Color.Tan;
+        public static readonly Color UnknownRecordColor = Color.LightGray;
+
+        public static Color RecordColor(string factionName)
+        {
+            switch (factionName)
+            {
+                case "Civilians": return CivilianRecordColor;
+                case "Survivors": return SurvivorRecordColor;
+                case "Police": return PoliceRecordColor;
+                case "Army": return ArmyRecordColor;
+                case "Bikers": return BikerRecordColor;
+                case "Gangstas": return GangstaRecordColor;
+                case "CHAR Corp.": return CharRecordColor;
+                case "BlackOps": return BlackOpsRecordColor;
+                case "Psychopaths": return PsychopathRecordColor;
+                case "Undeads": return UndeadRecordColor;
+                case "Ferals": return FeralRecordColor;
+                default: return UnknownRecordColor;
+            }
+        }
         #region IDs
         public enum IDs
         {

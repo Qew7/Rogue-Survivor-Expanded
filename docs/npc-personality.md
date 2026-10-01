@@ -9,15 +9,19 @@ resolution. No definition object or callback is serialized with the actor.
 
 ## Relationships
 
-An NPC keeps separate private records for people, leader groups, and factions.
-People and groups use stable actor identities; a leader's name is only a display
-label, so namesakes do not merge. A group is the current leader and followers.
-Changing leaders changes which group record applies, while old memories remain
-attached to their original group. Factions use existing numeric faction IDs.
+An NPC keeps separate private records for people, groups, and factions.
+People use stable actor identities and groups use permanent group identities;
+a leader's name is only a display label, so namesakes do not merge. Followers,
+including nested followers, share their top-level group. Succession preserves
+its identity and histories; a newly founded group after a split has a new
+identity. Factions use existing numeric faction IDs.
 
 Memories involving another person are attributed to that person. Examples
 include help, attacks, murder, theft, abandonment, joining a group, and deaths
 of companions. Loss of the observer's own base is attributed to its group.
+The founder's identity initializes the separate group namespace; a later
+leader does not replace its key. The base-loss memory changes
+no feeling score and remains in this history after resolution.
 Unattributed raids and starvation have no personal target. A memory is linked
 to the relevant relationship records as soon as it starts; when it resolves,
 those records retain the memory, its resolution turn, and its outcome. Records
@@ -30,20 +34,89 @@ The three feelings and acquired faction-specific trait biases add for a current
 target, clamped to -100..100. Dislike can
 stop trade offers and recruitment; positive feeling can make a marginal trade
 acceptable. A follower's feeling toward its leader also affects trust growth.
+Accumulated `TrustInLeader` remains the authority for trusting the current
+leader: while it meets the existing threshold, the follower accepts that
+leader's trade offers and does not exclude them from autonomous trade solely
+because of negative attitude. Memories can reduce trust on subsequent turns;
+once trust falls below the threshold, normal attitude-based refusals apply.
 Relationships only affect behavior while the preset option is enabled. NPC
 inspection shows traits but never reveals private pending or resolved memories.
 
+The original AI systems keep their existing roles: `MemorizedSensor` tracks
+recent perceptions, `ExplorationData` tracks visited places, and aggression/
+self-defense records determine combat hostility. Personality observations track
+experienced or witnessed consequences. `OrderableAI.OnRaid` stores a heard
+arrival signal for reporting even without line of sight; hearing it alone does
+not create a witnessed personality memory. `Scoring` keeps the player's game
+history, while `ResidentRecords` keeps individual NPC histories for Read Records.
+
+## Trait-driven intentions
+
+Civilian, gang, soldier and CHAR guard controllers can turn perceived aid,
+hunger, food requests and violence by their leader into persistent personal
+intentions. Current traits, relationships and leader trust determine motivation;
+existing survival and combat priorities interrupt ordinary social actions.
+NPCs can thank a helper, repay with actual food, ask for or decline aid, and
+voluntarily leave an unsafe leader. Private intentions and memories remain
+hidden during gameplay. Read Records retains their starts, outcomes and linked
+physical events, including an **Intentions and outcomes** category.
+
+NPCs also keep bounded knowledge with sources, confidence and remembered places.
+Real conversations can pass reports or answer a searcher's question; direct
+sight takes precedence over weaker reports of the same or older observation.
+Traits select avoiding or warning a reported aggressor, searching for a missing
+companion, accepting a supply assignment, or following a shelter proposal.
+Supply missions use real pickups, gifts and return reports. Shared episodes
+bind separate participant goals, with resource reservations and saved pacing.
+Eligible followers can preserve their group under a successor after an NPC
+leader's death.
+
+Goals now describe desired results. A bounded planner composes available actions
+at runtime, using the NPC's traits, relationships and local knowledge to compare
+methods. Acquiring food can involve a known pickup, a request or a real offered
+exchange; a helper can ask another person before assisting its recipient.
+Refusals and changed supplies trigger replanning. Predicted help never creates
+food, and witnessing another participant's successful delivery can remove a
+redundant step. Plans stay private during gameplay and are retained in Read
+Records alongside their actual outcomes.
+
+`NpcGoalGenerator` creates those desired results by evaluating deficits in the
+NPC's current needs and remembered conditions. Nutrition, recovery, care,
+reciprocity, safety, justice, belonging and autonomy use trait-driven importance
+and evidence confidence. It accepts no event kind: observations first update
+beliefs, and changed state then motivates a goal. Existing debt or injury can
+produce a goal without a new significant event. New urgent needs can replace a
+weaker generated goal at the decision boundary. Private starts record the
+current/desired values and utility explanation in Read Records.
+
+An actual food exchange creates the acquired `traded_for_food` memory, attributed
+to the trading partner. Its resolution can grant CHARISMATIC skill. An offer or
+an invalid transaction alone creates no memory of successful negotiation.
+
+Person records also retain trust, fear, attachment, grievance and debt at
+0..100. Aid and known violence change these values; they affect reports and
+method motivation. They complement the existing feeling score and explicit
+leader trust. Knowledge, goals and these opinions remain private during play.
+
+See [npc-intentions.md](npc-intentions.md) for implemented behavior, limits and
+extension points, including faction preferences and director admission rules.
+
 ## Extending the catalog
 
-Definitions live in `WRogue/Gameplay/Personality/PersonalityContent.cs` and
-`PersonalityWorldContent.cs` and are
-registered in `PersonalityRegistry`. A `TraitDefinition` has a stable string ID,
+Definitions live in feature modules under `WRogue/Gameplay/Npc/Content/`.
+The base and world catalogs remain in `PersonalityContent.cs` and
+`PersonalityWorldContent.cs`; modules register additional definitions through
+`NpcCatalogBuilder` into `PersonalityRegistry`. See
+[npc-content-modules.md](npc-content-modules.md) for contracts, ownership,
+observation order and a complete extension in one file.
+A `TraitDefinition` has a stable string ID,
 display name, starting/advanced flag, optional required trait, optional item
 model parameter, and one or more `TraitEffect`s. Standard effects change common
 AI decision axes: item value, courage, group trust, law enforcement, trade,
 exploration, compassion, and supply value. Conflicting starting traits can be
-registered as a pair. A new trait that needs a new action should add its action
-at the relevant AI or rule boundary and query `PersonalitySystem.HasTrait` there.
+registered as a pair. A trait needing new goals/actions can register its
+interest, goal source and operator in its module; common orchestration resolves
+these contracts without branching on the trait's ID.
 Group trust uses both the leader's traits and the follower's desire for company;
 a solitary follower can lose trust over time while a sociable one gains it faster.
 
@@ -83,13 +156,29 @@ events build the player's own relationship records; resolving these memories
 keeps their history but does not grant NPC trait or skill outcomes. Press
 `Shift+I` (rebindable as Relationships) to view personal, leader-group, and
 faction feelings. Groups are named after their leader. The screen displays
-only the player's records and qualitative feelings, never another actor's
+only the player's records, qualitative feelings and known trust, fear or
+grievance, never another actor's
 private memories or opinions. The list persists in the saved player actor.
+Direct conversations add a neutral contact; completed trades add trust. A
+dispute over supplies or an attack can create a wary or hostile relationship.
+Press `J` to read the exact rumors, requests and replies the player heard.
+Rumors name the event's district and, when its position falls inside a typed
+building zone, the grocery, gun shop, home, park or other known place. The J
+journal and Read Records color these place labels by type. A report from a
+street or unclassified zone names only the district.
 
-The catalog contains 50 starting and 62 advanced traits. Advanced traits
-are available only through memory resolution and require an existing trait.
+The catalog contains 50 starting and 66 advanced traits. Advanced traits
+are available only through memory resolution. Most require an existing trait;
+two earned-only traits, Battle scarred and Scarcity hardened, can arise from
+surviving an attack or starvation without an unrelated starting prerequisite.
 `likes_items` and `dislikes_items` each take an item model ID; pistol, shotgun,
 magazine, or any other defined item model uses the same trait definition.
+
+Promises, resource disputes, acquired `reliable` and `disillusioned` traits,
+specific possession and home attachments, and causal continuations are described
+in [npc-social-stories.md](npc-social-stories.md). Reports affect reputation with
+confidence discounting. An overdue promise is a private assessment until someone
+actually tells it to others.
 
 ## Experiences with unique characters, factions, and world events
 
@@ -181,16 +270,59 @@ and its trait/skill outcome, and death. It is a chronological history of the
 personality system's significant events, not a log of every movement or action.
 Unlike the short AI observation journal, this archive does not evict early events.
 It therefore adds to save size as a world grows older.
+For entries with an actual archived cause, Read Records adds a short
+**Prompted by** or **Connected to** explanation, such as a compensation demand
+linked to a witnessed theft. Search also matches that explanation. No motive
+is inferred from a trait alone: a refusal is linked to revenge only if the
+decision was really caused by a recorded grievance or goal.
+For a generated goal, a recorded trait reason states the measured increase in
+that goal's importance when the trait is present. Traits unrelated to the goal
+are omitted. The archive records the actual gained trait when a memory resolves;
+a skill appears only if the eligible trait outcomes were unavailable.
 
-This main-menu reader reveals saved NPC records outside gameplay. Reading does
-not resume the simulation or change the active session, mods, or options; NPC
-memories remain hidden from gameplay inspection. Older saves have no full archive:
-the reader recovers surviving observations and relationship memories and marks
-their history as partial. Events already discarded and actors no longer present
-in those older saves cannot be reconstructed.
+This main-menu reader reveals saved NPC records outside gameplay. Format-5
+saves carry a separate compressed archive, so reading does not load the world,
+resume simulation, or change the active session, mods or options. NPC memories
+remain hidden from gameplay inspection. Old world formats are unsupported.
 
-Use Up/Down and PgUp/PgDn to select or scroll, Enter to open, and Escape to return.
-Home/End jump to the beginning/end of a timeline.
+### Search, filters and ordering
+
+In the resident browser:
+
+- **S** searches a name (case insensitive); **F** opens combined filters.
+- Filter by current/last faction or group leader, alive/dead status, minimum
+  item acquisitions, memories, events, unique participants appearing in events, human kills,
+  resolved memories and gained traits; specify a minimum/maximum lifespan.
+- **O** sorts by name or any of those metrics, including lifespan and interest
+  score. Numeric sorts default to most/longest first; **V** reverses the order.
+- **I**, or the “Most interesting NPC” row, opens the highest-scoring resident
+  **among the current matches**. Empty results are explained. Ties use name and
+  persistent identity, so the same save/query selects the same resident.
+- **R** resets the browser; Enter opens one resident or the merged history of
+  all matching residents.
+
+Item acquisitions count successful incoming units over the entire life,
+including starting inventory, partial pickups, gifts and trades. Spending or
+losing items does not subtract; repeated pickups count again. Last inventory
+units/stacks are shown separately. Memory counts include creation history,
+even after resolution or removal from the AI's pending queue. Life duration
+is elapsed turns divided by 720, ending at death for dead residents. Unknown
+death dates display “?” and do not match a numeric lifespan range.
+
+The interest score gives capped weights to different event kinds (8, cap 12),
+direct experiences (2, cap 40), created memories (5, cap 20), resolutions (6,
+cap 12), gained traits (8, cap 10), unique participants appearing in events (3, cap 15),
+world experiences (4, cap 15) and help given (4, cap 12). It does not reward
+item farming or age by themselves. The resident's page shows its metrics and
+the formula so the selection is explainable.
+
+In a timeline, **S** searches event text and **F** selects memories/traits,
+combat, help, encounters/groups, world events, life/survival or intentions and
+outcomes. Both restrictions
+combine; **R** clears them. Up/Down and PgUp/PgDn scroll, Home/End jump, Escape
+returns. Changing a timeline filter does not change the resident's life score.
+Text prompts support Backspace, Ctrl+A to clear and Ctrl+V to paste names.
+
 
 ## Verification
 

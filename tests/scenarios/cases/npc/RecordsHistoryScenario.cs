@@ -45,8 +45,10 @@ static class RecordsHistoryScenario
             Check.Equal(true, initial.Contains("helped Alex"), "real gift is recorded as a life event");
             Check.Equal(true, initial.Contains("Memory: Received help"), "new memory is recorded");
             int count = personal.Entries.Count;
-            PersonalitySystem.Report(world.Game, new SignificantEvent("helped", resident, helper,
-                world.Map, resident.Location.Position, world.Map.LocalTime.TurnCounter));
+            SignificantEvent duplicate = new SignificantEvent("helped", resident, helper,
+                world.Map, resident.Location.Position, world.Map.LocalTime.TurnCounter);
+            foreach (ResidentEntry entry in personal.Entries) if (entry.Kind == "helped") duplicate.Id = entry.EventId;
+            PersonalitySystem.Report(world.Game, duplicate);
             Check.Equal(count, personal.Entries.Count, "duplicate observation does not duplicate history");
             for (int turn = 1; turn <= 40; turn++)
                 PersonalitySystem.Report(world.Game, new SignificantEvent("raid", null, null,
@@ -63,6 +65,8 @@ static class RecordsHistoryScenario
             snapshot = new RecordsSave("test", Session.Get);
             string history = String.Join(" ", new List<string>(RecordsReader.Lines(snapshot, personal)).ToArray());
             Check.Equal(true, history.Contains("gained trait Selfless"), "resolution outcome stays in history");
+            Check.Equal(true, new RecordsProfile(personal, snapshot.Turn).TraitChanges > 0,
+                "real trait resolution contributes typed development statistics");
             Check.Equal(true, history.Contains("Alex died"), "dead resident remains readable");
             Check.Equal(true, history.Contains("helped Alex"), "early life event survives long journal and death");
         });

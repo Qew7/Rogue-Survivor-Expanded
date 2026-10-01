@@ -42,18 +42,26 @@ namespace djack.RogueSurvivor.Engine
 
         public void Stop()
         {
+            RequestStop();
             Thread thread;
             lock (m_StateLock)
             {
                 thread = m_Thread;
-                m_StopRequested = true;
-                Monitor.PulseAll(m_StateLock);
             }
             if (thread == null) return;
             if (thread != Thread.CurrentThread)
                 thread.Join();
             lock (m_StateLock)
                 if (m_Thread == thread) m_Thread = null;
+        }
+
+        public void RequestStop()
+        {
+            lock (m_StateLock)
+            {
+                m_StopRequested = true;
+                Monitor.PulseAll(m_StateLock);
+            }
         }
 
         public void NotifyWork()

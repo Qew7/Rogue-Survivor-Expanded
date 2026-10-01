@@ -12,12 +12,22 @@ namespace djack.RogueSurvivor.Data
         public readonly int Turn;
         public readonly int Sequence;
         public readonly string Text;
-        public ResidentEntry(int turn, string text, int sequence)
-        { Turn = turn; Text = text; Sequence = sequence; }
+        public readonly string Kind;
+        public readonly bool Direct, GainedTrait;
+        public readonly Guid SubjectId, OtherId;
+        public readonly long EventId, CauseId;
+        public readonly string StoryId;
+        public readonly long[] SupportingCauses;
+        [System.Runtime.Serialization.OptionalField] public int RecordCategories;
+        public ResidentEntry(int turn, string text, int sequence, string kind = "note", bool direct = false,
+            Guid subjectId = default(Guid), Guid otherId = default(Guid), bool gainedTrait = false,
+            long eventId = 0, long causeId = 0, string storyId = null, long[] supportingCauses = null)
+        { Turn = turn; Text = text; Sequence = sequence; Kind = kind; Direct = direct; SubjectId = subjectId; OtherId = otherId; GainedTrait = gainedTrait;
+            EventId = eventId; CauseId = causeId; StoryId = storyId; SupportingCauses = supportingCauses; RecordCategories = NpcRecordDescriptions.Categories(kind); }
     }
 
     [Serializable]
-    sealed class ResidentRecord
+    sealed partial class ResidentRecord
     {
         public readonly Guid Identity;
         public string Name;
@@ -32,17 +42,23 @@ namespace djack.RogueSurvivor.Data
             Name = actor.UnmodifiedName;
             SpawnTurn = actor.SpawnTime;
         }
-        public void Add(string key, int turn, string text)
+        public void Add(string key, int turn, string text, ObservedEvent observed = null, bool gainedTrait = false, long[] supportingCauses = null)
         {
             if (m_Keys.ContainsKey(key)) return;
             m_Keys.Add(key, true);
-            m_Entries.Add(new ResidentEntry(turn, text, m_Entries.Count));
+            string kind = key.Split(':')[0];
+            var entry = new ResidentEntry(turn, text, m_Entries.Count, observed == null ? kind : observed.Kind,
+                observed != null && observed.Direct, observed == null ? Guid.Empty : observed.SubjectId,
+                observed == null ? Guid.Empty : observed.OtherId, gainedTrait,
+                observed == null ? 0 : observed.EventId, observed == null ? 0 : observed.CauseId, observed == null ? null : observed.StoryId, supportingCauses);
+            if (observed != null && observed.RecordCategories != 0) entry.RecordCategories = observed.RecordCategories;
+            m_Entries.Add(entry);
         }
     }
 
     // No Actor references: the chronicle survives removal of actors and corpses.
     [Serializable]
-    sealed class ResidentRecords
+    sealed partial class ResidentRecords
     {
         readonly Dictionary<Guid, ResidentRecord> m_Residents = new Dictionary<Guid, ResidentRecord>();
         public bool IsPartial;
@@ -71,6 +87,7 @@ namespace djack.RogueSurvivor.Data
                 }
             }
             record.Name = actor.UnmodifiedName;
+            if (record.DeathTurn < 0) record.Snapshot(actor);
             return record;
         }
 
@@ -98,19 +115,20 @@ namespace djack.RogueSurvivor.Data
             return memory.Id + ":" + memory.StartTurn + ":" + memory.SubjectId + ":" +
                 memory.RelatedPersonId + ":" + memory.Subject;
         }
-        public void MemoryStarted(Actor actor, MemoryInstance memory)
+        public void MemoryStarted(Actor actor, MemoryInstance memory, MemoryDefinition definition = null)
         {
             ResidentRecord record = Register(actor);
             if (record != null) record.Add("memory:" + MemoryKey(memory), memory.StartTurn,
-                "Memory: " + MemoryName(memory.Id) +
+                "Memory: " + (definition == null ? MemoryName(memory.Id) : definition.Name) +
                 (String.IsNullOrEmpty(memory.Subject) ? "" : " (" + memory.Subject + ")") + ".");
         }
-        public void MemoryResolved(Actor actor, MemoryInstance memory)
+        public void MemoryResolved(Actor actor, MemoryInstance memory, PersonalityRegistry registry = null)
         {
             ResidentRecord record = Register(actor);
             if (record == null) return;
             string outcome = memory.OutcomeId ?? "none";
-            if (outcome.StartsWith("trait:")) outcome = "gained trait " + TraitName(outcome.Substring(6));
+            if (outcome.StartsWith("trait:"))
+            { TraitDefinition trait = registry == null ? null : registry.Trait(outcome.Substring(6)); outcome = "gained trait " + (trait == null ? TraitName(outcome.Substring(6)) : trait.Name); }
             else if (outcome.StartsWith("skill:"))
             {
                 string skill = outcome.Substring(6);
@@ -120,7 +138,8 @@ namespace djack.RogueSurvivor.Data
             }
             else outcome = "no new trait or skill";
             record.Add("resolved:" + MemoryKey(memory), memory.ResolvedTurn,
-                "Resolved memory: " + MemoryName(memory.Id) + "; " + outcome + ".");
+                "Resolved memory: " + (registry == null || registry.Memory(memory.Id) == null ? MemoryName(memory.Id) : registry.Memory(memory.Id).Name) + "; " + outcome + ".", null,
+                memory.OutcomeId != null && memory.OutcomeId.StartsWith("trait:", StringComparison.Ordinal));
         }
         public void Observe(Actor actor, ObservedEvent observed)
         {
@@ -128,36 +147,15 @@ namespace djack.RogueSurvivor.Data
             if (record == null) return;
             string key = "event:" + observed.Kind + ":" + observed.Turn + ":" +
                 observed.SubjectId + ":" + observed.OtherId + ":" + observed.Subject + ":" + observed.Other;
+            if (observed.EventId != 0) key = "event:" + observed.EventId;
             record.Add(key, observed.Turn, (observed.Direct ? "Experienced: " : "Witnessed: ") +
-                EventText(observed));
+                EventText(observed) + (observed.StoryId == null ? "" : " [story " + observed.StoryId + "]"), observed);
             if (observed.Kind == "death" && observed.SubjectId == actor.PersonalityIdentity)
                 record.DeathTurn = observed.Turn;
         }
         static string EventText(ObservedEvent e)
         {
-            string special = PersonalityWorldContent.EventName(e.Kind);
-            if (special != null) return special +
-                (e.Subject == null ? "." : ": " + e.Subject + ".");
-            string subject = e.Subject ?? "Someone";
-            string other = e.Other ?? "someone";
-            switch (e.Kind)
-            {
-                case "death": return subject + " died" + (e.Other == null ? "." : "; killed by " + other + ".");
-                case "murder": return other + " murdered " + subject + ".";
-                case "kill_human": return other + " killed " + subject + ".";
-                case "attack": return other + " attacked " + subject + ".";
-                case "helped": return other + " helped " + subject + ".";
-                case "joined_group": return subject + " joined " + other + "'s group.";
-                case "abandoned": return subject + " was abandoned by " + other + ".";
-                case "base_theft": return subject + " stole from " + other + "'s base.";
-                case "base_loss": return subject + " lost a base.";
-                case "supplies_lost": return subject + " lost supplies.";
-                case "zombified": return other + " turned into " + subject + ".";
-                case "starvation": return subject + " faced starvation.";
-                case "raid": return "A raid occurred.";
-                case "unique_arrival": return subject + " arrived.";
-                default: return e.Kind + ": " + subject + (e.Other == null ? "." : "; " + other + ".");
-            }
+            return e.RecordText ?? NpcRecordDescriptions.Describe(e);
         }
 
         public static ResidentRecords Recover(Session session)
@@ -189,6 +187,12 @@ namespace djack.RogueSurvivor.Data
             ResidentRecord record = Register(actor);
             if (record == null) return;
             foreach (ObservedEvent observed in actor.Personality.Events) Observe(actor, observed);
+            foreach (NpcIntent intent in actor.Personality.Intents)
+            {
+                IntentChanged(actor, intent, "started", "recovered from available intent state", NpcContentCatalog.Default);
+                if (intent.Finished) IntentChanged(actor, intent, intent.Status.ToString().ToLowerInvariant(),
+                    intent.Outcome, NpcContentCatalog.Default);
+            }
             List<RelationshipRecord> relations = new List<RelationshipRecord>(actor.Personality.People);
             relations.AddRange(actor.Personality.Groups);
             relations.AddRange(actor.Personality.Factions);

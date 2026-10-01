@@ -19,8 +19,10 @@ Shift+S. Saves live in the `game-data` Docker volume and survive
 port, start with `ROGUE_PORT=6081 docker compose up --build -d`. Sound is
 unavailable in the browser session.
 
-On Windows, build `RogueSurvivor.sln` in `Release|Any CPU` with .NET Framework
-4.8 and run the executable from the `WRogue` directory.
+On Windows, download the `RogueSurvivorExpanded-vX.Y.Z-windows.zip` asset from
+the GitHub release, extract it, and run `RogueSurvivor.exe` from the extracted
+directory. The game requires .NET Framework 4.8. To build from source, build
+`RogueSurvivor.sln` in `Release|Any CPU`.
 
 ## New features
 
@@ -71,8 +73,8 @@ the option preview with Left/Right. **Save as preset** stores a named configurat
 future games. On the configuration screen, hover over a setting or select it with
 Up/Down to read its description. Page Up/Down move between pages of settings;
 Left/Right change the selected value.
-The chosen rules and settings are stored with the game save. Older saves keep
-their original mode rules.
+The chosen rules and settings are stored with the game save. Loading restores
+its stored mode rules. World saves require format 5; earlier formats are unsupported.
 
 ### NPC traits and memories
 
@@ -90,8 +92,55 @@ specific people, their leader's group, and their faction when trading or
 considering a leader. Inspecting an NPC shows traits, but not private memories.
 The catalog and extension points are described in
 [docs/npc-personality.md](docs/npc-personality.md).
+Developer contracts and a complete single-file extension are in
+[docs/npc-content-modules.md](docs/npc-content-modules.md).
 Press Shift+I in game to see your relationships with people, groups, and factions.
-Use Read Records below Load Game to browse saved NPC histories together or individually.
+Press V to talk to a nearby person. With one possible listener the exchange starts
+immediately; with several, choose a direction. They may tell you a report they know.
+If they asked you or you overheard them ask someone else for food, medicine or
+replacement supplies, V lets you answer Y or N (Esc postpones).
+Y promises delivery within 180 turns; give the item to
+fulfil the promise. N is an actual refusal that can change their next action and
+opinion. You also hear nearby NPC conversations through walls within hearing range;
+unseen speakers stay anonymous. Their private memories remain hidden.
+Press J to review rumors, requests and replies you actually heard. Conversations
+and completed trades add contacts to Shift+I; disputes and attacks can change them.
+Use Read Records below Load Game to browse format-5 NPC histories together or individually.
+Search names, filter life metrics, sort residents, or press I to read the most interesting NPC;
+S/F also search and filter events inside a timeline.
+Civilian, gang, soldier and CHAR guard NPCs can pursue trait-driven intentions:
+thank and repay a helper, ask for or share food, decline a request, and leave an
+unsafe leader. These use real AI actions and persist through saves. Internal
+intentions remain private during play; Read Records includes their outcomes and
+linked stories. NPCs can also pass spoken reports, search for missing companions
+through known exits, avoid or warn reported aggressors, and propose group supply
+or shelter plans. Participants pursue independent goals; pickups, gifts,
+arrivals and return reports determine the episode's outcome. Groups retain their
+identity through succession, factions influence plan preferences, and a saved
+director limits concurrent stories and reserves resources. A bounded planner
+composes actions to reach desired results: an NPC can obtain food by collecting
+known supplies, asking another person or accepting a trade offer. Traits and
+relationships affect method costs; refusals and changed resources cause
+replanning. Action sequences and their consequences are generated during play.
+Elementary goals and actions remain authored mechanics. Plans and causal links
+survive saving and appear retrospectively in Read Records. See
+[docs/npc-intentions.md](docs/npc-intentions.md) for behavior and limits.
+
+An integrated state evaluator now generates goals from unmet needs and personal
+values: food, health, care, debt, safety, justice, contact and group autonomy.
+Traits, relationships and evidence confidence determine their importance.
+Existing injury or debt can motivate action without a new scripted incident;
+new urgent needs can replace weaker generated goals. Recovery uses remembered
+medicine and actual treatment. Read Records retains each goal's state and utility
+explanation, and saves preserve its subject and cooldown.
+
+Interactions include scarce-resource disputes, actual concessions or refusals,
+promises with deadlines, direct treatment or medicine gifts, food-loss compensation
+and attachments to people, specific possessions and home. Replies and outcomes
+alter later goals; reputation includes personal, group and faction history.
+Completed episodes can cause connected later episodes. See
+[docs/npc-social-stories.md](docs/npc-social-stories.md) for mechanics and scenarios.
+Gameplay keeps memories private; Read Records retains retrospective causal history.
 
 The **Expanded** preset enables claimable bases. Stand inside an enclosed
 building and press **Ctrl+B** to preview its boundaries; press **Y** to claim
@@ -126,17 +175,21 @@ the theft becomes hostile to the thief.
 
 ## Develop and test
 
-For a new release, run `ruby tools/release_version.rb X.Y.Z` before committing
-and tagging `vX.Y.Z`. This updates the executable, Windows file metadata,
-bundled mod, README, and save format documentation together. CI checks that
-every copy matches `VERSION` and that release tags use the same number on push;
-this version check is skipped for pull requests.
+To publish a release, open **Actions → Release → Run workflow** on the default
+branch and enter a new `X.Y.Z` version. The workflow updates `VERSION`, the
+game and Windows file versions, bundled mod, README, and save format
+documentation; builds the Windows game; commits the version; creates `vX.Y.Z`;
+and publishes a GitHub Release with a ready-to-run Windows ZIP. The ZIP includes
+the executable, resources, and bundled mods. Do not create the tag or GitHub
+Release separately. The workflow needs permission to push to the default branch.
+For local version changes, run `ruby tools/release_version.rb X.Y.Z`.
 
 ```sh
 docker build --target test .
 bash tests/e2e.sh
 sh tests/scenario.sh --list
 sh tests/scenario.sh --bench-ai
+sh tests/scenario.sh storage/save-budget
 ```
 
 Gameplay scenarios and how to run one are documented in
@@ -146,3 +199,8 @@ Gameplay scenarios and how to run one are documented in
 [AGENTS.md](AGENTS.md) for contributor guidance and
 [docs/save-format.md](docs/save-format.md) for save compatibility. GitHub
 Actions runs the automated checks.
+
+The regular test target includes a large save/load performance gate: each
+operation must finish within 10 seconds and each save must fit in 50 MB.
+It also reports sampled RAM peaks; see the workload and copied-save command in
+[docs/performance.md](docs/performance.md#automated-save-and-load-budget).

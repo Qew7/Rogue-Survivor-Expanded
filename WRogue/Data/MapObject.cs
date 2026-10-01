@@ -262,8 +262,6 @@ namespace djack.RogueSurvivor.Data
         #region Flags helpers
         private bool GetFlag(Flags f) { return (m_Flags & f) != 0; }
         private void SetFlag(Flags f, bool value) { if (value) m_Flags |= f; else m_Flags &= ~f; }
-        private void OneFlag(Flags f) { m_Flags |= f; }
-        private void ZeroFlag(Flags f) { m_Flags &= ~f; }
         #endregion
     }
 }

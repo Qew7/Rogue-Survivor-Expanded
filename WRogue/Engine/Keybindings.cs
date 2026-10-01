@@ -55,6 +55,8 @@ namespace djack.RogueSurvivor.Engine
             Set(PlayerCommand.GIVE_ITEM, Keys.G);
             Set(PlayerCommand.HINTS_SCREEN_MODE, Keys.H | Keys.Control);
             Set(PlayerCommand.NEGOCIATE_TRADE, Keys.E);
+            Set(PlayerCommand.TALK, Keys.V);
+            Set(PlayerCommand.HEARD_JOURNAL, Keys.J);
             Set(PlayerCommand.LOAD_GAME, Keys.L | Keys.Shift);
             Set(PlayerCommand.MARK_ENEMIES_MODE, Keys.E | Keys.Control);
             Set(PlayerCommand.MESSAGE_LOG, Keys.M | Keys.Shift);
@@ -189,6 +191,25 @@ namespace djack.RogueSurvivor.Engine
                 if (kb.Get(PlayerCommand.RELATIONSHIPS) == Keys.None &&
                     kb.Get(Keys.I | Keys.Shift) == PlayerCommand.NONE)
                     kb.Set(PlayerCommand.RELATIONSHIPS, Keys.I | Keys.Shift);
+                if (kb.Get(PlayerCommand.TALK) == (Keys.T | Keys.Control))
+                {
+                    if (kb.Get(Keys.V) == PlayerCommand.NONE) kb.Set(PlayerCommand.TALK, Keys.V);
+                    else if (kb.Get(Keys.V | Keys.Shift) == PlayerCommand.NONE)
+                        kb.Set(PlayerCommand.TALK, Keys.V | Keys.Shift);
+                    else kb.Set(PlayerCommand.TALK, Keys.None);
+                }
+                else if (kb.Get(PlayerCommand.TALK) == Keys.None)
+                {
+                    if (kb.Get(Keys.V) == PlayerCommand.NONE) kb.Set(PlayerCommand.TALK, Keys.V);
+                    else if (kb.Get(Keys.V | Keys.Shift) == PlayerCommand.NONE)
+                        kb.Set(PlayerCommand.TALK, Keys.V | Keys.Shift);
+                }
+                if (kb.Get(PlayerCommand.HEARD_JOURNAL) == Keys.None)
+                {
+                    if (kb.Get(Keys.J) == PlayerCommand.NONE) kb.Set(PlayerCommand.HEARD_JOURNAL, Keys.J);
+                    else if (kb.Get(Keys.J | Keys.Shift) == PlayerCommand.NONE)
+                        kb.Set(PlayerCommand.HEARD_JOURNAL, Keys.J | Keys.Shift);
+                }
             }
             catch (Exception e)
             {

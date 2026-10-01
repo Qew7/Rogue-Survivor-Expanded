@@ -570,6 +570,7 @@ namespace djack.RogueSurvivor.Engine
             bool wasLocalNight = map.LocalTime.IsNight;
             int previousDay = map.LocalTime.Day;
             ++map.LocalTime.TurnCounter;
+            Gameplay.Personality.NpcIntentSystem.AdvanceClock(this, map);
             bool isLocalDay = !map.LocalTime.IsNight;
             if (previousDay != map.LocalTime.Day)
                 Gameplay.Personality.PersonalitySystem.ResolveDue(this, map);

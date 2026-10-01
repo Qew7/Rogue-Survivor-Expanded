@@ -998,10 +998,10 @@ namespace djack.RogueSurvivor.Gameplay.Generators
         #endregion
 
         #region Zones
-        protected Zone MakeUniqueZone(string basename, Rectangle rect)
+        protected Zone MakeUniqueZone(string basename, Rectangle rect, BuildingKind buildingKind = BuildingKind.None)
         {
             string name = String.Format("{0}@{1}-{2}", basename, rect.Left + rect.Width / 2, rect.Top + rect.Height / 2);
-            return new Zone(name, rect);
+            return new Zone(name, rect) { BuildingKind = buildingKind };
         }
         #endregion
     }

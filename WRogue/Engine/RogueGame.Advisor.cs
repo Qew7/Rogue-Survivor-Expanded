@@ -780,7 +780,8 @@ namespace djack.RogueSurvivor.Engine
                             "Trading means exhanging items.",
                             "To ask for a TRADE offer, just try to MOVE into the actor and accept or refuse the offer.",
                             "You can also initiate a more detailled trade negociation.",
-                            String.Format("To NEGOCIATE A TRADE : press <{0}> and select an npc with the directions.", s_KeyBindings.Get(PlayerCommand.NEGOCIATE_TRADE).ToString())
+                            String.Format("To NEGOCIATE A TRADE : press <{0}> and select an npc with the directions.", s_KeyBindings.Get(PlayerCommand.NEGOCIATE_TRADE).ToString()),
+                            String.Format("To TALK and hear a report or answer a request : press <{0}> and select an adjacent npc. Answer Y/N.", s_KeyBindings.Get(PlayerCommand.TALK).ToString())
                         };
                     break;
 

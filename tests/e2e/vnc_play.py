@@ -54,7 +54,7 @@ def wait_for_log(path, text, seconds=10):
 
 def read_saved_mods(path):
     with open(path, "rb") as saved:
-        assert saved.read(5) == b"RSE1\x04", "Save has no game version and mod manifest"
+        assert saved.read(5) == b"RSE1\x05", "Save has no game version and mod manifest"
 
         def read_string():
             length = 0
@@ -223,4 +223,52 @@ with socket.create_connection(("127.0.0.1", 5900), timeout=10) as vnc:
     else:
         raise RuntimeError("Saved game did not load: " + repr(open(log).read().splitlines()[-18:]))
 
-print("VNC input, new game, save and load passed ({} bytes)".format(save_bytes))
+    # Keep an explicit snapshot if the test preset enables permadeath.
+    import shutil
+    shutil.copyfile(save, "/opt/game/Config/Saves/records-e2e.sav")
+    # Abandon this test character, decline reincarnation, and browse the saved archive.
+    menu_count = open(log).read().count("main menu ready")
+    vnc.sendall(struct.pack(">BBHI", 4, 1, 0, shift))
+    key(vnc, ord("A"))
+    vnc.sendall(struct.pack(">BBHI", 4, 0, 0, shift))
+    key(vnc, ord("y"))
+    deadline = time.monotonic() + 30
+    returned = False
+    while time.monotonic() < deadline:
+        for symbol in (enter, ord("n"), 0xFF1B):
+            if open(log).read().count("main menu ready") > menu_count:
+                returned = True
+                break
+            key(vnc, symbol)
+        if returned:
+            break
+    else:
+        raise RuntimeError("Abandoning did not return to the main menu")
+    for symbol in (down, down, enter):
+        key(vnc, symbol)
+    wait_for_log(log, "records selection ready: Read Records - choose a save")
+    key(vnc, enter)
+    wait_for_log(log, "records browser ready")
+    for symbol in (ord("s"), ord("a"), enter):
+        key(vnc, symbol)
+    wait_for_log(log, "records prompt ready: NPC name contains")
+    key(vnc, ord("r"))
+    key(vnc, ord("o"))
+    wait_for_log(log, "records selection ready: Sort residents")
+    key(vnc, down)
+    key(vnc, enter)
+    for symbol in (ord("f"), down, down, down, right, 0xFF1B, ord("i")):
+        key(vnc, symbol)
+    wait_for_log(log, "records interesting NPC ready")
+    for symbol in (ord("s"), ord("m"), enter):
+        key(vnc, symbol)
+    wait_for_log(log, "records prompt ready: Event text contains")
+    key(vnc, ord("f"))
+    wait_for_log(log, "records selection ready: Event category")
+    for symbol in (0xFF56, enter):
+        key(vnc, symbol)
+    wait_for_log(log, "records event category selected: Intentions")
+    for symbol in (0xFF1B, 0xFF1B, 0xFF1B):
+        key(vnc, symbol)
+
+print("VNC input, new game, compact save/load and searchable records passed ({} bytes)".format(save_bytes))

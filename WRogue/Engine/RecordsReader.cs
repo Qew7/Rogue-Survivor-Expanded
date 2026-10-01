@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using djack.RogueSurvivor.Data;
+using djack.RogueSurvivor.Gameplay.Personality;
 
 namespace djack.RogueSurvivor.Engine
 {
@@ -10,19 +11,23 @@ namespace djack.RogueSurvivor.Engine
         public readonly string Path;
         public readonly int Turn;
         public readonly ResidentRecords Records;
+        List<RecordsProfile> m_Profiles;
+        public IList<RecordsProfile> Profiles { get {
+            if (m_Profiles == null) { m_Profiles = new List<RecordsProfile>();
+                foreach (ResidentRecord resident in Records.Residents) m_Profiles.Add(new RecordsProfile(resident, Turn)); }
+            return m_Profiles; } }
         public RecordsSave(string path, Session session)
         { Path = path; Turn = session.WorldTime.TurnCounter; Records = session.ResidentRecords; }
+        public RecordsSave(string path, int turn, ResidentRecords records)
+        { Path = path; Turn = turn; Records = records; }
     }
 
-    static class RecordsReader
+    static partial class RecordsReader
     {
         public static RecordsSave Load(string path)
         {
             // Deliberately do not restore Session, mods, options, player, or simulation.
-            Session saved = BinarySaveStore.LoadExact<Session>(path);
-            if (!saved.GamePreset.NpcPersonalitiesEnabled)
-                throw new InvalidDataException("NPC traits and memories are disabled in this save.");
-            return new RecordsSave(path, saved);
+            return BinarySaveStore.ReadRecords(path);
         }
 
         public static List<RecordsSave> Find(string directory, out int skipped)
@@ -45,6 +50,16 @@ namespace djack.RogueSurvivor.Engine
             return saves;
         }
 
+        static bool EntryMatches(ResidentEntry entry, string search, RecordsEventFilter filter,
+            Dictionary<long, ResidentEntry> causes)
+        {
+            if (filter != RecordsEventFilter.All &&
+                !NpcRecordDescriptions.Matches(entry, (NpcRecordCategory)(1 << ((int)filter - 1)))) return false;
+            if (String.IsNullOrEmpty(search) || entry.Text.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0) return true;
+            string context = CauseContext(entry, causes);
+            return context != null && context.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
         public static List<ResidentRecord> Residents(RecordsSave save)
         {
             List<ResidentRecord> people = new List<ResidentRecord>(save.Records.Residents);
@@ -56,14 +71,21 @@ namespace djack.RogueSurvivor.Engine
         }
 
         public static IList<string> Lines(RecordsSave save, ResidentRecord selected)
+        { return Lines(save, selected, null, "", RecordsEventFilter.All); }
+
+        public static IList<string> Lines(RecordsSave save, ResidentRecord selected, RecordsQuery query,
+            string search, RecordsEventFilter filter)
         {
             List<KeyValuePair<ResidentRecord, ResidentEntry>> entries =
                 new List<KeyValuePair<ResidentRecord, ResidentEntry>>();
+            Dictionary<long, ResidentEntry> causes = CauseIndex(save);
             IEnumerable<ResidentRecord> people = selected == null
-                ? save.Records.Residents : new[] { selected };
+                ? (IEnumerable<ResidentRecord>)(query == null ? new List<ResidentRecord>(save.Records.Residents) :
+                    query.Select(save).ConvertAll(p => p.Resident)) : new[] { selected };
             foreach (ResidentRecord resident in people)
                 foreach (ResidentEntry entry in resident.Entries)
-                    if (entry.Turn <= save.Turn)
+                    if (entry.Turn <= save.Turn && !SelfEncounter(resident, entry) &&
+                        EntryMatches(entry, search, filter, causes))
                         entries.Add(new KeyValuePair<ResidentRecord, ResidentEntry>(resident, entry));
             entries.Sort((a, b) => {
                 int turn = a.Value.Turn.CompareTo(b.Value.Turn);
@@ -73,22 +95,36 @@ namespace djack.RogueSurvivor.Engine
             });
             List<string> lines = new List<string>();
             if (save.Records.IsPartial)
-                lines.Add("Partial history: older saves retain only the records that were still available.");
+                lines.Add("Partial history: only recoverable records were available when the archive was rebuilt.");
             foreach (KeyValuePair<ResidentRecord, ResidentEntry> entry in entries)
             {
                 string line = new WorldTime(entry.Value.Turn) + " | " + entry.Key.Name +
                     " [" + entry.Key.Identity.ToString("N").Substring(0, 8) + "] | " + entry.Value.Text;
+                string context = CauseContext(entry.Value, causes);
+                if (context != null) line += " | " + context;
+                const string indent = "    ";
+                bool continuation = false;
                 while (line.Length > 120)
                 {
-                    int split = line.LastIndexOf(' ', 119, 119);
-                    if (split < 1) split = 120;
+                    int floor = continuation ? indent.Length : 0;
+                    int split = line.LastIndexOf(' ', 119, 120 - floor);
+                    // A break inside the continuation indent would consume no content.
+                    if (split <= floor) split = 120;
                     lines.Add(line.Substring(0, split));
-                    line = "    " + line.Substring(split).TrimStart();
+                    line = indent + line.Substring(split).TrimStart();
+                    continuation = true;
                 }
                 lines.Add(line);
             }
             if (entries.Count == 0) lines.Add("No recorded events before this save.");
             return lines;
+        }
+
+        static bool SelfEncounter(ResidentRecord resident, ResidentEntry entry)
+        {
+            return !entry.Direct && entry.SubjectId == resident.Identity &&
+                (entry.Kind == "unique_arrival" || entry.Kind == "met_unique" ||
+                    entry.Kind.StartsWith("met_", StringComparison.Ordinal));
         }
     }
 }

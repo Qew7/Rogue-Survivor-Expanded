@@ -189,10 +189,6 @@ namespace djack.RogueSurvivor.Engine
                 StartSimThread();
         }
 
-        void OnPlayerChangeMap()
-        {
-            RefreshPlayer();
-        }
         #endregion
         #region Simulation
         SimFlags ComputeSimFlagsForTurn(int turn)
@@ -278,6 +274,7 @@ namespace djack.RogueSurvivor.Engine
         }
         #endregion
         #region Simulation Thread
+        bool m_RestartSimulationAfterReincarnation;
         void StartSimThread()
         {
             if (s_Options.IsSimON && s_Options.SimThread)
