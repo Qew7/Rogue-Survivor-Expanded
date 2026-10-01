@@ -2,7 +2,7 @@
 
 An expanded version of roguedjack's Rogue Survivor, based on the source from
 [Tranquill6](https://github.com/Tranquill6).
-Current Expanded version: **0.2.0** (based on Rogue Survivor Alpha 10.1).
+Current Expanded version: **0.4.0** (based on Rogue Survivor Alpha 10.1).
 
 ## Play on macOS or Linux
 
@@ -52,7 +52,7 @@ and Esc to cancel. Higher-priority mods override files from lower-priority mods.
 Put each mod in its own folder under `WRogue/mods`. A mod can replace files in
 `Data/` and `Images/`; an optional `authors.json` can provide a description and
 one or more authors and websites, plus `version` and `game_version`.
-The `game_version` value must name this version (`0.2.0`) or a compatible
+The `game_version` value must name this version (`0.4.0`) or a compatible
 earlier version to enable the mod. Versions `0.1.0` and `0.1.1` are supported.
 `Deonapocalypse` is included as an example. The selected set is remembered for
 new games. Loading a save automatically uses its recorded mods and priority;
