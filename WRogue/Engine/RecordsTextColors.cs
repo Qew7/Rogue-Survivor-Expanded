@@ -59,6 +59,14 @@ namespace djack.RogueSurvivor.Engine
             initial.Add(term);
         }
 
+        public static int PrefixWidth(string text, int length, Func<string, int> measure)
+        {
+            if (length == 0) return 0;
+            // Keep trailing spaces inside the measured string. TextRenderer otherwise drops them.
+            const string marker = "X";
+            return measure(text.Substring(0, length) + marker) - measure(marker);
+        }
+
         public IList<RecordsTextRun> Runs(string text, Color plain)
         {
             var runs = new List<RecordsTextRun>();

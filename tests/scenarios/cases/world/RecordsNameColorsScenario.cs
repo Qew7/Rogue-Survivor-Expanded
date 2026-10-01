@@ -39,6 +39,15 @@ static class RecordsNameColorsScenario
                 "names embedded in longer words are not colored");
             Check.Equal(Color.LightGray, names.Runs("Lee", Color.White)[0].Color,
                 "the same name in different factions gets an unambiguous neutral color");
+            string place = "at the apartment building.";
+            var placeRuns = names.Runs(place, Color.White);
+            int buildingStart = -1;
+            foreach (RecordsTextRun run in placeRuns)
+                if (place.Substring(run.Start, run.Length) == "apartment building") buildingStart = run.Start;
+            Check.Equal("at the ".Length, buildingStart, "the building follows a space");
+            Check.Equal(8 * buildingStart,
+                RecordsTextColors.PrefixWidth(place, buildingStart, value => value.TrimEnd().Length * 8),
+                "a trailing-space-dropping text measurer keeps the gap before the colored building");
 
             ScenarioUI ui = (ScenarioUI)world.Game.UI;
             foreach (Keys key in new[] { Keys.Enter, Keys.Escape, Keys.Escape }) ui.QueueWaitKey(key);

@@ -29,7 +29,7 @@ namespace djack.RogueSurvivor.Engine
             if (names == null) { m_UI.UI_DrawStringBold(plain, text, x, y); return; }
             foreach (RecordsTextRun run in names.Runs(text, plain))
                 m_UI.UI_DrawStringBold(run.Color, text.Substring(run.Start, run.Length),
-                    x + m_UI.UI_BoldTextWidth(text.Substring(0, run.Start)), y);
+                    x + RecordsTextColors.PrefixWidth(text, run.Start, m_UI.UI_BoldTextWidth), y);
         }
         static int MoveRecordsChoice(Keys key, int selected, int count)
         {
