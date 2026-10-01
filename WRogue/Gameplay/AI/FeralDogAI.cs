@@ -177,10 +177,6 @@ namespace djack.RogueSurvivor.Gameplay.AI
             return BehaviorWander(game, null);
         }
 
-        private ActorAction BehaviorFightOrFlee(RogueGame game, List<Percept> enemies, bool isLeaderVisible, bool isLeaderFighting, ActorCourage courage, string[] fIGHT_EMOTES)
-        {
-            throw new NotImplementedException();
-        }
         #endregion
 
         #region Dogs specifics

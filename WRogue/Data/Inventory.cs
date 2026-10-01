@@ -235,33 +235,6 @@ namespace djack.RogueSurvivor.Data
         }
 #endif
 
-#if false
-        /// <summary>
-        /// Remove one quantity of item.
-        /// </summary>
-        /// <param name="it"></param>
-        public void Remove(Item it)
-        {
-            if (it == null)
-                throw new ArgumentNullException("it");
-            if (!m_Items.Contains(it))
-                return;
-
-            // Try destacking first.
-            Item destackFrom = GetBestDestackable(it);
-            if (destackFrom != null && destackFrom.Quantity > 1)
-            {
-                --destackFrom.Quantity;
-                if (destackFrom.Quantity <= 0)
-                    m_Items.Remove(destackFrom);
-                return;
-            }
-
-            // Cant destack, remove it.
-            m_Items.Remove(it);
-        }
-#endif
-
         /// <summary>
         /// Remove completly the item (all its quantity).
         /// </summary>
@@ -351,27 +324,6 @@ namespace djack.RogueSurvivor.Data
             }
 
             return false;
-        }
-
-        /// <summary>
-        /// Gets smallest stack this item can be destacked from.
-        /// </summary>
-        /// <param name="it"></param>
-        /// <returns></returns>
-        Item GetBestDestackable(Item it)
-        {
-            if (!it.Model.IsStackable)
-                return null;
-
-            Item smallestStack = null;
-            foreach(Item other in m_Items)
-                if (other.Model == it.Model)
-                {
-                    if (smallestStack == null || other.Quantity < smallestStack.Quantity)
-                        smallestStack = other;
-                }
-
-            return smallestStack;
         }
 
         public bool Contains(Item it)

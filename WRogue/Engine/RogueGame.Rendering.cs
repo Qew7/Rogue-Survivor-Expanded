@@ -55,7 +55,7 @@ namespace djack.RogueSurvivor.Engine
             m_UI.UI_Clear(Color.Black);
             {
                 // map & minimap
-                Color mapTint = Color.White; // disabled changing brightness bad for the eyes TintForDayPhase(m_Session.WorldTime.Phase);
+                Color mapTint = Color.White;
                 m_UI.UI_DrawLine(Color.DarkGray, RIGHTPANEL_X, 0, RIGHTPANEL_X, MESSAGES_Y);
                 DrawMap(m_Session.CurrentMap, mapTint);
 
@@ -209,40 +209,6 @@ namespace djack.RogueSurvivor.Engine
             return sb.ToString();
         }
 
-        /// <summary>
-        /// OBSOLETE
-        /// </summary>
-        /// <param name="phase"></param>
-        /// <returns></returns>
-        Color TintForDayPhase(DayPhase phase)
-        {
-            switch (phase)
-            {
-                case DayPhase.MORNING:
-                case DayPhase.MIDDAY:
-                case DayPhase.AFTERNOON:
-                    return TINT_DAY;
-
-                case DayPhase.SUNRISE:
-                    return TINT_SUNRISE;
-
-                case DayPhase.SUNSET:
-                    return TINT_SUNSET;
-
-                case DayPhase.MIDNIGHT:
-                    return TINT_MIDNIGHT;
-
-                case DayPhase.DEEP_NIGHT:
-                    return TINT_NIGHT;
-
-                case DayPhase.EVENING:
-                    return TINT_EVENING;
-                default:
-                    throw new ArgumentOutOfRangeException("unhandled dayphase");
-            }
-        }
-
-
         #region Overlays
         void AddOverlay(Overlay o)
         {
@@ -275,11 +241,6 @@ namespace djack.RogueSurvivor.Engine
         Point MapToScreen(int x, int y)
         {
             return new Point((x - m_MapViewRect.Left) * RogueGame.TILE_SIZE, (y - m_MapViewRect.Top) * RogueGame.TILE_SIZE);
-        }
-
-        Point ScreenToMap(Point screenPosition)
-        {
-            return ScreenToMap(screenPosition.X, screenPosition.Y);
         }
 
         Point ScreenToMap(int gx, int gy)

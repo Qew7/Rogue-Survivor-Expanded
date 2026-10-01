@@ -1290,17 +1290,6 @@ namespace djack.RogueSurvivor.Engine
             EXCLUDE_SECRET_MAPS = (1 << 0)
         }
 
-        List<Actor> ListWorldActors(Predicate<Actor> pred, MapListFlags flags)
-        {
-            List<Actor> list = new List<Actor>();
-
-            for (int dx = 0; dx < m_Session.World.Size; dx++)
-                for (int dy = 0; dy < m_Session.World.Size; dy++)
-                    list.AddRange(ListDistrictActors(m_Session.World[dx, dy], flags, pred));
-
-            return list;
-        }
-
         List<Actor> ListDistrictActors(District d, MapListFlags flags, Predicate<Actor> pred)
         {
             List<Actor> list = new List<Actor>();

@@ -20,7 +20,7 @@ static class GameTests
         Check.Equal(false, Check.Call(game, "IsInViewRect", new Point(25, 26)), "outside view bottom");
         Check.Equal(new Point(0, 0), Check.Call(game, "MapToScreen", new Type[] { typeof(Point) }, new Point(5, 5)), "view origin screen");
         Check.Equal(new Point(320, 320), Check.Call(game, "MapToScreen", new Type[] { typeof(Point) }, new Point(15, 15)), "view center screen");
-        Check.Equal(new Point(15, 15), Check.Call(game, "ScreenToMap", new Type[] { typeof(Point) }, new Point(320, 320)), "screen map roundtrip");
+        Check.Equal(new Point(15, 15), Check.Call(game, "ScreenToMap", new Type[] { typeof(int), typeof(int) }, 320, 320), "screen map roundtrip");
         Check.Equal(4, Check.Call(game, "FindLongestLine", new Type[] { typeof(string[]) }, (object)new string[] { "a", null, "four" }), "longest line");
     }
 }

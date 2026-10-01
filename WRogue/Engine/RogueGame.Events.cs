@@ -98,37 +98,6 @@ namespace djack.RogueSurvivor.Engine
         }
         #endregion
 
-        #region DISABLED Subway Invasion
-#if false
-        bool CheckForEvent_SubwayInvasion(Map map)
-        {
-            // randomly.
-            if (!m_Rules.RollChance(SUBWAY_INVASION_CHANCE))
-                return false;
-
-            // if not enough zombies only.
-            int undeads = CountUndeads(map);
-            if (undeads >= s_Options.MaxUndeads * SUBWAY_UNDEADS_FACTOR)
-                return false;
-
-            // clear.
-            return true;
-        }
-
-        void FireEvent_SubwayInvasion(Map map)
-        {
-            // do it silently.
-            int undeads = CountUndeads(map);
-            float invasionRatio = Math.Min(1.0f, (map.LocalTime.Day * s_Options.ZombieInvasionDailyIncrease + s_Options.DayZeroUndeadsPercent) / 100.0f);
-            int targetUndeadsCount = 1 + (int)(invasionRatio * s_Options.MaxUndeads * SUBWAY_UNDEADS_FACTOR);
-            int undeadsToSpawn = targetUndeadsCount - undeads;
-            for (int i = 0; i < undeadsToSpawn; i++)
-                SpawnNewSubwayUndead(map, map.LocalTime.Day);
-
-        }
-#endif
-        #endregion
-
         #region Refugees wave
         bool CheckForEvent_RefugeesWave(Map map)
         {
@@ -544,13 +513,6 @@ namespace djack.RogueSurvivor.Engine
             if (!m_Rules.RollChance(BIKERS_RAID_CHANCE_PER_TURN))
                 return false;
 
-            // if no bikers.
-#if false
-            disabled to take advantage of the new rival gang feature.
-            if(HasActorOfModelID(map, GameActors.IDs.BIKER_MAN))
-                return false;
-#endif
-
             // clear.
             return true;
         }
@@ -625,13 +587,6 @@ namespace djack.RogueSurvivor.Engine
             // check chance.
             if (!m_Rules.RollChance(GANGSTAS_RAID_CHANCE_PER_TURN))
                 return false;
-
-            // if no gangsta.
-#if false
-            disabled to take advantage of the new rival gang feature.
-            if (HasActorOfModelID(map, GameActors.IDs.GANGSTA_MAN))
-                return false;
-#endif
 
             // clear.
             return true;
@@ -1001,20 +956,6 @@ namespace djack.RogueSurvivor.Engine
             ///////////////////
             SpawnActorOnMapBorder(map, newUndead, SPAWN_DISTANCE_TO_PLAYER, false);
         }
-
-        void SpawnNewSubwayUndead(Map map, int day)
-        {
-            ////////////////
-            // Create actor.
-            ////////////////
-            Actor newUndead = m_TownGenerator.CreateNewSubwayUndead(map.LocalTime.TurnCounter);
-
-            ///////////////////
-            // Try to spawn it.
-            ///////////////////
-            SpawnActorOnMapBorder(map, newUndead, SPAWN_DISTANCE_TO_PLAYER, false);
-        }
-
 
         void SpawnNewRefugee(Map map)
         {

@@ -100,20 +100,6 @@ namespace djack.RogueSurvivor.Gameplay.Generators
         {
             Map subway = base.GenerateSubwayMap(seed, district);
 
-#if false
-            DISABLED
-            ////////////////////////////////
-            // People and undeads in subways.
-            ////////////////////////////////
-            // undeads, in rails zone.
-            int nbUndeads = (int)(RogueGame.SUBWAY_UNDEADS_FACTOR * (RogueGame.Options.MaxUndeads * RogueGame.Options.DayZeroUndeadsPercent) / 100);
-            for (int i = 0; i < nbUndeads; i++)
-            {
-                Actor undead = CreateNewSubwayUndead(0);
-                base.ActorPlace(m_DiceRoller, 1000, subway, undead,
-                    (pt) => subway.HasZonePartiallyNamedAt(pt, "rails"));
-            }
-#endif
             return subway;
         }
     }

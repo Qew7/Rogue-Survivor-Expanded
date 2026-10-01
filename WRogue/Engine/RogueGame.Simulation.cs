@@ -189,10 +189,6 @@ namespace djack.RogueSurvivor.Engine
                 StartSimThread();
         }
 
-        void OnPlayerChangeMap()
-        {
-            RefreshPlayer();
-        }
         #endregion
         #region Simulation
         SimFlags ComputeSimFlagsForTurn(int turn)

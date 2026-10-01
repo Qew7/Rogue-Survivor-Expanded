@@ -152,13 +152,6 @@ namespace djack.RogueSurvivor.Engine
         public const float SEWERS_UNDEADS_FACTOR = 0.50f;  // 1.0 for as much as surface undead spawning.
         #endregion
 
-        #region DISABLED Subway invasion
-#if false
-        const int SUBWAY_INVASION_CHANCE = 1;
-        public const float SUBWAY_UNDEADS_FACTOR = 0.25f;  // 1.0 for as much as surface undead spawning.
-#endif
-        #endregion
-
         #region Refugees
         /// <summary>
         /// How many refugees in each wave, as ratio of max civilians.
@@ -327,15 +320,6 @@ namespace djack.RogueSurvivor.Engine
         #region Undeads evolution
         const int ZOMBIE_LORD_EVOLUTION_MIN_DAY = 7;
         const int DISCIPLE_EVOLUTION_MIN_DAY = 7;
-        #endregion
-
-        #region Map color tints for day phases
-        readonly Color TINT_DAY = Color.White;
-        readonly Color TINT_SUNSET = Color.FromArgb(235, 235, 235);
-        readonly Color TINT_EVENING = Color.FromArgb(215, 215, 215);
-        readonly Color TINT_MIDNIGHT = Color.FromArgb(195, 195, 195);
-        readonly Color TINT_NIGHT = Color.FromArgb(205, 205, 205);
-        readonly Color TINT_SUNRISE = Color.FromArgb(225, 225, 225);
         #endregion
 
         #region Hearing chances - avoid spamming messages.

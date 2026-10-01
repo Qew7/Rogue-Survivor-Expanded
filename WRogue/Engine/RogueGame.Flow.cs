@@ -777,11 +777,6 @@ namespace djack.RogueSurvivor.Engine
             actor.HitPoints = Math.Min(m_Rules.ActorMaxHPs(actor), actor.HitPoints + hpRegen);
         }
 
-        void RegenActorSleep(Actor actor, int sleepRegen)
-        {
-            actor.SleepPoints = Math.Min(m_Rules.ActorMaxSleep(actor), actor.SleepPoints + sleepRegen);
-        }
-
         void SpendActorSanity(Actor actor, int sanCost)
         {
             actor.Sanity -= sanCost;
