@@ -18,7 +18,7 @@ static class PlannerBarterPlaceLimitScenario
             Actor seller = NpcIntentSupport.Actor(world, "seller", 38, 1);
             buyer.Inventory.AddAll(new ItemMedicine(world.Game.GameItems.MEDIKIT));
             buyer.FoodPoints = Session.Get.GamePreset.HungerPoints - 1;
-            NpcIntent goal = NpcStorySystem.StartKnown(buyer, new NpcKnownPerson { Id = buyer.PersonalityIdentity,
+            NpcIntent goal = NpcStorySystem.StartKnown(world.Game.NpcContent, buyer, new NpcKnownPerson { Id = buyer.PersonalityIdentity,
                 Name = buyer.UnmodifiedName, Place = buyer.Location }, world.Game.NpcContent.Capability("obtain_food"));
             Check.Equal(true, goal != null, "hungry buyer has a real food acquisition goal");
             var domain = new NpcPlanDomain(world.Game, buyer, goal, new List<Actor>());

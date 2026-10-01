@@ -16,7 +16,7 @@ static class ResourceYieldScenario
             hungry.FoodPoints = Session.Get.GamePreset.HungerPoints - 1;
             Location cache = new Location(world.Map, new Point(1, 2));
             var food = new ItemFood(world.Game.GameItems.CANNED_FOOD) { Quantity = 2 }; world.Map.DropItemAt(food, cache.Position);
-            NpcIntent reservation = NpcStorySystem.StartKnown(holder, new NpcKnownPerson { Id = hungry.PersonalityIdentity, Name = hungry.UnmodifiedName,
+            NpcIntent reservation = NpcStorySystem.StartKnown(world.Game.NpcContent, holder, new NpcKnownPerson { Id = hungry.PersonalityIdentity, Name = hungry.UnmodifiedName,
                 Place = hungry.Location }, world.Game.NpcContent.Capability("seek_companion"));
             Check.Equal(true, Session.Get.NpcDirector.Reserve(reservation.StoryId, cache), "another actual participant has an active competing plan");
             NpcIntentSupport.Turn(world, hungry);

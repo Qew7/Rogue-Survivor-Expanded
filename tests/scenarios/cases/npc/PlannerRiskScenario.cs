@@ -19,7 +19,7 @@ static class PlannerRiskScenario
             foreach (Actor actor in new[] { lawful, rebel })
             {
                 actor.FoodPoints = Session.Get.GamePreset.HungerPoints - 1;
-                NpcStorySystem.StartKnown(actor, new NpcKnownPerson { Id = actor.PersonalityIdentity, Name = actor.UnmodifiedName, Place = actor.Location }, world.Game.NpcContent.Capability("obtain_food"));
+                NpcStorySystem.StartKnown(world.Game.NpcContent, actor, new NpcKnownPerson { Id = actor.PersonalityIdentity, Name = actor.UnmodifiedName, Place = actor.Location }, world.Game.NpcContent.Capability("obtain_food"));
             }
             NpcIntentSupport.Turn(world, lawful);
             NpcIntent honestGoal = NpcIntentSupport.Intent(lawful, "obtain_food");

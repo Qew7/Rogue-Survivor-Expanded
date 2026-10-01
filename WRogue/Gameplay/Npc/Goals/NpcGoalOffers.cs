@@ -27,7 +27,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             NpcValueDefinition definition = context.Catalog.Value(valueId); NpcIntentDefinition capability = context.Catalog.Capability(capabilityId);
             if (definition == null || capability == null) throw new ArgumentException("Unknown goal value or capability.");
             Guid subject = self ? context.Self.Id : target.Id;
-            NpcGeneratedGoal state = NpcValues.Evaluate(context.Owner, definition, subject, current, desired, deficit, confidence, 0, context.Catalog.Personalities, context.Catalog);
+            NpcGeneratedGoal state = NpcValues.Evaluate(context.Catalog, context.Owner, definition,
+                subject, current, desired, deficit, confidence, 0);
             state.Resource = resource; state.ObligationId = obligation; state.ModelId = model; state.ObjectPlace = objectPlace; state.ItemId = itemId;
             state.IdentitySuffix = definition.IdentitySuffix == null ? "" : definition.IdentitySuffix(state);
             state.ResultState = capability.GetResult(context.Catalog, state);

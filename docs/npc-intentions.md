@@ -288,6 +288,9 @@ Where a stored cause ID resolves to an earlier archived event, the reader
 shows its prose as **Prompted by** for a goal start or **Connected to** for
 another entry. These words are searchable. The display uses only recorded
 links, so a trait alone does not become a claimed motive.
+The browser colors resident names by their archived faction in the list and
+timeline. If two residents share a name across factions, that name uses a
+neutral color where the text cannot distinguish their identities.
 For a shared group plan, the director's terminal story result determines the
 group plan's stage. One participant abandoning a goal leaves the group's
 destination available to participants whose goals are still active.

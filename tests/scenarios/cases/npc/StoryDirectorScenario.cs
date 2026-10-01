@@ -17,12 +17,12 @@ static class StoryDirectorScenario
                 NpcIntentSupport.Actor(world, "three", 2, 0, "loyal"), NpcIntentSupport.Actor(world, "four", 2, 2, "loyal"),
                 NpcIntentSupport.Actor(world, "five", 0, 1, "loyal") };
             var known = new NpcKnownPerson { Id = target.PersonalityIdentity, Name = target.UnmodifiedName, Place = target.Location };
-            for (int i = 0; i < 4; i++) Check.Equal(true, NpcStorySystem.StartKnown(actors[i], known, world.Game.NpcContent.Capability("seek_companion")) != null, "director admits bounded local stories");
-            Check.Equal(null, NpcStorySystem.StartKnown(actors[4], known, world.Game.NpcContent.Capability("seek_companion")), "fifth concurrent local story is rejected");
+            for (int i = 0; i < 4; i++) Check.Equal(true, NpcStorySystem.StartKnown(world.Game.NpcContent, actors[i], known, world.Game.NpcContent.Capability("seek_companion")) != null, "director admits bounded local stories");
+            Check.Equal(null, NpcStorySystem.StartKnown(world.Game.NpcContent, actors[4], known, world.Game.NpcContent.Capability("seek_companion")), "fifth concurrent local story is rejected");
             NpcIntent first = actors[0].Personality.Intents[0];
             Check.Equal(true, world.Try(new ActionNpcIntent(actors[0], world.Game, first, target)), "real reunion completes a slot");
             Check.Equal("completed", Session.Get.NpcDirector.Find(first.StoryId).Stage, "completion releases the active slot");
-            Check.Equal(true, NpcStorySystem.StartKnown(actors[4], known, world.Game.NpcContent.Capability("seek_companion")) != null, "another story can use the released slot");
+            Check.Equal(true, NpcStorySystem.StartKnown(world.Game.NpcContent, actors[4], known, world.Game.NpcContent.Capability("seek_companion")) != null, "another story can use the released slot");
             world.Map.LocalTime.TurnCounter = WorldTime.TURNS_PER_DAY;
             NpcIntentSystem.AdvanceClock(world.Game, world.Map);
             NpcStoryDirector director = Session.Get.NpcDirector;
@@ -39,8 +39,8 @@ static class StoryDirectorScenario
             var participants = new System.Collections.Generic.List<Actor>(actors);
             for (int i = 0; i < 4; i++) participants.Add(NpcIntentSupport.Actor(world, "role" + i, i + (i > 1 ? 1 : 0), 0, "loyal"));
             for (int i = 0; i < 8; i++)
-                Check.Equal(true, NpcStorySystem.StartKnown(participants[i], known, world.Game.NpcContent.Capability("seek_companion"), storyId: "shared") != null, "eight independent goals bind to one episode");
-            Check.Equal(null, NpcStorySystem.StartKnown(participants[8], known, world.Game.NpcContent.Capability("seek_companion"), storyId: "shared"), "ninth role is rejected before creating a goal");
+                Check.Equal(true, NpcStorySystem.StartKnown(world.Game.NpcContent, participants[i], known, world.Game.NpcContent.Capability("seek_companion"), storyId: "shared") != null, "eight independent goals bind to one episode");
+            Check.Equal(null, NpcStorySystem.StartKnown(world.Game.NpcContent, participants[8], known, world.Game.NpcContent.Capability("seek_companion"), storyId: "shared"), "ninth role is rejected before creating a goal");
             Check.Equal(8, director.Find("shared").Roles.Count, "role history and admitted intentions agree");
             director = new NpcStoryDirector();
             Location original = actors[0].Location;

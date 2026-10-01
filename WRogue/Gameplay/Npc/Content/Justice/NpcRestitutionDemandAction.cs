@@ -24,7 +24,8 @@ namespace djack.RogueSurvivor.Engine.Actions
             var source = new SignificantEvent("restitution_requested", m_Actor, target, m_Actor.Location.Map, m_Actor.Location.Position,
                 m_Actor.Location.Map.LocalTime.TurnCounter, causeId: goal.CauseId, storyId: goal.StoryId) { Units = loss.MissingUnits, ResourcePlace = loss.Place, Resource = "food" };
             PersonalitySystem.Report(m_Game, source);
-            NpcIntentSystem.Finish(m_Actor, goal, NpcIntentStatus.Completed, "actually demanded compensation without predicting compliance");
+            NpcIntentSystem.Finish(m_Game.NpcContent, m_Actor, goal, NpcIntentStatus.Completed,
+                "actually demanded compensation without predicting compliance");
         }
     }
 }

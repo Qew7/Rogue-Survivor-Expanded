@@ -41,12 +41,12 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public readonly Actor Owner;
         public readonly int CommunityCare, CommunitySecurity;
         public readonly int Group, Compassion, Trade, Courage, Law, Supplies, Feeling, Attachment, Fear, Grievance;
-        public NpcMotivation(Actor owner, Guid subject, PersonalityRegistry registry = null, NpcContentCatalog catalog = null,
-            string excludeTrait = null)
+        public NpcMotivation(NpcContentCatalog catalog, Actor owner, Guid subject, string excludeTrait = null)
         {
+            PersonalityRegistry registry = catalog.Personalities;
             NpcKnownPerson known = owner.Personality.Knowledge.Person(subject);
             if (known != null && owner.Faction != null && known.FactionId == owner.Faction.ID) {
-                NpcFactionPolicy policy = (catalog ?? NpcContentCatalog.Default).FactionPolicy(owner.Faction.ID);
+                NpcFactionPolicy policy = catalog.FactionPolicy(owner.Faction.ID);
                 CommunityCare = policy.Care; CommunitySecurity = policy.Security;
             }
             Owner = owner; Group = PersonalitySystem.Bias(owner, DecisionKind.Group, registry: registry, excludeTrait: excludeTrait); Compassion = PersonalitySystem.Bias(owner, DecisionKind.Compassion, registry: registry, excludeTrait: excludeTrait);

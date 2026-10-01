@@ -98,7 +98,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                     {
                         promise.Status = NpcCommitmentStatus.Released;
                         foreach (NpcIntent intent in owner.Personality.Intents) if (!intent.Finished && intent.Generated != null && intent.Generated.ObligationId == promise.Id)
-                            NpcIntentSystem.Finish(owner, intent, NpcIntentStatus.Abandoned, "recipient explicitly released the promise");
+                            NpcIntentSystem.Finish(game.NpcContent, owner, intent, NpcIntentStatus.Abandoned,
+                                "recipient explicitly released the promise");
                     }
             if ((source.Kind == "shared_food" || source.Kind == "shared_medicine") && source.Other == owner && PersonalitySystem.Bias(owner, DecisionKind.Compassion) > 0)
                 NpcPromises.ReleaseUnneeded(game, owner, source);

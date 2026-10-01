@@ -65,7 +65,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                             intent.TargetId == source.Subject.PersonalityIdentity || intent.CoordinatorId == source.Subject.PersonalityIdentity)))
                         {
                             if (source.Subject == owner || intent.CoordinatorId == source.Subject.PersonalityIdentity)
-                                NpcIntentSystem.Finish(owner, intent, NpcIntentStatus.Failed, source.Subject == owner ? "owner died" : "coordinator died");
+                                NpcIntentSystem.Finish(observation.Game.NpcContent, owner, intent,
+                                    NpcIntentStatus.Failed, source.Subject == owner ? "owner died" : "coordinator died");
                             else NpcGoalLifecycle.TargetDied(owner, intent, source.Other == owner, "learned that the target died", observation.Game.NpcContent);
                         }
                 if (source.Subject == owner) state.Reactions.Clear();

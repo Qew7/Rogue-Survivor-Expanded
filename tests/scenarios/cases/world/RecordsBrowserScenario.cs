@@ -25,7 +25,8 @@ static class RecordsBrowserScenario
             Check.Equal(true, drawn.Contains("No matching NPCs"), "empty filtered winner is explained");
             Check.Equal(true, drawn.Contains("Sort: Items (reversed)"), "sort and reverse controls operate");
             Check.Equal(true, drawn.Contains("Minimum items received: 9"), "numeric filter is rendered");
-            Check.Equal(true, drawn.Contains("Read Records - Alice"), "most interesting button opens NPC history");
+            Check.Equal(true, String.Concat(ui.DrawnStrings.ToArray()).Contains("Read Records - Alice"),
+                "most interesting button opens NPC history");
             Check.Equal(true, drawn.Contains("Interest score"), "winner explains its score");
             Check.Equal(true, drawn.Contains("Events: Memories | Text: x"), "timeline search and category combine");
             Check.Equal(true, drawn.Contains("Events: Intentions | Text: "), "new intentions category opens through the real browser");

@@ -94,7 +94,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                     if (!goal.Finished && goal.TargetId == source.Other.PersonalityIdentity && goal.StoryId == source.StoryId)
                     {
                         if (goal.DefinitionId == AnswerFoodRequestId)
-                            NpcIntentSystem.Finish(owner, goal, NpcIntentStatus.Completed, "observed that the recipient received food");
+                            NpcIntentSystem.Finish(observation.Game.NpcContent, owner, goal,
+                                NpcIntentStatus.Completed, "observed that the recipient received food");
                         else if (goal.DefinitionId == GroupsModule.GatherSuppliesId)
                         {
                             goal.Progress = 2; goal.NextAttempt = source.Turn;
@@ -133,7 +134,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                     if (!intent.Finished && (intent.DefinitionId == NutritionModule.RequestFoodId ||
                         intent.DefinitionId == NutritionModule.ObtainFoodId) &&
                         (NpcFoodSupply.HasFood(game, owner) || !game.Rules.IsActorHungry(owner)))
-                        NpcIntentSystem.Finish(owner, intent, NpcIntentStatus.Completed, "received needed supplies");
+                        NpcIntentSystem.Finish(game.NpcContent, owner, intent,
+                            NpcIntentStatus.Completed, "received needed supplies");
                 if (state.Reactions.Count < 4)
                 {
                     string text = PersonalitySystem.Bias(owner, DecisionKind.Compassion) < 0 ? "About time." :
@@ -147,7 +149,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                     if (!intent.Finished && intent.DefinitionId == NutritionModule.RequestFoodId &&
                         intent.TargetId == source.Subject.PersonalityIdentity && intent.StoryId == source.StoryId)
                     {
-                        if (intent.Plan == null) NpcIntentSystem.Finish(owner, intent, NpcIntentStatus.Failed, "request was declined");
+                        if (intent.Plan == null) NpcIntentSystem.Finish(game.NpcContent, owner, intent,
+                            NpcIntentStatus.Failed, "request was declined");
                         else { intent.Plan.Invalidate(); intent.Plan.NextPlanningTurn = source.Turn; intent.NextAttempt = source.Turn + 1; intent.Status = NpcIntentStatus.Active; }
                     }
         }

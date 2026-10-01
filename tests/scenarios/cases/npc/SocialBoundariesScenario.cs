@@ -20,7 +20,7 @@ static class SocialBoundariesScenario
             Check.Equal(null, NpcIntentSupport.Intent(carer, "medical_aid"), "hidden real injuries are not inspected");
             Check.Equal(1, hidden.HitPoints, "unseen target receives no imaginary treatment");
             carer.Personality.Knowledge.See(hidden, 0);
-            NpcIntent goal = NpcStorySystem.StartKnown(carer, carer.Personality.Knowledge.Person(hidden.PersonalityIdentity), world.Game.NpcContent.Capability("medical_aid"));
+            NpcIntent goal = NpcStorySystem.StartKnown(world.Game.NpcContent, carer, carer.Personality.Knowledge.Person(hidden.PersonalityIdentity), world.Game.NpcContent.Capability("medical_aid"));
             var step = new NpcPlanStep { Action = NpcPlanAction.TreatPerson, Target = hidden.PersonalityIdentity, Place = hidden.Location };
             goal.Plan = new NpcPlan(); goal.Plan.Steps.Add(step);
             var action = world.Game.NpcContent.Operator(step).Execute(new NpcExecutionContext(world.Game, carer, goal, step, new[] { hidden }, null));
@@ -28,7 +28,7 @@ static class SocialBoundariesScenario
             Check.Equal(1, carer.Inventory.CountItems, "invalid aid consumes no medicine");
             Check.Equal(false, NpcIntentSupport.HasEvent(carer, "treated_person"), "invalid aid emits no consequence");
             Session.Get.GamePreset.NpcPersonalitiesEnabled = false;
-            NpcPromises.Expire(carer); NpcGoalGenerator.Refresh(world.Game, carer);
+            NpcPromises.Expire(carer, world.Game.NpcContent); NpcGoalGenerator.Refresh(world.Game, carer);
             Check.Equal(false, action.IsLegal(), "disabled personality preset prevents social actions");
             Session.Get.GamePreset.NpcPersonalitiesEnabled = true;
             Actor listener = NpcIntentSupport.Actor(world, "listener", 2, 1);

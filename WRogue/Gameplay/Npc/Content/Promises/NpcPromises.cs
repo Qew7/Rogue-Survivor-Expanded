@@ -6,10 +6,9 @@ namespace djack.RogueSurvivor.Gameplay.Personality
 {
     static partial class NpcPromises
     {
-        public static void Expire(Actor owner, NpcContentCatalog catalog = null)
+        public static void Expire(Actor owner, NpcContentCatalog catalog)
         {
             if (owner.Personality == null || !owner.Personality.HasCommitments || owner.IsDead || owner.IsSleeping || !Session.Get.GamePreset.NpcPersonalitiesEnabled) return;
-            catalog = catalog ?? NpcContentCatalog.Default;
             int turn = owner.Location.Map.LocalTime.TurnCounter;
             foreach (NpcCommitment promise in owner.Personality.Commitments)
                 if (promise.Status == NpcCommitmentStatus.Active && turn >= promise.DueTurn)

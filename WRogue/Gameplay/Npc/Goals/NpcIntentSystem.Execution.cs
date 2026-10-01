@@ -18,7 +18,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 if (actor.Personality != null && actor.Personality.HasIntentState)
                     foreach (NpcIntent intent in actor.Personality.IntentList)
                         if (!intent.Finished && map.LocalTime.TurnCounter >= intent.Deadline)
-                            Finish(actor, intent, NpcIntentStatus.Failed, "deadline expired");
+                            Finish(game.NpcContent, actor, intent, NpcIntentStatus.Failed, "deadline expired");
             }
         }
         public static bool CanSee(RogueGame game, Actor owner, Actor target)
@@ -42,15 +42,15 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             {
                 if (intent.Finished) continue;
                 if (intent.GroupId != Guid.Empty && (owner.SocialGroup == null || owner.SocialGroup.Identity != intent.GroupId))
-                { Finish(owner, intent, NpcIntentStatus.Abandoned, "left the group that assigned this goal"); continue; }
+                { Finish(game.NpcContent, owner, intent, NpcIntentStatus.Abandoned, "left the group that assigned this goal"); continue; }
                 NpcIntentDefinition definition = game.NpcContent.Capability(intent.DefinitionId);
-                if (definition == null) { Finish(owner, intent, NpcIntentStatus.Abandoned, "unknown intent definition"); continue; }
-                if (turn >= intent.Deadline) { Finish(owner, intent, NpcIntentStatus.Failed, "deadline expired"); continue; }
+                if (definition == null) { Finish(game.NpcContent, owner, intent, NpcIntentStatus.Abandoned, "unknown intent definition"); continue; }
+                if (turn >= intent.Deadline) { Finish(game.NpcContent, owner, intent, NpcIntentStatus.Failed, "deadline expired"); continue; }
                 NpcValueDefinition value = intent.Generated == null ? null : game.NpcContent.Value(intent.Generated);
                 if (intent.Generated != null && intent.Generated.Deficit == 0 && value != null && value.CompleteWhenSatisfied)
-                { Finish(owner, intent, NpcIntentStatus.Completed, "observed that the desired state was satisfied"); continue; }
+                { Finish(game.NpcContent, owner, intent, NpcIntentStatus.Completed, "observed that the desired state was satisfied"); continue; }
                 NpcIntentOutcome outcome = definition.Assess == null ? null : definition.Assess(game, owner, intent);
-                if (outcome != null) { Finish(owner, intent, outcome.Status, outcome.Reason); continue; }
+                if (outcome != null) { Finish(game.NpcContent, owner, intent, outcome.Status, outcome.Reason); continue; }
                 Actor target = VisibleTarget(visible, intent.TargetId);
                 NpcKnownPerson known = owner.Personality.HasKnowledge ? owner.Personality.Knowledge.Person(intent.TargetId) : null;
                 if (target == null && known != null && known.SeenTurn > intent.LastKnownTurn && known.Confidence >= 40)
@@ -64,10 +64,10 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                     intent.KnownAttitude = PersonalitySystem.Attitude(owner, target);
                     if (!definition.AllowHostile &&
                         (intent.Generated == null || intent.Generated.SubjectId != owner.PersonalityIdentity) && game.Rules.AreEnemies(owner, target))
-                    { Finish(owner, intent, NpcIntentStatus.Abandoned, "target became hostile"); continue; }
+                    { Finish(game.NpcContent, owner, intent, NpcIntentStatus.Abandoned, "target became hostile"); continue; }
                 }
                 if (definition.Score(owner, intent, game.NpcContent) < definition.ThresholdFor(intent))
-                { Finish(owner, intent, NpcIntentStatus.Abandoned, "motivation changed"); continue; }
+                { Finish(game.NpcContent, owner, intent, NpcIntentStatus.Abandoned, "motivation changed"); continue; }
                 bool pause = !definition.Departure && (danger && !definition.ActDuringDanger || followingOrder ||
                     (definition.PauseWhenTired && game.Rules.IsActorTired(owner)) || (definition.PauseWhenHungry && game.Rules.IsActorHungry(owner)));
                 if (pause) intent.Status = NpcIntentStatus.Paused;
@@ -75,10 +75,9 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                     ? NpcIntentStatus.Waiting : NpcIntentStatus.Active;
             }
         }
-        public static NpcIntent Select(Actor owner, bool departureOnly = false, NpcContentCatalog catalog = null, bool dangerOnly = false)
+        public static NpcIntent Select(NpcContentCatalog catalog, Actor owner, bool departureOnly = false, bool dangerOnly = false)
         {
             if (!Enabled(owner) || !owner.Personality.HasIntentState) return null;
-            catalog = catalog ?? NpcContentCatalog.Default;
             int turn = owner.Location.Map.LocalTime.TurnCounter; NpcIntent best = null; int bestScore = Int32.MinValue;
             foreach (NpcIntent intent in owner.Personality.IntentList)
             {
@@ -93,10 +92,10 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             }
             return best;
         }
-        public static void Block(Actor owner, NpcIntent intent, string reason)
+        public static void Block(NpcContentCatalog catalog, Actor owner, NpcIntent intent, string reason)
         {
             intent.NextAttempt = owner.Location.Map.LocalTime.TurnCounter + 8;
-            if (++intent.BlockedAttempts >= 8) Finish(owner, intent, NpcIntentStatus.Failed, reason);
+            if (++intent.BlockedAttempts >= 8) Finish(catalog, owner, intent, NpcIntentStatus.Failed, reason);
         }
 
     }

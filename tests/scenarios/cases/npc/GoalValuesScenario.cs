@@ -19,8 +19,8 @@ static class GoalValuesScenario
                 state.Danger = state.Violation = state.ThreatConfidence = 100;
                 NpcGoalGenerator.Refresh(world.Game, observer);
             }
-            Check.Equal(NpcGoalValue.Justice, NpcIntentSystem.Select(lawful).Generated.Value, "lawful NPC values addressing wrongdoing");
-            Check.Equal(NpcGoalValue.Safety, NpcIntentSystem.Select(timid).Generated.Value, "timid NPC values safety in identical known circumstances");
+            Check.Equal(NpcGoalValue.Justice, NpcIntentSystem.Select(world.Game.NpcContent, lawful).Generated.Value, "lawful NPC values addressing wrongdoing");
+            Check.Equal(NpcGoalValue.Safety, NpcIntentSystem.Select(world.Game.NpcContent, timid).Generated.Value, "timid NPC values safety in identical known circumstances");
             Check.Equal(0, lawful.Personality.Events.Count, "the generator needs no scripted incident");
             int hp = target.HitPoints; NpcIntentSupport.Turn(world, lawful);
             Check.Equal(true, NpcIntentSupport.HasEvent(lawful, "confronted"), "justice goal performs a real warning");

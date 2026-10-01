@@ -24,7 +24,7 @@ static class StoryGroupBoundariesScenario
             NpcIntentSupport.Turn(world, solitary);
             Check.Equal(true, NpcIntentSupport.HasEvent(leader, "shelter_declined"), "rejection is actually spoken to the leader");
             NpcKnownPerson recipient = new NpcKnownPerson { Id = solitary.PersonalityIdentity, Name = solitary.UnmodifiedName, Place = solitary.Location };
-            NpcIntent gather = NpcStorySystem.StartKnown(collector, recipient, world.Game.NpcContent.Capability("gather_group_supplies"), destination: new Location(world.Map, new Point(2, 2)), groupId: leader.SocialGroup.Identity);
+            NpcIntent gather = NpcStorySystem.StartKnown(world.Game.NpcContent, collector, recipient, world.Game.NpcContent.Capability("gather_group_supplies"), destination: new Location(world.Map, new Point(2, 2)), groupId: leader.SocialGroup.Identity);
             var stock = new ItemFood(world.Game.GameItems.CANNED_FOOD) { Quantity = 3 }; world.Map.DropItemAt(stock, new Point(2, 2));
             world.Place(collector, 1, 2);
             var take = new ActionNpcIntent(collector, world.Game, gather, food: stock);

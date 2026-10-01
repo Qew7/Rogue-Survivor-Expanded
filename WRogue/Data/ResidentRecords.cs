@@ -189,8 +189,9 @@ namespace djack.RogueSurvivor.Data
             foreach (ObservedEvent observed in actor.Personality.Events) Observe(actor, observed);
             foreach (NpcIntent intent in actor.Personality.Intents)
             {
-                IntentChanged(actor, intent, "started", "recovered from available intent state");
-                if (intent.Finished) IntentChanged(actor, intent, intent.Status.ToString().ToLowerInvariant(), intent.Outcome);
+                IntentChanged(actor, intent, "started", "recovered from available intent state", NpcContentCatalog.Default);
+                if (intent.Finished) IntentChanged(actor, intent, intent.Status.ToString().ToLowerInvariant(),
+                    intent.Outcome, NpcContentCatalog.Default);
             }
             List<RelationshipRecord> relations = new List<RelationshipRecord>(actor.Personality.People);
             relations.AddRange(actor.Personality.Groups);

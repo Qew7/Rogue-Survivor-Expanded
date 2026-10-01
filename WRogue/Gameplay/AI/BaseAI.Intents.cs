@@ -27,12 +27,12 @@ namespace djack.RogueSurvivor.Gameplay.AI
         }
         protected ActorAction BehaviorNpcEmergency(RogueGame game, List<Actor> visible)
         {
-            NpcIntent intent = NpcIntentSystem.Select(m_Actor, catalog: game.NpcContent, dangerOnly: true);
+            NpcIntent intent = NpcIntentSystem.Select(game.NpcContent, m_Actor, dangerOnly: true);
             return intent == null ? null : BehaviorNpcPlan(game, intent, visible);
         }
         protected ActorAction BehaviorNpcDeparture(RogueGame game, List<Actor> visible)
         {
-            NpcIntent intent = NpcIntentSystem.Select(m_Actor, true, game.NpcContent);
+            NpcIntent intent = NpcIntentSystem.Select(game.NpcContent, m_Actor, true);
             if (intent == null || m_Actor.Leader == null) return null;
             return BehaviorNpcPlan(game, intent, visible);
         }
@@ -48,7 +48,7 @@ namespace djack.RogueSurvivor.Gameplay.AI
                 if (action.IsLegal()) return action;
             }
             ActorAction groupPlan = BehaviorNpcGroupPlans(game, visible); if (groupPlan != null) return groupPlan;
-            NpcIntent intent = NpcIntentSystem.Select(m_Actor, catalog: game.NpcContent); if (intent == null) return BehaviorNpcRumors(game, visible);
+            NpcIntent intent = NpcIntentSystem.Select(game.NpcContent, m_Actor); if (intent == null) return BehaviorNpcRumors(game, visible);
             return BehaviorNpcPlan(game, intent, visible);
         }
     }

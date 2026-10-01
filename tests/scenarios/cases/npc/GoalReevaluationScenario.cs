@@ -13,12 +13,12 @@ static class GoalReevaluationScenario
             Actor target = NpcIntentSupport.Actor(world, "target", 2, 1);
             owner.Personality.Knowledge.See(target, 0); NpcKnownPerson known = owner.Personality.Knowledge.Person(target.PersonalityIdentity);
             known.Danger = known.Violation = 100; known.ThreatConfidence = 90;
-            NpcGoalGenerator.Refresh(world.Game, owner); NpcIntent warning = NpcIntentSystem.Select(owner);
+            NpcGoalGenerator.Refresh(world.Game, owner); NpcIntent warning = NpcIntentSystem.Select(world.Game.NpcContent, owner);
             Check.Equal(NpcGoalValue.Justice, warning.Generated.Value, "initial values favor a warning");
             owner.Personality.AddTrait(new TraitInstance("fearful"));
             NpcIntentSupport.Turn(world, owner);
             Check.Equal(NpcIntentStatus.Abandoned, warning.Status, "new values invalidate the original motivation");
-            Check.Equal(NpcGoalValue.Safety, NpcIntentSystem.Select(owner).Generated.Value, "unchanged facts support a newly preferred desired state");
+            Check.Equal(NpcGoalValue.Safety, NpcIntentSystem.Select(world.Game.NpcContent, owner).Generated.Value, "unchanged facts support a newly preferred desired state");
             Check.Equal(false, NpcIntentSupport.HasEvent(owner, "confronted"), "abandoned goal creates no completed warning");
             Check.Equal(true, world.Game.Rules.GridDistance(owner.Location.Position, target.Location.Position) > 1, "new goal produces actual retreat");
         });

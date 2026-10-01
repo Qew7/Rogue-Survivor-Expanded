@@ -29,7 +29,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             c.Fact(fact); c.Value(new NpcValueDefinition(value, description, null, importance));
             c.Capability(new NpcIntentDefinition(id, description, 180, 360) { ResultFacts = (catalog, g) => catalog.Facts.Mask(fact),
                 DirectAction = action, AssignedScore = (catalog, owner, target) =>
-                    importance(new NpcMotivation(owner, target, catalog.Personalities, catalog)),
+                    importance(new NpcMotivation(catalog, owner, target)),
                 AllowHostile = combat, ActDuringDanger = combat, AllowQuestions = true });
             c.Operator(new NpcOperatorDefinition(id, null, context => action(new NpcActionContext(context))));
             c.OperatorSource(new NpcOperatorSource(id, catalog => catalog.Facts.Mask(fact), d => {

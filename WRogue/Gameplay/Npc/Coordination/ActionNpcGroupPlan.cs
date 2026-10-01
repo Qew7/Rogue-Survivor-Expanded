@@ -39,9 +39,10 @@ namespace djack.RogueSurvivor.Engine.Actions
                 plan.CauseId, id);
             if (Definition.CoordinatorCapability != null)
             {
-                NpcIntent goal = NpcStorySystem.StartKnown(m_Actor, m_Actor.Personality.Knowledge.Person(plan.BeneficiaryId),
+                NpcIntent goal = NpcStorySystem.StartKnown(m_Game.NpcContent, m_Actor,
+                    m_Actor.Personality.Knowledge.Person(plan.BeneficiaryId),
                     m_Game.NpcContent.Capability(Definition.CoordinatorCapability), plan.CauseId, id,
-                    groupId: group == null ? Guid.Empty : group.Identity, catalog: m_Game.NpcContent);
+                    groupId: group == null ? Guid.Empty : group.Identity);
                 if (goal != null) goal.Status = NpcIntentStatus.Waiting;
             }
             PersonalitySystem.Report(m_Game, new SignificantEvent(Definition.EventId, m_Actor, listener, m_Actor.Location.Map,

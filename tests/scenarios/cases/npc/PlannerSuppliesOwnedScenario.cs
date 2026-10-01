@@ -15,7 +15,7 @@ static class PlannerSuppliesOwnedScenario
             Actor collector = NpcIntentSupport.Actor(world, "collector", 2, 1, "generous");
             leader.AddFollower(collector); leader.AddFollower(hungry);
             NpcIntentSupport.Food(world, collector, 3); hungry.FoodPoints = Session.Get.GamePreset.HungerPoints - 1;
-            NpcIntent goal = NpcStorySystem.StartKnown(collector, new NpcKnownPerson { Id = hungry.PersonalityIdentity, Name = hungry.UnmodifiedName, Place = hungry.Location },
+            NpcIntent goal = NpcStorySystem.StartKnown(world.Game.NpcContent, collector, new NpcKnownPerson { Id = hungry.PersonalityIdentity, Name = hungry.UnmodifiedName, Place = hungry.Location },
                 world.Game.NpcContent.Capability("gather_group_supplies"), destination: new Location(world.Map, new Point(5, 1)), groupId: leader.SocialGroup.Identity);
             goal.CoordinatorId = leader.PersonalityIdentity; goal.CoordinatorPlace = leader.Location;
             NpcIntentSupport.Turn(world, collector);

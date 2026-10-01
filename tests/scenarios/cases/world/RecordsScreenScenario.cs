@@ -39,7 +39,7 @@ static class RecordsScreenScenario
                 Check.Call(world.Game, "ReadRecordsFrom", new[] { typeof(string) }, directory);
                 Check.Equal(true, ui.DrawnStrings.Contains("Read Records - All residents"),
                     "all-resident timeline opens from save selection");
-                Check.Equal(true, ui.DrawnStrings.Contains("Read Records - recorded NPC"),
+                Check.Equal(true, String.Concat(ui.DrawnStrings.ToArray()).Contains("Read Records - recorded NPC"),
                     "individual resident timeline opens from resident selection");
                 Check.Equal(true, String.Join(" ", ui.DrawnStrings.ToArray()).Contains("faced starvation"),
                     "event text is rendered");

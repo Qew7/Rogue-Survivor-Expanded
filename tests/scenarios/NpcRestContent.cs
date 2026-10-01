@@ -52,7 +52,8 @@ sealed class NpcRestContent : INpcContentModule, INpcGoalSource
             var source = new SignificantEvent("regained_stamina", m_Actor, null, m_Actor.Location.Map, m_Actor.Location.Position,
                 m_Actor.Location.Map.LocalTime.TurnCounter, causeId: context.Goal.CauseId, storyId: context.Goal.StoryId) { Units = m_Actor.StaminaPoints - before };
             PersonalitySystem.Report(m_Game, source);
-            NpcIntentSystem.Finish(m_Actor, context.Goal, NpcIntentStatus.Completed, "actually regained stamina");
+            NpcIntentSystem.Finish(m_Game.NpcContent, m_Actor, context.Goal,
+                NpcIntentStatus.Completed, "actually regained stamina");
         }
     }
 }

@@ -17,7 +17,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 if (goal.Plan != null) { goal.Plan.Invalidate(); if (goal.Plan.CompletedFacts != null) goal.Plan.CompletedFacts.Clear(); goal.Plan.NextPlanningTurn = context.Owner.Location.Map.LocalTime.TurnCounter; }
                 return;
             }
-            if (goal.Plan == null) { NpcIntentSystem.Finish(context.Owner, goal, NpcIntentStatus.Completed, "performed the intended action"); return; }
+            if (goal.Plan == null) { NpcIntentSystem.Finish(context.Game.NpcContent, context.Owner, goal,
+                NpcIntentStatus.Completed, "performed the intended action"); return; }
             if (retain && !observed.Empty)
             {
                 if (goal.Plan.CompletedFacts == null) goal.Plan.CompletedFacts = new System.Collections.Generic.List<string>();
@@ -26,7 +27,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             }
             var domain = new NpcPlanDomain(context.Game, context.Owner, goal, context.Visible);
             if ((domain.InitialState | observed).Contains(goal.Plan.DesiredState))
-                NpcIntentSystem.Finish(context.Owner, goal, NpcIntentStatus.Completed, "actually satisfied the desired state");
+                NpcIntentSystem.Finish(context.Game.NpcContent, context.Owner, goal,
+                    NpcIntentStatus.Completed, "actually satisfied the desired state");
             else if (context.Step != null && goal.Plan.Current == context.Step) goal.Plan.Cursor++;
         }
         public static bool Owned(RogueGame game, Actor owner, NpcIntent goal)

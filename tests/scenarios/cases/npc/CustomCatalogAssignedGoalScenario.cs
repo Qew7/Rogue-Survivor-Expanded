@@ -31,7 +31,7 @@ static class CustomCatalogAssignedGoalScenario
             Check.Equal(true, score >= retaliation.Threshold,
                 "module trait makes the assigned goal eligible");
 
-            NpcIntent goal = NpcStorySystem.StartKnown(owner, known, retaliation, catalog: active);
+            NpcIntent goal = NpcStorySystem.StartKnown(world.Game.NpcContent, owner, known, retaliation);
             Check.Equal(true, goal != null, "assigned goal starts using the active trait registry");
             Check.Equal(score, goal.Priority, "admission records the same score used for execution");
             Check.Equal(true, NpcPlanExecution.Owned(world.Game, owner, goal),

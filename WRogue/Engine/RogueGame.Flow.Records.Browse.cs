@@ -9,7 +9,8 @@ namespace djack.RogueSurvivor.Engine
 {
     partial class RogueGame
     {
-        void DrawRecordsChoices(string title, IList<string> entries, int selected, string notice, string footer)
+        void DrawRecordsChoices(string title, IList<string> entries, int selected, string notice, string footer,
+            RecordsNameColors names = null)
         {
             m_UI.UI_Clear(Color.Black); DrawHeader();
             m_UI.UI_DrawStringBold(Color.Yellow, TruncateString(title, 118), 0, BOLD_LINE_SPACING);
@@ -17,11 +18,18 @@ namespace djack.RogueSurvivor.Engine
             int y = 4 * BOLD_LINE_SPACING, first = selected / 38 * 38;
             for (int i = first; i < entries.Count && i < first + 38; i++)
             {
-                m_UI.UI_DrawStringBold(i == selected ? Color.LightGreen : Color.White,
-                    (i == selected ? "> " : "  ") + TruncateString(entries[i], 116), 0, y);
+                DrawRecordsText((i == selected ? "> " : "  ") + TruncateString(entries[i], 116), 0, y,
+                    i == selected ? Color.LightGreen : Color.White, names);
                 y += BOLD_LINE_SPACING;
             }
             DrawFootnote(Color.White, footer); m_UI.UI_Repaint();
+        }
+        void DrawRecordsText(string text, int x, int y, Color plain, RecordsNameColors names)
+        {
+            if (names == null) { m_UI.UI_DrawStringBold(plain, text, x, y); return; }
+            foreach (RecordsTextRun run in names.Runs(text, plain))
+                m_UI.UI_DrawStringBold(run.Color, text.Substring(run.Start, run.Length),
+                    x + m_UI.UI_BoldTextWidth(text.Substring(0, run.Start)), y);
         }
         static int MoveRecordsChoice(Keys key, int selected, int count)
         {
@@ -36,6 +44,7 @@ namespace djack.RogueSurvivor.Engine
         void BrowseRecords(RecordsSave save)
         {
             RecordsQuery query = new RecordsQuery(); int selected = 0;
+            var names = new RecordsNameColors(save.Records.Residents);
             Logger.WriteLine(Logger.Stage.RUN_MAIN, "records browser ready");
             while (true)
             {
@@ -45,7 +54,7 @@ namespace djack.RogueSurvivor.Engine
                 selected = Math.Min(selected, labels.Count - 1);
                 DrawRecordsChoices("Read Records - " + Path.GetFileName(save.Path), labels, selected,
                     "Matches " + people.Count + "/" + save.Profiles.Count + " | Sort: " + query.Sort + (query.Reverse ? " (reversed)" : "") + " | " + query.FilterSummary(),
-                    "ENTER read | S search | F filters | O sort | V reverse | I most interesting | R reset | ESC back");
+                    "ENTER read | S search | F filters | O sort | V reverse | I most interesting | R reset | ESC back", names);
                 Keys key = m_UI.UI_WaitKey().KeyCode;
                 if (key == Keys.Escape) return;
                 if (key == Keys.S)
@@ -128,6 +137,7 @@ namespace djack.RogueSurvivor.Engine
         void ShowRecordsTimeline(RecordsSave save, ResidentRecord resident, RecordsQuery query)
         {
             string title = resident == null ? "All residents" : resident.Name;
+            var names = new RecordsNameColors(save.Records.Residents);
             Logger.WriteLine(Logger.Stage.RUN_MAIN, "records screen ready: " + title);
             string search = ""; RecordsEventFilter filter = RecordsEventFilter.All;
             int first = 0; const int pageSize = 40;
@@ -142,11 +152,11 @@ namespace djack.RogueSurvivor.Engine
                 }
                 int last = Math.Max(0, lines.Count - pageSize); first = Math.Min(first, last);
                 m_UI.UI_Clear(Color.Black); DrawHeader();
-                m_UI.UI_DrawStringBold(Color.Yellow, "Read Records - " + title, 0, BOLD_LINE_SPACING);
+                DrawRecordsText("Read Records - " + title, 0, BOLD_LINE_SPACING, Color.Yellow, names);
                 m_UI.UI_DrawStringBold(Color.Gray, "Events: " + filter + " | Text: " + search, 0, 2 * BOLD_LINE_SPACING);
                 int y = 4 * BOLD_LINE_SPACING;
                 for (int i = first; i < lines.Count && i < first + pageSize; i++)
-                { m_UI.UI_DrawStringBold(Color.White, TruncateString(lines[i], 120), 0, y); y += BOLD_LINE_SPACING; }
+                { DrawRecordsText(TruncateString(lines[i], 120), 0, y, Color.White, names); y += BOLD_LINE_SPACING; }
                 DrawFootnote(Color.White, "Up/Down PgUp/PgDn Home/End | S search events | F event category | R reset | ESC back"); m_UI.UI_Repaint();
                 Keys key = m_UI.UI_WaitKey().KeyCode;
                 if (key == Keys.Escape) return;

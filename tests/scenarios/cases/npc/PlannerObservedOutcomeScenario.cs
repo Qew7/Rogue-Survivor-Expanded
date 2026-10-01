@@ -16,10 +16,10 @@ static class PlannerObservedOutcomeScenario
             Actor absent = NpcIntentSupport.Actor(world, "absent", 25, 1, "generous");
             NpcIntentSupport.Food(world, donor, 3);
             var known = new NpcKnownPerson { Id = recipient.PersonalityIdentity, Name = recipient.UnmodifiedName, Place = recipient.Location };
-            NpcIntent gift = NpcStorySystem.StartKnown(donor, known, world.Game.NpcContent.Capability("answer_food_request"));
-            NpcIntent waiting = NpcStorySystem.StartKnown(watcher, known, world.Game.NpcContent.Capability("answer_food_request"), storyId: gift.StoryId);
-            NpcIntent unseen = NpcStorySystem.StartKnown(absent, known, world.Game.NpcContent.Capability("answer_food_request"), storyId: gift.StoryId);
-            NpcIntent task = NpcStorySystem.StartKnown(collector, known, world.Game.NpcContent.Capability("gather_group_supplies"), storyId: gift.StoryId);
+            NpcIntent gift = NpcStorySystem.StartKnown(world.Game.NpcContent, donor, known, world.Game.NpcContent.Capability("answer_food_request"));
+            NpcIntent waiting = NpcStorySystem.StartKnown(world.Game.NpcContent, watcher, known, world.Game.NpcContent.Capability("answer_food_request"), storyId: gift.StoryId);
+            NpcIntent unseen = NpcStorySystem.StartKnown(world.Game.NpcContent, absent, known, world.Game.NpcContent.Capability("answer_food_request"), storyId: gift.StoryId);
+            NpcIntent task = NpcStorySystem.StartKnown(world.Game.NpcContent, collector, known, world.Game.NpcContent.Capability("gather_group_supplies"), storyId: gift.StoryId);
             task.CoordinatorId = watcher.PersonalityIdentity; task.CoordinatorPlace = watcher.Location;
             NpcIntentSupport.Turn(world, donor);
             Check.Equal(NpcIntentStatus.Completed, waiting.Status, "observed actual aid satisfies another helper's desired result");

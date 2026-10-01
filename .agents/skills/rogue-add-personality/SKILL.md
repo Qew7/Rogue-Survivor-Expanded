@@ -29,6 +29,8 @@ For a causal action, pass the real earlier event ID in `CauseId`; generated goal
 
 For a trait explanation in Read Records, compare the chosen goal's actual importance with the same value evaluated while excluding that one trait. Name the trait only when this calculation yields a positive contribution; do not claim it was the sole cause of the action. Event-earned traits should have a reachable `MemoryOutcome` before skill fallbacks, and a scenario should prove both the real trait grant and its saved record.
 
+Pass the active `NpcContentCatalog` to goal admission, selection, completion and blocked-goal handling. Test custom content through the game's catalog; the runtime must not silently substitute the default catalog. Read Records colors archived NPC names by faction, with a neutral color for names shared across factions.
+
 Add a deterministic named scenario in its own file under `tests/scenarios/cases/npc/`. Exercise the real event, decision, and resolution path; assert the gameplay effect and a boundary such as an unseen event, duplicate event, missing target, disabled preset, or ineligible outcome. If saved state changes, add a save/load scenario and update `docs/save-format.md`. If new production files are added, list them in `WRogue/RogueSurvivor.csproj`.
 
 Run `sh tests/scenario.sh <name>` during development and `docker build --target test .` before finishing. Run `bash tests/e2e.sh` if startup, input, rendering, UI, or assets change. Do not restart a running game container unless the user asks.

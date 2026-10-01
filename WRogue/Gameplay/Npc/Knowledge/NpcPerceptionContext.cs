@@ -20,8 +20,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public readonly NpcContentCatalog Catalog;
         public readonly NpcFact Fact;
         public readonly int Improvement;
-        public NpcReportContext(Actor listener, NpcFact fact, int improvement, NpcContentCatalog catalog = null)
-        { Listener = listener; Fact = fact; Improvement = improvement; Catalog = catalog ?? NpcContentCatalog.Default; }
+        public NpcReportContext(Actor listener, NpcFact fact, int improvement, NpcContentCatalog catalog)
+        { Listener = listener; Fact = fact; Improvement = improvement; Catalog = catalog; }
         public void RememberPlace(string kind, int minimumConfidence = 40)
         {
             if (Fact.Confidence >= minimumConfidence)

@@ -34,7 +34,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             {
                 if (domain.InitialState.Contains(plan.DesiredState))
                 {
-                    NpcIntentSystem.Finish(owner, goal, NpcIntentStatus.Completed, "observed all desired effects");
+                    NpcIntentSystem.Finish(catalog, owner, goal, NpcIntentStatus.Completed,
+                        "observed all desired effects");
                     return null;
                 }
                 NpcPlanStep step = plan.Current;
@@ -52,7 +53,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                     plan.NextPlanningTurn = turn + 8;
                     if (steps == null || steps.Count == 0)
                     {
-                        NpcIntentSystem.Block(owner, goal, "no plan from available knowledge and actions");
+                        NpcIntentSystem.Block(catalog, owner, goal,
+                            "no plan from available knowledge and actions");
                         return null;
                     }
                     plan.Steps.AddRange(steps);
@@ -78,7 +80,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 plan.Reject(step, turn);
                 domain = new NpcPlanDomain(game, owner, goal, visible, catalog);
             }
-            NpcIntentSystem.Block(owner, goal, "plan action is unavailable");
+            NpcIntentSystem.Block(catalog, owner, goal, "plan action is unavailable");
             return null;
         }
 

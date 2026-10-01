@@ -384,6 +384,7 @@
     <Compile Include="Engine\RogueGame.PlayerActions.Relationships.cs" />
     <Compile Include="Engine\RogueGame.Flow.Records.cs" />
     <Compile Include="Engine\RecordsReader.cs" />
+    <Compile Include="Engine\RecordsNameColors.cs" />
     <Compile Include="Engine\RecordsReader.Causes.cs" />
     <Compile Include="Data\ResidentRecords.cs" />
     <Compile Include="Engine\RogueGame.MouseMove.cs" />

@@ -40,7 +40,7 @@ sealed class WatchPatrolContent : INpcContentModule
         }, (a, b, p) => b.PersonalityIdentity == p.CollectorId, (a, p) => "Survey the nearby lookout.",
         (game, owner, source) => {
             if (source.Task.CollectorId != owner.PersonalityIdentity) return;
-            NpcIntent goal = NpcStorySystem.StartKnown(owner, new NpcKnownPerson { Id = owner.PersonalityIdentity,
+            NpcIntent goal = NpcStorySystem.StartKnown(game.NpcContent, owner, new NpcKnownPerson { Id = owner.PersonalityIdentity,
                 Name = owner.UnmodifiedName, Place = owner.Location }, game.NpcContent.Capability("survey_area"), source.Id,
                 source.StoryId, source.Task.Destination, owner.SocialGroup.Identity);
             if (goal != null) source.Task.Stage = "surveying";

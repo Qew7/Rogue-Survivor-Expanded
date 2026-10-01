@@ -95,11 +95,13 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             if (source.Kind == "supplies_delivered" && source.Other == owner)
                 foreach (NpcIntent goal in owner.Personality.Intents)
                     if (!goal.Finished && goal.DefinitionId == CoordinateSuppliesId && goal.StoryId == source.StoryId)
-                        NpcIntentSystem.Finish(owner, goal, NpcIntentStatus.Completed, "collector reported successful delivery");
+                        NpcIntentSystem.Finish(observation.Game.NpcContent, owner, goal,
+                            NpcIntentStatus.Completed, "collector reported successful delivery");
             if (source.Kind == "task_declined" && source.Other == owner)
                 foreach (NpcIntent goal in owner.Personality.Intents)
                     if (!goal.Finished && goal.DefinitionId == CoordinateSuppliesId && goal.StoryId == source.StoryId)
-                        NpcIntentSystem.Finish(owner, goal, NpcIntentStatus.Failed, "collector declined the task");
+                        NpcIntentSystem.Finish(observation.Game.NpcContent, owner, goal,
+                            NpcIntentStatus.Failed, "collector declined the task");
         }
     }
 }

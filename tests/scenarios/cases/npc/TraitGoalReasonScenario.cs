@@ -13,15 +13,15 @@ static class TraitGoalReasonScenario
             Session.Get.GamePreset = GamePreset.BuiltIn(GameMode.GM_STANDARD);
             Actor helper = NpcIntentSupport.Actor(world, "helper", 1, 1, "kind");
             Actor neighbor = NpcIntentSupport.Actor(world, "neighbor", 2, 1);
-            NpcGeneratedGoal goal = NpcValues.Evaluate(helper, world.Game.NpcContent.Value(NpcGoalValue.Care),
-                neighbor.PersonalityIdentity, 0, 100, 100, 100, 0, world.Game.NpcContent.Personalities,
-                world.Game.NpcContent);
+            NpcGeneratedGoal goal = NpcValues.Evaluate(world.Game.NpcContent, helper,
+                world.Game.NpcContent.Value(NpcGoalValue.Care),
+                neighbor.PersonalityIdentity, 0, 100, 100, 100, 0);
             string reason = NpcValues.TraitInfluence(helper, goal, world.Game.NpcContent);
             Check.Equal(true, reason != null && reason.Contains("trait Kind") && reason.Contains("25"),
                 "reason reports the measured importance contribution of Kind");
-            NpcGeneratedGoal unchanged = NpcValues.Evaluate(helper, world.Game.NpcContent.Value(NpcGoalValue.Nutrition),
-                helper.PersonalityIdentity, 0, 100, 100, 100, 0, world.Game.NpcContent.Personalities,
-                world.Game.NpcContent);
+            NpcGeneratedGoal unchanged = NpcValues.Evaluate(world.Game.NpcContent, helper,
+                world.Game.NpcContent.Value(NpcGoalValue.Nutrition),
+                helper.PersonalityIdentity, 0, 100, 100, 100, 0);
             Check.Equal(null, NpcValues.TraitInfluence(helper, unchanged, world.Game.NpcContent),
                 "unrelated nutrition goal gets no invented trait cause");
             NpcKnownPerson target = new NpcKnownPerson { Id = neighbor.PersonalityIdentity,

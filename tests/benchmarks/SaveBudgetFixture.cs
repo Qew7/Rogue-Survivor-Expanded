@@ -81,7 +81,8 @@ static class SaveBudgetFixture
             Turn, 180, 180, generated.Utility, eventBase + 1, "budget:" + eventBase, 0, generated);
         intent.Plan = new NpcPlan { Desired = generated.Result };
         intent.Plan.Steps.Add(new NpcPlanStep { Action = NpcPlanAction.GiveFood, Target = peer.PersonalityIdentity, Place = peer.Location });
-        session.ResidentRecords.IntentChanged(actor, intent, "started", "performance fixture commitment");
+        session.ResidentRecords.IntentChanged(actor, intent, "started", "performance fixture commitment",
+            NpcContentCatalog.Default);
     }
 
     public static void Validate(Session session)

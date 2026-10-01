@@ -17,18 +17,18 @@ static class GroupPlanParticipantExitScenario
             Actor target = NpcIntentSupport.Actor(world, "target", 4, 1);
             leader.AddFollower(helper);
             var known = new NpcKnownPerson { Id = target.PersonalityIdentity, Name = target.UnmodifiedName, Place = target.Location };
-            NpcIntent first = NpcStorySystem.StartKnown(leader, known, world.Game.NpcContent.Capability("seek_companion"), storyId: "shared-exit");
-            NpcIntent second = NpcStorySystem.StartKnown(helper, known, world.Game.NpcContent.Capability("seek_companion"), storyId: "shared-exit");
+            NpcIntent first = NpcStorySystem.StartKnown(world.Game.NpcContent, leader, known, world.Game.NpcContent.Capability("seek_companion"), storyId: "shared-exit");
+            NpcIntent second = NpcStorySystem.StartKnown(world.Game.NpcContent, helper, known, world.Game.NpcContent.Capability("seek_companion"), storyId: "shared-exit");
             Check.Equal(true, first != null && second != null, "two real goals share one director episode");
             Location destination = new Location(world.Map, new Point(6, 1));
             var plan = new NpcGroupPlan { StoryId = "shared-exit", Kind = "group_shelter", Stage = "seeking", Destination = destination };
             leader.SocialGroup.Plan = plan;
-            NpcIntentSystem.Finish(helper, second, NpcIntentStatus.Abandoned, "motivation changed");
+            NpcIntentSystem.Finish(world.Game.NpcContent, helper, second, NpcIntentStatus.Abandoned, "motivation changed");
             Check.Equal(false, Session.Get.NpcDirector.Find(plan.StoryId).Finished,
                 "one withdrawn participant does not end the shared episode");
             Check.Equal("seeking", plan.Stage, "the remaining participant keeps the active group plan");
             Check.Equal(destination, plan.Destination, "the shared destination survives a participant's withdrawal");
-            NpcIntentSystem.Finish(leader, first, NpcIntentStatus.Abandoned, "motivation changed");
+            NpcIntentSystem.Finish(world.Game.NpcContent, leader, first, NpcIntentStatus.Abandoned, "motivation changed");
             Check.Equal("failed", Session.Get.NpcDirector.Find(plan.StoryId).Stage,
                 "director reaches a terminal result when every role has ended");
             Check.Equal("failed", plan.Stage, "the group plan follows the director's terminal result");

@@ -18,7 +18,8 @@ namespace djack.RogueSurvivor.Engine
             DoSay(buyer, seller, "Agreed. These supplies for your food.", Sayflags.IS_FREE_ACTION);
             NpcPlanExecution.Publish(this, "bartered_food", buyer, seller, goal);
             if (goal.DefinitionId == NutritionModule.ObtainFoodId || goal.DefinitionId == NutritionModule.RequestFoodId)
-                NpcIntentSystem.Finish(buyer, goal, NpcIntentStatus.Completed, "actually exchanged supplies for food");
+                NpcIntentSystem.Finish(NpcContent, buyer, goal, NpcIntentStatus.Completed,
+                    "actually exchanged supplies for food");
         }
     }
 }

@@ -360,6 +360,13 @@ namespace djack.RogueSurvivor
             m_GameCanvas.AddString(m_BoldFont, color, text, gx, gy);
         }
 
+        public int UI_BoldTextWidth(string text)
+        {
+            if (String.IsNullOrEmpty(text)) return 0;
+            return TextRenderer.MeasureText(text, m_BoldFont, new Size(10000, 100),
+                TextFormatFlags.NoPadding | TextFormatFlags.SingleLine).Width;
+        }
+
         public void UI_DrawRect(Color color, Rectangle rect)
         {
             if (rect.Width <= 0 || rect.Height <= 0)

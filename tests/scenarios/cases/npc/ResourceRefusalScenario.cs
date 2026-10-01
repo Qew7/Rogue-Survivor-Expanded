@@ -16,7 +16,7 @@ static class ResourceRefusalScenario
             taker.FoodPoints = Session.Get.GamePreset.HungerPoints - 1;
             Location cache = new Location(world.Map, new Point(1, 2));
             world.Map.DropItemAt(new ItemFood(world.Game.GameItems.CANNED_FOOD) { Quantity = 2 }, cache.Position);
-            NpcIntent reservation = NpcStorySystem.StartKnown(holder, new NpcKnownPerson { Id = taker.PersonalityIdentity, Name = taker.UnmodifiedName,
+            NpcIntent reservation = NpcStorySystem.StartKnown(world.Game.NpcContent, holder, new NpcKnownPerson { Id = taker.PersonalityIdentity, Name = taker.UnmodifiedName,
                 Place = taker.Location }, world.Game.NpcContent.Capability("seek_companion"));
             Session.Get.NpcDirector.Reserve(reservation.StoryId, cache);
             NpcIntentSupport.Turn(world, taker); NpcIntentSupport.Turn(world, holder);

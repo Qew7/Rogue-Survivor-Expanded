@@ -63,8 +63,9 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 if (story != null) Session.Get.NpcDirector.Link(story, existing.StoryId, owner, source.Id);
                 source.Task.Stage = "responding"; return;
             }
-            NpcIntent goal = NpcStorySystem.StartKnown(owner, threat, game.NpcContent.Capability("defend_person"), source.Id,
-                source.StoryId, groupId: owner.SocialGroup.Identity, catalog: game.NpcContent);
+            NpcIntent goal = NpcStorySystem.StartKnown(game.NpcContent, owner, threat,
+                game.NpcContent.Capability("defend_person"), source.Id, source.StoryId,
+                groupId: owner.SocialGroup.Identity);
             if (goal != null) source.Task.Stage = "responding";
             else if (owner.Personality.Reactions.Count < 4) owner.Personality.Reactions.Add(new NpcReaction(source.Subject,
                 "I won't fight for that task.", source.Id, source.Turn, "task_declined", source.StoryId));

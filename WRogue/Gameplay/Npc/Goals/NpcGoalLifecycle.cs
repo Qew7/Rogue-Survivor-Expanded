@@ -25,7 +25,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 {
                     NpcValueDefinition value = catalog.Value(intent.Generated);
                     bool satisfied = intent.Generated.Deficit == 0 && value != null && value.CompleteWhenSatisfied;
-                    NpcIntentSystem.Finish(owner, intent, satisfied ? NpcIntentStatus.Completed : NpcIntentStatus.Abandoned,
+                    NpcIntentSystem.Finish(catalog, owner, intent, satisfied ? NpcIntentStatus.Completed : NpcIntentStatus.Abandoned,
                         satisfied ? "observed that the desired state was satisfied" : "motivation changed");
                 }
             candidates.Sort((a, b) => { int score = b.State.Utility.CompareTo(a.State.Utility);
@@ -47,7 +47,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                         }
                     if (active < 4 || weakest == null || candidate.State.Utility < weakest.Generated.Utility + 10 ||
                         !owner.Personality.GoalCooldownReady(candidate.State.Key, owner.Location.Map.LocalTime.TurnCounter)) continue;
-                    NpcIntentSystem.Finish(owner, weakest, NpcIntentStatus.Abandoned, "a more important state became unsatisfied");
+                    NpcIntentSystem.Finish(catalog, owner, weakest, NpcIntentStatus.Abandoned,
+                        "a more important state became unsatisfied");
                 }
                 Start(catalog, owner, candidate.Target, candidate.Capability, candidate.Cause, candidate.Story, candidate.State);
             }
@@ -121,14 +122,16 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         {
             NpcIntentDefinition definition = catalog.Capability(intent.DefinitionId);
             NpcIntentOutcome outcome = definition == null || definition.OnTargetDeath == null ? null : definition.OnTargetDeath(killedByOwner);
-            Finish(owner, intent, outcome == null ? NpcIntentStatus.Failed : outcome.Status, outcome == null ? reason : outcome.Reason);
+            Finish(catalog, owner, intent, outcome == null ? NpcIntentStatus.Failed : outcome.Status,
+                outcome == null ? reason : outcome.Reason);
         }
-        public static void Finish(Actor owner, NpcIntent intent, NpcIntentStatus status, string reason)
+        public static void Finish(NpcContentCatalog catalog, Actor owner, NpcIntent intent,
+            NpcIntentStatus status, string reason)
         {
             if (intent.Finished) return;
             intent.Status = status; intent.Outcome = reason;
             intent.FinishedTurn = owner.Location.Map == null ? intent.StartedTurn : owner.Location.Map.LocalTime.TurnCounter;
-            Session.Get.ResidentRecords.IntentChanged(owner, intent, status.ToString().ToLowerInvariant(), reason);
+            Session.Get.ResidentRecords.IntentChanged(owner, intent, status.ToString().ToLowerInvariant(), reason, catalog);
             Session.Get.NpcDirector.Outcome(owner, intent);
             NpcStorySystem.GoalFinished(owner, intent);
             intent.LastKnown = default(Location);

@@ -9,7 +9,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public static int Importance(NpcContentCatalog catalog, Actor owner, NpcGoalValue value, Guid subject)
         {
             NpcValueDefinition definition = catalog.Value(value);
-            return definition == null ? 0 : definition.Importance(new NpcMotivation(owner, subject, catalog.Personalities, catalog));
+            return definition == null ? 0 : definition.Importance(new NpcMotivation(catalog, owner, subject));
         }
         public static int KnownAttitude(Actor owner, Guid subject, PersonalityRegistry registry = null,
             string excludeTrait = null)
@@ -30,16 +30,17 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 TraitDefinition definition = catalog.Personalities.Trait(trait.Id);
                 if (definition == null) continue;
                 int without = Math.Max(0, Math.Min(200, value.Importance(
-                    new NpcMotivation(owner, goal.SubjectId, catalog.Personalities, catalog, trait.Id))));
+                    new NpcMotivation(catalog, owner, goal.SubjectId, trait.Id))));
                 int increase = goal.Importance - without;
                 if (increase > largest) { largest = increase; strongest = definition.Name; }
             }
             return strongest == null ? null : "because trait " + strongest + " raised this goal's importance by " + largest;
         }
-        public static NpcGeneratedGoal Evaluate(Actor owner, NpcValueDefinition definition, Guid subject,
-            int current, int desired, int deficit, int confidence, ulong result, PersonalityRegistry registry = null, NpcContentCatalog catalog = null)
+        public static NpcGeneratedGoal Evaluate(NpcContentCatalog catalog, Actor owner,
+            NpcValueDefinition definition, Guid subject, int current, int desired, int deficit,
+            int confidence, ulong result)
         {
-            int importance = Math.Max(0, Math.Min(200, definition.Importance(new NpcMotivation(owner, subject, registry, catalog))));
+            int importance = Math.Max(0, Math.Min(200, definition.Importance(new NpcMotivation(catalog, owner, subject))));
             deficit = Math.Max(0, Math.Min(100, deficit)); confidence = Math.Max(0, Math.Min(100, confidence));
             return new NpcGeneratedGoal { Value = definition.LegacyValue ?? default(NpcGoalValue),
                 DefinitionId = definition.LegacyValue.HasValue ? null : definition.Id,

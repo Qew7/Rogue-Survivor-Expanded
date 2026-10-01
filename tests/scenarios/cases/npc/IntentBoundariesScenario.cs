@@ -26,7 +26,7 @@ static class IntentBoundariesScenario
             Check.Equal(false, wrongReaction.IsLegal(), "reaction cannot address another person with the same name");
             wrongReaction.Perform();
             Check.Equal(1, grateful.Personality.Reactions.Count, "invalid reaction remains queued for its actual recipient");
-            NpcIntentSystem.Block(grateful, intent, "temporary obstruction");
+            NpcIntentSystem.Block(world.Game.NpcContent, grateful, intent, "temporary obstruction");
             var delayedAction = new ActionNpcIntent(grateful, world.Game, intent, player, NpcFoodSupply.SpareFood(world.Game, grateful, player));
             Check.Equal(false, delayedAction.IsLegal(), "selected action cannot bypass retry delay");
             world.Map.LocalTime.TurnCounter = intent.NextAttempt;
@@ -53,7 +53,7 @@ static class IntentBoundariesScenario
             Session.Get.GamePreset = disabled;
             PersonalitySystem.Report(world.Game, new SignificantEvent("helped", hidden, player, world.Map, hidden.Location.Position, 9000));
             Check.Equal(0, hidden.Personality.Intents.Count, "disabled preset creates no intentions");
-            Check.Equal(null, NpcIntentSystem.Select(grateful), "disabled preset does not execute saved goals");
+            Check.Equal(null, NpcIntentSystem.Select(world.Game.NpcContent, grateful), "disabled preset does not execute saved goals");
             Check.Equal(false, action.IsLegal(), "disabled preset rejects already selected action");
         });
     }

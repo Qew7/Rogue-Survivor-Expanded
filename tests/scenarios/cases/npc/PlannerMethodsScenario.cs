@@ -21,7 +21,7 @@ static class PlannerMethodsScenario
             {
                 owner.FoodPoints = Session.Get.GamePreset.HungerPoints - 1;
                 NpcKnowledgeSystem.Perceive(world.Game, owner, sensor.Sense(world.Game, owner));
-                NpcStorySystem.StartKnown(owner, new NpcKnownPerson { Id = owner.PersonalityIdentity, Name = owner.UnmodifiedName, Place = owner.Location }, world.Game.NpcContent.Capability("obtain_food"));
+                NpcStorySystem.StartKnown(world.Game.NpcContent, owner, new NpcKnownPerson { Id = owner.PersonalityIdentity, Name = owner.UnmodifiedName, Place = owner.Location }, world.Game.NpcContent.Capability("obtain_food"));
             }
             NpcIntentSupport.Turn(world, social);
             NpcIntent a = NpcIntentSupport.Intent(social, "obtain_food"), b = NpcIntentSupport.Intent(solitary, "obtain_food");

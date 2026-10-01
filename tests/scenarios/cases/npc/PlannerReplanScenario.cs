@@ -19,7 +19,7 @@ static class PlannerReplanScenario
             var sensor = new LOSSensor(LOSSensor.SensingFilter.ITEMS);
             NpcKnowledgeSystem.Perceive(world.Game, owner, sensor.Sense(world.Game, owner));
             owner.FoodPoints = Session.Get.GamePreset.HungerPoints - 1;
-            NpcIntent goal = NpcStorySystem.StartKnown(owner, new NpcKnownPerson { Id = owner.PersonalityIdentity, Name = owner.UnmodifiedName, Place = owner.Location }, world.Game.NpcContent.Capability("obtain_food"));
+            NpcIntent goal = NpcStorySystem.StartKnown(world.Game.NpcContent, owner, new NpcKnownPerson { Id = owner.PersonalityIdentity, Name = owner.UnmodifiedName, Place = owner.Location }, world.Game.NpcContent.Capability("obtain_food"));
             NpcIntentSupport.Turn(world, owner);
             Check.Equal(new Point(3, 1), goal.Plan.Steps[goal.Plan.Cursor].Place.Position, "first plan selects cheaper stock");
             world.Map.RemoveItemAt(first, new Point(3, 1));
