@@ -19,8 +19,10 @@ Shift+S. Saves live in the `game-data` Docker volume and survive
 port, start with `ROGUE_PORT=6081 docker compose up --build -d`. Sound is
 unavailable in the browser session.
 
-On Windows, build `RogueSurvivor.sln` in `Release|Any CPU` with .NET Framework
-4.8 and run the executable from the `WRogue` directory.
+On Windows, download the `RogueSurvivorExpanded-vX.Y.Z-windows.zip` asset from
+the GitHub release, extract it, and run `RogueSurvivor.exe` from the extracted
+directory. The game requires .NET Framework 4.8. To build from source, build
+`RogueSurvivor.sln` in `Release|Any CPU`.
 
 ## New features
 
@@ -173,11 +175,14 @@ the theft becomes hostile to the thief.
 
 ## Develop and test
 
-For a new release, run `ruby tools/release_version.rb X.Y.Z` before committing
-and tagging `vX.Y.Z`. This updates the executable, Windows file metadata,
-bundled mod, README, and save format documentation together. CI checks that
-every copy matches `VERSION` and that release tags use the same number on push;
-this version check is skipped for pull requests.
+To publish a release, open **Actions → Release → Run workflow** on the default
+branch and enter a new `X.Y.Z` version. The workflow updates `VERSION`, the
+game and Windows file versions, bundled mod, README, and save format
+documentation; builds the Windows game; commits the version; creates `vX.Y.Z`;
+and publishes a GitHub Release with a ready-to-run Windows ZIP. The ZIP includes
+the executable, resources, and bundled mods. Do not create the tag or GitHub
+Release separately. The workflow needs permission to push to the default branch.
+For local version changes, run `ruby tools/release_version.rb X.Y.Z`.
 
 ```sh
 docker build --target test .

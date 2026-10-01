@@ -1,0 +1,81 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (X.Y.Z, without v)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: windows-latest
+    env:
+      RELEASE_VERSION: ${{ inputs.version }}
+      RELEASE_BRANCH: ${{ github.event.repository.default_branch }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 0
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+      - uses: microsoft/setup-msbuild@v3
+      - name: Update and check release version
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          ruby tools/release_version.rb $env:RELEASE_VERSION
+          if ($LASTEXITCODE -ne 0) { throw 'Could not update release version' }
+          ruby tools/release_version.rb --check
+          if ($LASTEXITCODE -ne 0) { throw 'Release version files do not match' }
+          $tag = "v$env:RELEASE_VERSION"
+          git ls-remote --exit-code --tags origin "refs/tags/$tag" | Out-Null
+          if ($LASTEXITCODE -eq 0) { throw "Tag $tag already exists" }
+          if ($LASTEXITCODE -ne 2) { throw 'Could not check remote tags' }
+          git diff --exit-code -- VERSION WRogue/SetupConfig.cs WRogue/Properties/AssemblyInfo.cs WRogue/mods/Deonapocalypse/authors.json README.md docs/save-format.md | Out-Null
+          if ($LASTEXITCODE -eq 0) { throw 'Version is already current; no release commit to create' }
+      - name: Build Windows game
+        shell: pwsh
+        run: |
+          msbuild RogueSurvivor.sln /p:Configuration=Release '/p:Platform=Any CPU' /verbosity:minimal
+          if ($LASTEXITCODE -ne 0) { throw 'Windows build failed' }
+      - name: Package Windows game
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $output = 'WRogue/bin/Release'
+          foreach ($required in @('RogueSurvivor.exe', 'Resources/Data', 'Resources/Images', 'mods/Deonapocalypse/authors.json')) {
+            if (-not (Test-Path (Join-Path $output $required))) { throw "Missing game file: $required" }
+          }
+          Copy-Item VERSION (Join-Path $output 'VERSION')
+          $archive = "RogueSurvivorExpanded-v$env:RELEASE_VERSION-windows.zip"
+          Compress-Archive -Path "$output/*" -DestinationPath $archive -CompressionLevel Optimal
+          if (-not (Test-Path $archive)) { throw 'Windows archive was not created' }
+      - name: Commit version and publish release
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $tag = "v$env:RELEASE_VERSION"
+          $archive = "RogueSurvivorExpanded-$tag-windows.zip"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add VERSION WRogue/SetupConfig.cs WRogue/Properties/AssemblyInfo.cs WRogue/mods/Deonapocalypse/authors.json README.md docs/save-format.md
+          git commit -m "Release $tag"
+          if ($LASTEXITCODE -ne 0) { throw 'Could not commit release version' }
+          git tag -a $tag -m "Release $tag"
+          if ($LASTEXITCODE -ne 0) { throw 'Could not create release tag' }
+          git push origin "HEAD:refs/heads/$env:RELEASE_BRANCH" "refs/tags/$tag"
+          if ($LASTEXITCODE -ne 0) { throw 'Could not push release commit and tag' }
+          gh release create $tag $archive --verify-tag --title $tag --generate-notes
+          if ($LASTEXITCODE -ne 0) { throw 'Could not publish GitHub release' }
