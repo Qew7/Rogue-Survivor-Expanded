@@ -213,7 +213,7 @@ namespace djack.RogueSurvivor.Gameplay.Generators
             ///////////
             // 6. Zone
             ///////////
-            Zone zone = base.MakeUniqueZone("Apartements", b.BuildingRect);
+            Zone zone = base.MakeUniqueZone("Apartements", b.BuildingRect, BuildingKind.Apartments);
             map.AddZone(zone);
             MakeWalkwayZones(map, b);
 
@@ -424,7 +424,7 @@ namespace djack.RogueSurvivor.Gameplay.Generators
             // 7. Zone
             ///////////
             #region
-            map.AddZone(MakeUniqueZone("Housing", b.BuildingRect));
+            map.AddZone(MakeUniqueZone("Housing", b.BuildingRect, BuildingKind.House));
             MakeWalkwayZones(map, b);
             #endregion
 

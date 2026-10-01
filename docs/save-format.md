@@ -223,6 +223,12 @@ the same identified event after loading does not create another memory, reward
 or intention. The new fields use format 5's existing graph field encoding;
 absent optional fields initialize to their defaults.
 
+Generated building zones retain an optional `BuildingKind` alongside their
+existing name and bounds. `None` is the default for roads, rooms and older
+zones. Rumor wording looks up the kind at the fact's saved map position; the
+spoken location is then preserved as text in heard journals and resident
+records. Archive entries still do not store separate building coordinates.
+
 Resident records retain NPC identity/name, spawn/death turns, faction and
 leader-group snapshots, last inventory and traits, cumulative item acquisitions,
 and the snapshot turn. Entries retain ordered text, event kind, direct/witnessed

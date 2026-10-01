@@ -19,7 +19,7 @@ static class RecordsNameColorsScenario
             world.Place(ada, 1, 0); world.Place(bo, 2, 0);
             ResidentRecord record = Session.Get.ResidentRecords.Register(ada);
             Session.Get.ResidentRecords.Register(bo);
-            record.Add("test", 0, "Ada met Bo at the store.");
+            record.Add("test", 0, "Ada met Bo at the grocery store.");
 
             Actor firstLee = new Actor(world.Game.GameActors.MaleCivilian,
                 world.Game.GameFactions.TheCivilians, "Lee", false, false, 0);
@@ -29,7 +29,7 @@ static class RecordsNameColorsScenario
             Session.Get.ResidentRecords.Register(firstLee);
             Session.Get.ResidentRecords.Register(secondLee);
 
-            var names = new RecordsNameColors(Session.Get.ResidentRecords.Residents);
+            var names = new RecordsTextColors(Session.Get.ResidentRecords.Residents);
             string line = "Ada met Bo. Adaline and Bored stayed elsewhere.";
             var runs = names.Runs(line, Color.White);
             Check.Equal("Ada", line.Substring(runs[0].Start, runs[0].Length), "first name is recognized");
@@ -47,6 +47,8 @@ static class RecordsNameColorsScenario
                 "the real Read Records screen draws the civilian name in color");
             Check.Equal(true, ui.DrawnBold.Exists(draw => draw.Item1 == Color.Orange && draw.Item2 == "Bo"),
                 "the real Read Records screen draws the biker name in color");
+            Check.Equal(true, ui.DrawnBold.Exists(draw => draw.Item1 == Zone.FoodStoreColor &&
+                draw.Item2 == "grocery store"), "the real Read Records screen draws the building in color");
         });
     }
 

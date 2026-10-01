@@ -10,7 +10,7 @@ namespace djack.RogueSurvivor.Engine
     partial class RogueGame
     {
         void DrawRecordsChoices(string title, IList<string> entries, int selected, string notice, string footer,
-            RecordsNameColors names = null)
+            RecordsTextColors names = null)
         {
             m_UI.UI_Clear(Color.Black); DrawHeader();
             m_UI.UI_DrawStringBold(Color.Yellow, TruncateString(title, 118), 0, BOLD_LINE_SPACING);
@@ -24,7 +24,7 @@ namespace djack.RogueSurvivor.Engine
             }
             DrawFootnote(Color.White, footer); m_UI.UI_Repaint();
         }
-        void DrawRecordsText(string text, int x, int y, Color plain, RecordsNameColors names)
+        void DrawRecordsText(string text, int x, int y, Color plain, RecordsTextColors names)
         {
             if (names == null) { m_UI.UI_DrawStringBold(plain, text, x, y); return; }
             foreach (RecordsTextRun run in names.Runs(text, plain))
@@ -44,7 +44,7 @@ namespace djack.RogueSurvivor.Engine
         void BrowseRecords(RecordsSave save)
         {
             RecordsQuery query = new RecordsQuery(); int selected = 0;
-            var names = new RecordsNameColors(save.Records.Residents);
+            var names = new RecordsTextColors(save.Records.Residents);
             Logger.WriteLine(Logger.Stage.RUN_MAIN, "records browser ready");
             while (true)
             {
@@ -137,7 +137,7 @@ namespace djack.RogueSurvivor.Engine
         void ShowRecordsTimeline(RecordsSave save, ResidentRecord resident, RecordsQuery query)
         {
             string title = resident == null ? "All residents" : resident.Name;
-            var names = new RecordsNameColors(save.Records.Residents);
+            var names = new RecordsTextColors(save.Records.Residents);
             Logger.WriteLine(Logger.Stage.RUN_MAIN, "records screen ready: " + title);
             string search = ""; RecordsEventFilter filter = RecordsEventFilter.All;
             int first = 0; const int pageSize = 40;

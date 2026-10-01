@@ -105,6 +105,7 @@ namespace djack.RogueSurvivor.Engine
         void HandleHeardJournal()
         {
             IList<string> lines = HeardJournalLines(m_Player);
+            var placeColors = new RecordsTextColors(new ResidentRecord[0]);
             const int linesPerPage = 35;
             int page = 0;
             while (true)
@@ -116,7 +117,7 @@ namespace djack.RogueSurvivor.Engine
                 y += 2 * BOLD_LINE_SPACING;
                 for (int i = page * linesPerPage; i < lines.Count && i < (page + 1) * linesPerPage; i++)
                 {
-                    m_UI.UI_DrawStringBold(Color.White, lines[i], 0, y);
+                    DrawRecordsText(lines[i], 0, y, Color.White, placeColors);
                     y += BOLD_LINE_SPACING;
                 }
                 DrawFootnote(Color.White, "PgUp/PgDn to move, ESC to leave");

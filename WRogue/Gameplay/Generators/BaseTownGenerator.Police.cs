@@ -99,7 +99,7 @@ namespace djack.RogueSurvivor.Gameplay.Generators
             stairsToLevel1 = new Point(entryDoorPos.X, policeBlock.InsideRect.Top);
 
             // Zone.
-            surfaceMap.AddZone(MakeUniqueZone("Police Station", policeBlock.BuildingRect));
+            surfaceMap.AddZone(MakeUniqueZone("Police Station", policeBlock.BuildingRect, BuildingKind.PoliceStation));
             MakeWalkwayZones(surfaceMap, policeBlock);
         }
 

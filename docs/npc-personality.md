@@ -162,6 +162,10 @@ private memories or opinions. The list persists in the saved player actor.
 Direct conversations add a neutral contact; completed trades add trust. A
 dispute over supplies or an attack can create a wary or hostile relationship.
 Press `J` to read the exact rumors, requests and replies the player heard.
+Rumors name the event's district and, when its position falls inside a typed
+building zone, the grocery, gun shop, home, park or other known place. The J
+journal and Read Records color these place labels by type. A report from a
+street or unclassified zone names only the district.
 
 The catalog contains 50 starting and 66 advanced traits. Advanced traits
 are available only through memory resolution. Most require an existing trait;

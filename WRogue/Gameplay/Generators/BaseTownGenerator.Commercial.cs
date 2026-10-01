@@ -173,35 +173,43 @@ namespace djack.RogueSurvivor.Gameplay.Generators
             // add shop image next to doors.
             string shopImage;
             string shopName;
+            BuildingKind buildingKind;
             switch (shopType)
             {
                 case ShopType.CONSTRUCTION:
                     shopImage = GameImages.DECO_SHOP_CONSTRUCTION;
                     shopName = "Construction";
+                    buildingKind = BuildingKind.ConstructionStore;
                     break;
                 case ShopType.GENERAL_STORE:
                     shopImage = GameImages.DECO_SHOP_GENERAL_STORE;
                     shopName = "GeneralStore";
+                    buildingKind = BuildingKind.GeneralStore;
                     break;
                 case ShopType.GROCERY:
                     shopImage = GameImages.DECO_SHOP_GROCERY;
                     shopName = "Grocery";
+                    buildingKind = BuildingKind.Grocery;
                     break;
                 case ShopType.GUNSHOP:
                     shopImage = GameImages.DECO_SHOP_GUNSHOP;
                     shopName = "Gunshop";
+                    buildingKind = BuildingKind.Gunshop;
                     break;
                 case ShopType.PHARMACY:
                     shopImage = GameImages.DECO_SHOP_PHARMACY;
                     shopName = "Pharmacy";
+                    buildingKind = BuildingKind.Pharmacy;
                     break;
                 case ShopType.SPORTSWEAR:
                     shopImage = GameImages.DECO_SHOP_SPORTSWEAR;
                     shopName = "Sportswear";
+                    buildingKind = BuildingKind.SportswearStore;
                     break;
                 case ShopType.HUNTING:
                     shopImage = GameImages.DECO_SHOP_HUNTING;
                     shopName = "Hunting Shop";
+                    buildingKind = BuildingKind.HuntingStore;
                     break;
                 default:
                     throw new ArgumentOutOfRangeException("unhandled shoptype");
@@ -260,7 +268,7 @@ namespace djack.RogueSurvivor.Gameplay.Generators
             // 6. Zone
             ///////////
             // shop building.
-            map.AddZone(MakeUniqueZone(shopName, b.BuildingRect));
+            map.AddZone(MakeUniqueZone(shopName, b.BuildingRect, buildingKind));
             // walkway zones.
             MakeWalkwayZones(map, b);
 
@@ -282,7 +290,7 @@ namespace djack.RogueSurvivor.Gameplay.Generators
                 DoForEachTile(shopBasement, shopBasement.Rect, (pt) => shopBasement.GetTileAt(pt).IsInside = true);
                 TileFill(shopBasement, m_Game.GameTiles.FLOOR_CONCRETE);
                 TileRectangle(shopBasement, m_Game.GameTiles.WALL_BRICK, shopBasement.Rect);
-                shopBasement.AddZone(MakeUniqueZone("basement", shopBasement.Rect));
+                shopBasement.AddZone(MakeUniqueZone("basement", shopBasement.Rect, buildingKind));
 
                 // - some shelves with shop items.
                 // - some rats.
@@ -506,7 +514,7 @@ namespace djack.RogueSurvivor.Gameplay.Generators
             ////////////
             // 6. Zones.
             ////////////
-            map.AddZone(MakeUniqueZone("CHAR Agency", b.BuildingRect));
+            map.AddZone(MakeUniqueZone("CHAR Agency", b.BuildingRect, BuildingKind.CharAgency));
             MakeWalkwayZones(map, b);
 
             // Done
@@ -783,7 +791,7 @@ namespace djack.RogueSurvivor.Gameplay.Generators
             ///////////
             // 8. Zone
             ///////////
-            Zone zone = base.MakeUniqueZone("CHAR Office", b.BuildingRect);
+            Zone zone = base.MakeUniqueZone("CHAR Office", b.BuildingRect, BuildingKind.Office);
             zone.SetGameAttribute<bool>(ZoneAttributes.IS_CHAR_OFFICE, true);
             map.AddZone(zone);
             MakeWalkwayZones(map, b);
@@ -875,7 +883,7 @@ namespace djack.RogueSurvivor.Gameplay.Generators
             ///////////
             // 5. Zone
             ///////////
-            Zone parkZone = MakeUniqueZone("Park", b.BuildingRect);
+            Zone parkZone = MakeUniqueZone("Park", b.BuildingRect, BuildingKind.Park);
             map.AddZone(parkZone);
             MakeWalkwayZones(map, b);
 

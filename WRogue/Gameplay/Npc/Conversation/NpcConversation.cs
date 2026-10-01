@@ -78,9 +78,14 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public static void ShareRumor(RogueGame game, Actor speaker, Actor listener, NpcFact fact, bool free)
         {
             string report = NpcRecordDescriptions.Report(game.NpcContent, fact);
+            District district = fact.Place.Map.District;
+            string place = district == null ? "near " + fact.Place.Map.Name :
+                "in district " + World.CoordToString(district.WorldPosition.X, district.WorldPosition.Y);
+            Zone building = Zone.BuildingAt(fact.Place);
+            if (building != null) place += ", at the " + Zone.BuildingLabel(building.BuildingKind);
             game.DoSay(speaker, listener, (fact.Source == NpcKnowledgeSource.Told ? "I was told that " :
                 fact.Source == NpcKnowledgeSource.Inferred ? "As far as I know, " : "I saw that ") + report +
-                " near " + fact.Place.Map.Name + ".", RogueGame.Sayflags.IS_STORY | RogueGame.Sayflags.IS_RUMOR |
+                " " + place + ".", RogueGame.Sayflags.IS_STORY | RogueGame.Sayflags.IS_RUMOR |
                 (free ? RogueGame.Sayflags.IS_FREE_ACTION : RogueGame.Sayflags.NONE), fact.EventId, fact.StoryId);
             foreach (Actor hearer in speaker.Location.Map.Actors)
             {
