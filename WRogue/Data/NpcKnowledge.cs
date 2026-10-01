@@ -81,15 +81,19 @@ namespace djack.RogueSurvivor.Data
             Facts.Add(fact); Trim(Facts, 48); Revision++; return true;
         }
         public NpcKnownPerson Person(Guid id) { return People.Find(p => p.Id == id); }
-        public void See(Actor actor, int turn)
+        public NpcKnownPerson See(Actor actor, int turn)
         {
             NpcKnownPerson person = Person(actor.PersonalityIdentity);
             if (person == null || person.Place != actor.Location || person.Dead != actor.IsDead) Revision++;
-            if (person == null) { People.Add(person = new NpcKnownPerson { Id = actor.PersonalityIdentity }); Trim(People, 32); }
+            // Refresh recency before another participant can fill the bounded list.
+            if (person == null) person = new NpcKnownPerson { Id = actor.PersonalityIdentity };
+            else People.Remove(person);
+            People.Add(person); Trim(People, 32);
             person.Name = actor.UnmodifiedName; person.Place = actor.Location; person.SeenTurn = turn; person.Dead = actor.IsDead;
             person.FactionId = actor.Faction == null ? -1 : actor.Faction.ID;
             person.GroupId = actor.SocialGroup == null ? Guid.Empty : actor.SocialGroup.Identity;
             person.Confidence = 100; person.Source = NpcKnowledgeSource.Witness;
+            return person;
         }
         public void RememberPlace(NpcKnownPlace place)
         {

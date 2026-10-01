@@ -346,7 +346,9 @@ end a search without consulting the unseen actor's current state.
 
 Each NPC retains at most 48 facts, 32 people, 16 places, 32 exits and 64
 conversation/query deduplication entries. Facts and places expire after two days
-from the original observation. Goal evaluation runs after accepted observations
+from the original observation. Seeing a person refreshes their position in the
+bounded list, so a newly seen participant cannot evict someone observed in the
+same event. Goal evaluation runs after accepted observations
 and before decisions, using these bounded lists. The director continues to pace
 complex group proposals independently.
 
@@ -546,7 +548,7 @@ Scenarios: `npc/intent-gratitude`, `npc/intent-food-request`,
 `npc/intent-persistence`, `npc/story-rumor`, `npc/story-threat-methods`,
 `npc/story-search`, `npc/story-group-supplies`, `npc/story-group-shelter`,
 `npc/story-group-boundaries`, `npc/story-hidden-source`,
-`npc/story-knowledge-boundaries`, `npc/story-director`,
+`npc/story-knowledge-boundaries`, `npc/knowledge-death-capacity`, `npc/story-director`,
 `npc/story-persistence`, `factions/social-group-succession`,
 `factions/npc-faction-plans` and
 `world/records-browser`. They exercise actual

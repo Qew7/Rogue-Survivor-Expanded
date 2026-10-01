@@ -16,12 +16,16 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         {
             Actor owner = observation.Owner; SignificantEvent source = observation.Source;
             NpcKnowledge knowledge = owner.Personality.Knowledge;
-            if (observation.SeesSubject) knowledge.See(source.Subject, source.Turn);
-            if (observation.SeesOther) knowledge.See(source.Other, source.Turn);
-            if (observation.SeesSubject) knowledge.Person(source.Subject.PersonalityIdentity).Hostile = observation.Game.Rules.AreEnemies(owner, source.Subject);
-            if (observation.SeesOther) knowledge.Person(source.Other.PersonalityIdentity).Hostile = observation.Game.Rules.AreEnemies(owner, source.Other);
-            if (observation.Game.NpcContent.Event(source.Kind) != null && observation.Game.NpcContent.Event(source.Kind).ProvesDeath && source.Subject != null)
-            { NpcKnownPerson dead = knowledge.Person(source.Subject.PersonalityIdentity); if (dead != null) dead.Dead = true; }
+            NpcKnownPerson subject = observation.SeesSubject ? knowledge.See(source.Subject, source.Turn) : null;
+            NpcKnownPerson other = observation.SeesOther ? knowledge.See(source.Other, source.Turn) : null;
+            if (subject != null) subject.Hostile = observation.Game.Rules.AreEnemies(owner, source.Subject);
+            if (other != null) other.Hostile = observation.Game.Rules.AreEnemies(owner, source.Other);
+            NpcEventDefinition definition = observation.Game.NpcContent.Event(source.Kind);
+            if (definition != null && definition.ProvesDeath && source.Subject != null)
+            {
+                NpcKnownPerson dead = subject ?? knowledge.Person(source.Subject.PersonalityIdentity);
+                if (dead != null) dead.Dead = true;
+            }
         }
         internal static void RetainEvent(NpcObservation observation, NpcEventDefinition definition)
         {
@@ -44,7 +48,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 Actor person = percept.Percepted as Actor;
                 if (person != null)
                 {
-                    knowledge.See(person, turn); NpcKnownPerson known = knowledge.Person(person.PersonalityIdentity);
+                    NpcKnownPerson known = knowledge.See(person, turn);
                     known.Hostile = game.Rules.AreEnemies(actor, person);
                     game.NpcContent.Perceive(NpcPerceptionKind.Person, new NpcPerceptionContext(game, actor, percept.Location, person));
                 }
