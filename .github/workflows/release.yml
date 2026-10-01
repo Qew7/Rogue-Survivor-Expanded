@@ -40,11 +40,12 @@ jobs:
           ruby tools/release_version.rb --check
           if ($LASTEXITCODE -ne 0) { throw 'Release version files do not match' }
           $tag = "v$env:RELEASE_VERSION"
-          git ls-remote --exit-code --tags origin "refs/tags/$tag" | Out-Null
-          if ($LASTEXITCODE -eq 0) { throw "Tag $tag already exists" }
-          if ($LASTEXITCODE -ne 2) { throw 'Could not check remote tags' }
-          git diff --exit-code -- VERSION WRogue/SetupConfig.cs WRogue/Properties/AssemblyInfo.cs WRogue/mods/Deonapocalypse/authors.json README.md docs/save-format.md | Out-Null
-          if ($LASTEXITCODE -eq 0) { throw 'Version is already current; no release commit to create' }
+          $existingTag = git ls-remote --tags origin "refs/tags/$tag"
+          if ($LASTEXITCODE -ne 0) { throw 'Could not check remote tags' }
+          if ($existingTag) { throw "Tag $tag already exists" }
+          $changedFiles = git diff --name-only -- VERSION WRogue/SetupConfig.cs WRogue/Properties/AssemblyInfo.cs WRogue/mods/Deonapocalypse/authors.json README.md docs/save-format.md
+          if ($LASTEXITCODE -ne 0) { throw 'Could not inspect version changes' }
+          if (-not $changedFiles) { throw 'Version is already current; no release commit to create' }
       - name: Build Windows game
         shell: pwsh
         run: |
