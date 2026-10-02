@@ -30,6 +30,7 @@ namespace djack.RogueSurvivor.Data
     {
         public void Refresh(Session session)
         {
+            m_DistrictKinds = DistrictKindsFrom(session.World);
             if (session.World == null) return;
             for (int x = 0; x < session.World.Size; x++)
                 for (int y = 0; y < session.World.Size; y++)

@@ -100,7 +100,7 @@ namespace djack.RogueSurvivor.Data
                 return Humanize(step.OperatorId);
             switch (step.Action)
             {
-                case NpcPlanAction.Travel: return "travel to the destination";
+                case NpcPlanAction.Travel: return TravelText(step.Place);
                 case NpcPlanAction.EnterShelter: return "enter the shelter";
                 case NpcPlanAction.PickupFood: return "collect food";
                 case NpcPlanAction.AskFood: return "ask for food";
@@ -127,5 +127,25 @@ namespace djack.RogueSurvivor.Data
 
         static string Humanize(string name)
         { return (name ?? "act").Replace('_', ' ').Replace('-', ' ').ToLowerInvariant(); }
+
+        static string TravelText(Location place)
+        {
+            if (place.Map == null) return "travel onward";
+            District district = place.Map.District;
+            string coordinate = district == null ? null :
+                World.CoordToString(district.WorldPosition.X, district.WorldPosition.Y);
+            Zone building = Zone.BuildingAt(place);
+            if (building != null)
+                return "travel to the " + Zone.BuildingLabel(building.BuildingKind) +
+                    (coordinate == null ? "" : " in district " + coordinate);
+            if (district != null && place.Map == district.EntryMap)
+                return "travel to the " + District.KindLabel(district.Kind) + " district " + coordinate;
+            string map = place.Map.Name;
+            int suffix = map == null ? -1 : map.IndexOf('@');
+            if (suffix >= 0) map = map.Substring(0, suffix);
+            map = map == null ? "" : map.Trim();
+            return "travel to " + (map.Length == 0 ? "a known place" : map) +
+                (coordinate == null ? "" : " in district " + coordinate);
+        }
     }
 }

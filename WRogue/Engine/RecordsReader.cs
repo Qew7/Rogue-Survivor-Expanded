@@ -221,7 +221,7 @@ namespace djack.RogueSurvivor.Engine
         {
             switch (step)
             {
-                case "Travel": case "travel": return "travel to the destination";
+                case "Travel": case "travel": return "travel onward";
                 case "EnterShelter": case "shelter.enter": return "enter the shelter";
                 case "PickupFood": case "food.take": return "collect food";
                 case "AskFood": case "food.ask": return "ask for food";

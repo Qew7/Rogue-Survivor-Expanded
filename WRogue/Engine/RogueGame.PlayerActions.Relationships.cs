@@ -113,7 +113,8 @@ namespace djack.RogueSurvivor.Engine
         void HandleHeardJournal()
         {
             IList<string> lines = HeardJournalLines(m_Player);
-            var placeColors = new RecordsTextColors(new ResidentRecord[0]);
+            var placeColors = new RecordsTextColors(new ResidentRecord[0],
+                ResidentRecords.DistrictKindsFrom(m_Session.World));
             const int linesPerPage = 35;
             int page = 0;
             while (true)

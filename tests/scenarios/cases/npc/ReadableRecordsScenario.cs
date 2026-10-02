@@ -47,12 +47,12 @@ static class ReadableRecordsScenario
                 Check.Equal(true, lines.Contains("believed neighbor needed food"), "food need is explained only for its own goal");
                 Check.Equal(true, lines.Contains("Kind") && lines.Contains("trait made this goal more compelling"),
                     "archive names the cause without a score");
-                Check.Equal(true, lines.Contains("travel to the destination, then give food"), "archive explains the plan");
+                Check.Equal(true, lines.Contains("travel onward, then give food"), "unknown old route has no invented place");
                 Check.Equal(false, lines.Contains("[story "), "archive hides story IDs");
                 Check.Equal(false, lines.Contains("Intent started:"), "archive hides internal state labels");
                 Check.Equal(false, lines.Contains("Need unmet:") || lines.Contains("importance:") || lines.Contains("confidence:"),
                     "neither new nor older entries expose goal scores");
-                Check.Equal(true, lines.Contains("Planned route: travel to the destination, then enter the shelter."),
+                Check.Equal(true, lines.Contains("Planned route: travel onward, then enter the shelter."),
                     "older archived plans also read naturally");
                 Check.Equal(true, lines.Contains("Food was running low"), "older hunger entry explains its own need");
                 string shelter = String.Join(" ", RecordsReader.Lines(RecordsReader.Load(path), null,

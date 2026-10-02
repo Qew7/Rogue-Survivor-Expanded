@@ -233,6 +233,9 @@ Resident records retain NPC identity/name, spawn/death turns, faction and
 leader-group snapshots, last inventory and traits, cumulative item acquisitions,
 and the snapshot turn. Entries retain ordered text, event kind, direct/witnessed
 status, participant IDs and whether resolution actually granted a trait.
+The archive optionally retains each district's kind by coordinate so
+`Read Records` can color district labels like the world map without loading the
+world graph. Older archives without this field leave district labels uncolored.
 Deduplication keys are preserved. Histories contain no Actor references and
 survive actor/corpse removal; entries are not evicted.
 Entries also retain event/cause/story IDs. Private intention starts and terminal
@@ -242,6 +245,9 @@ physical-event counts and the interesting-life score. Private missing-contact
 inferences, generated `goal_plan` action lists and story-stage entries use the
 same typed archive path and **Intentions and outcomes** filter, and also do not
 inflate those counts.
+New plan entries include known building or map destinations and their district.
+Older plan entries contain only action names, so their destinations cannot be
+reconstructed by the archive reader.
 Heard speech uses existing resident entries with kinds `heard_rumor`,
 `heard_request` and `heard_reply`. Only awake intelligent NPCs within audio range
 gain an entry; seeing the speaker is not required. Text, event ID and any known

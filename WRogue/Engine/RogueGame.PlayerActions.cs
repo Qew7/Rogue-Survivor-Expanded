@@ -1016,15 +1016,15 @@ namespace djack.RogueSurvivor.Engine
                     {
                         District d = m_Session.World[x, y];
                         char dStatus = d == m_Session.CurrentMap.District ? '*' : m_Session.Scoring.HasVisited(d.EntryMap) ? '-' : '?';
-                        Color dColor;
+                        Color dColor = District.DisplayColor(d.Kind);
                         string dChar;
                         switch (d.Kind)
                         {
-                            case DistrictKind.BUSINESS: dColor = Color.Red; dChar = "Bus"; break;
-                            case DistrictKind.GENERAL: dColor = Color.Gray; dChar = "Gen"; break;
-                            case DistrictKind.GREEN: dColor = Color.Green; dChar = "Gre"; break;
-                            case DistrictKind.RESIDENTIAL: dColor = Color.Orange; dChar = "Res"; break;
-                            case DistrictKind.SHOPPING: dColor = Color.White; dChar = "Sho"; break;
+                            case DistrictKind.BUSINESS: dChar = "Bus"; break;
+                            case DistrictKind.GENERAL: dChar = "Gen"; break;
+                            case DistrictKind.GREEN: dChar = "Gre"; break;
+                            case DistrictKind.RESIDENTIAL: dChar = "Res"; break;
+                            case DistrictKind.SHOPPING: dChar = "Sho"; break;
                             default:
                                 throw new ArgumentOutOfRangeException("unhandled district kind");
                         }

@@ -304,6 +304,10 @@ For a generated goal, the chronicle describes a pressing need only when it is
 relevant to that goal, and names a contributing trait when present. Numeric
 deficit, importance, confidence and utility scores stay in the saved model and
 do not appear to the player. The NPC's plan is described in ordinary language.
+When a travel step has a known place, the record names its building or map and
+district. Older plan entries retain only the action, so the archive describes
+their travel without inventing a destination. District labels use the same
+kind colors as the world map in Read Records and the heard journal.
 The chronicle keeps internal
 story IDs available for search but hides them from displayed lines. Traits
 unrelated to the goal are omitted. The archive records the actual gained trait when a memory resolves;
