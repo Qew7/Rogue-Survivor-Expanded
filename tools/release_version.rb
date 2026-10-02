@@ -17,8 +17,7 @@ COPIES = {
     /"game_version": "(?<version>\d+\.\d+\.\d+)"/
   ],
   'README.md' => [
-    /Current Expanded version: \*\*(?<version>\d+\.\d+\.\d+)\*\*/,
-    /The `game_version` value must name this version \(`(?<version>\d+\.\d+\.\d+)`\)/
+    /Current Expanded version: \*\*(?<version>\d+\.\d+\.\d+)\*\*/
   ],
   'docs/save-format.md' => [
     /Saves record the Rogue Survivor Expanded version \(`(?<version>\d+\.\d+\.\d+)` at/

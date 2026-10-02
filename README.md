@@ -1,206 +1,33 @@
 # Rogue Survivor Expanded
 
-An expanded version of roguedjack's Rogue Survivor, based on the source from
-[Tranquill6](https://github.com/Tranquill6).
-Current Expanded version: **0.4.1** (based on Rogue Survivor Alpha 10.1).
+An expanded version of roguedjack's Rogue Survivor, based on [Tranquill6's source](https://github.com/Tranquill6) (Alpha 10.1). Current Expanded version: **0.4.1**.
 
-## Play on macOS or Linux
+## Play
 
-Install Docker with Compose, then run:
+**macOS / Linux:** Install Docker with Compose, then run:
 
 ```sh
 docker compose up --build -d
 ```
 
-Open [http://localhost:6080](http://localhost:6080), click the game window to
-focus it, and press Enter if the game asks to create its data folders. Save with
-Shift+S. Saves live in the `game-data` Docker volume and survive
-`docker compose down`; `docker compose down -v` deletes them. To use another web
-port, start with `ROGUE_PORT=6081 docker compose up --build -d`. Sound is
-unavailable in the browser session.
+Open [localhost:6080](http://localhost:6080), click the game window, and press Enter if prompted to create data folders. Saves persist in the `game-data` Docker volume.
 
-On Windows, download the `RogueSurvivorExpanded-vX.Y.Z-windows.zip` asset from
-the GitHub release, extract it, and run `RogueSurvivor.exe` from the extracted
-directory. The game requires .NET Framework 4.8. To build from source, build
-`RogueSurvivor.sln` in `Release|Any CPU`.
+**Windows:** Download the Windows ZIP from [Releases](../../releases), extract it, and run `RogueSurvivor.exe`. Requires .NET Framework 4.8.
 
-## New features
+## What's new
 
-### Mouse movement
+- Mouse movement and context menus.
+- Mods and configurable game presets.
+- NPC traits, memories, conversations, and emergent stories.
+- Claimable bases, storage rooms, and follower scavenging.
 
-Press M to toggle mouse movement. Hover over a destination to see the route and
-step count, then left-click to walk. Clicking an adjacent enemy or interactive
-object performs the usual bump action. Taking damage interrupts travel.
+## Contribute
 
-Right-click for a context menu of available actions. At a district edge,
-right-click the exit marker (or your character while standing next to the edge)
-and choose **Leave district** to travel to the neighboring district without a
-numpad. Shift+M shows the mouse control help in the game log.
-
-When an action asks for a direction (push, pull, barricade, build, give, trade,
-and similar actions), click an adjacent tile. Click your character for actions
-that can target yourself, or right-click to cancel. Direction keys and Escape
-still work. While aiming a grenade, hover over a tile to preview the target and
-left-click to throw; you can still aim with direction keys and throw with F.
-
-### Mods
-
-Open **Mods** from the main menu to enable multiple mods and set their priority.
-Use Space to toggle a mod, Left/Right to change its priority, Enter to apply,
-and Esc to cancel. Higher-priority mods override files from lower-priority mods.
-
-Put each mod in its own folder under `WRogue/mods`. A mod can replace files in
-`Data/` and `Images/`; an optional `authors.json` can provide a description and
-one or more authors and websites, plus `version` and `game_version`.
-The `game_version` value must name this version (`0.4.1`) or a compatible
-earlier version to enable the mod. Versions `0.1.0` and `0.1.1` are supported.
-`Deonapocalypse` is included as an example. The selected set is remembered for
-new games. Loading a save automatically uses its recorded mods and priority;
-returning to the menu restores the previous selection. Missing mods fall back
-to original files when the save can still be read; otherwise the game reports
-the required mod and version. New saves also record the Expanded version and
-reject incompatible versions with a message showing both version numbers.
-
-### Configurable game presets
-
-New games open the configuration screen with Standard settings. Adjust zombie types, infection,
-corpses, evolution, bases, survival thresholds, and decay. **Other gameplay
-options** opens the existing settings for population, spawn rates, events, and
-other rules. **Load preset** offers **Standard**, **Corpses & Infection**,
-**Vintage**, **Expanded**, and your saved configurations. The options screen
-shows the loaded values. In the preset list, move with Up/Down and page through
-the option preview with Left/Right. **Save as preset** stores a named configuration for
-future games. On the configuration screen, hover over a setting or select it with
-Up/Down to read its description. Page Up/Down move between pages of settings;
-Left/Right change the selected value.
-The chosen rules and settings are stored with the game save. Loading restores
-its stored mode rules. World saves require format 5; earlier formats are unsupported.
-
-### NPC traits and memories
-
-The new-game configuration has an **NPC traits and memories** switch. When on,
-intelligent living NPCs begin with three traits and one or two unresolved
-memories. Traits influence what they collect, how they fight, their willingness
-to join and trust a group, trade, exploration, and their response to crime.
-Item likes and dislikes can target any item model. Significant experiences,
-including a leader's death, violence, a base theft, and a raid, create new
-memories for NPCs who experience or witness them. After several game days,
-memories resolve according to the NPC's traits and later experiences, granting
-a skill level or an advanced trait. Memories tied to people remain in the NPC's
-private relationship history after resolution. The NPC reacts differently to
-specific people, their leader's group, and their faction when trading or
-considering a leader. Inspecting an NPC shows traits, but not private memories.
-The catalog and extension points are described in
-[docs/npc-personality.md](docs/npc-personality.md).
-Developer contracts and a complete single-file extension are in
-[docs/npc-content-modules.md](docs/npc-content-modules.md).
-Press Shift+I in game to see your relationships with people, groups, and factions.
-Press V to talk to a nearby person. With one possible listener the exchange starts
-immediately; with several, choose a direction. They may tell you a report they know.
-If they asked you or you overheard them ask someone else for food, medicine or
-replacement supplies, V lets you answer Y or N (Esc postpones).
-Y promises delivery within 180 turns; give the item to
-fulfil the promise. N is an actual refusal that can change their next action and
-opinion. You also hear nearby NPC conversations through walls within hearing range;
-unseen speakers stay anonymous. Their private memories remain hidden.
-Press J to review rumors, requests and replies you actually heard. Conversations
-and completed trades add contacts to Shift+I; disputes and attacks can change them.
-Use Read Records below Load Game to browse format-5 NPC histories together or individually.
-Search names, filter life metrics, sort residents, or press I to read the most interesting NPC;
-S/F also search and filter events inside a timeline.
-Civilian, gang, soldier and CHAR guard NPCs can pursue trait-driven intentions:
-thank and repay a helper, ask for or share food, decline a request, and leave an
-unsafe leader. These use real AI actions and persist through saves. Internal
-intentions remain private during play; Read Records includes their outcomes and
-linked stories. NPCs can also pass spoken reports, search for missing companions
-through known exits, avoid or warn reported aggressors, and propose group supply
-or shelter plans. Participants pursue independent goals; pickups, gifts,
-arrivals and return reports determine the episode's outcome. Groups retain their
-identity through succession, factions influence plan preferences, and a saved
-director limits concurrent stories and reserves resources. A bounded planner
-composes actions to reach desired results: an NPC can obtain food by collecting
-known supplies, asking another person or accepting a trade offer. Traits and
-relationships affect method costs; refusals and changed resources cause
-replanning. Action sequences and their consequences are generated during play.
-Elementary goals and actions remain authored mechanics. Plans and causal links
-survive saving and appear retrospectively in Read Records. See
-[docs/npc-intentions.md](docs/npc-intentions.md) for behavior and limits.
-
-An integrated state evaluator now generates goals from unmet needs and personal
-values: food, health, care, debt, safety, justice, contact and group autonomy.
-Traits, relationships and evidence confidence determine their importance.
-Existing injury or debt can motivate action without a new scripted incident;
-new urgent needs can replace weaker generated goals. Recovery uses remembered
-medicine and actual treatment. Read Records retains each goal's state and utility
-explanation, and saves preserve its subject and cooldown.
-
-Interactions include scarce-resource disputes, actual concessions or refusals,
-promises with deadlines, direct treatment or medicine gifts, food-loss compensation
-and attachments to people, specific possessions and home. Replies and outcomes
-alter later goals; reputation includes personal, group and faction history.
-Completed episodes can cause connected later episodes. See
-[docs/npc-social-stories.md](docs/npc-social-stories.md) for mechanics and scenarios.
-Gameplay keeps memories private; Read Records retains retrospective causal history.
-
-The **Expanded** preset enables claimable bases. Stand inside an enclosed
-building and press **Ctrl+B** to preview its boundaries; press **Y** to claim
-it. Hostile actors and undead block their rooms. Fortified passages can connect
-clear buildings into one base. Living NPC leaders with followers can claim bases;
-only the leader and their current followers share ownership. The player can
-claim a base alone. Your base boundary is highlighted in
-green on the minimap, and its district coordinate appears beside your name and
-faction. While standing inside another group's base, your status shows
-**FOREIGN BASE**; foreign bases are not marked on the minimap. A basement or
-another level can join the same base when its claimable
-area has a two-way stair connection to an already claimed area. Claim each
-level separately with **Ctrl+B** and **Y**. Open subway tracks are not claimed
-with a station room. Claiming an unconnected area releases every level of the
-previous base; you can own one base at a time. A group leader's death also
-releases every level of its base.
-
-In your base, stand in a room and press **Ctrl+B**, then **F** to assign food
-storage or **W** to assign weapon storage. In the follower order menu, press
-**E** to send a follower for supplies. They take needed provisions from storage,
-search their district and neighboring districts through map exits, and return
-found food and weapons to the assigned rooms. Enable **Claimable bases** in
-any preset to use these mechanics. If you move your base during a scavenging
-trip, the follower brings collected supplies to the new base.
-NPC leaders check each member's current hunger and the food on their base and
-in the group's inventories. When those reserves cannot cover current hunger
-and the next two days' consumption for everyone, a leader sends an available
-follower from the base for supplies. If none is available, the leader may go instead.
-They leave stored food and weapons in place until they need them. Taking
-supplies from another group's base is possible, but an awake owner who sees
-the theft becomes hostile to the thief.
-
-## Develop and test
-
-To publish a release, open **Actions → Release → Run workflow** on the default
-branch and enter a new `X.Y.Z` version. The workflow updates `VERSION`, the
-game and Windows file versions, bundled mod, README, and save format
-documentation; builds the Windows game; commits the version; creates `vX.Y.Z`;
-and publishes a GitHub Release with a ready-to-run Windows ZIP. The ZIP includes
-the executable, resources, and bundled mods. Do not create the tag or GitHub
-Release separately. The workflow needs permission to push to the default branch.
-For local version changes, run `ruby tools/release_version.rb X.Y.Z`.
+Read [AGENTS.md](AGENTS.md), make your change, and open a pull request. For gameplay changes, add a [scenario](docs/gameplay-scenarios.md) and run:
 
 ```sh
+sh tests/scenario.sh <name>
 docker build --target test .
-bash tests/e2e.sh
-sh tests/scenario.sh --list
-sh tests/scenario.sh --bench-ai
-sh tests/scenario.sh storage/save-budget
 ```
 
-Gameplay scenarios and how to run one are documented in
-[docs/gameplay-scenarios.md](docs/gameplay-scenarios.md). See
-[optimizations.md](optimizations.md) for a summary of completed changes and
-[docs/performance.md](docs/performance.md) for their measurements,
-[AGENTS.md](AGENTS.md) for contributor guidance and
-[docs/save-format.md](docs/save-format.md) for save compatibility. GitHub
-Actions runs the automated checks.
-
-The regular test target includes a large save/load performance gate: each
-operation must finish within 10 seconds and each save must fit in 50 MB.
-It also reports sampled RAM peaks; see the workload and copied-save command in
-[docs/performance.md](docs/performance.md#automated-save-and-load-budget).
+For UI, input, rendering, or asset changes, also run `bash tests/e2e.sh`.
