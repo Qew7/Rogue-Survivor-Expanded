@@ -95,6 +95,9 @@ namespace djack.RogueSurvivor.Engine
             while (line.Length > width)
             {
                 int split = line.LastIndexOf(' ', width);
+                int building = line.LastIndexOf(" at the ", StringComparison.Ordinal);
+                if (building >= 20 && split > building && line.Length - building < width - 4)
+                    split = building;
                 if (split < 20) split = width;
                 lines.Add(line.Substring(0, split));
                 line = "    " + line.Substring(split).TrimStart();

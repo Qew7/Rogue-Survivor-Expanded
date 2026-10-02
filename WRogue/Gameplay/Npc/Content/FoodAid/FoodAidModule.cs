@@ -70,8 +70,10 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         }
         void RegisterEvents(NpcCatalogBuilder catalog)
         {
+            catalog.OnReport("helped", c => NpcReputation.Help(c, true));
+            catalog.OnReport("shared_food", c => NpcReputation.Help(c));
             catalog.Event(new NpcEventDefinition("helped", NpcRecordCategory.Help, true, e => (e.Other ?? "someone") + " helped " + (e.Subject ?? "Someone") + ".", null));
-            catalog.Event(new NpcEventDefinition("shared_food", NpcRecordCategory.Help, false, e => (e.Subject ?? "Someone") + " shared food with " + (e.Other ?? "someone") + ".", null) { StoryStage = (g, s, e) => NpcEpisodeProgress.FoodDelivery(g, s, e) });
+            catalog.Event(new NpcEventDefinition("shared_food", NpcRecordCategory.Help, true, e => (e.Subject ?? "Someone") + " shared food with " + (e.Other ?? "someone") + ".", null) { StoryStage = (g, s, e) => NpcEpisodeProgress.FoodDelivery(g, s, e) });
             catalog.Event(new NpcEventDefinition("request_refused", NpcRecordCategory.Help, false, e => (e.Subject ?? "Someone") + " declined " + (e.Other ?? "someone") + "'s request.", null));
             catalog.Event(new NpcEventDefinition("aid_acknowledged", NpcRecordCategory.Help, false, e => (e.Subject ?? "Someone") + " acknowledged aid from " + (e.Other ?? "someone") + ".", null));
             catalog.On("helped", NpcObservationPhase.Knowledge, OnKnowledge);

@@ -246,6 +246,18 @@ Heard speech uses existing resident entries with kinds `heard_rumor`,
 `heard_request` and `heard_reply`. Only awake intelligent NPCs within audio range
 gain an entry; seeing the speaker is not required. Text, event ID and any known
 cause/story ID survive archive-only load, under the **Encounters** filter.
+Retained `NpcFact` entries optionally store `SubjectReportName` and
+`OtherReportName`, the observer's original spoken description of each participant.
+An acquaintance is named; an unfamiliar visible person is described by faction
+membership. Retelling and save/load preserve these descriptions while stable
+participant IDs remain available to NPC decisions. Older saves without these
+fields fall back to their existing participant names. Retained facts also store
+optional `SubjectFactionId` and `OtherFactionId` snapshots.
+These let a listener react to the named faction when the observer did not know
+the actor's name; older saves have no faction snapshot. A retained supply-loss
+fact also stores optional `Resource` and its existing `Units` count so a later
+report can describe the actual contents and amount. Older facts default to an
+unspecified supply loss.
 Unanswered player requests reuse saved `NpcReaction` state and expire after 30
 turns. Its optional `Overheard` field distinguishes requests made to someone
 else from requests addressed to the player. Player promises use the existing

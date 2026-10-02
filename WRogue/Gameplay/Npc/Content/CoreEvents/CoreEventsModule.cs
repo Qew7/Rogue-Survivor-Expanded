@@ -19,18 +19,18 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             });
             catalog.Event(new NpcEventDefinition("attack", NpcRecordCategory.Combat, true, e => (e.Other ?? "someone") + " attacked " + (e.Subject ?? "Someone") + ".", null));
             catalog.Event(new NpcEventDefinition("murder", NpcRecordCategory.Combat, true, e => (e.Other ?? "someone") + " murdered " + (e.Subject ?? "Someone") + ".", null));
-            catalog.Event(new NpcEventDefinition("death", NpcRecordCategory.Combat | NpcRecordCategory.Life, true, e => (e.Subject ?? "Someone") + " died" + (e.Other == null ? "." : "; killed by " + (e.Other ?? "someone") + "."), f => f.SubjectName + " died") { ProvesDeath = true });
+            catalog.Event(new NpcEventDefinition("death", NpcRecordCategory.Combat | NpcRecordCategory.Life, true, e => (e.Subject ?? "Someone") + " died" + (e.Other == null ? "." : "; killed by " + (e.Other ?? "someone") + "."), f => f.ReportSubject + " died" + (f.ReportOther == null ? "" : "; killed by " + f.ReportOther)) { ProvesDeath = true });
             catalog.Event(new NpcEventDefinition("kill_human", NpcRecordCategory.Combat, false, e => (e.Other ?? "someone") + " killed " + (e.Subject ?? "Someone") + ".", null));
             catalog.Event(new NpcEventDefinition("starvation", NpcRecordCategory.Life, false, e => (e.Subject ?? "Someone") + " faced starvation.", null));
             catalog.Event(new NpcEventDefinition("zombified", NpcRecordCategory.Life, false, e => (e.Other ?? "someone") + " turned into " + (e.Subject ?? "Someone") + ".", null));
-            catalog.Event(new NpcEventDefinition("base_loss", NpcRecordCategory.None, false, e => (e.Subject ?? "Someone") + " lost a base.", null));
-            catalog.Event(new NpcEventDefinition("raid", NpcRecordCategory.World, false, e => "A raid occurred.", null));
+            catalog.Event(new NpcEventDefinition("base_loss", NpcRecordCategory.World, true, e => (e.Subject ?? "Someone") + " lost a base.", null));
+            catalog.Event(new NpcEventDefinition("raid", NpcRecordCategory.World, true, e => "A raid occurred.", f => "there was a raid"));
             catalog.Event(new NpcEventDefinition("spawn", NpcRecordCategory.Life, false, null, null) { CanObserve = (a, e) => a != e.Subject });
             catalog.Event(new NpcEventDefinition("unique_arrival", NpcRecordCategory.World, false, e => (e.Subject ?? "Someone") + " arrived.", null) { CanObserve = (a, e) => a != e.Subject });
             catalog.Event(new NpcEventDefinition("met_unique", NpcRecordCategory.Encounters, false, null, null));
             catalog.Event(new NpcEventDefinition("chat", NpcRecordCategory.Encounters, false,
                 e => (e.Subject ?? "Someone") + " talked with " + (e.Other ?? "someone") + "."));
-            catalog.Event(new NpcEventDefinition("traded", NpcRecordCategory.Encounters, false,
+            catalog.Event(new NpcEventDefinition("traded", NpcRecordCategory.Encounters, true,
                 e => (e.Subject ?? "Someone") + " traded with " + (e.Other ?? "someone") + "."));
             catalog.On("chat", NpcObservationPhase.Relationships, RememberContact);
             catalog.On("traded", NpcObservationPhase.Relationships, RememberContact);
@@ -38,8 +38,18 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             foreach (var source in PersonalityWorldContent.Uniques)
                 catalog.Event(new NpcEventDefinition(source.Kind, NpcRecordCategory.Encounters, describe: e => source.Name + (e.Subject == null ? "." : ": " + e.Subject + ".")) { OncePerSubject = true, CanObserve = (a, e) => a != e.Subject });
             foreach (var source in PersonalityWorldContent.WorldEvents)
-                catalog.Event(new NpcEventDefinition(source.Kind, WorldCategory(source.Kind), source.Kind == "army_supplies" || source.Kind.EndsWith("_raid"),
-                    e => source.Name + (e.Subject == null ? "." : ": " + e.Subject + ".")));
+            {
+                Func<NpcFact, string> report = null;
+                if (source.Kind.EndsWith("_raid"))
+                    report = f => "there was a " + source.Name.ToLowerInvariant() +
+                        (f.ReportSubject == null ? "" : " involving " + f.ReportSubject);
+                else if (source.Kind == "army_supplies")
+                    report = f => "there was an army relief drop" +
+                        (f.ReportSubject == null ? "" : " involving " + f.ReportSubject);
+                catalog.Event(new NpcEventDefinition(source.Kind, WorldCategory(source.Kind),
+                    source.Kind == "army_supplies" || source.Kind.EndsWith("_raid"),
+                    e => source.Name + (e.Subject == null ? "." : ": " + e.Subject + "."), report));
+            }
         }
         static NpcRecordCategory WorldCategory(string kind)
         { return kind.EndsWith("_raid") || kind.EndsWith("_arrival") || kind == "zombie_invasion" || kind == "army_supplies" ? NpcRecordCategory.World : NpcRecordCategory.None; }

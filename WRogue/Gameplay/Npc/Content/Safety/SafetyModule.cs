@@ -74,8 +74,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         }
         void RegisterEvents(NpcCatalogBuilder catalog)
         {
-            catalog.OnReport("attack", HearNeed);
-            catalog.OnReport("murder", HearNeed);
+            catalog.OnReport("attack", c => { HearNeed(c); NpcReputation.Attack(c); });
+            catalog.OnReport("murder", c => { HearNeed(c); NpcReputation.Attack(c); });
             catalog.Event(new NpcEventDefinition("left_group", NpcRecordCategory.Encounters, false, e => (e.Subject ?? "Someone") + " chose to leave " + (e.Other ?? "someone") + "'s group.", null) { StoryStage = (g, s, e) => "completed" });
             catalog.Event(new NpcEventDefinition("withdrew", NpcRecordCategory.None, false, e => (e.Subject ?? "Someone") + " withdrew from the last reported danger location.", null) { StoryStage = (g, s, e) => "completed" });
             catalog.On("attack", NpcObservationPhase.Knowledge, OnKnowledge);

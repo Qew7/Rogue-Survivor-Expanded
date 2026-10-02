@@ -9,6 +9,14 @@ namespace djack.RogueSurvivor.Data
     {
         public long EventId;
         public string Kind, SubjectName, OtherName, StoryId;
+        [System.Runtime.Serialization.OptionalField] public string Resource;
+        // The words used by the first observer stay fixed when the fact is retold.
+        [System.Runtime.Serialization.OptionalField] public string SubjectReportName;
+        [System.Runtime.Serialization.OptionalField] public string OtherReportName;
+        [System.Runtime.Serialization.OptionalField] public int? SubjectFactionId;
+        [System.Runtime.Serialization.OptionalField] public int? OtherFactionId;
+        public string ReportSubject { get { return SubjectReportName ?? SubjectName; } }
+        public string ReportOther { get { return OtherReportName ?? OtherName; } }
         public Guid SubjectId, OtherId, SourceId;
         public int EventTurn, LearnedTurn, Confidence, Hops, Units, Risk;
         public Location Place;
@@ -17,7 +25,9 @@ namespace djack.RogueSurvivor.Data
         public NpcFact Retell(Guid speaker, int turn, int confidence)
         {
             return new NpcFact { EventId = EventId, Kind = Kind, SubjectName = SubjectName, OtherName = OtherName,
-                StoryId = StoryId, SubjectId = SubjectId, OtherId = OtherId, SourceId = speaker, EventTurn = EventTurn,
+                SubjectReportName = SubjectReportName, OtherReportName = OtherReportName,
+                SubjectFactionId = SubjectFactionId, OtherFactionId = OtherFactionId,
+                StoryId = StoryId, Resource = Resource, SubjectId = SubjectId, OtherId = OtherId, SourceId = speaker, EventTurn = EventTurn,
                 LearnedTurn = turn, Confidence = confidence, Hops = Hops + 1, Units = Units, Risk = Risk, Place = Place, Source = NpcKnowledgeSource.Told, NoSubjectLocation = NoSubjectLocation };
         }
     }

@@ -57,7 +57,10 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         {
             catalog.Event(new NpcEventDefinition("valued_item_acquired", NpcRecordCategory.None, false, e => (e.Subject ?? "Someone") + " acquired a personally valued kind of item.", null));
             catalog.Event(new NpcEventDefinition("home_reached", NpcRecordCategory.None, false, e => (e.Subject ?? "Someone") + " returned to their threatened home.", null));
-            catalog.Event(new NpcEventDefinition("supplies_lost", NpcRecordCategory.None, false, e => (e.Subject ?? "Someone") + " lost supplies.", null));
+            catalog.Event(new NpcEventDefinition("supplies_lost", NpcRecordCategory.None, true,
+                e => (e.Subject ?? "Someone") + " lost supplies.",
+                f => (f.ReportOther ?? "someone") + " took " + (f.Units > 0 ? f.Units + " units of " : "") +
+                    (f.Resource == "food" ? "food" : "stored supplies") + " from " + (f.ReportSubject ?? "someone") + "'s storage"));
             catalog.On("supplies_lost", NpcObservationPhase.Relationships, OnRelationships);
         }
         static void OnRelationships(NpcObservation observation)

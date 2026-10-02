@@ -28,7 +28,7 @@ namespace djack.RogueSurvivor.Gameplay.AI
                 PersonalitySystem.Bias(m_Actor, DecisionKind.Compassion) / 2 < 25) return null;
             foreach (NpcFact fact in knowledge.Facts)
             {
-                if (fact.Kind == "missing_companion" || (fact.SubjectId == Guid.Empty && fact.Kind != "food_cache" && fact.Kind != "medicine_cache")) continue;
+                if (fact.Kind == "missing_companion" || (fact.SubjectId == Guid.Empty && fact.Kind != "food_cache" && fact.Kind != "medicine_cache" && fact.Kind != "raid")) continue;
                 foreach (Actor person in visible)
                 {
                     if (person == m_Actor || person.PersonalityIdentity == fact.SourceId) continue;

@@ -35,7 +35,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             catalog.Event(new NpcEventDefinition("resource_contested", NpcRecordCategory.None, true, e => (e.Subject ?? "Someone") + " asked " + (e.Other ?? "someone") + " to yield disputed supplies.", null));
             catalog.Event(new NpcEventDefinition("resource_yielded", NpcRecordCategory.None, false, e => (e.Subject ?? "Someone") + " yielded disputed supplies to " + (e.Other ?? "someone") + ".", null));
             catalog.Event(new NpcEventDefinition("resource_refused", NpcRecordCategory.None, false, e => (e.Subject ?? "Someone") + " refused to yield supplies to " + (e.Other ?? "someone") + ".", null));
-            catalog.Event(new NpcEventDefinition("contested_taken", NpcRecordCategory.None, true, e => (e.Subject ?? "Someone") + " took supplies despite " + (e.Other ?? "someone") + "'s refusal.", f => f.SubjectName + " took disputed supplies"));
+            catalog.Event(new NpcEventDefinition("contested_taken", NpcRecordCategory.None, true, e => (e.Subject ?? "Someone") + " took supplies despite " + (e.Other ?? "someone") + "'s refusal.", f => f.ReportSubject + " took disputed supplies" + (f.ReportOther == null ? "" : " despite " + f.ReportOther + "'s refusal")));
             catalog.On("contested_taken", NpcObservationPhase.Relationships, OnRelationships);
             catalog.On("resource_contested", NpcObservationPhase.Relationships, OnRelationships);
             catalog.On("resource_refused", NpcObservationPhase.Relationships, OnRelationships);

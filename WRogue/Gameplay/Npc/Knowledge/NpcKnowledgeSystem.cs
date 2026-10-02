@@ -9,6 +9,15 @@ namespace djack.RogueSurvivor.Gameplay.Personality
 {
     static partial class NpcKnowledgeSystem
     {
+        static string ReportName(Actor observer, Actor participant, bool seen)
+        {
+            if (participant == null) return null;
+            if (!seen) return "someone";
+            RelationshipRecord relationship = observer.Personality.Person(participant.PersonalityIdentity);
+            if (participant == observer || relationship != null && relationship.Name == participant.UnmodifiedName)
+                return participant.UnmodifiedName;
+            return participant.Faction == null ? "someone" : "a " + participant.Faction.MemberName;
+        }
         public static bool Visible(RogueGame game, Actor actor, Location place)
         { return place.Map == actor.Location.Map && game.Rules.GridDistance(actor.Location.Position, place.Position) <=
             game.Rules.ActorFOV(actor, actor.Location.Map.LocalTime, game.Session.World.Weather) && LOS.CanTraceViewLine(actor.Location, place.Position); }
@@ -36,7 +45,13 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 Source = observation.Direct ? NpcKnowledgeSource.Participant : NpcKnowledgeSource.Witness, Confidence = observation.Direct ? 100 : 90,
                 SourceId = owner.PersonalityIdentity, SubjectId = !seesSubject ? Guid.Empty : source.Subject.PersonalityIdentity,
                 OtherId = !seesOther ? Guid.Empty : source.Other.PersonalityIdentity, SubjectName = !seesSubject ? null : source.Subject.UnmodifiedName,
-                OtherName = !seesOther ? null : source.Other.UnmodifiedName, Place = new Location(source.Map, source.Position), StoryId = source.StoryId });
+                OtherName = !seesOther ? null : source.Other.UnmodifiedName,
+                SubjectReportName = ReportName(owner, source.Subject, seesSubject),
+                OtherReportName = ReportName(owner, source.Other, seesOther),
+                SubjectFactionId = !seesSubject || source.Subject.Faction == null ? (int?)null : source.Subject.Faction.ID,
+                OtherFactionId = !seesOther || source.Other.Faction == null ? (int?)null : source.Other.Faction.ID,
+                Place = new Location(source.Map, source.Position), StoryId = source.StoryId,
+                Resource = source.Resource, Units = source.Units });
         }
         public static void Perceive(RogueGame game, Actor actor, IList<Percept> percepts)
         {
@@ -77,10 +92,10 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             int improvement = Math.Max(0, confidence - (previous == null ? 0 : previous.Confidence));
             bool learned = listener.Personality.Knowledge.Learn(fact);
             if (learned && fact.SubjectId != Guid.Empty && !fact.NoSubjectLocation)
-                listener.Personality.Knowledge.LearnPerson(new NpcKnownPerson { Id = fact.SubjectId, Name = fact.SubjectName, Place = fact.Place,
+                listener.Personality.Knowledge.LearnPerson(new NpcKnownPerson { Id = fact.SubjectId, Name = fact.ReportSubject, Place = fact.Place,
                     SeenTurn = fact.EventTurn, Confidence = confidence, Source = NpcKnowledgeSource.Told, Dead = game.NpcContent.Event(fact.Kind) != null && game.NpcContent.Event(fact.Kind).ProvesDeath && confidence >= 60 });
             if (learned && fact.OtherId != Guid.Empty && listener.Personality.Knowledge.Person(fact.OtherId) == null)
-                listener.Personality.Knowledge.LearnPerson(new NpcKnownPerson { Id = fact.OtherId, Name = fact.OtherName, Place = fact.Place,
+                listener.Personality.Knowledge.LearnPerson(new NpcKnownPerson { Id = fact.OtherId, Name = fact.ReportOther, Place = fact.Place,
                     SeenTurn = fact.EventTurn, Confidence = confidence, Source = NpcKnowledgeSource.Told });
             if (learned) game.NpcContent.Hear(new NpcReportContext(listener, fact, improvement, game.NpcContent));
             return learned;

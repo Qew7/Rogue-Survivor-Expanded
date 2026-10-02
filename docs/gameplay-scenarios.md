@@ -35,6 +35,12 @@ unknown map data, bounded planner locations and shared-goal lifecycle.
 `npc/overheard-rumor` cover the talk command, Y/N consequences, audio range,
 walls, rumor learning and archive-only heard-speech search. The first also
 checks persistent promises; `world/talk-keybinding-migration` checks old keys.
+`npc/all-rumor-identities` checks the name/faction rule against every registered
+reportable event. `npc/supply-loss-rumor`, `npc/aid-trade-rumor`,
+`npc/barter-rumor`, `npc/base-loss-rumor`, `npc/raid-rumor` and
+`npc/raid-rumor-ai` exercise the corresponding real actions or event handlers.
+`npc/supply-loss-rumor-save`
+checks the new supply payload across save and load.
 
 Add each new scenario in its own file under the matching topic directory in
 `tests/scenarios/cases/`. Living and undead skills have separate directories.

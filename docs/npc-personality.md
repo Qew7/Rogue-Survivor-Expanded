@@ -166,6 +166,22 @@ Rumors name the event's district and, when its position falls inside a typed
 building zone, the grocery, gun shop, home, park or other known place. The J
 journal and Read Records color these place labels by type. A report from a
 street or unclassified zone names only the district.
+For a witnessed event, the first reporter names an acquaintance but describes
+an unfamiliar visible participant by faction (for example, "a biker"). Later
+reporters repeat that description even if they have since learned the person's
+name. The same rule applies to every reportable event and each participant
+mentioned in its wording. Attack rumors explicitly describe who attacked whom.
+Completed storage theft, food and medicine gifts, barter, ordinary trades, base
+loss and raids can also be retold. Storage-loss reports preserve the resource
+and quantity taken. The event's stable participant IDs remain in NPC knowledge
+for decisions and causal records.
+Hearing a report about an attack, theft, broken or kept promise, or aid can
+change the listener's opinion. Law and compassion traits change approval or
+condemnation; courage changes fear of a reported attacker. The player uses the
+same reaction as NPC listeners. A named participant affects a personal
+relationship, while an unfamiliar participant affects only their reported
+faction, with a weaker reaction. Repeating the same report at unchanged
+confidence does not apply the reaction again.
 
 The catalog contains 50 starting and 66 advanced traits. Advanced traits
 are available only through memory resolution. Most require an existing trait;
