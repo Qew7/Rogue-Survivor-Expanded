@@ -31,7 +31,7 @@ static class TraitGoalReasonScenario
             Check.Equal(true, started != null, "goal starts with adequate utility");
             bool recorded = false;
             foreach (ResidentEntry entry in Session.Get.ResidentRecords.Register(helper).Entries)
-                if (entry.Kind == "goal_started" && entry.Text.Contains("because trait Kind")) recorded = true;
+                if (entry.Kind == "goal_started" && entry.Text.Contains("Kind trait raised its importance")) recorded = true;
             Check.Equal(true, recorded, "Read Records includes the causal trait contribution at intent start");
         });
     }

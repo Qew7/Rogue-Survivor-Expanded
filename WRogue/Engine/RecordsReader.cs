@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text.RegularExpressions;
 using djack.RogueSurvivor.Data;
 using djack.RogueSurvivor.Gameplay.Personality;
 
@@ -55,7 +56,9 @@ namespace djack.RogueSurvivor.Engine
         {
             if (filter != RecordsEventFilter.All &&
                 !NpcRecordDescriptions.Matches(entry, (NpcRecordCategory)(1 << ((int)filter - 1)))) return false;
-            if (String.IsNullOrEmpty(search) || entry.Text.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0) return true;
+            if (String.IsNullOrEmpty(search) || entry.Text.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                (!String.IsNullOrEmpty(entry.StoryId) && entry.StoryId.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                DisplayText(entry).IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0) return true;
             string context = CauseContext(entry, causes);
             return context != null && context.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0;
         }
@@ -99,7 +102,7 @@ namespace djack.RogueSurvivor.Engine
             foreach (KeyValuePair<ResidentRecord, ResidentEntry> entry in entries)
             {
                 string line = new WorldTime(entry.Value.Turn) + " | " + entry.Key.Name +
-                    " [" + entry.Key.Identity.ToString("N").Substring(0, 8) + "] | " + entry.Value.Text;
+                    " | " + DisplayText(entry.Value);
                 string context = CauseContext(entry.Value, causes);
                 if (context != null) line += " | " + context;
                 const string indent = "    ";
@@ -125,6 +128,69 @@ namespace djack.RogueSurvivor.Engine
             return !entry.Direct && entry.SubjectId == resident.Identity &&
                 (entry.Kind == "unique_arrival" || entry.Kind == "met_unique" ||
                     entry.Kind.StartsWith("met_", StringComparison.Ordinal));
+        }
+
+        static string DisplayText(ResidentEntry entry)
+        {
+            string text = entry.Text;
+            if (text == null) return "";
+            int start = text.IndexOf(" [story ", StringComparison.Ordinal);
+            while (start >= 0)
+            {
+                int end = text.IndexOf(']', start);
+                if (end < 0) break;
+                text = text.Remove(start, end - start + 1);
+                start = text.IndexOf(" [story ", StringComparison.Ordinal);
+            }
+            text = text.Trim();
+            if (entry.Kind == "goal_plan" && text.StartsWith("Plan: ", StringComparison.Ordinal))
+            {
+                string[] steps = text.Substring(6).TrimEnd('.').Split(new[] { " → " }, StringSplitOptions.None);
+                for (int i = 0; i < steps.Length; i++) steps[i] = OldPlanStep(steps[i]);
+                return "Planned route: " + String.Join(", then ", steps) + ".";
+            }
+            if (entry.Kind == "story_stage" && text.StartsWith("Story ", StringComparison.Ordinal))
+            {
+                Match story = Regex.Match(text, @"^Story ([a-z_]+): ([a-z_]+)\.");
+                if (story.Success)
+                {
+                    string goal = story.Groups[1].Value.Replace('_', ' ');
+                    string stage = story.Groups[2].Value;
+                    return "The effort to " + goal + (stage == "completed" ? " succeeded." :
+                        stage == "failed" ? " failed." : stage == "abandoned" ? " was abandoned." : " continued.");
+                }
+            }
+            if (entry.Kind.StartsWith("goal_", StringComparison.Ordinal) && text.StartsWith("Intent ", StringComparison.Ordinal))
+            {
+                Match intent = Regex.Match(text, @"^Intent ([a-z]+): (.*?); target (.*?); (.*)\.$");
+                if (intent.Success)
+                {
+                    string state = intent.Groups[1].Value, goal = intent.Groups[2].Value;
+                    string reason = intent.Groups[4].Value;
+                    Match need = Regex.Match(reason, @"^[^:]+: (-?\d+) → (-?\d+); deficit (\d+), importance (\d+), confidence (\d+), utility \d+(?:; (.*))?$");
+                    if (state == "started" && need.Success)
+                        return "Decided to " + goal.ToLowerInvariant() + ". Need unmet: " + need.Groups[3].Value +
+                            "% (current " + need.Groups[1].Value + ", desired " + need.Groups[2].Value +
+                            "); importance: " + need.Groups[4].Value + "/200; confidence: " + need.Groups[5].Value +
+                            "%" + (need.Groups[6].Success ? ". " + need.Groups[6].Value.Replace("because trait ", "Trait ") : "") + ".";
+                    return (state == "completed" ? "Achieved: " : state == "started" ? "Decided to: " : "Goal " + state + ": ") +
+                        goal + ". " + reason + ".";
+                }
+            }
+            return text;
+        }
+
+        static string OldPlanStep(string step)
+        {
+            switch (step)
+            {
+                case "Travel": case "travel": return "travel to the destination";
+                case "EnterShelter": case "shelter.enter": return "enter the shelter";
+                case "PickupFood": case "food.take": return "collect food";
+                case "AskFood": case "food.ask": return "ask for food";
+                case "GiveFood": case "food.give": return "give food";
+                default: return Regex.Replace(step.Replace('_', ' ').Replace('.', ' '), "([a-z])([A-Z])", "$1 $2").ToLowerInvariant();
+            }
         }
     }
 }

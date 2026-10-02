@@ -31,7 +31,7 @@ static class StoryContinuationScenario
             Check.Equal(true, next.Generated.Causes.Length > 0, "supporting evidence is retained with the goal");
             Session.Get.WorldTime.TurnCounter = 181;
             string text = String.Join(" ", RecordsReader.Lines(new RecordsSave("test", Session.Get), null));
-            Check.Equal(true, text.Contains("Continuation of"), "chronicle connects the independently generated episodes");
+            Check.Equal(true, text.Contains("found another lead"), "chronicle connects the independently generated episodes");
         });
     }
 }

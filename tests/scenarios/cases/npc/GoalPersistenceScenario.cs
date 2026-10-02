@@ -30,7 +30,7 @@ static class GoalPersistenceScenario
                 Check.Equal(NpcIntentStatus.Completed, saved.Status, "saved state goal resumes through a real action");
                 Check.Equal(3, NpcIntentSupport.FoodUnits(actor), "loading creates no duplicate supplies");
                 BinarySaveStore.Save(path, loaded);
-                Check.Equal(true, String.Join(" ", RecordsReader.Lines(RecordsReader.Load(path), null, null, saved.StoryId, RecordsEventFilter.Intentions)).Contains("Nutrition:"), "archive-only reader retains the reason for generation");
+                Check.Equal(true, String.Join(" ", RecordsReader.Lines(RecordsReader.Load(path), null, null, saved.StoryId, RecordsEventFilter.Intentions)).Contains("Need unmet:"), "archive-only reader explains the reason for generation");
                 var food = new System.Collections.Generic.List<Item>(actor.Inventory.Items);
                 foreach (Item item in food) actor.Inventory.RemoveAllQuantity(item);
                 restored.Map.LocalTime.TurnCounter = 1; NpcGoalGenerator.Refresh(restored.Game, actor);

@@ -51,7 +51,7 @@ static class StoryPersistenceScenario
                 loaded.WorldTime.TurnCounter = restored.Map.LocalTime.TurnCounter;
                 BinarySaveStore.Save(path, loaded); RecordsSave archive = RecordsReader.Load(path);
                 Check.Equal(true, String.Join(" ", new System.Collections.Generic.List<string>(RecordsReader.Lines(archive, null, null, saved.StoryId,
-                    RecordsEventFilter.Intentions)).ToArray()).Contains("Story group_supplies: completed"), "archive-only reader can search the multi-actor episode");
+                    RecordsEventFilter.Intentions)).ToArray()).Contains("gather supplies for the group came to an end successfully"), "archive-only reader can search the multi-actor episode");
             }
             finally { if (File.Exists(path)) File.Delete(path); if (File.Exists(path + ".bak")) File.Delete(path + ".bak"); }
         });

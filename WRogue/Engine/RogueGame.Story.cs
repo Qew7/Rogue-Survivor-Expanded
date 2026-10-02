@@ -42,6 +42,14 @@ namespace djack.RogueSurvivor.Engine
             m_MusicManager.Stop();
         }
 
+        void RememberStoryMoment(Actor player, Actor speaker, string text)
+        {
+            if (player.Personality == null) player.Personality = new PersonalityState();
+            player.Personality.HearSpeech(new HeardJournalEntry(player.Location.Map.LocalTime.TurnCounter,
+                speaker == null ? "story_note" : "heard_rumor",
+                speaker == null ? "You" : speaker.UnmodifiedName, text, 0));
+        }
+
         void CheckSpecialPlayerEventsAfterAction(Actor player)
         {
             //////////////////////////////////////////////////////////
@@ -77,6 +85,7 @@ namespace djack.RogueSurvivor.Engine
 
                         // achievement!
                         ShowNewAchievement(Achievement.IDs.CHAR_BROKE_INTO_OFFICE);
+                        RememberStoryMoment(player, null, "You broke into a CHAR office.");
                     }
                 }
             }
@@ -131,6 +140,7 @@ namespace djack.RogueSurvivor.Engine
                         fromCUF.IsAnAIExit = true;
                         ReportPersonalityEvent("char_discovered", player, null, player.Location.Map,
                             player.Location.Position, false, false);
+                        RememberStoryMoment(player, null, "You found the CHAR underground facility and opened its route to the surface.");
                     }
                 }
             }
@@ -149,6 +159,7 @@ namespace djack.RogueSurvivor.Engine
                         lock (m_Session) // thread safe
                         {
                             m_Session.PlayerKnows_TheSewersThingLocation = true;
+                            RememberStoryMoment(player, null, "You saw a strange creature in the sewers.");
 
                             // message + music, so the player notices it.
                             m_MusicManager.Stop();
@@ -204,6 +215,7 @@ namespace djack.RogueSurvivor.Engine
                                     String.Format("Looks like {0} wants you to turn the generator on to open the cells...", HeOrShe(prisoner))
                                 };
                                 ShowSpecialDialogue(prisoner, text);
+                                RememberStoryMoment(player, prisoner, "Asked you to switch on the corridor generator to open the cell and promised to reveal the CHAR underground facility's location.");
 
                                 // Scoring event.
                                 m_Session.Scoring.AddEvent(m_Session.WorldTime.TurnCounter, String.Format("{0} offered a deal.", prisoner.Name));
@@ -257,6 +269,9 @@ namespace djack.RogueSurvivor.Engine
                                 monster.ActionPoints = 0;
                                 ReportPersonalityEvent("prisoner_transformed", monster, prisoner, map,
                                     monster.Location.Position, false, false);
+                                RememberStoryMoment(player, prisoner, String.Format("Revealed that the CHAR underground facility is in district {0}, reached through a CHAR office's iron door, then transformed.",
+                                    World.CoordToString(m_Session.UniqueMaps.CHARUndergroundFacility.TheMap.District.WorldPosition.X,
+                                        m_Session.UniqueMaps.CHARUndergroundFacility.TheMap.District.WorldPosition.Y)));
 
                                 // Scoring event.
                                 m_Session.Scoring.AddEvent(m_Session.WorldTime.TurnCounter, String.Format("{0} turned into a {1}!", prisoner.Name, monster.Model.Name));
@@ -300,6 +315,7 @@ namespace djack.RogueSurvivor.Engine
                             // message if 1st time.
                             if (!m_Session.Scoring.HasSighted(m_Session.UniqueActors.JasonMyers.TheActor.Model.ID))
                             {
+                                RememberStoryMoment(player, null, "You spotted Jason Myers carrying an axe.");
                                 ClearMessages();
                                 AddMessage(new Message("Nice axe you have there!", m_Session.WorldTime.TurnCounter, Color.Yellow));
                                 if (!m_Player.IsBotPlayer)

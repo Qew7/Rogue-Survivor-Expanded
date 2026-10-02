@@ -87,7 +87,7 @@ and evidence confidence. It accepts no event kind: observations first update
 beliefs, and changed state then motivates a goal. Existing debt or injury can
 produce a goal without a new significant event. New urgent needs can replace a
 weaker generated goal at the decision boundary. Private starts record the
-current/desired values and utility explanation in Read Records.
+current/desired values, unmet need, importance and confidence in Read Records.
 
 An actual food exchange creates the acquired `traded_for_food` memory, attributed
 to the trading partner. Its resolution can grant CHARISMATIC skill. An offer or
@@ -300,9 +300,11 @@ For entries with an actual archived cause, Read Records adds a short
 linked to a witnessed theft. Search also matches that explanation. No motive
 is inferred from a trait alone: a refusal is linked to revenge only if the
 decision was really caused by a recorded grievance or goal.
-For a generated goal, a recorded trait reason states the measured increase in
-that goal's importance when the trait is present. Traits unrelated to the goal
-are omitted. The archive records the actual gained trait when a memory resolves;
+For a generated goal, the chronicle describes the unmet need (0–100%), current
+and desired state, importance (0–200), confidence (0–100%), the measured trait
+effect when present, and the NPC's plan in ordinary language. It keeps internal
+story IDs available for search but hides them from displayed lines. Traits
+unrelated to the goal are omitted. The archive records the actual gained trait when a memory resolves;
 a skill appears only if the eligible trait outcomes were unavailable.
 
 This main-menu reader reveals saved NPC records outside gameplay. Format-5

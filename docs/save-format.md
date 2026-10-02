@@ -265,9 +265,12 @@ else from requests addressed to the player. Player promises use the existing
 `NpcCommitment` state and deadline.
 The player's `PersonalityState` also has an optional bounded `HeardJournalEntry`
 list (up to 128 entries), storing turn, speech kind, identified or anonymous
-speaker, exact heard text and cause ID. It is populated only for awake players
-within hearing range; it is separate from NPC `ResidentRecords` and is displayed
-in game with J. Saves made before this field was added load with an empty list.
+speaker, text and cause ID. Heard speech is populated only for awake players
+within hearing range. Significant scripted discoveries and conversations also
+store short summaries in this list, including the prisoner's request and the
+facility directions after release. It is separate from NPC `ResidentRecords`
+and is displayed in game with J. Saves made before this field was added load
+with an empty list.
 Read Records builds a temporary index of archived event IDs and resolves a
 record's `CauseId` and `SupportingCauses` into up to two readable antecedents.
 Only prior, present archive entries are shown; missing links produce no text.

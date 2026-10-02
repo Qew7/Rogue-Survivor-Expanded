@@ -19,8 +19,8 @@ static class CustomCatalogGoalRecordScenario
             Check.Equal(true, goal != null, "the custom module starts a real goal");
             bool attributed = false;
             foreach (ResidentEntry entry in Session.Get.ResidentRecords.Register(owner).Entries)
-                if (entry.Kind == "goal_started" && entry.Text.Contains("Recover stamina") &&
-                    entry.Text.Contains("because trait Restful")) attributed = true;
+                if (entry.Kind == "goal_started" && entry.Text.Contains("recover stamina") &&
+                    entry.Text.Contains("Restful trait raised its importance")) attributed = true;
             Check.Equal(true, attributed, "records resolve custom goal prose and trait influence from the active catalog");
 
             Actor assigned = NpcIntentSupport.Actor(world, "assigned", 2, 1);
@@ -33,7 +33,7 @@ static class CustomCatalogGoalRecordScenario
                 NpcIntentStatus.Completed, "rested after taking a breath");
             bool namedFinish = false;
             foreach (ResidentEntry entry in Session.Get.ResidentRecords.Register(assigned).Entries)
-                if (entry.Kind == "goal_completed" && entry.Text.Contains("Take a breath")) namedFinish = true;
+                if (entry.Kind == "goal_completed" && entry.Text.Contains("take a breath")) namedFinish = true;
             Check.Equal(true, namedFinish, "finished assigned goals retain custom capability names in Read Records");
 
             NpcKnownPerson self = new NpcKnownPerson { Id = owner.PersonalityIdentity,

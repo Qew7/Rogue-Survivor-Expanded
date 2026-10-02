@@ -81,11 +81,16 @@ namespace djack.RogueSurvivor.Engine
                 for (int i = player.Personality.HeardJournal.Count - 1; i >= 0; i--)
                 {
                     HeardJournalEntry heard = player.Personality.HeardJournal[i];
+                    if (heard.Kind == "story_note")
+                    {
+                        AppendJournalLine(lines, String.Format("Turn {0} | Story: {1}", heard.Turn, heard.Text));
+                        continue;
+                    }
                     AppendJournalLine(lines, String.Format("Turn {0} | {1} | {2}: \"{3}\"", heard.Turn,
                         heard.Kind == "heard_rumor" ? "Rumor" : heard.Kind == "heard_request" ? "Request" : "Reply",
                         heard.Speaker, heard.Text));
                 }
-            if (lines.Count == 0) lines.Add("You have not heard any rumors or requests yet.");
+            if (lines.Count == 0) lines.Add("You have no story notes, rumors or requests yet.");
             return lines;
         }
 

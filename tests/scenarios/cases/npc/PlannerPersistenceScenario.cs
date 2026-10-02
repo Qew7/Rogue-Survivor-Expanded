@@ -33,7 +33,7 @@ static class PlannerPersistenceScenario
                 Check.Equal(0, saved.Plan.Steps.Count, "terminal plan releases all bound map references");
                 Check.Equal(true, saved.Plan.LastEventId > 0, "real execution saves its causal continuation");
                 loaded.WorldTime.TurnCounter = restored.Map.LocalTime.TurnCounter; BinarySaveStore.Save(path, loaded);
-                Check.Equal(true, String.Join(" ", RecordsReader.Lines(RecordsReader.Load(path), null, null, saved.StoryId, RecordsEventFilter.Intentions)).Contains("Plan:"), "archive-only records show generated plans");
+                Check.Equal(true, String.Join(" ", RecordsReader.Lines(RecordsReader.Load(path), null, null, saved.StoryId, RecordsEventFilter.Intentions)).Contains("plans to"), "archive-only records show generated plans");
             }
             finally { if (File.Exists(path)) File.Delete(path); if (File.Exists(path + ".bak")) File.Delete(path + ".bak"); }
         });
