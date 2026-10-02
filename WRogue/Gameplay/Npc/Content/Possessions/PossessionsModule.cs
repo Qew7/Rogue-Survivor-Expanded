@@ -60,7 +60,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             catalog.Event(new NpcEventDefinition("supplies_lost", NpcRecordCategory.None, true,
                 e => (e.Subject ?? "Someone") + " lost supplies.",
                 f => (f.ReportOther ?? "someone") + " took " + (f.Units > 0 ? f.Units + " units of " : "") +
-                    (f.Resource == "food" ? "food" : "stored supplies") + " from " + (f.ReportSubject ?? "someone") + "'s storage"));
+                    (f.Resource == "food" ? "food" : "stored supplies") + " from " + (f.ReportSubject ?? "someone") + "'s storage")
+                { ReportActorRole = NpcReportActorRole.Other, SelfReportTone = NpcSelfReportTone.Harmful });
             catalog.On("supplies_lost", NpcObservationPhase.Relationships, OnRelationships);
         }
         static void OnRelationships(NpcObservation observation)

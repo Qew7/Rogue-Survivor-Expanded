@@ -12,6 +12,7 @@ namespace djack.RogueSurvivor.Engine.Actions
         public ActionNpcTell(Actor actor, RogueGame game, Actor target, NpcFact fact) : base(actor, game) { this.target = target; this.fact = fact; }
         public override bool IsLegal()
         { return NpcIntentSystem.Enabled(m_Actor) && !m_Actor.IsSleeping && target != null && !target.IsSleeping && fact != null &&
+            NpcConversation.CanTell(m_Game, m_Actor, fact) &&
             target.Model.Abilities.IsIntelligent && !target.Model.Abilities.IsUndead && NpcIntentSystem.CanSee(m_Game, m_Actor, target) &&
             m_Game.Rules.GridDistance(m_Actor.Location.Position, target.Location.Position) <= 4 && !m_Game.Rules.AreEnemies(m_Actor, target) &&
             m_Actor.Personality.Knowledge.Facts.Contains(fact) && fact.Confidence >= 40 && fact.Hops < 3 &&

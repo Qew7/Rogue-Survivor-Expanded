@@ -173,6 +173,12 @@ name. The same rule applies to every reportable event and each participant
 mentioned in its wording. Attack rumors explicitly describe who attacked whom.
 Participants describe themselves as involved in the event; only bystanders
 who saw it say that they witnessed it.
+An NPC offers a rumor about their own action only when their traits fit the
+action: compassionate, generous or social NPCs may talk about help; cruel,
+rebellious or aggressive NPCs may boast about violence or theft. Social or
+trade-minded NPCs may recount neutral actions. Victims and witnesses can still
+tell what happened without these self-report traits. This applies to both
+spontaneous NPC conversations and replies to player talk.
 Completed storage theft, food and medicine gifts, barter, ordinary trades, base
 loss and raids can also be retold. Storage-loss reports preserve the resource
 and quantity taken. The event's stable participant IDs remain in NPC knowledge

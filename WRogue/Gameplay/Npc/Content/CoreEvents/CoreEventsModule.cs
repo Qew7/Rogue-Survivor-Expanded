@@ -17,13 +17,13 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 bool accepted = person != null && person.Dead && person.Source == NpcKnowledgeSource.Told && person.SeenTurn == c.Fact.EventTurn;
                 if (accepted) NpcGoalLifecycle.KnownDeath(c.Listener, c.Fact.SubjectId, "learned of death through a report", c.Catalog);
             });
-            catalog.Event(new NpcEventDefinition("attack", NpcRecordCategory.Combat, true, e => (e.Other ?? "someone") + " attacked " + (e.Subject ?? "Someone") + ".", null));
-            catalog.Event(new NpcEventDefinition("murder", NpcRecordCategory.Combat, true, e => (e.Other ?? "someone") + " murdered " + (e.Subject ?? "Someone") + ".", null));
-            catalog.Event(new NpcEventDefinition("death", NpcRecordCategory.Combat | NpcRecordCategory.Life, true, e => (e.Subject ?? "Someone") + " died" + (e.Other == null ? "." : "; killed by " + (e.Other ?? "someone") + "."), f => f.ReportSubject + " died" + (f.ReportOther == null ? "" : "; killed by " + f.ReportOther)) { ProvesDeath = true });
+            catalog.Event(new NpcEventDefinition("attack", NpcRecordCategory.Combat, true, e => (e.Other ?? "someone") + " attacked " + (e.Subject ?? "Someone") + ".", null) { ReportActorRole = NpcReportActorRole.Other, SelfReportTone = NpcSelfReportTone.Harmful });
+            catalog.Event(new NpcEventDefinition("murder", NpcRecordCategory.Combat, true, e => (e.Other ?? "someone") + " murdered " + (e.Subject ?? "Someone") + ".", null) { ReportActorRole = NpcReportActorRole.Other, SelfReportTone = NpcSelfReportTone.Harmful });
+            catalog.Event(new NpcEventDefinition("death", NpcRecordCategory.Combat | NpcRecordCategory.Life, true, e => (e.Subject ?? "Someone") + " died" + (e.Other == null ? "." : "; killed by " + (e.Other ?? "someone") + "."), f => f.ReportSubject + " died" + (f.ReportOther == null ? "" : "; killed by " + f.ReportOther)) { ProvesDeath = true, ReportActorRole = NpcReportActorRole.Other, SelfReportTone = NpcSelfReportTone.Harmful });
             catalog.Event(new NpcEventDefinition("kill_human", NpcRecordCategory.Combat, false, e => (e.Other ?? "someone") + " killed " + (e.Subject ?? "Someone") + ".", null));
             catalog.Event(new NpcEventDefinition("starvation", NpcRecordCategory.Life, false, e => (e.Subject ?? "Someone") + " faced starvation.", null));
             catalog.Event(new NpcEventDefinition("zombified", NpcRecordCategory.Life, false, e => (e.Other ?? "someone") + " turned into " + (e.Subject ?? "Someone") + ".", null));
-            catalog.Event(new NpcEventDefinition("base_loss", NpcRecordCategory.World, true, e => (e.Subject ?? "Someone") + " lost a base.", null));
+            catalog.Event(new NpcEventDefinition("base_loss", NpcRecordCategory.World, true, e => (e.Subject ?? "Someone") + " lost a base.", null) { ReportActorRole = NpcReportActorRole.None });
             catalog.Event(new NpcEventDefinition("raid", NpcRecordCategory.World, true, e => "A raid occurred.", f => "there was a raid"));
             catalog.Event(new NpcEventDefinition("spawn", NpcRecordCategory.Life, false, null, null) { CanObserve = (a, e) => a != e.Subject });
             catalog.Event(new NpcEventDefinition("unique_arrival", NpcRecordCategory.World, false, e => (e.Subject ?? "Someone") + " arrived.", null) { CanObserve = (a, e) => a != e.Subject });
@@ -31,7 +31,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             catalog.Event(new NpcEventDefinition("chat", NpcRecordCategory.Encounters, false,
                 e => (e.Subject ?? "Someone") + " talked with " + (e.Other ?? "someone") + "."));
             catalog.Event(new NpcEventDefinition("traded", NpcRecordCategory.Encounters, true,
-                e => (e.Subject ?? "Someone") + " traded with " + (e.Other ?? "someone") + "."));
+                e => (e.Subject ?? "Someone") + " traded with " + (e.Other ?? "someone") + ".") { ReportActorRole = NpcReportActorRole.Both });
             catalog.On("chat", NpcObservationPhase.Relationships, RememberContact);
             catalog.On("traded", NpcObservationPhase.Relationships, RememberContact);
             catalog.On("death", NpcObservationPhase.Goals, OnGoals);

@@ -12,6 +12,7 @@ static class ParticipantRumorWordingScenario
         {
             Session.Get.GamePreset = GamePreset.BuiltIn(GameMode.GM_STANDARD);
             Actor actor = NpcIntentSupport.Actor(world, "actor", 2, 1);
+            actor.Personality.AddTrait(new TraitInstance("generous"));
             Actor recipient = NpcIntentSupport.Actor(world, "recipient", 1, 1);
             Actor witness = NpcIntentSupport.Actor(world, "witness", 1, 2);
             Actor sleeper = NpcIntentSupport.Actor(world, "sleeper", 0, 1);
