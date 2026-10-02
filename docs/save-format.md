@@ -9,7 +9,7 @@ Unmarked BinaryFormatter settings are no longer accepted.
 
 ## Envelope and archive
 
-Saves record the Rogue Survivor Expanded version (`0.4.0` at the current release)
+Saves record the Rogue Survivor Expanded version (`0.4.1` at the current release)
 separately from the envelope format number. Saves from `0.1.0`, `0.1.1`, and
 the current release series are accepted;
 other versions are rejected before loading their mod list or object graph. The
