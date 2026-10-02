@@ -167,17 +167,54 @@ namespace djack.RogueSurvivor.Engine
                 {
                     string state = intent.Groups[1].Value, goal = intent.Groups[2].Value;
                     string reason = intent.Groups[4].Value;
-                    Match need = Regex.Match(reason, @"^[^:]+: (-?\d+) → (-?\d+); deficit (\d+), importance (\d+), confidence (\d+), utility \d+(?:; (.*))?$");
+                    Match need = Regex.Match(reason, @"^([^:]+): (-?\d+) → (-?\d+); deficit (\d+), importance (\d+), confidence (\d+), utility \d+(?:; (.*))?$");
                     if (state == "started" && need.Success)
-                        return "Decided to " + goal.ToLowerInvariant() + ". Need unmet: " + need.Groups[3].Value +
-                            "% (current " + need.Groups[1].Value + ", desired " + need.Groups[2].Value +
-                            "); importance: " + need.Groups[4].Value + "/200; confidence: " + need.Groups[5].Value +
-                            "%" + (need.Groups[6].Success ? ". " + need.Groups[6].Value.Replace("because trait ", "Trait ") : "") + ".";
+                        return ReadableGoalStart("Decided to " + goal.ToLowerInvariant(), need.Groups[1].Value,
+                            need.Groups[4].Value, need.Groups[5].Value, intent.Groups[3].Value,
+                            need.Groups[7].Value);
                     return (state == "completed" ? "Achieved: " : state == "started" ? "Decided to: " : "Goal " + state + ": ") +
                         goal + ". " + reason + ".";
                 }
             }
+            if (entry.Kind == "goal_started" && text.IndexOf(". Need unmet: ", StringComparison.Ordinal) >= 0)
+            {
+                Match recent = Regex.Match(text, @"^(.*?) decided to (.*?)\. Need unmet: (\d+)% \(current -?\d+, desired -?\d+\); importance: (\d+)/200; confidence: \d+%(?:\. The (.*?) trait raised its importance by \d+ points)?\.$");
+                if (recent.Success)
+                {
+                    string goal = recent.Groups[2].Value;
+                    int forTarget = goal.IndexOf(" for ", StringComparison.Ordinal);
+                    return ReadableGoalStart(recent.Groups[1].Value + " decided to " + recent.Groups[2].Value,
+                        ValueForGoal(goal), recent.Groups[3].Value, recent.Groups[4].Value,
+                        forTarget < 0 ? null : goal.Substring(forTarget + 5),
+                        recent.Groups[5].Success ? "because trait " + recent.Groups[5].Value + " raised this goal's importance" : null);
+                }
+            }
             return text;
+        }
+
+        static string ReadableGoalStart(string action, string value, string deficitText, string importanceText,
+            string target, string trait)
+        {
+            int deficit, importance;
+            string context = Int32.TryParse(deficitText, out deficit) && Int32.TryParse(importanceText, out importance)
+                ? ResidentRecords.GoalContext(value, deficit, importance, target) : null;
+            string result = action;
+            if (context != null) result += ". " + context;
+            Match influence = Regex.Match(trait ?? "", @"(?:because trait |The )([^;]+?)(?: raised| trait)");
+            if (influence.Success) result += ". The " + influence.Groups[1].Value + " trait made this goal more compelling";
+            return result + ".";
+        }
+
+        static string ValueForGoal(string goal)
+        {
+            goal = goal.ToLowerInvariant();
+            if (goal.StartsWith("have usable food", StringComparison.Ordinal)) return "Nutrition";
+            if (goal.StartsWith("keep a reserve of usable food", StringComparison.Ordinal)) return "FoodReserve";
+            if (goal.StartsWith("provide needed food", StringComparison.Ordinal)) return "Care";
+            if (goal.StartsWith("meet a person's medical need", StringComparison.Ordinal)) return "MedicalCare";
+            if (goal.StartsWith("recover health", StringComparison.Ordinal)) return "Recovery";
+            if (goal.StartsWith("reach safety", StringComparison.Ordinal)) return "Safety";
+            return "";
         }
 
         static string OldPlanStep(string step)

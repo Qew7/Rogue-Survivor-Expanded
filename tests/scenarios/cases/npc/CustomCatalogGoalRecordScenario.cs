@@ -20,7 +20,7 @@ static class CustomCatalogGoalRecordScenario
             bool attributed = false;
             foreach (ResidentEntry entry in Session.Get.ResidentRecords.Register(owner).Entries)
                 if (entry.Kind == "goal_started" && entry.Text.Contains("recover stamina") &&
-                    entry.Text.Contains("Restful trait raised its importance")) attributed = true;
+                    entry.Text.Contains("Restful trait made this goal more compelling")) attributed = true;
             Check.Equal(true, attributed, "records resolve custom goal prose and trait influence from the active catalog");
 
             Actor assigned = NpcIntentSupport.Actor(world, "assigned", 2, 1);

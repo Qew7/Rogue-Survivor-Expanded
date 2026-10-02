@@ -30,22 +30,42 @@ static class ReadableRecordsScenario
             Session.Get.ResidentRecords.Register(owner).Add("old-plan", 0,
                 "Plan: Travel → EnterShelter. [story old123]",
                 new ObservedEvent("goal_plan", 0, owner.UnmodifiedName, null, true, storyId: "old123"));
+            Session.Get.ResidentRecords.Register(owner).Add("old-hunger", 0,
+                "Intent started: Have usable food; target Mira; Nutrition: 0 → 100; deficit 100, importance 70, confidence 100, utility 70. [story old-food]",
+                new ObservedEvent("goal_started", 0, owner.UnmodifiedName, owner.UnmodifiedName, true, storyId: "old-food"));
+            Session.Get.ResidentRecords.Register(owner).Add("old-shelter", 0,
+                "Intent started: Return to my chosen shelter; target Mira; Residence: 0 → 1; deficit 100, importance 53, confidence 100, utility 53. [story old-shelter]",
+                new ObservedEvent("goal_started", 0, owner.UnmodifiedName, owner.UnmodifiedName, true, storyId: "old-shelter"));
+            Session.Get.ResidentRecords.Register(owner).Add("recent-shelter", 0,
+                "Mira decided to return to my chosen shelter. Need unmet: 100% (current 0, desired 1); importance: 53/200; confidence: 100%. The Homebody trait raised its importance by 8 points.",
+                new ObservedEvent("goal_started", 0, owner.UnmodifiedName, owner.UnmodifiedName, true, storyId: "recent-shelter"));
             string path = Path.Combine(Path.GetTempPath(), "readable-records-" + Guid.NewGuid().ToString("N"));
             try
             {
                 BinarySaveStore.Save(path, Session.Get);
                 string lines = String.Join(" ", RecordsReader.Lines(RecordsReader.Load(path), null));
-                Check.Equal(true, lines.Contains("Need unmet: 100%"), "archive explains deficit");
-                Check.Equal(true, lines.Contains("importance: " + need.Importance + "/200"), "archive explains importance");
-                Check.Equal(true, lines.Contains("Kind trait raised its importance"), "archive names the cause");
+                Check.Equal(true, lines.Contains("believed neighbor needed food"), "food need is explained only for its own goal");
+                Check.Equal(true, lines.Contains("Kind") && lines.Contains("trait made this goal more compelling"),
+                    "archive names the cause without a score");
                 Check.Equal(true, lines.Contains("travel to the destination, then give food"), "archive explains the plan");
                 Check.Equal(false, lines.Contains("[story "), "archive hides story IDs");
                 Check.Equal(false, lines.Contains("Intent started:"), "archive hides internal state labels");
+                Check.Equal(false, lines.Contains("Need unmet:") || lines.Contains("importance:") || lines.Contains("confidence:"),
+                    "neither new nor older entries expose goal scores");
                 Check.Equal(true, lines.Contains("Planned route: travel to the destination, then enter the shelter."),
                     "older archived plans also read naturally");
+                Check.Equal(true, lines.Contains("Food was running low"), "older hunger entry explains its own need");
+                string shelter = String.Join(" ", RecordsReader.Lines(RecordsReader.Load(path), null,
+                    null, "old-shelter", RecordsEventFilter.Intentions));
+                Check.Equal(true, shelter.Contains("return to my chosen shelter") && !shelter.Contains("food") &&
+                    !shelter.Contains("hungry"), "shelter entry does not acquire an unrelated hunger explanation");
+                string recentShelter = String.Join(" ", RecordsReader.Lines(RecordsReader.Load(path), null,
+                    null, "recent-shelter", RecordsEventFilter.Intentions));
+                Check.Equal(true, recentShelter.Contains("Homebody") && !recentShelter.Contains("importance:") &&
+                    !recentShelter.Contains("food"), "recent saves lose scores without gaining an unrelated need");
                 string search = String.Join(" ", RecordsReader.Lines(RecordsReader.Load(path), null,
                     null, intent.StoryId, RecordsEventFilter.Intentions));
-                Check.Equal(true, search.Contains("Need unmet:"), "story ID still works as a search key");
+                Check.Equal(true, search.Contains("needed food"), "story ID still works as a search key");
             }
             finally { if (File.Exists(path)) File.Delete(path); if (File.Exists(path + ".bak")) File.Delete(path + ".bak"); }
         });

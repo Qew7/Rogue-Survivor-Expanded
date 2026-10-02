@@ -30,9 +30,11 @@ namespace djack.RogueSurvivor.Data
                 text = actor.UnmodifiedName + " decided to " + goal.ToLowerInvariant();
                 if (targetName != actor.UnmodifiedName && !System.String.IsNullOrEmpty(targetName)) text += " for " + targetName;
                 if (intent.Generated != null)
-                    text += ". Need unmet: " + intent.Generated.Deficit + "% (current " + intent.Generated.Current +
-                        ", desired " + intent.Generated.Desired + "); importance: " + intent.Generated.Importance +
-                        "/200; confidence: " + intent.Generated.Confidence + "%";
+                {
+                    string context = GoalContext(intent.Generated.DefinitionId ?? intent.Generated.Value.ToString(),
+                        intent.Generated.Deficit, intent.Generated.Importance, targetName);
+                    if (context != null) text += ". " + context;
+                }
                 string trait = TraitReason(reason);
                 if (trait != null) text += ". " + trait;
                 text += ".";
@@ -62,7 +64,24 @@ namespace djack.RogueSurvivor.Data
             string detail = reason.Substring(start + marker.Length);
             const string raised = " raised this goal's importance by ";
             int split = detail.IndexOf(raised, System.StringComparison.Ordinal);
-            return split < 0 ? null : "The " + detail.Substring(0, split) + " trait raised its importance by " + detail.Substring(split + raised.Length) + " points";
+            return split < 0 ? null : "The " + detail.Substring(0, split) + " trait made this goal more compelling";
+        }
+
+        internal static string GoalContext(string value, int deficit, int importance, string target)
+        {
+            if (deficit < 60) return null;
+            string need;
+            switch (value)
+            {
+                case "Nutrition": need = "Food was running low"; break;
+                case "FoodReserve": need = "Their food stores were running low"; break;
+                case "Care": need = "They believed " + (System.String.IsNullOrEmpty(target) ? "someone" : target) + " needed food"; break;
+                case "MedicalCare": need = "They believed " + (System.String.IsNullOrEmpty(target) ? "someone" : target) + " needed treatment"; break;
+                case "Recovery": need = "Their injuries needed attention"; break;
+                case "Safety": need = "They believed danger was close"; break;
+                default: return null;
+            }
+            return need + (importance >= 120 ? ", so this felt urgent" : "");
         }
 
         static string ReadableReason(string reason)
