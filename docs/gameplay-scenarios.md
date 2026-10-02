@@ -48,6 +48,9 @@ checks the new supply payload across save and load.
 exercise new social consequences through pickup, speech, trade, death,
 travel, treatment and deadlines. `npc/social-dynamics-save` checks their
 persistent state and archive text.
+`npc/courage-assessment`, `npc/courage-retreat` and `npc/courage-rumor-save`
+cover situational resolve, actual flight, witnesses, memory resolution, rumor
+consequences and save/load.
 
 Add each new scenario in its own file under the matching topic directory in
 `tests/scenarios/cases/`. Living and undead skills have separate directories.

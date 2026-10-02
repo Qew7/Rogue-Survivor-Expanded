@@ -437,6 +437,18 @@ namespace djack.RogueSurvivor.Gameplay.AI
         }
         #endregion
         #region Fight or Flee
+        protected ActorAction BehaviorPanicRetreat(RogueGame game, List<Percept> enemies,
+            bool hasVisibleLeader, bool isLeaderFighting, string[] emotes,
+            RouteFinder.SpecialActions allowedChargeActions)
+        {
+            if (enemies == null || enemies.Count == 0 || !NpcCourage.CanFear(m_Actor)) return null;
+            int threat;
+            int resolve = NpcCourage.Resolve(game, m_Actor, enemies, out threat);
+            if (!NpcCourage.ImmediateMortalThreat(game, m_Actor, enemies) &&
+                (threat < 20 || resolve > -45)) return null;
+            return BehaviorFightOrFlee(game, enemies, hasVisibleLeader, isLeaderFighting,
+                ActorCourage.COWARD, emotes, allowedChargeActions);
+        }
         /// <summary>
         /// Engage in mele fight with the nearest reachable enemy or flee from him.
         /// </summary>
@@ -451,12 +463,17 @@ namespace djack.RogueSurvivor.Gameplay.AI
             string[] emotes,
             RouteFinder.SpecialActions allowedChargeActions)
         {
-            int personalityCourage = PersonalitySystem.Bias(m_Actor, DecisionKind.Courage);
-            if (personalityCourage >= 20) courage = ActorCourage.COURAGEOUS;
-            else if (personalityCourage <= -20) courage = ActorCourage.COWARD;
+            int threat;
+            int resolve = NpcCourage.Resolve(game, m_Actor, enemies, out threat);
+            bool canFear = NpcCourage.CanFear(m_Actor);
+            bool panic = canFear && (NpcCourage.ImmediateMortalThreat(game, m_Actor, enemies) ||
+                threat >= 20 && resolve <= -45);
+            if (canFear)
+                courage = resolve <= -25 ? ActorCourage.COWARD :
+                    resolve >= 15 ? ActorCourage.COURAGEOUS : ActorCourage.CAUTIOUS;
             // alpha10 filter out unreachables if no ranged weapon equipped
             // (we shouldnt be here anyway if we have a ranged weapon)
-            if (m_Actor.GetEquippedRangedWeapon() == null)
+            if (!panic && m_Actor.GetEquippedRangedWeapon() == null)
             {
                 FilterOutUnreachablePercepts(game, ref enemies, allowedChargeActions);
                 if (enemies.Count == 0)
@@ -499,7 +516,11 @@ namespace djack.RogueSurvivor.Gameplay.AI
             // 1. Always fight if enemy has ranged weapon.
             // if we are here, it means we can't shoot him, cause firing behavior has priority.
             // so we want to get a chance at melee a shooting enemy.
-            if (HasEquipedRangedWeapon(enemy))
+            if (panic)
+                decideToFlee = true;
+            else if (!canFear)
+                decideToFlee = false;
+            else if (HasEquipedRangedWeapon(enemy))
                 decideToFlee = false;
             // 2. Always fight if law enforcer vs murderer.
             // do our duty.
@@ -575,9 +596,7 @@ namespace djack.RogueSurvivor.Gameplay.AI
                 }
             }
 
-            if (!HasEquipedRangedWeapon(enemy) && !game.Rules.IsActorTired(m_Actor) &&
-                personalityCourage != 0 && game.Rules.RollChance(Math.Min(60, Math.Abs(personalityCourage))))
-                decideToFlee = personalityCourage < 0;
+            if (panic) doRun = true;
 
             // alpha10
             // Improve STA management a bit.
@@ -717,7 +736,7 @@ namespace djack.RogueSurvivor.Gameplay.AI
                         if (doUseExit)
                         {
                             m_Actor.Activity = Activity.FLEEING;
-                            return useExit;
+                            return panic ? new ActionFearRetreat(m_Actor, game, useExit, enemy) : useExit;
                         }
                     }
                 }
@@ -758,7 +777,7 @@ namespace djack.RogueSurvivor.Gameplay.AI
                     if (doRun)
                         RunIfPossible(game.Rules);
                     m_Actor.Activity = Activity.FLEEING;
-                    return bumpAction;
+                    return panic ? new ActionFearRetreat(m_Actor, game, bumpAction, enemy) : bumpAction;
                 }
                 #endregion
 

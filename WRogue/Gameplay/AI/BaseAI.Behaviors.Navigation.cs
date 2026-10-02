@@ -277,7 +277,9 @@ namespace djack.RogueSurvivor.Gameplay.AI
             bool canCheckBreak, bool canCheckPush)
         {
             float currentDistance = game.Rules.StdDistance(m_Actor.Location.Position, goal);
-            bool imStarvingOrCourageous = game.Rules.IsActorStarving(m_Actor) || Directives.Courage == ActorCourage.COURAGEOUS;
+            int threat;
+            bool imStarvingOrCourageous = game.Rules.IsActorStarving(m_Actor) ||
+                NpcCourage.Resolve(game, m_Actor, null, out threat) >= 15;
 
             ActorAction bump = BehaviorBumpToward(game, goal,
                 canCheckBreak, canCheckPush,
@@ -664,7 +666,9 @@ namespace djack.RogueSurvivor.Gameplay.AI
         {
             // prepare data.
             Direction prevDirection = Direction.FromVector(m_Actor.Location.Position.X - m_prevLocation.Position.X, m_Actor.Location.Position.Y - m_prevLocation.Position.Y);
-            bool imStarvingOrCourageous = game.Rules.IsActorStarving(m_Actor) || Directives.Courage == ActorCourage.COURAGEOUS;
+            int threat;
+            bool imStarvingOrCourageous = game.Rules.IsActorStarving(m_Actor) ||
+                NpcCourage.Resolve(game, m_Actor, null, out threat) >= 15;
             bool isIntelligent = m_Actor.Model.Abilities.IsIntelligent;
 
             // eval all adjacent tiles for exploration utility and get the best one.

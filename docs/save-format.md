@@ -100,6 +100,11 @@ resolution, with its outcome and turn. Player relationships retain their own
 experienced/witnessed events and do not expose another NPC's private memory
 during gameplay.
 
+NPC courage is recalculated from current conditions and has no new saved stat.
+The `frightened_escape` memory, witnessed `fled_in_fear` fact and any reported
+threat cause use the existing personality, knowledge and archive fields.
+`npc/courage-rumor-save` checks all three across save and load.
+
 Social state keeps separate promise snapshots for each participant, including
 resource, remaining units, deadline, outcome and the promisor's original group
 and faction. Resource disputes and personal attachments also persist. Each of

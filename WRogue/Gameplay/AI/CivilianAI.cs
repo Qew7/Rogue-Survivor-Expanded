@@ -344,6 +344,11 @@ namespace djack.RogueSurvivor.Gameplay.AI
             //}
             //#endregion
 
+            // Immediate danger takes priority over a shot that may not stop the attackers.
+            ActorAction panicRetreat = BehaviorPanicRetreat(game, FilterCurrent(game, enemies), seeLeader, isLeaderFighting,
+                m_Emotes, RouteFinder.SpecialActions.JUMP | RouteFinder.SpecialActions.DOORS);
+            if (panicRetreat != null) return panicRetreat;
+
             // 3 fire at nearest enemy
             #region
             if (hasEnemies && this.Directives.CanFireWeapons && m_Actor.GetEquippedWeapon() is ItemRangedWeapon)

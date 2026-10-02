@@ -446,6 +446,7 @@
     <Compile Include="Gameplay\AI\BaseAI.Behaviors.Navigation.cs" />
     <Compile Include="Gameplay\AI\BaseAI.Behaviors.Equipment.cs" />
     <Compile Include="Gameplay\AI\BaseAI.Behaviors.Combat.cs" />
+    <Compile Include="Gameplay\AI\NpcCourage.cs" />
     <Compile Include="Gameplay\AI\BaseAI.Helpers.cs" />
     <Compile Include="Gameplay\AI\BaseAI.Perception.cs" />
     <Compile Include="Gameplay\AI\BaseAI.Items.Inventory.cs" />

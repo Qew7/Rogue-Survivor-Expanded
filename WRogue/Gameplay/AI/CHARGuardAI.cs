@@ -109,6 +109,9 @@ namespace djack.RogueSurvivor.Gameplay.AI
             // get data.
             List<Percept> allEnemies = FilterEnemies(game, mapPercepts);
             List<Percept> currentEnemies = FilterCurrent(game, allEnemies);
+            ActorAction panicRetreat = BehaviorPanicRetreat(game, currentEnemies, true, true,
+                FIGHT_EMOTES, RouteFinder.SpecialActions.JUMP | RouteFinder.SpecialActions.DOORS);
+            if (panicRetreat != null) return panicRetreat;
             bool checkOurLeader = m_Actor.HasLeader && !DontFollowLeader;
             bool hasAnyEnemies = allEnemies != null;
 

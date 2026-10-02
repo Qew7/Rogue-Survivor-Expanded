@@ -9,7 +9,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public string Id { get { return "core-events"; } }
         public void Register(NpcCatalogBuilder catalog)
         {
-            foreach (var faction in PersonalityWorldContent.Factions) catalog.FactionPolicy((int)faction.Id, new NpcFactionPolicy(faction.Supply, faction.Shelter, faction.Care, faction.Security));
+            foreach (var faction in PersonalityWorldContent.Factions) catalog.FactionPolicy((int)faction.Id, new NpcFactionPolicy(faction.Supply, faction.Shelter, faction.Care, faction.Security, faction.Courage));
             catalog.Event(new NpcEventDefinition("craps", NpcRecordCategory.World));
             catalog.Event(new NpcEventDefinition("floods", NpcRecordCategory.World));
             catalog.OnReport("death", c => {

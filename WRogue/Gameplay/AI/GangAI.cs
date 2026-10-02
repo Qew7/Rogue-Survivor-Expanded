@@ -172,6 +172,11 @@ namespace djack.RogueSurvivor.Gameplay.AI
             //}
             //#endregion
 
+            ActorAction panicRetreat = BehaviorPanicRetreat(game, currentEnemies, seeLeader, isLeaderFighting,
+                FIGHT_EMOTES, RouteFinder.SpecialActions.JUMP | RouteFinder.SpecialActions.DOORS |
+                RouteFinder.SpecialActions.BREAK | RouteFinder.SpecialActions.PUSH);
+            if (panicRetreat != null) return panicRetreat;
+
             // 2 fire at nearest enemy (always if has leader, half of the time if not)
             #region
             if (hasCurrentEnemies && (checkOurLeader || game.Rules.RollChance(50)))

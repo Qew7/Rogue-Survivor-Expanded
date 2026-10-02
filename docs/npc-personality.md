@@ -364,6 +364,31 @@ returns. Changing a timeline filter does not change the resident's life score.
 Text prompts support Backspace, Ctrl+A to clear and Ctrl+V to paste names.
 
 
+## Courage and retreat
+
+Living intelligent NPCs choose their own courage. The follower directive menu no
+longer changes it. The starting point comes from their faction (civilians 0,
+survivors 5, armed gangs 10, police 18, army 25), and personality traits adjust
+it. For each encounter, health, stamina, equipped weapon and usable ammunition,
+relevant combat skills, sanity, and visible companions change the score. Firearm
+or bow training lowers confidence when the matching weapon or ammunition is
+missing. A healthy companion helps; an injured or fleeing one can spread fear.
+Low sanity usually lowers resolve, but it raises it for a maniac or berserker.
+Only visible nearby enemies count: their number, distance, reach and estimated
+damage determine the immediate threat. A severely outmatched NPC, or one that
+could die from the next adjacent or ranged hit, tries to retreat before firing.
+Undead, feral creatures and the player do not use this
+fear decision; the player chooses how to act.
+
+When a severe retreat actually moves the NPC, `fled_in_fear` enters the world
+record. Witnesses can pass it on as a rumor. A listener who learns the threat's
+identity treats that person as dangerous, with the flight event as evidence.
+The fleeing NPC gains a private `frightened_escape` memory, which temporarily
+reduces resolve and resolves after two to five days. Depending on existing
+traits, it may develop into panic attacks, trauma or hardening; otherwise the
+NPC can gain Strong Psyche. Repeated movement while that memory is pending
+does not generate another flight event.
+
 ## Verification
 
 Add a named scenario in its own file under `tests/scenarios/cases/npc/` for each
