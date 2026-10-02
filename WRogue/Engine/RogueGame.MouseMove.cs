@@ -15,6 +15,7 @@ namespace djack.RogueSurvivor.Engine
         Point? m_MouseMoveHover;
         List<Point> m_MouseMovePreview;
         List<Point> m_MouseMoveSteps;
+        HashSet<Actor> m_MouseMoveSeenEnemies;
         KeyEventArgs m_MouseMoveInterruptedKey;
         bool m_MouseMoveCanBump;
 
@@ -23,7 +24,7 @@ namespace djack.RogueSurvivor.Engine
             m_IsMouseMoveMode = !m_IsMouseMoveMode;
             m_MouseMoveHover = null;
             m_MouseMovePreview = null;
-            m_MouseMoveSteps = null;
+            StopMouseMove();
             m_MouseMoveCanBump = false;
             CloseMouseContextMenu();
             ClearOverlays();
@@ -54,12 +55,40 @@ namespace djack.RogueSurvivor.Engine
                 });
         }
 
-        bool HasVisibleMouseMoveEnemy(Actor player)
+        HashSet<Actor> VisibleMouseMoveEnemies(Actor player)
         {
+            HashSet<Actor> visible = new HashSet<Actor>();
             foreach (Actor other in player.Location.Map.Actors)
                 if (other != player && IsVisibleToPlayer(other) && m_Rules.AreEnemies(player, other))
-                    return true;
-            return false;
+                    visible.Add(other);
+            return visible;
+        }
+
+        void StartMouseMove(Actor player, List<Point> steps)
+        {
+            m_MouseMoveSteps = steps;
+            m_MouseMoveSeenEnemies = VisibleMouseMoveEnemies(player);
+        }
+
+        void StopMouseMove()
+        {
+            m_MouseMoveSteps = null;
+            m_MouseMoveSeenEnemies = null;
+        }
+
+        bool HasNewVisibleMouseMoveEnemy(Actor player)
+        {
+            HashSet<Actor> visible = VisibleMouseMoveEnemies(player);
+            bool found = false;
+            if (m_MouseMoveSeenEnemies != null)
+                foreach (Actor enemy in visible)
+                    if (!m_MouseMoveSeenEnemies.Contains(enemy))
+                    {
+                        found = true;
+                        break;
+                    }
+            m_MouseMoveSeenEnemies = visible;
+            return found;
         }
 
         bool IsAdjacentMouseBump(Actor player, Point goal)
@@ -110,7 +139,7 @@ namespace djack.RogueSurvivor.Engine
             }
             else if (buttons == MouseButtons.Left && m_MouseMovePreview != null && m_MouseMovePreview.Count > 0)
             {
-                m_MouseMoveSteps = new List<Point>(m_MouseMovePreview);
+                StartMouseMove(player, new List<Point>(m_MouseMovePreview));
                 keepLoop = !ContinueMouseMove(player);
             }
             return true;
@@ -120,7 +149,7 @@ namespace djack.RogueSurvivor.Engine
         {
             if (damage <= 0 || actor != m_Player || m_MouseMoveSteps == null)
                 return false;
-            m_MouseMoveSteps = null;
+            StopMouseMove();
             m_MouseMoveHover = null;
             m_MouseMovePreview = null;
             m_MouseMoveCanBump = false;
@@ -131,9 +160,9 @@ namespace djack.RogueSurvivor.Engine
         {
             if (m_MouseMoveSteps == null || m_MouseMoveSteps.Count == 0)
                 return false;
-            if (HasVisibleMouseMoveEnemy(player))
+            if (HasNewVisibleMouseMoveEnemy(player))
             {
-                m_MouseMoveSteps = null;
+                StopMouseMove();
                 m_MouseMovePreview = null;
                 m_MouseMoveHover = null;
                 AddMessage(new Message("Mouse movement stopped: enemy in sight.",
@@ -143,7 +172,7 @@ namespace djack.RogueSurvivor.Engine
             KeyEventArgs interruption = m_UI.UI_PeekKey();
             if (interruption != null)
             {
-                m_MouseMoveSteps = null;
+                StopMouseMove();
                 if (InputTranslator.KeyToCommand(interruption) == PlayerCommand.MOUSE_MOVE_MODE)
                     ToggleMouseMoveMode();
                 else
@@ -158,19 +187,19 @@ namespace djack.RogueSurvivor.Engine
             if (direction == null || !IsVisibleToPlayer(player.Location.Map, next) ||
                 !m_Rules.IsWalkableFor(player, player.Location.Map, next.X, next.Y))
             {
-                m_MouseMoveSteps = null;
+                StopMouseMove();
                 m_MouseMovePreview = null;
                 AddMessage(MakeErrorMessage("Mouse route is blocked."));
                 return false;
             }
             if (TryPlayerInsanity())
             {
-                m_MouseMoveSteps = null;
+                StopMouseMove();
                 return true;
             }
             if (!DoPlayerBump(player, direction))
             {
-                m_MouseMoveSteps = null;
+                StopMouseMove();
                 return false;
             }
             if (m_MouseMoveSteps == null)
@@ -180,13 +209,13 @@ namespace djack.RogueSurvivor.Engine
             }
             if (player.Location.Map != map || player.Location.Position != next)
             {
-                m_MouseMoveSteps = null;
+                StopMouseMove();
                 FinishMouseMoveAction(player);
                 return true;
             }
             m_MouseMoveSteps.RemoveAt(0);
             if (m_MouseMoveSteps.Count == 0)
-                m_MouseMoveSteps = null;
+                StopMouseMove();
             m_MouseMovePreview = null;
             m_MouseMoveHover = null;
             FinishMouseMoveAction(player);

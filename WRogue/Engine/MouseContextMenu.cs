@@ -192,7 +192,7 @@ namespace djack.RogueSurvivor.Engine
             {
                 List<Point> route = FindMouseMovePath(player, action.Target);
                 if (route == null || route.Count == 0) return false;
-                m_MouseMoveSteps = route;
+                StartMouseMove(player, route);
                 return ContinueMouseMove(player);
             }
             if (action.Kind == MouseContextActionKind.Wait && action.Target == here)
