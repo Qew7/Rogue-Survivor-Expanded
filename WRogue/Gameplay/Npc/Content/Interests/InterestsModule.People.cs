@@ -19,7 +19,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             if (friend == null || friend.Dead) return;
             foreach (NpcFact fact in c.Owner.Personality.Knowledge.Facts)
             {
-                if (fact.Kind != "attack" || fact.SubjectId != friend.Id || c.Turn - fact.EventTurn >= 180) continue;
+                if (fact.Kind != "attack" || fact.Source == NpcKnowledgeSource.Told && (!fact.NamesSubject || !fact.NamesOther) ||
+                    fact.SubjectId != friend.Id || c.Turn - fact.EventTurn >= 180) continue;
                 NpcKnownPerson aggressor = c.FindPerson(p => p.Id == fact.OtherId);
                 if (aggressor != null && !aggressor.Dead) offers.Add(aggressor, "Protection", "defend_person", 0, 1, 100, fact.Confidence,
                     fact.EventId, fact.StoryId, obligation: fact.EventId);

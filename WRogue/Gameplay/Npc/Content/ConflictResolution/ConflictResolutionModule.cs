@@ -56,7 +56,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             }
             foreach (NpcFact fact in owner.Personality.Knowledge.Facts)
             {
-                if (fact.Kind != "attack" || c.Turn - fact.EventTurn >= 180 || fact.SubjectId == c.Self.Id) continue;
+                if (fact.Kind != "attack" || fact.Source == NpcKnowledgeSource.Told && (!fact.NamesSubject || !fact.NamesOther) ||
+                    c.Turn - fact.EventTurn >= 180 || fact.SubjectId == c.Self.Id) continue;
                 NpcKnownPerson victim = c.FindPerson(p => p.Id == fact.SubjectId), aggressor = c.FindPerson(p => p.Id == fact.OtherId);
                 if (victim == null || victim.Dead || aggressor == null || aggressor.Dead) continue;
                 RelationshipRecord attachment = owner.Personality.Person(victim.Id);

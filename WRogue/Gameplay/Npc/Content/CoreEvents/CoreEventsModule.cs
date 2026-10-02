@@ -13,7 +13,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             catalog.Event(new NpcEventDefinition("craps", NpcRecordCategory.World));
             catalog.Event(new NpcEventDefinition("floods", NpcRecordCategory.World));
             catalog.OnReport("death", c => {
-                NpcKnownPerson person = c.Listener.Personality.Knowledge.Person(c.Fact.SubjectId);
+                NpcKnownPerson person = c.Fact.NamesSubject ? c.Listener.Personality.Knowledge.Person(c.Fact.SubjectId) : null;
                 bool accepted = person != null && person.Dead && person.Source == NpcKnowledgeSource.Told && person.SeenTurn == c.Fact.EventTurn;
                 if (accepted) NpcGoalLifecycle.KnownDeath(c.Listener, c.Fact.SubjectId, "learned of death through a report", c.Catalog);
             });

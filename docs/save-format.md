@@ -250,7 +250,8 @@ Retained `NpcFact` entries optionally store `SubjectReportName` and
 `OtherReportName`, the observer's original spoken description of each participant.
 An acquaintance is named; an unfamiliar visible person is described by faction
 membership. Retelling and save/load preserve these descriptions while stable
-participant IDs remain available to NPC decisions. Older saves without these
+participant IDs remain available for causal records. Faction-only hearsay does
+not identify a person for NPC targeting. Older saves without these
 fields fall back to their existing participant names. Retained facts also store
 optional `SubjectFactionId` and `OtherFactionId` snapshots.
 These let a listener react to the named faction when the observer did not know

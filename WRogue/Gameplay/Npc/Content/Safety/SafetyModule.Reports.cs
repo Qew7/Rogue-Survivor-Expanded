@@ -9,7 +9,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         static void HearNeed(NpcReportContext c)
         {
             Actor owner = c.Listener; NpcFact fact = c.Fact; NpcKnowledge knowledge = owner.Personality.Knowledge;
-            NpcKnownPerson other = knowledge.Person(fact.OtherId);
+            NpcKnownPerson other = fact.NamesOther ? knowledge.Person(fact.OtherId) : null;
             if ((fact.Kind == "attack" || fact.Kind == "murder") && other != null && (fact.EventTurn > other.ThreatTurn ||
                 (fact.EventTurn == other.ThreatTurn && fact.Confidence > other.ThreatConfidence)))
             { other.Danger = 100; other.ThreatTurn = fact.EventTurn; other.ThreatConfidence = fact.Confidence; other.ThreatCause = fact.EventId; }

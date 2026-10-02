@@ -17,6 +17,8 @@ namespace djack.RogueSurvivor.Data
         [System.Runtime.Serialization.OptionalField] public int? OtherFactionId;
         public string ReportSubject { get { return SubjectReportName ?? SubjectName; } }
         public string ReportOther { get { return OtherReportName ?? OtherName; } }
+        public bool NamesSubject { get { return SubjectId != Guid.Empty && !String.IsNullOrEmpty(SubjectName) && ReportSubject == SubjectName; } }
+        public bool NamesOther { get { return OtherId != Guid.Empty && !String.IsNullOrEmpty(OtherName) && ReportOther == OtherName; } }
         public Guid SubjectId, OtherId, SourceId;
         public int EventTurn, LearnedTurn, Confidence, Hops, Units, Risk;
         public Location Place;

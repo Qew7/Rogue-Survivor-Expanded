@@ -182,7 +182,8 @@ spontaneous NPC conversations and replies to player talk.
 Completed storage theft, food and medicine gifts, barter, ordinary trades, base
 loss and raids can also be retold. Storage-loss reports preserve the resource
 and quantity taken. The event's stable participant IDs remain in NPC knowledge
-for decisions and causal records.
+for causal records. Faction-only hearsay does not identify a person for NPC
+targeting, even when the listener knows them from another encounter.
 Hearing a report about an attack, theft, broken or kept promise, or aid can
 change the listener's opinion. Law and compassion traits change approval or
 condemnation; courage changes fear of a reported attacker. The player uses the

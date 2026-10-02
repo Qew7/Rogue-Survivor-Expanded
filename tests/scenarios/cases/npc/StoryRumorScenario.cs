@@ -15,6 +15,7 @@ static class StoryRumorScenario
             Actor victim = NpcIntentSupport.Actor(world, "victim", 1, 1);
             Actor attacker = NpcIntentSupport.Actor(world, "Alex", 2, 1);
             Actor listener = NpcIntentSupport.Actor(world, "Alex", 5, 1, "timid");
+            witness.Personality.Opinion(attacker.PersonalityIdentity, attacker.UnmodifiedName);
             PersonalitySystem.Report(world.Game, new SignificantEvent("attack", victim, attacker, world.Map, victim.Location.Position, 0));
             NpcFact fact = witness.Personality.Knowledge.Facts[0];
             Check.Equal(NpcKnowledgeSource.Witness, fact.Source, "event is witnessed rather than heard");

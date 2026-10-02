@@ -43,14 +43,27 @@ static class RumorTraitReactionScenario
             PersonalitySystem.Report(world.Game, new SignificantEvent("attack", victim, attacker,
                 world.Map, victim.Location.Position, 0));
             NpcFact anonymous = unknownWitness.Personality.Knowledge.Facts.Find(f => f.Kind == "attack");
+            Check.Equal("a civilian", anonymous.ReportSubject, "unfamiliar victim is described by faction too");
             Check.Equal("a biker", anonymous.ReportOther, "unfamiliar attacker is reported by faction");
             Actor factionListener = NpcIntentSupport.Actor(world, "faction listener", 11, 0, "lawful");
             Check.Equal(true, NpcKnowledgeSystem.Hear(world.Game, factionListener, unknownWitness, anonymous),
                 "listener hears faction report");
             Check.Equal(true, factionListener.Personality.Faction(attacker.Faction.ID).Feeling < 0,
                 "faction report changes the faction impression");
+            Check.Equal(attacker.Faction.Name, factionListener.Personality.Faction(attacker.Faction.ID).Name,
+                "faction relationship uses the faction's proper name");
             Check.Equal(null, factionListener.Personality.Person(attacker.PersonalityIdentity),
                 "faction report does not blame a named stranger");
+            Check.Equal(null, factionListener.Personality.Knowledge.Person(attacker.PersonalityIdentity),
+                "faction report does not create a known person from the hidden actor ID");
+            Check.Equal(null, factionListener.Personality.Knowledge.Person(victim.PersonalityIdentity),
+                "faction report does not identify the unnamed victim either");
+            Actor priorAcquaintance = NpcIntentSupport.Actor(world, "prior acquaintance", 12, 0);
+            NpcKnownPerson knownAttacker = priorAcquaintance.Personality.Knowledge.See(attacker, -1);
+            Check.Equal(true, NpcKnowledgeSystem.Hear(world.Game, priorAcquaintance, unknownWitness, anonymous),
+                "listener with prior knowledge also hears the anonymous report");
+            Check.Equal(0, knownAttacker.Danger, "anonymous report does not identify a previously known attacker");
+            Check.Equal(0, knownAttacker.Violation, "anonymous report cannot assign a personal violation");
 
             Actor helper = NpcIntentSupport.Actor(world, "helper", 2, 2);
             witness.Personality.Opinion(helper.PersonalityIdentity, helper.UnmodifiedName);

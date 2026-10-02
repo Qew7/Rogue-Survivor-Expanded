@@ -69,7 +69,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         {
             catalog.OnReport("shared_medicine", c => NpcReputation.Help(c));
             catalog.OnReport("requested_medicine", c => {
-                NpcKnownPerson person = c.Listener.Personality.Knowledge.Person(c.Fact.SubjectId); NpcFact fact = c.Fact;
+                NpcFact fact = c.Fact;
+                NpcKnownPerson person = fact.NamesSubject ? c.Listener.Personality.Knowledge.Person(fact.SubjectId) : null;
                 if (person != null && (fact.EventTurn > person.MedicalTurn || fact.EventTurn == person.MedicalTurn && fact.Confidence > person.MedicalConfidence))
                 { person.MedicalNeed = 100; person.MedicalConfidence = fact.Confidence; person.MedicalTurn = fact.EventTurn; person.MedicalCause = fact.EventId; person.MedicalStory = fact.StoryId; }
             });

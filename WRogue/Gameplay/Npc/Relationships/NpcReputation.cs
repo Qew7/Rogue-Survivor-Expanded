@@ -20,7 +20,6 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             NpcFact fact = c.Fact;
             Actor listener = c.Listener;
             Guid id = other ? fact.OtherId : fact.SubjectId;
-            string actualName = other ? fact.OtherName : fact.SubjectName;
             string reportedName = other ? fact.ReportOther : fact.ReportSubject;
             int? factionId = other ? fact.OtherFactionId : fact.SubjectFactionId;
             if (id == Guid.Empty || id == listener.PersonalityIdentity || c.Improvement <= 0 ||
@@ -38,13 +37,13 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             if (strength == 0) return;
 
             // A faction description gives no grounds to judge a named stranger.
-            bool named = reportedName == actualName;
+            bool named = other ? fact.NamesOther : fact.NamesSubject;
             RelationshipRecord opinion;
             if (named)
                 opinion = listener.Personality.Opinion(id, reportedName);
             else if (factionId.HasValue)
             {
-                opinion = listener.Personality.OpinionFaction(factionId.Value, reportedName);
+                opinion = listener.Personality.OpinionFaction(factionId.Value, Models.Factions[factionId.Value].Name);
                 strength = Math.Max(1, strength / 2);
             }
             else return;

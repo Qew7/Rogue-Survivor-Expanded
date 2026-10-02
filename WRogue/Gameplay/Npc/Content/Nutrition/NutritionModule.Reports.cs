@@ -9,7 +9,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         static void HearNeed(NpcReportContext c)
         {
             Actor owner = c.Listener; NpcFact fact = c.Fact; NpcKnowledge knowledge = owner.Personality.Knowledge;
-            NpcKnownPerson subject = knowledge.Person(fact.SubjectId), other = knowledge.Person(fact.OtherId);
+            NpcKnownPerson subject = fact.NamesSubject ? knowledge.Person(fact.SubjectId) : null;
             if (fact.Kind == "requested_food" && subject != null && (fact.EventTurn > subject.FoodNeedTurn ||
                 (fact.EventTurn == subject.FoodNeedTurn && fact.Confidence > subject.FoodConfidence)))
             { subject.FoodNeed = 100; subject.FoodNeedTurn = fact.EventTurn; subject.FoodConfidence = fact.Confidence;
