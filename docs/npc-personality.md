@@ -171,6 +171,8 @@ an unfamiliar visible participant by faction (for example, "a biker"). Later
 reporters repeat that description even if they have since learned the person's
 name. The same rule applies to every reportable event and each participant
 mentioned in its wording. Attack rumors explicitly describe who attacked whom.
+Participants describe themselves as involved in the event; only bystanders
+who saw it say that they witnessed it.
 Completed storage theft, food and medicine gifts, barter, ordinary trades, base
 loss and raids can also be retold. Storage-loss reports preserve the resource
 and quantity taken. The event's stable participant IDs remain in NPC knowledge
