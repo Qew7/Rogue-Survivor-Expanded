@@ -56,6 +56,31 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             leader.TransferSocialGroupTo(best);
             PersonalitySystem.Report(game, new SignificantEvent("group_succession", best, leader, best.Location.Map, best.Location.Position,
                 best.Location.Map.LocalTime.TurnCounter, otherIsDirect: false));
+            if (best.CountFollowers == 0) return;
+            var dissenters = new List<Actor>();
+            foreach (Actor follower in new List<Actor>(best.Followers))
+            {
+                if (!NpcIntentSystem.Enabled(follower) || follower.IsSleeping || follower.Location.Map != best.Location.Map ||
+                    !NpcKnowledgeSystem.Visible(game, follower, best.Location)) continue;
+                RelationshipRecord opinion = follower.Personality.Person(best.PersonalityIdentity);
+                int grievance = opinion == null ? 0 : opinion.Grievance;
+                int feeling = opinion == null ? 0 : opinion.Feeling;
+                if (follower.TrustInLeader < -60 || grievance >= 40 ||
+                    PersonalitySystem.Bias(follower, DecisionKind.Group) < -15 && feeling < 0)
+                    dissenters.Add(follower);
+            }
+            if (dissenters.Count == 0) return;
+            Actor rival = null; int rivalScore = Int32.MinValue;
+            foreach (Actor dissenter in dissenters)
+            {
+                int value = game.Rules.ActorMaxFollowers(dissenter) + PersonalitySystem.Bias(dissenter, DecisionKind.Group);
+                if (rival == null || value > rivalScore || value == rivalScore && dissenter.PersonalityIdentity.CompareTo(rival.PersonalityIdentity) < 0)
+                { rival = dissenter; rivalScore = value; }
+            }
+            foreach (Actor dissenter in dissenters) best.RemoveFollower(dissenter);
+            foreach (Actor dissenter in dissenters) if (dissenter != rival) rival.AddFollower(dissenter);
+            PersonalitySystem.Report(game, new SignificantEvent("group_split", rival, best, rival.Location.Map, rival.Location.Position,
+                rival.Location.Map.LocalTime.TurnCounter));
         }
     }
 }

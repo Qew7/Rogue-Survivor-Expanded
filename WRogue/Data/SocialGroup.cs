@@ -15,6 +15,8 @@ namespace djack.RogueSurvivor.Data
         public long PlanSequence;
         public int NextPlanTurn;
         public NpcGroupPlan Plan;
+        [System.Runtime.Serialization.OptionalField] public int SupplyRule;
+        [System.Runtime.Serialization.OptionalField] public long LastSupplyRuleEvent;
         public SocialGroup(Actor founder, Guid identity)
         { Identity = identity; LeaderId = founder.PersonalityIdentity; LeaderName = founder.UnmodifiedName;
             FactionId = founder.Faction == null ? -1 : founder.Faction.ID; Members.Add(founder.PersonalityIdentity); }

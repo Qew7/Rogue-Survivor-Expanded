@@ -65,11 +65,35 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         void RegisterEvents(NpcCatalogBuilder catalog)
         {
             catalog.OnReport("base_theft", c => NpcReputation.Reputation(c, false, false, true));
+            catalog.OnReport("claimed_permission", NpcReputation.PermissionClaim);
+            catalog.OnReport("false_testimony_exposed", c => NpcReputation.Reputation(c, false, false, true));
+            catalog.AfterEvent("base_theft", (game, e) => {
+                if (e.Subject == null || e.Subject.Personality == null || !e.Subject.Personality.HasTrait("deceptive")) return;
+                NpcFact theft = e.Subject.Personality.Knowledge.Facts.Find(f => f.EventId == e.Id && f.Kind == "base_theft");
+                if (theft == null) return;
+                e.Subject.Personality.Knowledge.Learn(new NpcFact { EventId = e.Id, Kind = "claimed_permission",
+                    SubjectId = theft.SubjectId, OtherId = theft.OtherId, SubjectName = theft.SubjectName, OtherName = theft.OtherName,
+                    SubjectReportName = theft.SubjectReportName, OtherReportName = theft.OtherReportName,
+                    SubjectFactionId = theft.SubjectFactionId, OtherFactionId = theft.OtherFactionId,
+                    EventTurn = e.Turn, LearnedTurn = e.Turn, Source = NpcKnowledgeSource.Participant,
+                    SourceId = e.Subject.PersonalityIdentity, Confidence = 90, Place = theft.Place });
+            });
             catalog.OnReport("boundary_defied", c => NpcReputation.Reputation(c, false, false, true));
             catalog.Event(new NpcEventDefinition("confronted", NpcRecordCategory.None, false, e => (e.Subject ?? "Someone") + " warned " + (e.Other ?? "someone") + " about known misconduct.", null) { StoryStage = (g, s, e) => "completed" });
             catalog.Event(new NpcEventDefinition("boundary_accepted", NpcRecordCategory.None, false, e => (e.Subject ?? "Someone") + " accepted " + (e.Other ?? "someone") + "'s boundary.", null));
             catalog.Event(new NpcEventDefinition("boundary_defied", NpcRecordCategory.None, true, e => (e.Subject ?? "Someone") + " rejected " + (e.Other ?? "someone") + "'s boundary.", f => f.ReportSubject + " rejected " + (f.ReportOther == null ? "a" : f.ReportOther + "'s") + " warning") { SelfReportTone = NpcSelfReportTone.Harmful });
             catalog.Event(new NpcEventDefinition("base_theft", NpcRecordCategory.None, true, e => (e.Subject ?? "Someone") + " stole from " + (e.Other ?? "someone") + "'s base.", f => f.ReportSubject + " stole supplies from " + (f.ReportOther ?? "someone") + "'s base") { SelfReportTone = NpcSelfReportTone.Harmful });
+            catalog.Event(new NpcEventDefinition("claimed_permission", NpcRecordCategory.None, false,
+                e => (e.Subject ?? "Someone") + " claimed permission to take supplies.",
+                f => f.ReportSubject + " claimed permission from " + (f.ReportOther ?? "the owner") + " to take supplies")
+                { SelfReportTone = NpcSelfReportTone.Neutral });
+            catalog.Event(new NpcEventDefinition("false_testimony_exposed", NpcRecordCategory.Encounters, false,
+                e => (e.Other ?? "Someone") + " rejected " + (e.Subject ?? "someone") + "'s permission claim after witnessing the theft.",
+                f => f.ReportSubject + " gave an account contradicted by an eyewitness", isPrivate: true));
+            catalog.Memory(new MemoryDefinition("false_testimony_exposed", "Caught a contradictory permission claim", 2, 5,
+                new[] { new MemoryTrigger("false_testimony_exposed", (a, e) => a == e.Other) },
+                new MemoryOutcome(null, "mistrustful", null), new MemoryOutcome(null, null, Skills.IDs.STRONG_PSYCHE))
+                .Relate(MemoryRelationRole.Subject, -8), false);
             catalog.Event(new NpcEventDefinition("restitution_given", NpcRecordCategory.Help, false, e => (e.Subject ?? "Someone") + " replaced supplies lost by " + (e.Other ?? "someone") + ".", null));
             catalog.Event(new NpcEventDefinition("restitution_requested", NpcRecordCategory.Help, true, e => (e.Subject ?? "Someone") + " asked " + (e.Other ?? "someone") + " to compensate lost supplies.", null) { AudibleReport = true, PlayerReply = new NpcPlayerReply("replacement supplies", "food_promised", "restitution_refused", "Yes, I'll replace your supplies.", "No, I won't replace them.") });
             catalog.Event(new NpcEventDefinition("restitution_refused", NpcRecordCategory.Help, true, e => (e.Subject ?? "Someone") + " refused " + (e.Other ?? "someone") + "'s demand for compensation.", null) { SelfReportTone = NpcSelfReportTone.Harmful });

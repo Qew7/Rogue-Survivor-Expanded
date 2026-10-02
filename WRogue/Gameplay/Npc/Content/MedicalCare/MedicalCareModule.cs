@@ -46,6 +46,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             foreach (NpcKnownPerson person in people)
             {
                 if (person.Id == self.Id || person.Dead || person.Hostile) continue;
+                if (owner.Personality.HasServiceAgreements && owner.Personality.ServiceAgreements.Exists(a =>
+                    a.Provider == owner.PersonalityIdentity && a.Patient == person.Id && a.Status == NpcServiceStatus.Accepted)) continue;
                 if ((person.MedicalNeed > 0 || context.Pending(NpcGoalValue.MedicalCare, person.Id)) && turn - person.MedicalTurn <= 60)
                     offers.Add(person, NpcGoalValue.MedicalCare, context.Catalog.Capability("medical_aid"),
                         100 - person.MedicalNeed, 100, person.MedicalNeed, person.MedicalConfidence, person.MedicalCause, person.MedicalStory, resource: "medicine");

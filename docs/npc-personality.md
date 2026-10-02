@@ -204,6 +204,13 @@ specific possession and home attachments, and causal continuations are described
 in [npc-social-stories.md](npc-social-stories.md). Reports affect reputation with
 confidence discounting. An overdue promise is a private assessment until someone
 actually tells it to others.
+Base-resource permissions, contradictory testimony, learned group supply rules,
+contested succession and medicine-for-shelter agreements also use those existing
+event, memory, relationship and knowledge paths. A deceptive thief's permission
+claim can circulate as hearsay, while an eyewitness retains the real theft and
+can privately reject the contradiction. Group rule changes and splits are
+reportable; failed service agreements remain private until their beneficiary
+speaks about them.
 
 ## Experiences with unique characters, factions, and world events
 

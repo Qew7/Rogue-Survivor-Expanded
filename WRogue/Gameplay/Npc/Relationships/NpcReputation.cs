@@ -1,5 +1,6 @@
 using System;
 using djack.RogueSurvivor.Data;
+using djack.RogueSurvivor.Engine;
 
 namespace djack.RogueSurvivor.Gameplay.Personality
 {
@@ -13,6 +14,14 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         { React(c, helperIsOther, true, 0); }
         internal static void Attack(NpcReportContext c)
         { React(c, true, false, 3); }
+        internal static void PermissionClaim(NpcReportContext c)
+        {
+            if (c.Improvement <= 0 || !c.Fact.NamesSubject) return;
+            int strength = Math.Max(1, c.Improvement / 15);
+            RelationshipRecord opinion = c.Listener.Personality.Opinion(c.Fact.SubjectId, c.Fact.ReportSubject);
+            opinion.AdjustSocial(trust: strength, grievance: -strength);
+            opinion.Feeling = Math.Min(100, opinion.Feeling + strength);
+        }
 
         // Severity: 0 is help, 1 is a broken promise, 2 is misconduct, 3 is violence.
         static void React(NpcReportContext c, bool other, bool positive, int severity)
@@ -61,6 +70,28 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                     (fact.EventTurn > person.ViolationTurn || fact.EventTurn == person.ViolationTurn && fact.Confidence > person.ViolationConfidence))
                 { person.Violation = 100; person.ViolationConfidence = fact.Confidence; person.ViolationTurn = fact.EventTurn; person.ViolationCause = fact.EventId; }
             }
+        }
+    }
+    static class NpcTestimony
+    {
+        public static void Refute(NpcContentCatalog catalog, Actor listener, Actor speaker, NpcFact claim)
+        {
+            if (listener.Personality.Knowledge.Facts.Exists(f => f.EventId == claim.EventId && f.Kind == "false_testimony_exposed")) return;
+            int turn = listener.Location.Map.LocalTime.TurnCounter;
+            listener.Personality.Opinion(speaker.PersonalityIdentity, speaker.UnmodifiedName).AdjustSocial(trust: -15, grievance: 10);
+            long id = Session.Get.NextPersonalityEventId();
+            var observed = new ObservedEvent("false_testimony_exposed", turn, speaker.UnmodifiedName, listener.UnmodifiedName,
+                true, subjectId: speaker.PersonalityIdentity, otherId: listener.PersonalityIdentity, eventId: id, causeId: claim.EventId);
+            NpcRecordDescriptions.Annotate(observed, catalog.Event("false_testimony_exposed"), catalog);
+            listener.Personality.Remember(observed);
+            Session.Get.ResidentRecords.Observe(listener, observed);
+            listener.Personality.Knowledge.Learn(new NpcFact { EventId = claim.EventId, Kind = "false_testimony_exposed",
+                SubjectId = speaker.PersonalityIdentity, SubjectName = speaker.UnmodifiedName, EventTurn = turn, LearnedTurn = turn,
+                Source = NpcKnowledgeSource.Inferred, SourceId = listener.PersonalityIdentity, Confidence = 100,
+                Place = listener.Location, NoSubjectLocation = true });
+            MemoryDefinition definition = catalog.Personalities.Memory("false_testimony_exposed");
+            if (definition != null) NpcMemoryProcessor.Add(listener, definition, turn, speaker.UnmodifiedName, null,
+                subjectId: speaker.PersonalityIdentity, relations: NpcMemoryRelations.Observed(speaker, null), impact: -8);
         }
     }
 }

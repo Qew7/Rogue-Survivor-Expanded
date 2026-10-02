@@ -190,6 +190,23 @@ sequences distinguish a newly founded group after a split. Assigned goals save
 group identity, destination, collector progress, coordinator identity/last known
 place and original observation turn, allowing continuation between pickup,
 gift and return report.
+The optional group supply rule and last contributing event ID survive save and
+load. Each member optionally saves the group identity, rule value and event ID
+of the rule they last witnessed or learned from a trusted report. A contested
+succession keeps the original group object for loyal members;
+departing members receive a new group identity and retain their individual
+relationship history.
+
+Personalities optionally save up to sixteen one-pickup permissions: grantor
+identity, map location, resource, expiry turn, remaining pickup count and the
+spoken concession event ID. A used, expired or mismatched permission cannot
+authorize another base pickup. Up to eight separate service agreements store
+provider/patient identities and names, visited shelter location, offer and
+accepted-event causes, deadline, story ID and status. Both participants save
+their own copy. Goals for the shared shelter trip retain their ordinary story,
+cause and destination fields. No new object points directly to an actor.
+`claimed_permission` and `false_testimony_exposed` are bounded knowledge facts
+with the original theft event ID; retellings preserve source and confidence.
 
 Each personality may optionally retain up to sixteen `NpcInterest` records:
 stable definition ID, subject identity, last known place, importance/need,

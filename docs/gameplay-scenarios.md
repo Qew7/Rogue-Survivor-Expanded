@@ -41,6 +41,13 @@ reportable event. `npc/supply-loss-rumor`, `npc/aid-trade-rumor`,
 `npc/raid-rumor-ai` exercise the corresponding real actions or event handlers.
 `npc/supply-loss-rumor-save`
 checks the new supply payload across save and load.
+`npc/resource-permission`, `npc/conflicting-testimony`,
+`npc/group-supply-rule`, `npc/group-supply-trade`, `npc/contested-succession`,
+`npc/shelter-care-exchange`, `npc/shelter-care-deadline` and
+`npc/shelter-care-player-reply`
+exercise new social consequences through pickup, speech, trade, death,
+travel, treatment and deadlines. `npc/social-dynamics-save` checks their
+persistent state and archive text.
 
 Add each new scenario in its own file under the matching topic directory in
 `tests/scenarios/cases/`. Living and undead skills have separate directories.

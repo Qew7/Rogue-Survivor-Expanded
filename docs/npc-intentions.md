@@ -152,6 +152,10 @@ address. Hostility and immediate combat still determine which actions are legal.
 
 For resource competition, promises, actual replies, lasting attachments and
 connected causal episodes, see [npc-social-stories.md](npc-social-stories.md).
+That document also covers one-pickup permissions, contradictory testimony,
+group supply rules, contested succession and medicine agreements tied to a
+shared shelter trip. The latter uses two independent shelter goals and delays
+ordinary medical aid until both participants actually arrive.
 
 CivilianAI, GangAI, SoldierAI and CHARGuardAI participate when NPC traits and
 memories are enabled. Intelligent living actors with these controllers can act;

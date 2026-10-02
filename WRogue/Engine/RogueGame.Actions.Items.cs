@@ -476,6 +476,17 @@ namespace djack.RogueSurvivor.Engine
         void NoticeXpdBaseTheft(Actor thief, XpdBase baseClaim, Point position, Item item, long causeId = 0, string storyId = null, int units = 1)
         {
             Map map = thief.Location.Map;
+            string resource = item is ItemFood ? "food" : item is ItemMedicine ? "medicine" : "item";
+            long permissionCause = thief.Personality == null || !m_Session.GamePreset.NpcPersonalitiesEnabled ? 0 :
+                thief.Personality.UsePermission(baseClaim.GroupLeader.PersonalityIdentity, new Location(map, position), resource,
+                    map.LocalTime.TurnCounter);
+            if (permissionCause != 0)
+            {
+                Gameplay.Personality.PersonalitySystem.Report(this, new Gameplay.Personality.SignificantEvent("permission_used", thief,
+                    baseClaim.GroupLeader, map, position, map.LocalTime.TurnCounter, false, causeId: permissionCause, storyId: storyId)
+                    { Units = units, ModelId = item.Model.ID, Resource = resource });
+                return;
+            }
             Gameplay.Personality.PersonalitySystem.Report(this, new Gameplay.Personality.SignificantEvent("base_theft", thief, baseClaim.GroupLeader,
                 map, position, map.LocalTime.TurnCounter, false, causeId: causeId, storyId: storyId) { Units = units, ModelId = item.Model.ID, Resource = item is ItemFood ? "food" : item is ItemMedicine ? "medicine" : "item" });
             if ((baseClaim.FoodRoom.HasValue && baseClaim.FoodRoom.Value.Contains(position) && item is ItemFood) ||

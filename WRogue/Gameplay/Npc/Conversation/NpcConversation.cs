@@ -63,6 +63,14 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public static bool CanTell(RogueGame game, Actor speaker, NpcFact fact)
         {
             if (speaker == null || fact == null || speaker.Personality == null) return false;
+            if (fact.Kind == "claimed_permission")
+            {
+                if (fact.Source == NpcKnowledgeSource.Told)
+                    return !speaker.Personality.Knowledge.Facts.Exists(f => f.EventId == fact.EventId &&
+                        (f.Kind == "base_theft" && f.Source != NpcKnowledgeSource.Told || f.Kind == "false_testimony_exposed"));
+                return speaker.Personality.HasTrait("deceptive") &&
+                    fact.SubjectId == speaker.PersonalityIdentity && fact.SourceId == speaker.PersonalityIdentity;
+            }
             NpcEventDefinition definition = game.NpcContent.Event(fact.Kind);
             if (definition == null) return true;
             Guid id = speaker.PersonalityIdentity;
@@ -111,7 +119,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 "in district " + World.CoordToString(district.WorldPosition.X, district.WorldPosition.Y);
             Zone building = Zone.BuildingAt(fact.Place);
             if (building != null) place += ", at the " + Zone.BuildingLabel(building.BuildingKind);
-            game.DoSay(speaker, listener, (fact.Source == NpcKnowledgeSource.Told ? "I was told that " :
+            game.DoSay(speaker, listener, (fact.Kind == "claimed_permission" && fact.SubjectId == speaker.PersonalityIdentity ? "I say that " :
+                fact.Source == NpcKnowledgeSource.Told ? "I was told that " :
                 fact.Source == NpcKnowledgeSource.Inferred ? "As far as I know, " :
                 fact.Source == NpcKnowledgeSource.Participant ? "I was involved when " : "I saw that ") + report +
                 " " + place + ".", RogueGame.Sayflags.IS_STORY | RogueGame.Sayflags.IS_RUMOR |

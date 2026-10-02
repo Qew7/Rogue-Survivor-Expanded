@@ -86,18 +86,31 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         {
             RelationshipRecord trust = listener.Personality.Person(speaker.PersonalityIdentity);
             int confidence = Math.Max(0, Math.Min(95, source.Confidence - 20 + (trust == null ? 0 : trust.Trust / 10) +
+                (trust == null ? 0 : -trust.Grievance / 5) +
                 Math.Min(0, PersonalitySystem.Bias(listener, DecisionKind.Group)) / 2));
             NpcFact fact = source.Retell(speaker.PersonalityIdentity, listener.Location.Map.LocalTime.TurnCounter, confidence);
+            bool refuted = false;
+            if (fact.Kind == "claimed_permission")
+            {
+                NpcFact contrary = listener.Personality.Knowledge.Facts.Find(f => f.EventId == fact.EventId && f.Kind == "base_theft");
+                if (contrary != null && contrary.Source != NpcKnowledgeSource.Told && contrary.Confidence >= 80)
+                {
+                    confidence = 20; fact.Confidence = confidence; refuted = true;
+                }
+                else if (contrary != null && contrary.Confidence >= confidence)
+                    fact.Confidence = confidence = Math.Min(confidence, 30);
+            }
             NpcFact previous = listener.Personality.Knowledge.Facts.Find(f => f.EventId == fact.EventId && f.Kind == fact.Kind);
             int improvement = Math.Max(0, confidence - (previous == null ? 0 : previous.Confidence));
             bool learned = listener.Personality.Knowledge.Learn(fact);
+            if (learned && refuted) NpcTestimony.Refute(game.NpcContent, listener, speaker, fact);
             if (learned && fact.NamesSubject && !fact.NoSubjectLocation)
                 listener.Personality.Knowledge.LearnPerson(new NpcKnownPerson { Id = fact.SubjectId, Name = fact.ReportSubject, Place = fact.Place,
                     SeenTurn = fact.EventTurn, Confidence = confidence, Source = NpcKnowledgeSource.Told, Dead = game.NpcContent.Event(fact.Kind) != null && game.NpcContent.Event(fact.Kind).ProvesDeath && confidence >= 60 });
             if (learned && fact.NamesOther && listener.Personality.Knowledge.Person(fact.OtherId) == null)
                 listener.Personality.Knowledge.LearnPerson(new NpcKnownPerson { Id = fact.OtherId, Name = fact.ReportOther, Place = fact.Place,
                     SeenTurn = fact.EventTurn, Confidence = confidence, Source = NpcKnowledgeSource.Told });
-            if (learned) game.NpcContent.Hear(new NpcReportContext(listener, fact, improvement, game.NpcContent));
+            if (learned) game.NpcContent.Hear(new NpcReportContext(listener, fact, refuted ? 0 : improvement, game.NpcContent));
             return learned;
         }
         public static void HearLocation(Actor listener, Actor speaker, NpcKnownPerson report, long eventId, NpcContentCatalog catalog)

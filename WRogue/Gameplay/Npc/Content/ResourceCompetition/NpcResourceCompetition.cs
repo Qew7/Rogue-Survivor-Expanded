@@ -20,6 +20,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 {
                     int willing = PersonalitySystem.Bias(owner, DecisionKind.Compassion) + PersonalitySystem.Bias(owner, DecisionKind.Trade) / 2 -
                         PersonalitySystem.Bias(owner, DecisionKind.Supplies) / 2 + NpcValues.KnownAttitude(owner, source.Subject.PersonalityIdentity) / 4;
+                    if (owner.SocialGroup != null) willing -= owner.SocialGroup.LeaderId == owner.PersonalityIdentity ?
+                        owner.SocialGroup.SupplyRule : owner.Personality.KnownSupplyRule(owner.SocialGroup.Identity);
                     NpcResourceDefinition resource = game.NpcContent.Resource(source.Resource);
                     bool ownNeed = resource != null && resource.OwnNeed(game, owner, source);
                     NpcReplies.Reply(owner, source.Subject, source, willing >= 15 && !ownNeed ? "resource_yielded" : "resource_refused",
@@ -30,6 +32,14 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             }
             else if (dispute != null)
             {
+                if (source.Kind == "resource_yielded" && owner == source.Other)
+                {
+                    XpdBase claim = source.ResourcePlace.Map.XpdBaseAt(source.ResourcePlace.Position);
+                    if (claim != null && claim.GroupLeader == source.Subject && !claim.Owns(owner))
+                        owner.Personality.Permit(new NpcSupplyPermission { Grantor = claim.GroupLeader.PersonalityIdentity,
+                            Place = source.ResourcePlace, Resource = source.Resource, ExpiresTurn = source.Turn + 180,
+                            Units = 1, CauseId = source.Id });
+                }
                 dispute.Response = source.Kind; dispute.CauseId = source.Id; dispute.Turn = source.Turn;
                 owner.Personality.Opinion(peer.PersonalityIdentity, peer.UnmodifiedName).AdjustSocial(
                     trust: source.Kind == "resource_yielded" ? 5 : source.Kind == "contested_taken" ? -15 : -2,
