@@ -3,8 +3,49 @@ using djack.RogueSurvivor.Engine;
 
 namespace djack.RogueSurvivor.Data
 {
+    // Diagnostic state only. Never keep Actor/Map references in the resident archive.
+    [Serializable]
+    sealed class ResidentSurvivalSnapshot
+    {
+        public int LocalTurn, WorldTurn;
+        public int HitPoints, MaxHitPoints, Stamina, MaxStamina, Food, MaxFood, Sleep, MaxSleep, Sanity, MaxSanity;
+        public int Speed, Threat, Resolve, EnemyDistance;
+        public bool Hungry, Starving, Sleepy, Exhausted, Tired, Disturbed, Insane, Sleeping, Running, Mortal;
+        public string Activity, Reason, OtherName, OtherModel;
+        public Guid OtherId;
+
+        public ResidentSurvivalSnapshot(Actor actor, Rules rules, int worldTurn)
+        {
+            LocalTurn = actor.Location.Map.LocalTime.TurnCounter;
+            WorldTurn = worldTurn;
+            HitPoints = actor.HitPoints; MaxHitPoints = rules.ActorMaxHPs(actor);
+            Stamina = actor.StaminaPoints; MaxStamina = rules.ActorMaxSTA(actor);
+            Food = actor.FoodPoints; MaxFood = rules.ActorMaxFood(actor);
+            Sleep = actor.SleepPoints; MaxSleep = rules.ActorMaxSleep(actor);
+            Sanity = actor.Sanity; MaxSanity = rules.ActorMaxSanity(actor);
+            Speed = rules.ActorSpeed(actor);
+            Hungry = rules.IsActorHungry(actor); Starving = rules.IsActorStarving(actor);
+            Sleepy = rules.IsActorSleepy(actor); Exhausted = rules.IsActorExhausted(actor);
+            Tired = rules.IsActorTired(actor);
+            Disturbed = rules.IsActorDisturbed(actor); Insane = rules.IsActorInsane(actor);
+            Sleeping = actor.IsSleeping; Running = actor.IsRunning;
+            Activity = actor.Activity.ToString();
+            EnemyDistance = -1;
+        }
+
+        public void SetOther(Actor other)
+        {
+            if (other == null) return;
+            OtherId = other.PersonalityIdentity;
+            OtherName = other.UnmodifiedName;
+            OtherModel = other.Model.Name;
+        }
+    }
+
     sealed partial class ResidentRecord
     {
+        [System.Runtime.Serialization.OptionalField] public ResidentSurvivalSnapshot ThreatSnapshot;
+        [System.Runtime.Serialization.OptionalField] public ResidentSurvivalSnapshot DeathSnapshot;
         public string FactionName, GroupName;
         public Guid GroupIdentity;
         public long ItemsReceived;

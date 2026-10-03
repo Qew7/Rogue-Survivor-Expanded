@@ -171,6 +171,25 @@ namespace djack.RogueSurvivor.Data
             if (observed.Kind == "death" && observed.SubjectId == actor.PersonalityIdentity)
                 record.DeathTurn = observed.Turn;
         }
+        public void RecordThreat(Actor actor, Rules rules, int worldTurn, Actor enemy,
+            int distance, int threat, int resolve, bool mortal)
+        {
+            if (threat < 20 && !mortal) return;
+            ResidentRecord record = Register(actor);
+            if (record == null || record.ThreatSnapshot != null || record.DeathTurn >= 0) return;
+            var snapshot = new ResidentSurvivalSnapshot(actor, rules, worldTurn);
+            snapshot.Threat = threat; snapshot.Resolve = resolve; snapshot.Mortal = mortal;
+            snapshot.EnemyDistance = distance; snapshot.SetOther(enemy);
+            record.ThreatSnapshot = snapshot;
+        }
+        public void RecordDeath(Actor actor, Rules rules, int worldTurn, Actor killer, string reason)
+        {
+            ResidentRecord record = Register(actor);
+            if (record == null || record.DeathSnapshot != null) return;
+            var snapshot = new ResidentSurvivalSnapshot(actor, rules, worldTurn);
+            snapshot.Reason = reason; snapshot.SetOther(killer);
+            record.DeathSnapshot = snapshot;
+        }
         static string EventText(ObservedEvent e)
         {
             return e.RecordText ?? NpcRecordDescriptions.Describe(e);
