@@ -27,7 +27,10 @@ static partial class NpcSafetyBenchmarks
         civilian.HitPoints = world.Game.Rules.ActorMaxHPs(civilian) / 2;
         civilian.FoodPoints = foodState == 0 || foodState == 4 ? world.Game.Rules.ActorMaxFood(civilian) :
             Session.Get.GamePreset.HungerPoints - 1;
-        civilian.SleepPoints = sleepState == 0 ? world.Game.Rules.ActorMaxSleep(civilian) : 0;
+        civilian.SleepPoints = sleepState == 0 ? world.Game.Rules.ActorMaxSleep(civilian) :
+            sleepState == 2 ? Session.Get.GamePreset.SleepPoints - 1 : 0;
+        if (name.EndsWith("_tired")) civilian.StaminaPoints = 0;
+        if (name.EndsWith("_insane")) civilian.Sanity = 0;
         int initialFood = civilian.FoodPoints;
         Type simFlag = typeof(RogueGame).GetNestedType("SimFlags", BindingFlags.NonPublic);
         object normalSim = Enum.ToObject(simFlag, 0);

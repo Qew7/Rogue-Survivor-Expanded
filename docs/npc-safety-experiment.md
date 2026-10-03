@@ -7,8 +7,9 @@ sh tests/scenario.sh --bench-npc-safety
 ```
 
 The runner prints one summary after all cases finish. Each case uses the same
-100 seeds (7000–7099) in a fresh world. A timid, unarmed civilian starts at half
-health; when present, one zombie starts two cells away. The player is separated
+100 seeds (7000–7099) in a fresh world. An unarmed civilian starts at half
+health, with the case name selecting its trait; when present, one zombie starts
+two cells away. The player is separated
 from the test area by a wall. The fixture advances the real map clock, including
 stamina, hunger, sleep and involuntary collapse, then gives actors actions using
 their actual action points and controllers. Threat cases run for 30 map turns;
@@ -18,6 +19,36 @@ sleep and route effects remain separate.
 The final `ms-per-run` column measures wall-clock time for one complete fixture,
 including world setup and all turns. Compare it on the same machine and build;
 it is a performance signal, not an isolated cost for the escape planner.
+
+## Needs and escape routes on October 3, 2026
+
+On the current build, the organized civilian faced one zombie and a visible exit
+three steps around a turn. Each condition below used the same 100 seeds and
+30-turn limit; only the starting need changed.
+
+| Starting condition | Reached exit | Died | Collapsed asleep | Still active |
+| --- | ---: | ---: | ---: | ---: |
+| Fed, rested, full stamina and sanity | 91 | 5 | 0 | 4 |
+| Hungry | 86 | 10 | 0 | 4 |
+| Sleepy | 59 | 38 | 0 | 3 |
+| No sleep points | 75 | 0 | 25 | 0 |
+| No stamina | 100 | 0 | 0 | 0 |
+| No sanity | 57 | 36 | 0 | 7 |
+
+An exhausted case stops at the first collapse, so its 25 sleepers are not
+counted as survivors. Zero stamina lowers movement speed but also lowers
+courage, causing all 100 to seek the exit in this particular encounter. The
+sanity case calls the real controller directly, but the benchmark runner does
+not apply the game's separate 5% random insane-action override; its outcome
+understates that extra disruption. Hunger does not directly reduce speed;
+tiredness and sleepiness do. These are isolated start states, not rates from
+the whole saved world.
+
+The same benchmark before and after allowing planned retreat to run gave
+91 exits and 5 deaths in the rested case. Mean time to an outcome changed
+from 7.3 to 6.5 turns. The exhausted case changed from 70 exits and 30
+collapses to 75 exits and 25 collapses. `npc/planned-escape-running` checks
+that the route action actually runs with enough stamina and walks without it.
 
 ## Paired escape-plan comparison
 

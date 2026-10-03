@@ -691,6 +691,8 @@ namespace djack.RogueSurvivor.Gameplay.AI
                 ActorAction plannedEscape = BehaviorPlannedEscape(game, enemies, visible);
                 if (plannedEscape != null)
                 {
+                    if (doRun && plannedEscape is ActionBump)
+                        RunIfPossible(game.Rules);
                     m_Actor.Activity = Activity.FLEEING;
                     return panic ? new ActionFearRetreat(m_Actor, game, plannedEscape, enemy) : plannedEscape;
                 }
