@@ -22,7 +22,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 NpcFact incident = e.Subject.Personality.Knowledge.Facts.Find(f => f.EventId == plan.CauseId && f.Kind == "attack");
                 if (incident == null || e.Other == null || e.Other.PersonalityIdentity != incident.OtherId) return;
                 Session.Get.NpcDirector.End(story, "completed", e.Turn); plan.Stage = "completed"; plan.Destination = default(Location);
-                Session.Get.ResidentRecords.StoryChanged(e.Subject, story, e.Turn, e.Id);
+                Session.Get.ResidentRecords.StoryChanged(e.Subject, story, e.Turn, e.Id, game.NpcContent);
             });
         }
         static NpcCollectiveOffer ProtectionOffer(NpcCollectiveContext c)

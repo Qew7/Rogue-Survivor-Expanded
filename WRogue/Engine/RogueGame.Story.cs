@@ -46,7 +46,7 @@ namespace djack.RogueSurvivor.Engine
         {
             if (player.Personality == null) player.Personality = new PersonalityState();
             player.Personality.HearSpeech(new HeardJournalEntry(player.Location.Map.LocalTime.TurnCounter,
-                speaker == null ? "story_note" : "heard_rumor",
+                "story_note",
                 speaker == null ? "You" : speaker.UnmodifiedName, text, 0));
         }
 

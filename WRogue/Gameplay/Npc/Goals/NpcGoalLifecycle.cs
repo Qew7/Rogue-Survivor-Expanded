@@ -132,7 +132,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             intent.Status = status; intent.Outcome = reason;
             intent.FinishedTurn = owner.Location.Map == null ? intent.StartedTurn : owner.Location.Map.LocalTime.TurnCounter;
             Session.Get.ResidentRecords.IntentChanged(owner, intent, status.ToString().ToLowerInvariant(), reason, catalog);
-            Session.Get.NpcDirector.Outcome(owner, intent);
+            Session.Get.NpcDirector.Outcome(owner, intent, catalog);
             NpcStorySystem.GoalFinished(owner, intent);
             intent.LastKnown = default(Location);
             intent.Destination = default(Location);

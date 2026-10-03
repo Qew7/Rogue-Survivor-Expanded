@@ -29,7 +29,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 if (stage == null || stage == story.Stage) return;
                 story.Stage = stage;
                 if (story.Finished) director.End(story, stage, source.Turn);
-                Session.Get.ResidentRecords.StoryChanged(source.Subject, story, source.Turn, source.Id);
+                Session.Get.ResidentRecords.StoryChanged(source.Subject, story, source.Turn, source.Id, game.NpcContent);
                 SocialGroup group = source.Subject == null ? null : source.Subject.SocialGroup;
                 NpcGroupPlan factionPlan = null;
                 if (source.Other != null && source.Other.Personality != null)

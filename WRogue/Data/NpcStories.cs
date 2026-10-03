@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using djack.RogueSurvivor.Engine;
+using djack.RogueSurvivor.Gameplay.Personality;
 
 namespace djack.RogueSurvivor.Data
 {
@@ -97,7 +98,7 @@ namespace djack.RogueSurvivor.Data
                         Goal = intent.DefinitionId, TargetId = intent.TargetId, Status = intent.Status, IntentSequence = intent.Sequence });
             }
         }
-        public void Outcome(Actor actor, NpcIntent intent)
+        public void Outcome(Actor actor, NpcIntent intent, NpcContentCatalog catalog)
         {
             lock (this)
             {
@@ -106,11 +107,11 @@ namespace djack.RogueSurvivor.Data
                 if (role != null) { role.Status = intent.Status; role.Outcome = intent.Outcome; }
                 if (story.Finished) return;
                 if (story.Roles.Count > 0 && story.Roles.TrueForAll(r => r.Status == NpcIntentStatus.Completed))
-                { End(story, "completed", intent.FinishedTurn); Session.Get.ResidentRecords.StoryChanged(actor, story, intent.FinishedTurn, 0); return; }
+                { End(story, "completed", intent.FinishedTurn); Session.Get.ResidentRecords.StoryChanged(actor, story, intent.FinishedTurn, 0, catalog); return; }
                 if (intent.Status == NpcIntentStatus.Completed && story.CompletionGoal != null && intent.DefinitionId == story.CompletionGoal)
-                { End(story, "completed", intent.FinishedTurn); Session.Get.ResidentRecords.StoryChanged(actor, story, intent.FinishedTurn, 0); return; }
+                { End(story, "completed", intent.FinishedTurn); Session.Get.ResidentRecords.StoryChanged(actor, story, intent.FinishedTurn, 0, catalog); return; }
                 if (intent.Status != NpcIntentStatus.Completed && story.Roles.TrueForAll(r => r.Status >= NpcIntentStatus.Completed))
-                { End(story, "failed", intent.FinishedTurn); Session.Get.ResidentRecords.StoryChanged(actor, story, intent.FinishedTurn, 0); }
+                { End(story, "failed", intent.FinishedTurn); Session.Get.ResidentRecords.StoryChanged(actor, story, intent.FinishedTurn, 0, catalog); }
             }
         }
         public void End(NpcStory story, string stage, int turn)

@@ -46,11 +46,20 @@ static class StoryJournalScenario
                 "seeing the prisoner starts the offer");
             Check.Equal(true, player.Personality.HeardJournal[0].Text.Contains("generator"),
                 "offer records the actionable request");
+            Check.Equal("story_note", player.Personality.HeardJournal[0].Kind,
+                "prisoner's request is a witnessed story note");
             Check.Call(world.Game, "CheckSpecialPlayerEventsAfterAction", new[] { typeof(Actor) }, player);
             Check.Equal(ScriptStage.STAGE_2, session.ScriptStage_PoliceStationPrisoner,
                 "release triggers the reveal");
             Check.Equal(true, player.Personality.HeardJournal[1].Text.Contains("iron door"),
                 "release records the facility route");
+            Check.Equal("story_note", player.Personality.HeardJournal[1].Kind,
+                "witnessed transformation is a story note");
+            string journal = String.Join(" ", (IList<string>)Check.Call(world.Game, "HeardJournalLines",
+                new[] { typeof(Actor) }, player));
+            Check.Equal(true, journal.Contains("Story: the prisoner: Asked") &&
+                journal.Contains("Story: the prisoner: Revealed") && !journal.Contains("Rumor"),
+                "journal labels both moments as stories and names the speaker");
             int count = player.Personality.HeardJournal.Count;
             Check.Call(world.Game, "CheckSpecialPlayerEventsAfterAction", new[] { typeof(Actor) }, player);
             Check.Equal(count, player.Personality.HeardJournal.Count, "story notes do not repeat");
@@ -63,6 +72,10 @@ static class StoryJournalScenario
                 Check.Equal(count, saved.Personality.HeardJournal.Count, "story notes survive loading");
                 Check.Equal(player.Personality.HeardJournal[1].Text, saved.Personality.HeardJournal[1].Text,
                     "the route survives loading");
+                Check.Equal("story_note", saved.Personality.HeardJournal[0].Kind,
+                    "the request's story label survives loading");
+                Check.Equal("the prisoner", saved.Personality.HeardJournal[1].Speaker,
+                    "the witness's name survives loading");
             }
             finally { if (File.Exists(path)) File.Delete(path); if (File.Exists(path + ".bak")) File.Delete(path + ".bak"); }
         });

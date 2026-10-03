@@ -9,7 +9,7 @@ namespace djack.RogueSurvivor.Data
             if (parent == null || child == null || parent == child) return;
             ResidentRecord record = Register(actor); if (record == null) return;
             int turn = actor.Location.Map.LocalTime.TurnCounter;
-            record.Add("link:" + parent + ":" + child, turn, actor.UnmodifiedName + " found another lead for an ongoing goal.",
+            record.Add("link:" + parent + ":" + child, turn, actor.UnmodifiedName + " found another lead for an ongoing goal. [story " + parent + "]",
                 new ObservedEvent("story_link", turn, actor.UnmodifiedName, null, true, causeId: cause, storyId: child));
         }
         public void InferredMissing(Actor actor, NpcFact fact)
@@ -19,10 +19,10 @@ namespace djack.RogueSurvivor.Data
                 new ObservedEvent("knowledge_inferred", fact.LearnedTurn, actor.UnmodifiedName, fact.SubjectName, true,
                     subjectId: actor.PersonalityIdentity, otherId: fact.SubjectId, eventId: fact.EventId));
         }
-        public void StoryChanged(Actor actor, NpcStory story, int turn, long eventId)
+        public void StoryChanged(Actor actor, NpcStory story, int turn, long eventId, NpcContentCatalog catalog)
         {
             ResidentRecord record = Register(actor); if (record == null) return;
-            NpcIntentDefinition definition = NpcContentCatalog.Default.Capability(story.Template);
+            NpcIntentDefinition definition = catalog.Capability(story.Template);
             string goal = definition == null ? StoryGoal(story.Template) : definition.Name.ToLowerInvariant();
             string progress = story.Stage == "completed" ? "came to an end successfully" :
                 story.Stage == "failed" ? "failed" : story.Stage == "abandoned" ? "was abandoned" :

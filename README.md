@@ -21,9 +21,9 @@ Open [localhost:6080](http://localhost:6080), click the game window, and press E
 - NPC traits, memories, conversations, and emergent stories.
 - Claimable bases, storage rooms, and follower scavenging.
 
-## Справочник
+## Reference
 
-- [Все черты характера NPC и их влияние](docs/npc-traits-guide.md)
+- [All NPC personality traits and their effects](docs/npc-traits-guide.md)
 
 ## Contribute
 

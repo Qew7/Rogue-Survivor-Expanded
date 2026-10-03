@@ -83,7 +83,8 @@ namespace djack.RogueSurvivor.Engine
                     HeardJournalEntry heard = player.Personality.HeardJournal[i];
                     if (heard.Kind == "story_note")
                     {
-                        AppendJournalLine(lines, String.Format("Turn {0} | Story: {1}", heard.Turn, heard.Text));
+                        AppendJournalLine(lines, String.Format("Turn {0} | Story: {1}{2}", heard.Turn,
+                            heard.Speaker == "You" || String.IsNullOrEmpty(heard.Speaker) ? "" : heard.Speaker + ": ", heard.Text));
                         continue;
                     }
                     AppendJournalLine(lines, String.Format("Turn {0} | {1} | {2}: \"{3}\"", heard.Turn,
