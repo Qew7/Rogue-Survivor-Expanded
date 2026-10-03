@@ -22,6 +22,19 @@ namespace djack.RogueSurvivor.Engine
         internal string CachedSearch;
         internal RecordsEventFilter CachedFilter;
         internal List<string> CachedLines;
+        internal Dictionary<ResidentRecord, string> CachedNames;
+        internal bool CachedPartial;
+        internal bool CachedLinesMatch(string search, RecordsEventFilter filter)
+        {
+            if (CachedLines == null || CachedNames == null || CachedSearch != search || CachedFilter != filter ||
+                CachedPartial != Records.IsPartial || CachedNames.Count != Records.Residents.Count) return false;
+            foreach (ResidentRecord resident in Records.Residents)
+            {
+                string name;
+                if (!CachedNames.TryGetValue(resident, out name) || name != resident.Name) return false;
+            }
+            return true;
+        }
         int m_CachedTurn = -1, m_CachedResidents = -1, m_CachedEntries = -1;
         internal void Prepare()
         {
@@ -31,6 +44,7 @@ namespace djack.RogueSurvivor.Engine
                 m_CachedEntries == entries) return;
 
             CachedLines = null;
+            CachedNames = null;
             Causes = RecordsReader.CauseIndex(this);
             m_CachedTurn = Turn; m_CachedResidents = Records.Residents.Count; m_CachedEntries = entries;
             m_Profiles = null;
@@ -124,8 +138,8 @@ namespace djack.RogueSurvivor.Engine
         {
             save.Prepare();
             bool cacheable = save.IsArchive && selected == null && query == null;
-            if (cacheable && save.CachedLines != null && save.CachedSearch == search &&
-                save.CachedFilter == filter) return new List<string>(save.CachedLines);
+            if (cacheable && save.CachedLinesMatch(search, filter))
+                return new List<string>(save.CachedLines);
 
             List<KeyValuePair<ResidentRecord, ResidentEntry>> entries = MatchingEntries(save, selected, query, search, filter);
             entries.Sort(CompareEntries);
@@ -140,7 +154,11 @@ namespace djack.RogueSurvivor.Engine
             {
                 save.CachedSearch = search;
                 save.CachedFilter = filter;
+                save.CachedPartial = save.Records.IsPartial;
                 save.CachedLines = new List<string>(lines);
+                save.CachedNames = new Dictionary<ResidentRecord, string>();
+                foreach (ResidentRecord resident in save.Records.Residents)
+                    save.CachedNames.Add(resident, resident.Name);
             }
             return lines;
         }
