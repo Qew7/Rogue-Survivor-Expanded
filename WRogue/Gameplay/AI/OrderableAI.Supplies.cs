@@ -41,10 +41,9 @@ namespace djack.RogueSurvivor.Gameplay.AI
                     (claim.FoodRoom != null && claim.FoodRoom.Value.Contains(cell)) ||
                     (claim.WeaponRoom != null && claim.WeaponRoom.Value.Contains(cell))) continue;
                 bool boundary = false;
-                foreach (Point step in new[] { new Point(-1, 0), new Point(1, 0),
-                    new Point(0, -1), new Point(0, 1) })
+                foreach (Direction step in Direction.COMPASS_4)
                 {
-                    Point neighbor = new Point(cell.X + step.X, cell.Y + step.Y);
+                    Point neighbor = cell + step;
                     if (map.IsInBounds(neighbor) && map.IsWalkable(neighbor.X, neighbor.Y) &&
                         !claim.Contains(neighbor)) { boundary = true; break; }
                 }
