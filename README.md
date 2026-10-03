@@ -12,7 +12,7 @@ docker compose up --build -d
 
 Open [localhost:6080](http://localhost:6080), click the game window, and press Enter if prompted to create data folders. Saves persist in the `game-data` Docker volume.
 
-**Windows:** Download the Windows ZIP from [Releases](../../releases), extract it, and run `RogueSurvivor.exe`. Requires .NET Framework 4.8.
+**Windows:** Download the Windows ZIP from [Releases](../../releases), extract it, and run `RogueSurvivor.exe`. Requires .NET Framework 4.8 or 4.8.1.
 
 ## What's new
 
