@@ -105,49 +105,21 @@ namespace djack.RogueSurvivor.Gameplay.AI
         protected bool IsGoodTrapSpot(RogueGame game, Map map, Point pos, out string reason)
         {
             reason = "";
-            bool potentialSpot = false;
-
-            // 1. Potential spot?
-            // 2. Don't overdo it.
-
-            // 1. Potential spot?
-            // outside and has a corpse.
             bool isInside = map.GetTileAt(pos).IsInside;
             if (!isInside && map.GetCorpsesAt(pos) != null)
-            {
                 reason = "that corpse will serve as a bait for";
-                potentialSpot = true;
-            }
             else
             {
-                //  entering or leaving a building?
                 bool wasInside = m_prevLocation.Map.GetTileAt(m_prevLocation.Position).IsInside;
                 if (wasInside != isInside)
-                {
                     reason = "protecting the building with";
-                    potentialSpot = true;
-                }
-                else
-                {
-                    // ...or a door/window?
-                    MapObject objThere = map.GetMapObjectAt(pos);
-                    if (objThere != null && objThere is DoorWindow)
-                    {
-                        reason = "protecting the doorway with";
-                        potentialSpot = true;
-                    }
-                    // ...or an exit?
-                    else if (map.GetExitAt(pos) != null)
-                    {
-                        reason = "protecting the exit with";
-                        potentialSpot = true;
-                    }
-                }
+                else if (map.GetMapObjectAt(pos) is DoorWindow)
+                    reason = "protecting the doorway with";
+                else if (map.GetExitAt(pos) != null)
+                    reason = "protecting the exit with";
             }
-            if (!potentialSpot)
-                return false;
+            if (reason.Length == 0) return false;
 
-            // 2. Don't overdo it.
             // Never drop more than 3 traps.
             Inventory itemsThere = map.GetItemsAt(pos);
             if (itemsThere != null)
