@@ -277,11 +277,28 @@ namespace djack.RogueSurvivor.Engine
             Point to = new Point();
             List<Point> wallsToFix = new List<Point>();
             Point traceGoal = Point.Empty;
+            int height = ymax - ymin + 1;
+            // Per-call cell state: 1 transparent, 2 opaque, 4 already visible.
+            byte[] cells = new byte[(xmax - xmin + 1) * height];
             Func<int, int, bool> trace = (x, y) =>
             {
-                bool viewThrough = (x == traceGoal.X && y == traceGoal.Y) ||
-                    map.IsTransparent(x, y);
-                if (viewThrough) visibleSet.Add(new Point(x, y));
+                int index = (x - xmin) * height + y - ymin;
+                bool viewThrough = x == traceGoal.X && y == traceGoal.Y;
+                if (!viewThrough)
+                {
+                    byte cached = (byte)(cells[index] & 3);
+                    if (cached == 0)
+                    {
+                        cached = (byte)(map.IsTransparent(x, y) ? 1 : 2);
+                        cells[index] |= cached;
+                    }
+                    viewThrough = cached == 1;
+                }
+                if (viewThrough && (cells[index] & 4) == 0)
+                {
+                    cells[index] |= 4;
+                    visibleSet.Add(new Point(x, y));
+                }
                 return viewThrough;
             };
 
@@ -300,7 +317,8 @@ namespace djack.RogueSurvivor.Engine
                         continue;
 
                     // If we already know tile is visible, pass.
-                    if (visibleSet.Contains(to))
+                    int index = (x - xmin) * height + y - ymin;
+                    if ((cells[index] & 4) != 0)
                         continue;
 
                     // Trace line.
@@ -324,7 +342,11 @@ namespace djack.RogueSurvivor.Engine
                     }
 
                     // Visible.
-                    visibleSet.Add(to);
+                    if ((cells[index] & 4) == 0)
+                    {
+                        cells[index] |= 4;
+                        visibleSet.Add(to);
+                    }
                 }
             }
 

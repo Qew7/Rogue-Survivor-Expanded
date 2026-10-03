@@ -16,6 +16,7 @@ namespace djack.RogueSurvivor.Gameplay.AI
     [Serializable]
     abstract partial class BaseAI : AIController
     {
+        internal static Action<long> ProfileRouteCheck;
         #region Types
         protected class ChoiceEval<_T_>
         {

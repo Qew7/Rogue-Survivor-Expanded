@@ -811,11 +811,15 @@ namespace djack.RogueSurvivor.Gameplay.AI
         /// <see cref="RouteFinder.CanReachSimple(RogueGame, Point, int, Func{Point, Point, int})"/>
         protected bool CanReachSimple(RogueGame game, Point dest, RouteFinder.SpecialActions allowedActions)
         {
+            Action<long> profileRoute = ProfileRouteCheck;
+            long routeStart = profileRoute == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
             if (m_RouteFinder == null)
                 m_RouteFinder = new RouteFinder(this);
             m_RouteFinder.AllowedActions = allowedActions;
             int maxDist = game.Rules.GridDistance(m_Actor.Location.Position, dest);
-            return m_RouteFinder.CanReachSimple(game, dest, maxDist, game.Rules.GridDistance);
+            bool reached = m_RouteFinder.CanReachSimple(game, dest, maxDist, game.Rules.GridDistance);
+            if (profileRoute != null) profileRoute(System.Diagnostics.Stopwatch.GetTimestamp() - routeStart);
+            return reached;
         }
 
         protected void FilterOutUnreachablePercepts(RogueGame game, ref List<Percept> percepts, RouteFinder.SpecialActions allowedActions)

@@ -19,6 +19,7 @@ namespace djack.RogueSurvivor.Gameplay.AI
     /// </summary>
     class CivilianAI : OrderableAI
     {
+        internal static Action<long> ProfileIntentPrep;
         #region Constants
         const int FOLLOW_NPCLEADER_MAXDIST = 1;
         const int FOLLOW_PLAYERLEADER_MAXDIST = 1;
@@ -162,7 +163,10 @@ namespace djack.RogueSurvivor.Gameplay.AI
         protected override ActorAction SelectAction(RogueGame game, List<Percept> percepts)
         {
             List<Percept> mapPercepts = FilterSameMap(game, percepts);
+            Action<long> profileIntentPrep = ProfileIntentPrep;
+            long intentStart = profileIntentPrep == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
             List<Actor> intentVisible = PrepareNpcIntents(game, mapPercepts, m_LOSSensor.FOV);
+            if (profileIntentPrep != null) profileIntentPrep(System.Diagnostics.Stopwatch.GetTimestamp() - intentStart);
 
             // DEBUG BOT
 #if DEBUG

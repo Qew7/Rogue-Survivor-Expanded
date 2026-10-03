@@ -5,12 +5,34 @@ Run the headless benchmarks with:
 ```sh
 sh tests/scenario.sh --bench
 sh tests/scenario.sh --bench-ai
+sh tests/scenario.sh --bench-npc-turn
 ```
 
 The runner warms each case, runs five timed samples, and prints the median.
 `--bench-ai` runs just the AI and generation cases for quicker iteration.
 The test UI omits actual graphics driver work, so the minimap case measures
 game-side traversal and dispatch.
+`--bench-npc-turn` runs eight real map turns on a seeded 100×100 surface with
+the maximum 75 configured civilians (plus any building residents) and 200
+shambling zombies, with fresh fixture runs for warmup and
+five timed samples. It reports the median run's map upkeep, actor dispatch,
+AI sensing, field-of-view computation, decision, intent preparation, route
+checks, legality and action execution; the named subphases are inclusive and
+some can overlap. The top action types rank
+decision time by the action returned. World setup, rendering, other districts
+and background simulation are outside the timed interval. These timings show
+which phase dominates this fixture, not a full-city turn or an exact cost of
+every NPC behavior.
+On October 4, 2026, the same Docker/Mono fixture on `ea156b1` measured
+141.0 ms per eight map turns, including 57.1 ms in 1,800 FOV computations.
+With per-call transparency and visible-cell state in `LOS.ComputeFOVFor`, it
+measured 121.3 ms per eight turns, including 35.2 ms in FOV (38% less FOV time,
+14% less total time). Each figure is the median of five fresh runs after one
+warmup; the before/after samples were run sequentially, so treat these as
+diagnostic rather than a controlled paired comparison. The FOV scenario checks
+the complete visible-cell set against the original algorithm across positions,
+walls and door-state changes. There is no cross-call cache: moved actors and
+newly opened doors are recomputed on the next observation.
 These general benchmarks are diagnostic. The save/load budget below is an
 automated pass/fail gate. Compare measurements on the same
 machine, Docker configuration, and runtime.
@@ -338,6 +360,30 @@ avoid introducing first-use pauses during play.
 
 For a concise list of the changes behind these measurements, see
 [optimizations.md](../optimizations.md).
+
+## NPC turn profile
+
+Local Docker/Mono run on October 4, 2026, using `--bench-npc-turn` on one
+100×100 generated surface: 75 configured civilians plus six building residents,
+200 shambling zombies, eight full map turns. The median of five fresh runs was
+136.0 ms total, or 17.0 ms per map turn. It performed 813 civilian and 987
+zombie actions. In that median run:
+
+- Field-of-view computation used 27.3 ms for civilians and 28.3 ms for zombies:
+  **55.6 ms combined, 40.9%** of the total.
+- Civilian decision logic used 44.4 ms, including 16.2 ms preparing NPC
+  intents and 1.5 ms in 924 reachability checks. Zombie decisions used 15.5 ms.
+- Performing chosen actions used 4.1 ms for civilians and 1.6 ms for zombies.
+  Map upkeep used 1.3 ms; action legality and actor dispatch were smaller.
+
+These are inclusive measurements: field of view is part of sensing, and intent
+preparation and route checks are part of decision time. The benchmark replaces
+the generated controllers with timing subclasses, performs their real legal
+actions and advances the real map clock. It does not advance basements or other
+districts, draw the UI, or include fixture generation in the timed interval.
+The fixture has only shambling zombies so their controller phase can be measured
+consistently; different zombie mixes, longer runs and denser social interactions
+may change the ranking. The timing hooks also add some measurement overhead.
 
 ## AI and generation profile
 
