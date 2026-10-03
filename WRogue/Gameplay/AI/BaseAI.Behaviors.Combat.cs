@@ -417,6 +417,14 @@ namespace djack.RogueSurvivor.Gameplay.AI
             assessment = new NpcCourage.Assessment();
             if (enemies == null || enemies.Count == 0 || !NpcCourage.CanFear(m_Actor)) return null;
             assessment = NpcCourage.Assess(game, m_Actor, enemies);
+            if (assessment.Threat >= 20 || assessment.Mortal)
+            {
+                Actor enemy = FilterNearest(game, enemies).Percepted as Actor;
+                game.Session.ResidentRecords.RecordThreat(m_Actor, game.Rules,
+                    game.Session.WorldTime.TurnCounter, enemy,
+                    game.Rules.GridDistance(m_Actor.Location.Position, enemy.Location.Position),
+                    assessment.Threat, assessment.Resolve, assessment.Mortal);
+            }
             if (!assessment.Mortal && (assessment.Threat < 20 || assessment.Resolve > -45)) return null;
             return BehaviorFightOrFlee(game, enemies, hasVisibleLeader, isLeaderFighting,
                 ActorCourage.COWARD, emotes, allowedChargeActions, visible, assessment);

@@ -74,6 +74,8 @@ namespace djack.RogueSurvivor.Engine
 #endif
 
             bool wasMurder = (killer != null && m_Rules.IsMurder(killer, deadGuy));
+            m_Session.ResidentRecords.RecordDeath(deadGuy, m_Rules,
+                m_Session.WorldTime.TurnCounter, killer, reason);
             ReportPersonalityEvent("death", deadGuy, killer, deadGuy.Location.Map, deadGuy.Location.Position);
             if (wasMurder)
                 ReportPersonalityEvent("murder", deadGuy, killer, deadGuy.Location.Map, deadGuy.Location.Position);

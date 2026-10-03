@@ -105,6 +105,21 @@ The `frightened_escape` memory, witnessed `fled_in_fear` fact and any reported
 threat cause use the existing personality, knowledge and archive fields.
 `npc/courage-rumor-save` checks all three across save and load.
 
+Each intelligent living non-player resident can optionally retain one snapshot
+from their first serious visible threat (assessed threat at least 20 or an
+immediately mortal attack) and one from death. Both are in the resident archive,
+not in the actor or corpse. They retain local and world turns; current and
+maximum health, stamina, food, sleep and sanity; effective movement speed;
+hunger, starvation, tiredness, sleepiness, exhaustion, disturbed and insane
+flags; sleeping, running and activity; plus the visible enemy and its distance,
+threat and resolve at first danger, or the actual death reason and killer at
+death. Enemy and killer are copied as ID, name and model, without actor links.
+Older archives load with both optional fields absent. A death snapshot reflects
+state when `KillActor` runs, after any lethal damage was applied. The first
+threat snapshot is retained even if later encounters are worse. The
+`npc/resident-survival-snapshots` scenario checks capture, bounds, archive-only
+reading and full save/load.
+
 Social state keeps separate promise snapshots for each participant, including
 resource, remaining units, deadline, outcome and the promisor's original group
 and faction. Resource disputes and personal attachments also persist. Each of
