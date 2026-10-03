@@ -18,13 +18,14 @@ try {
   $deadline = (Get-Date).AddSeconds(60)
   while ((Get-Date) -lt $deadline) {
     if ($game.HasExited) { throw "Game exited during startup (code $($game.ExitCode))" }
-    if ((Test-Path $log) -and (Select-String -Path $log -Pattern 'loading images done' -Quiet)) {
-      Write-Host 'Windows game reached image loading successfully'
+    # A fresh install waits for Enter before loading images.
+    if ((Test-Path $log) -and (Select-String -Path $log -Pattern 'directory setup ready for confirmation', 'loading images done' -Quiet)) {
+      Write-Host 'Windows game reached the first-run prompt or image loading'
       return
     }
     Start-Sleep -Milliseconds 500
   }
-  throw 'Game did not finish image loading within 60 seconds'
+  throw 'Game did not reach the first-run prompt or image loading within 60 seconds'
 } finally {
   if (-not $game.HasExited) { Stop-Process -Id $game.Id -Force }
   if (Test-Path $log) { Get-Content $log | Select-Object -Last 40 }
