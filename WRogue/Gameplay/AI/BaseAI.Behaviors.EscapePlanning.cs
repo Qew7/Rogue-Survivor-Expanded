@@ -38,7 +38,7 @@ namespace djack.RogueSurvivor.Gameplay.AI
             return depth;
         }
 
-        ActorAction BehaviorPlannedEscape(RogueGame game, List<Percept> enemies)
+        ActorAction BehaviorPlannedEscape(RogueGame game, List<Percept> enemies, HashSet<Point> visible)
         {
             int depth = EscapePlanDepth(game);
             if (depth == 0 || !m_Actor.Model.Abilities.AI_CanUseAIExits) return null;
@@ -56,8 +56,9 @@ namespace djack.RogueSurvivor.Gameplay.AI
                     foe.GetEquippedRangedWeapon() != null && foe.GetEquippedRangedWeapon().Ammo > 0)
                     return null;
             }
-            HashSet<Point> visible = LOS.ComputeFOVFor(game.Rules, m_Actor, map.LocalTime,
-                game.Session.World.Weather);
+            if (visible == null)
+                visible = LOS.ComputeFOVFor(game.Rules, m_Actor, map.LocalTime,
+                    game.Session.World.Weather);
             var seen = new HashSet<Point> { origin };
             var queue = new Queue<EscapeStep>();
             queue.Enqueue(new EscapeStep(origin, origin, 0));

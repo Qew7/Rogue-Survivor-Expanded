@@ -123,8 +123,10 @@ namespace djack.RogueSurvivor.Gameplay.AI
             // get data.
             List<Percept> allEnemies = FilterEnemies(game, mapPercepts);
             List<Percept> currentEnemies = FilterCurrent(game, allEnemies);
+            NpcCourage.Assessment courageAssessment;
             ActorAction panicRetreat = BehaviorPanicRetreat(game, currentEnemies, true, true,
-                FIGHT_EMOTES, RouteFinder.SpecialActions.JUMP | RouteFinder.SpecialActions.DOORS);
+                FIGHT_EMOTES, RouteFinder.SpecialActions.JUMP | RouteFinder.SpecialActions.DOORS,
+                m_LOSSensor.FOV, out courageAssessment);
             if (panicRetreat != null) return panicRetreat;
             bool checkOurLeader = m_Actor.HasLeader && !DontFollowLeader;
             bool hasCurrentEnemies = (currentEnemies != null);
@@ -207,7 +209,8 @@ namespace djack.RogueSurvivor.Gameplay.AI
 
                 // fight or flee?
                 RouteFinder.SpecialActions allowedChargeActions = RouteFinder.SpecialActions.JUMP | RouteFinder.SpecialActions.DOORS; // alpha10
-                ActorAction fightOrFlee = BehaviorFightOrFlee(game, currentEnemies, true, true, ActorCourage.COURAGEOUS, FIGHT_EMOTES, allowedChargeActions);
+                ActorAction fightOrFlee = BehaviorFightOrFlee(game, currentEnemies, true, true,
+                    ActorCourage.COURAGEOUS, FIGHT_EMOTES, allowedChargeActions, m_LOSSensor.FOV, courageAssessment);
                 if (fightOrFlee != null)
                 {
                     return fightOrFlee;

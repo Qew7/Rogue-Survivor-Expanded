@@ -172,9 +172,10 @@ namespace djack.RogueSurvivor.Gameplay.AI
             //}
             //#endregion
 
+            NpcCourage.Assessment courageAssessment;
             ActorAction panicRetreat = BehaviorPanicRetreat(game, currentEnemies, seeLeader, isLeaderFighting,
                 FIGHT_EMOTES, RouteFinder.SpecialActions.JUMP | RouteFinder.SpecialActions.DOORS |
-                RouteFinder.SpecialActions.BREAK | RouteFinder.SpecialActions.PUSH);
+                RouteFinder.SpecialActions.BREAK | RouteFinder.SpecialActions.PUSH, FOV, out courageAssessment);
             if (panicRetreat != null) return panicRetreat;
 
             // 2 fire at nearest enemy (always if has leader, half of the time if not)
@@ -219,7 +220,8 @@ namespace djack.RogueSurvivor.Gameplay.AI
                 RouteFinder.SpecialActions allowedChargeActions = RouteFinder.SpecialActions.JUMP | RouteFinder.SpecialActions.DOORS; // alpha10
                 // gangs are allowed to make a mess :)
                 allowedChargeActions |= RouteFinder.SpecialActions.BREAK | RouteFinder.SpecialActions.PUSH;
-                ActorAction fightOrFlee = BehaviorFightOrFlee(game, currentEnemies, seeLeader, isLeaderFighting, ActorCourage.COURAGEOUS, FIGHT_EMOTES, allowedChargeActions);
+                ActorAction fightOrFlee = BehaviorFightOrFlee(game, currentEnemies, seeLeader, isLeaderFighting,
+                    ActorCourage.COURAGEOUS, FIGHT_EMOTES, allowedChargeActions, FOV, courageAssessment);
                 if (fightOrFlee != null)
                 {
                     return fightOrFlee;

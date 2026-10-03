@@ -15,6 +15,10 @@ their actual action points and controllers. Threat cases run for 30 map turns;
 quiet controls run for 20. Cases vary one condition within each group so food,
 sleep and route effects remain separate.
 
+The final `ms-per-run` column measures wall-clock time for one complete fixture,
+including world setup and all turns. Compare it on the same machine and build;
+it is a performance signal, not an isolated cost for the escape planner.
+
 ## Paired escape-plan comparison
 
 The two images use the same experiment runner, maps, seeds (7000–7099), and

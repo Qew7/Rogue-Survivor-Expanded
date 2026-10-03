@@ -345,8 +345,11 @@ namespace djack.RogueSurvivor.Gameplay.AI
             //#endregion
 
             // Immediate danger takes priority over a shot that may not stop the attackers.
-            ActorAction panicRetreat = BehaviorPanicRetreat(game, FilterCurrent(game, enemies), seeLeader, isLeaderFighting,
-                m_Emotes, RouteFinder.SpecialActions.JUMP | RouteFinder.SpecialActions.DOORS);
+            List<Percept> currentEnemies = FilterCurrent(game, enemies);
+            NpcCourage.Assessment courageAssessment;
+            ActorAction panicRetreat = BehaviorPanicRetreat(game, currentEnemies, seeLeader, isLeaderFighting,
+                m_Emotes, RouteFinder.SpecialActions.JUMP | RouteFinder.SpecialActions.DOORS,
+                m_LOSSensor.FOV, out courageAssessment);
             if (panicRetreat != null) return panicRetreat;
 
             // 3 fire at nearest enemy
@@ -407,7 +410,10 @@ namespace djack.RogueSurvivor.Gameplay.AI
                 }
                 // fight or flee.
                 RouteFinder.SpecialActions allowedChargeActions = RouteFinder.SpecialActions.JUMP | RouteFinder.SpecialActions.DOORS; // alpha10
-                ActorAction fightOrFlee = BehaviorFightOrFlee(game, enemies, seeLeader, isLeaderFighting, Directives.Courage, m_Emotes, allowedChargeActions);
+                NpcCourage.Assessment? priorAssessment = currentEnemies != null &&
+                    currentEnemies.Count == enemies.Count ? (NpcCourage.Assessment?)courageAssessment : null;
+                ActorAction fightOrFlee = BehaviorFightOrFlee(game, enemies, seeLeader, isLeaderFighting,
+                    Directives.Courage, m_Emotes, allowedChargeActions, m_LOSSensor.FOV, priorAssessment);
                 if (fightOrFlee != null)
                 {
                     return fightOrFlee;

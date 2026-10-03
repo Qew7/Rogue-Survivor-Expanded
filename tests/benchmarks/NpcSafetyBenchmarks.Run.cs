@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 
 static partial class NpcSafetyBenchmarks
@@ -10,6 +12,7 @@ static partial class NpcSafetyBenchmarks
         public int Runs, Alive, Died, Escaped, Slept, TookFood, AteFood, SleepActions;
         public int FirstAway, Fled, CornerDeaths, NearEnemyWaits, TowardAfterAway, TotalLife;
         public int SleepNearEnemy, VoluntarySleepNearEnemy, Collapsed;
+        public double ElapsedMs;
         public void Add(Result x)
         {
             Runs++; Alive += x.Alive; Died += x.Died; Escaped += x.Escaped;
@@ -59,20 +62,24 @@ static partial class NpcSafetyBenchmarks
             foreach (var test in cases)
             {
                 var summary = new Result { Group = test.Group, Name = test.Name };
+                Stopwatch timer = Stopwatch.StartNew();
                 for (int seed = 7000; seed < 7100; seed++)
                     summary.Add(Run(test.Group, test.Name, seed, test.Layout, test.Danger,
                         test.Exit, test.Inside, test.Food, test.FoodX, test.Sleep));
+                timer.Stop();
+                summary.ElapsedMs = timer.Elapsed.TotalMilliseconds;
                 summaries.Add(summary);
             }
         }
         finally { Console.SetOut(display); }
         Console.WriteLine("NPC safety experiment: 100 seeds per independent case; 30 danger turns / 20 quiet turns");
-        Console.WriteLine("group case runs alive dead exit sleep took ate first-away fled corner-deaths near-waits toward sleep-near chosen-sleep-near collapse sleep-action avg-life");
+        Console.WriteLine("group case runs alive dead exit sleep took ate first-away fled corner-deaths near-waits toward sleep-near chosen-sleep-near collapse sleep-action avg-life ms-per-run");
         foreach (Result s in summaries)
             Console.WriteLine(s.Group + " " + s.Name + " " + s.Runs + " " + s.Alive + " " + s.Died + " " +
                 s.Escaped + " " + s.Slept + " " + s.TookFood + " " + s.AteFood + " " + s.FirstAway + " " +
                 s.Fled + " " + s.CornerDeaths + " " + s.NearEnemyWaits + " " + s.TowardAfterAway + " " +
                 s.SleepNearEnemy + " " + s.VoluntarySleepNearEnemy + " " + s.Collapsed + " " + s.SleepActions + " " +
-                ((double)s.TotalLife / s.Runs).ToString("F1"));
+                ((double)s.TotalLife / s.Runs).ToString("F1", CultureInfo.InvariantCulture) + " " +
+                (s.ElapsedMs / s.Runs).ToString("F2", CultureInfo.InvariantCulture));
     }
 }

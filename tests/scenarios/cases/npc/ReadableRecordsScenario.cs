@@ -39,6 +39,11 @@ static class ReadableRecordsScenario
             Session.Get.ResidentRecords.Register(owner).Add("recent-shelter", 0,
                 "Mira decided to return to my chosen shelter. Need unmet: 100% (current 0, desired 1); importance: 53/200; confidence: 100%. The Homebody trait raised its importance by 8 points.",
                 new ObservedEvent("goal_started", 0, owner.UnmodifiedName, owner.UnmodifiedName, true, storyId: "recent-shelter"));
+            Session.Get.ResidentRecords.Register(owner).Add("old-stage", 0,
+                "Story supply_run: completed.", new ObservedEvent("story_stage", 0, owner.UnmodifiedName, null, true));
+            Session.Get.ResidentRecords.Register(owner).Add("old-completion", 0,
+                "Intent completed: Find food; target Mira; goal met.",
+                new ObservedEvent("goal_completed", 0, owner.UnmodifiedName, owner.UnmodifiedName, true));
             string path = Path.Combine(Path.GetTempPath(), "readable-records-" + Guid.NewGuid().ToString("N"));
             try
             {
@@ -55,6 +60,10 @@ static class ReadableRecordsScenario
                 Check.Equal(true, lines.Contains("Planned route: travel onward, then enter the shelter."),
                     "older archived plans also read naturally");
                 Check.Equal(true, lines.Contains("Food was running low"), "older hunger entry explains its own need");
+                Check.Equal(true, lines.Contains("The effort to supply run succeeded."),
+                    "old story stages retain readable outcomes");
+                Check.Equal(true, lines.Contains("Achieved: Find food. goal met."),
+                    "old completed goals retain their outcome text");
                 string shelter = String.Join(" ", RecordsReader.Lines(RecordsReader.Load(path), null,
                     null, "old-shelter", RecordsEventFilter.Intentions));
                 Check.Equal(true, shelter.Contains("return to my chosen shelter") && !shelter.Contains("food") &&

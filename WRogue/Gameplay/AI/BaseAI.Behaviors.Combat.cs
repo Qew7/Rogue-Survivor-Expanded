@@ -439,15 +439,15 @@ namespace djack.RogueSurvivor.Gameplay.AI
         #region Fight or Flee
         protected ActorAction BehaviorPanicRetreat(RogueGame game, List<Percept> enemies,
             bool hasVisibleLeader, bool isLeaderFighting, string[] emotes,
-            RouteFinder.SpecialActions allowedChargeActions)
+            RouteFinder.SpecialActions allowedChargeActions, HashSet<Point> visible,
+            out NpcCourage.Assessment assessment)
         {
+            assessment = new NpcCourage.Assessment();
             if (enemies == null || enemies.Count == 0 || !NpcCourage.CanFear(m_Actor)) return null;
-            int threat;
-            int resolve = NpcCourage.Resolve(game, m_Actor, enemies, out threat);
-            if (!NpcCourage.ImmediateMortalThreat(game, m_Actor, enemies) &&
-                (threat < 20 || resolve > -45)) return null;
+            assessment = NpcCourage.Assess(game, m_Actor, enemies);
+            if (!assessment.Mortal && (assessment.Threat < 20 || assessment.Resolve > -45)) return null;
             return BehaviorFightOrFlee(game, enemies, hasVisibleLeader, isLeaderFighting,
-                ActorCourage.COWARD, emotes, allowedChargeActions);
+                ActorCourage.COWARD, emotes, allowedChargeActions, visible, assessment);
         }
         /// <summary>
         /// Engage in mele fight with the nearest reachable enemy or flee from him.
@@ -461,13 +461,14 @@ namespace djack.RogueSurvivor.Gameplay.AI
         /// <returns></returns>
         protected ActorAction BehaviorFightOrFlee(RogueGame game, List<Percept> enemies, bool hasVisibleLeader, bool isLeaderFighting, ActorCourage courage,
             string[] emotes,
-            RouteFinder.SpecialActions allowedChargeActions)
+            RouteFinder.SpecialActions allowedChargeActions, HashSet<Point> visible = null,
+            NpcCourage.Assessment? priorAssessment = null)
         {
-            int threat;
-            int resolve = NpcCourage.Resolve(game, m_Actor, enemies, out threat);
+            NpcCourage.Assessment assessment = priorAssessment ?? NpcCourage.Assess(game, m_Actor, enemies);
+            int threat = assessment.Threat;
+            int resolve = assessment.Resolve;
             bool canFear = NpcCourage.CanFear(m_Actor);
-            bool panic = canFear && (NpcCourage.ImmediateMortalThreat(game, m_Actor, enemies) ||
-                threat >= 20 && resolve <= -45);
+            bool panic = canFear && (assessment.Mortal || threat >= 20 && resolve <= -45);
             if (canFear)
                 courage = resolve <= -25 ? ActorCourage.COWARD :
                     resolve >= 15 ? ActorCourage.COURAGEOUS : ActorCourage.CAUTIOUS;
@@ -715,13 +716,14 @@ namespace djack.RogueSurvivor.Gameplay.AI
 
                 // 3. Use exit?
                 #region
-                ActorAction plannedEscape = BehaviorPlannedEscape(game, enemies);
+                ActorAction plannedEscape = BehaviorPlannedEscape(game, enemies, visible);
                 if (plannedEscape != null)
                 {
                     m_Actor.Activity = Activity.FLEEING;
                     return panic ? new ActionFearRetreat(m_Actor, game, plannedEscape, enemy) : plannedEscape;
                 }
                 if (m_Actor.Model.Abilities.AI_CanUseAIExits &&
+                    UsableEscapeExit(m_Actor.Location.Map.GetExitAt(m_Actor.Location.Position)) &&
                     game.Rules.RollChance(FLEE_THROUGH_EXIT_CHANCE))
                 {
                     ActorAction useExit = BehaviorUseExit(game, UseExitFlags.NONE);

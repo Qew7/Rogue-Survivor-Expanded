@@ -11,6 +11,12 @@ namespace djack.RogueSurvivor.Gameplay.AI
     // A decision about this encounter, recalculated from observable conditions each turn.
     static class NpcCourage
     {
+        public struct Assessment
+        {
+            public int Resolve, Threat;
+            public bool Mortal;
+        }
+
         public static bool CanFear(Actor actor)
         {
             return actor != null && !actor.IsPlayer && !actor.Model.Abilities.IsUndead &&
@@ -19,25 +25,20 @@ namespace djack.RogueSurvivor.Gameplay.AI
 
         public static bool ImmediateMortalThreat(RogueGame game, Actor actor, List<Percept> enemies)
         {
-            if (!CanFear(actor) || enemies == null) return false;
-            foreach (Percept percept in enemies)
-            {
-                Actor enemy = percept.Percepted as Actor;
-                if (enemy == null || enemy.IsDead || enemy.Location.Map != actor.Location.Map ||
-                    percept.Turn != actor.Location.Map.LocalTime.TurnCounter) continue;
-                int distance = game.Rules.GridDistance(actor.Location.Position, enemy.Location.Position);
-                ItemRangedWeapon gun = enemy.GetEquippedRangedWeapon();
-                if (gun != null && gun.Ammo > 0 && distance <= enemy.CurrentRangedAttack.Range &&
-                    enemy.CurrentRangedAttack.DamageValue >= actor.HitPoints) return true;
-                if (distance <= 1 && enemy.CurrentMeleeAttack.DamageValue >= actor.HitPoints) return true;
-            }
-            return false;
+            return Assess(game, actor, enemies).Mortal;
         }
 
         public static int Resolve(RogueGame game, Actor actor, List<Percept> enemies, out int threat)
         {
-            threat = 0;
-            if (!CanFear(actor)) return 100;
+            Assessment assessment = Assess(game, actor, enemies);
+            threat = assessment.Threat;
+            return assessment.Resolve;
+        }
+
+        public static Assessment Assess(RogueGame game, Actor actor, List<Percept> enemies)
+        {
+            Assessment assessment = new Assessment();
+            if (!CanFear(actor)) { assessment.Resolve = 100; return assessment; }
             int score = game.NpcContent.FactionPolicy(actor.Faction.ID).Courage +
                 PersonalitySystem.Bias(actor, DecisionKind.Courage, registry: game.NpcContent.Personalities);
             int maxHp = Math.Max(1, game.Rules.ActorMaxHPs(actor));
@@ -83,14 +84,18 @@ namespace djack.RogueSurvivor.Gameplay.AI
                     int distance = game.Rules.GridDistance(actor.Location.Position, enemy.Location.Position);
                     ItemRangedWeapon gun = enemy.GetEquippedRangedWeapon();
                     bool shoots = gun != null && gun.Ammo > 0 && distance <= enemy.CurrentRangedAttack.Range;
+                    if (shoots && enemy.CurrentRangedAttack.DamageValue >= actor.HitPoints ||
+                        distance <= 1 && enemy.CurrentMeleeAttack.DamageValue >= actor.HitPoints)
+                        assessment.Mortal = true;
                     if (distance > 3 && !shoots) continue;
                     int damage = Math.Max(1, shoots ? enemy.CurrentRangedAttack.DamageValue : enemy.CurrentMeleeAttack.DamageValue);
                     int danger = Math.Min(70, 20 + 30 * damage / maxHp +
                         (damage >= actor.HitPoints ? 45 : damage * 2 >= actor.HitPoints ? 20 : 0));
-                    threat += shoots ? danger : distance <= 1 ? danger : distance == 2 ? danger * 2 / 3 : danger / 3;
+                    assessment.Threat += shoots ? danger : distance <= 1 ? danger : distance == 2 ? danger * 2 / 3 : danger / 3;
                 }
-            threat = Math.Min(100, threat);
-            return score - threat;
+            assessment.Threat = Math.Min(100, assessment.Threat);
+            assessment.Resolve = score - assessment.Threat;
+            return assessment;
         }
 
         static int Skill(Actor actor, Skills.IDs id)
