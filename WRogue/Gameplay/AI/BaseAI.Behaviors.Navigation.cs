@@ -702,22 +702,19 @@ namespace djack.RogueSurvivor.Gameplay.AI
                     Location next = m_Actor.Location + dir;
                     Map map = next.Map;
                     Point pos = next.Position;
+                    int trapsDamage = isIntelligent ? ComputeTrapsMaxDamageForMe(game, map, pos) : 0;
 
                     // intelligent NPC: forbid stepping on deadly traps, unless starving or courageous (desperate).
-                    if (m_Actor.Model.Abilities.IsIntelligent)
+                    if (isIntelligent && trapsDamage >= m_Actor.HitPoints)
                     {
-                        int trapsDamage = ComputeTrapsMaxDamageForMe(game, map, pos);
-                        if (trapsDamage >= m_Actor.HitPoints)
+                        if (!imStarvingOrCourageous.HasValue)
                         {
-                            if (!imStarvingOrCourageous.HasValue)
-                            {
-                                int threat;
-                                imStarvingOrCourageous = game.Rules.IsActorStarving(m_Actor) ||
-                                    NpcCourage.Resolve(game, m_Actor, null, out threat) >= 15;
-                            }
-                            if (!imStarvingOrCourageous.Value)
-                                return float.NaN;
+                            int threat;
+                            imStarvingOrCourageous = game.Rules.IsActorStarving(m_Actor) ||
+                                NpcCourage.Resolve(game, m_Actor, null, out threat) >= 15;
                         }
+                        if (!imStarvingOrCourageous.Value)
+                            return float.NaN;
                     }
 
                     // Heuristic scoring:
@@ -766,12 +763,8 @@ namespace djack.RogueSurvivor.Gameplay.AI
                     if (mapObj != null && (mapObj.IsMovable || mapObj is DoorWindow))
                         score += EXPLORE_BARRICADES;
                     // 4th If intelligent punish stepping on unsafe traps. // alpha10
-                    if (isIntelligent)
-                    {
-                        int trapsDmg = ComputeTrapsMaxDamageForMe(game, map, pos);
-                        if (trapsDmg > 0)
-                            score += trapsDmg * AVOID_TRAPS;
-                    }
+                    if (trapsDamage > 0)
+                        score += trapsDamage * AVOID_TRAPS;
                     // 5th Prefer inside during the night vs outside during the day, and inside if sleepy // alpha10.1
                     bool isInside = map.GetTileAt(pos.X, pos.Y).IsInside;
                     if (isInside)
