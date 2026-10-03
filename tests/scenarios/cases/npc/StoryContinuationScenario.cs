@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using djack.RogueSurvivor.Data;
 using djack.RogueSurvivor.Engine;
 using djack.RogueSurvivor.Engine.Actions;
@@ -31,7 +32,25 @@ static class StoryContinuationScenario
             Check.Equal(true, next.Generated.Causes.Length > 0, "supporting evidence is retained with the goal");
             Session.Get.WorldTime.TurnCounter = 181;
             string text = String.Join(" ", RecordsReader.Lines(new RecordsSave("test", Session.Get), null));
-            Check.Equal(true, text.Contains("Continuation of"), "chronicle connects the independently generated episodes");
+            Check.Equal(true, text.Contains("found another lead"), "chronicle connects the independently generated episodes");
+            string path = Path.Combine(Path.GetTempPath(), "story-continuation-" + Guid.NewGuid().ToString("N"));
+            try
+            {
+                BinarySaveStore.Save(path, Session.Get);
+                RecordsSave archive = RecordsReader.Load(path);
+                string parent = String.Join(" ", RecordsReader.Lines(archive, null, null,
+                    first.StoryId, RecordsEventFilter.Intentions));
+                Check.Equal(true, parent.Contains("found another lead"),
+                    "parent story search finds the saved continuation");
+                Check.Equal(false, parent.Contains("[story "), "parent ID remains hidden in displayed prose");
+                string child = String.Join(" ", RecordsReader.Lines(archive, null, null,
+                    next.StoryId, RecordsEventFilter.Intentions));
+                Check.Equal(true, child.Contains("found another lead"), "child story search still finds the link");
+                string absent = String.Join(" ", RecordsReader.Lines(archive, null, null,
+                    "missing-story-id", RecordsEventFilter.Intentions));
+                Check.Equal(false, absent.Contains("found another lead"), "unrelated story ID does not match the link");
+            }
+            finally { if (File.Exists(path)) File.Delete(path); if (File.Exists(path + ".bak")) File.Delete(path + ".bak"); }
         });
     }
 }

@@ -164,7 +164,6 @@ namespace djack.RogueSurvivor.Engine
                 AddMessage(new Message(String.Format("3. {0} grenades.", directives.CanThrowGrenades ? "Throw" : "Don't throw"), m_Session.WorldTime.TurnCounter, Color.LightGreen));
                 AddMessage(new Message(String.Format("4. {0}.", directives.CanSleep ? "Sleep" : "Don't sleep"), m_Session.WorldTime.TurnCounter, Color.LightGreen));
                 AddMessage(new Message(String.Format("5. {0}.", directives.CanTrade ? "Trade" : "Don't trade"), m_Session.WorldTime.TurnCounter, Color.LightGreen));
-                AddMessage(new Message(String.Format("6. {0}.", ActorDirective.CourageString(directives.Courage)), m_Session.WorldTime.TurnCounter, Color.LightGreen));
                 RedrawPlayScreen();
 
                 // 2. Get input.
@@ -176,7 +175,7 @@ namespace djack.RogueSurvivor.Engine
                 {
                     loop = false;
                 }
-                else if (choice >= 1 && choice <= 6)
+                else if (choice >= 1 && choice <= 5)
                 {
                     switch (choice)
                     {
@@ -194,20 +193,6 @@ namespace djack.RogueSurvivor.Engine
                             break;
                         case 5: // trade
                             directives.CanTrade = !directives.CanTrade;
-                            break;
-                        case 6:  // courage: coward -> cautious -> courageous.
-                            switch (directives.Courage)
-                            {
-                                case ActorCourage.COWARD:
-                                    directives.Courage = ActorCourage.CAUTIOUS;
-                                    break;
-                                case ActorCourage.CAUTIOUS:
-                                    directives.Courage = ActorCourage.COURAGEOUS;
-                                    break;
-                                case ActorCourage.COURAGEOUS:
-                                    directives.Courage = ActorCourage.COWARD;
-                                    break;
-                            }
                             break;
                     }
                 }

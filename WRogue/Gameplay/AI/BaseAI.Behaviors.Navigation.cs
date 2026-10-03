@@ -25,6 +25,7 @@ namespace djack.RogueSurvivor.Gameplay.AI
         /// <returns></returns>
         protected ActorAction BehaviorWander(RogueGame game, Predicate<Location> goodWanderLocFn, ExplorationData exploration)
         {
+            bool almostSleepy = game.Rules.IsAlmostSleepy(m_Actor);
             ChoiceEval<Direction> chooseDir = Choose<Direction>(game,
                 Direction.COMPASS_LIST,
                 (dir) =>
@@ -62,7 +63,8 @@ namespace djack.RogueSurvivor.Gameplay.AI
                     }
 
                     // alpha10.1 allowing break action prevent rare cases of getting stuck or going back and forth but we penalize it
-                    if (next.Map.GetMapObjectAt(next.Position) != null)
+                    MapObject mapObject = next.Map.GetMapObjectAt(next.Position);
+                    if (mapObject != null)
                     {
                         ActorAction bumpObjAction = game.Rules.IsBumpableFor(m_Actor, game, next);
                         if (bumpObjAction != null && (bumpObjAction is ActionBreak || bumpObjAction is ActionBashDoor))
@@ -72,7 +74,7 @@ namespace djack.RogueSurvivor.Gameplay.AI
                             else
                                 score += BREAKING_OBJ;
                             // if we have to break things, prefer objs we can break more quickly
-                            score -= GetObjectHitPoints(next.Map.GetMapObjectAt(next.Position));
+                            score -= GetObjectHitPoints(mapObject);
                         }
                     }
 
@@ -90,14 +92,14 @@ namespace djack.RogueSurvivor.Gameplay.AI
                     // alpha10.1 prefer wandering to doorwindows and exits.
                     // helps civs ai getting stuck in semi-infinite loop when running out of new exploration to do.
                     // as a side effect, make ais with no exploration data (eg zombies) more eager to visit door/windows and exits.
-                    DoorWindow doorWindow = next.Map.GetMapObjectAt(next.Position) as DoorWindow;
+                    DoorWindow doorWindow = mapObject as DoorWindow;
                     if (doorWindow != null)
                         score += DOORWINDOWS;
                     if (next.Map.GetExitAt(next.Position) != null)
                         score += EXITS;
 
                     // alpha10.1 prefer inside when almost sleepy
-                    if (game.Rules.IsAlmostSleepy(m_Actor) && next.Map.GetTileAt(next.Position).IsInside)
+                    if (almostSleepy && next.Map.GetTileAt(next.Position).IsInside)
                         score += INSIDE_WHEN_ALMOST_SLEEPY;
 
                     // alpha10.1 add random factor
@@ -277,7 +279,7 @@ namespace djack.RogueSurvivor.Gameplay.AI
             bool canCheckBreak, bool canCheckPush)
         {
             float currentDistance = game.Rules.StdDistance(m_Actor.Location.Position, goal);
-            bool imStarvingOrCourageous = game.Rules.IsActorStarving(m_Actor) || Directives.Courage == ActorCourage.COURAGEOUS;
+            bool? imStarvingOrCourageous = null;
 
             ActorAction bump = BehaviorBumpToward(game, goal,
                 canCheckBreak, canCheckPush,
@@ -292,10 +294,16 @@ namespace djack.RogueSurvivor.Gameplay.AI
                         return float.NaN;
 
                     // avoid stepping on damaging traps, unless starving or courageous.
-                    if (!imStarvingOrCourageous)
+                    int trapsDamage = ComputeTrapsMaxDamageForMe(game, m_Actor.Location.Map, ptA);
+                    if (trapsDamage > 0)
                     {
-                        int trapsDamage = ComputeTrapsMaxDamageForMe(game, m_Actor.Location.Map, ptA);
-                        if (trapsDamage > 0)
+                        if (!imStarvingOrCourageous.HasValue)
+                        {
+                            int threat;
+                            imStarvingOrCourageous = game.Rules.IsActorStarving(m_Actor) ||
+                                NpcCourage.Resolve(game, m_Actor, null, out threat) >= 15;
+                        }
+                        if (!imStarvingOrCourageous.Value)
                         {
                             // if instant death, don't do it.
                             if (trapsDamage >= m_Actor.HitPoints)
@@ -664,7 +672,7 @@ namespace djack.RogueSurvivor.Gameplay.AI
         {
             // prepare data.
             Direction prevDirection = Direction.FromVector(m_Actor.Location.Position.X - m_prevLocation.Position.X, m_Actor.Location.Position.Y - m_prevLocation.Position.Y);
-            bool imStarvingOrCourageous = game.Rules.IsActorStarving(m_Actor) || Directives.Courage == ActorCourage.COURAGEOUS;
+            bool? imStarvingOrCourageous = null;
             bool isIntelligent = m_Actor.Model.Abilities.IsIntelligent;
 
             // eval all adjacent tiles for exploration utility and get the best one.
@@ -696,12 +704,18 @@ namespace djack.RogueSurvivor.Gameplay.AI
                     Location next = m_Actor.Location + dir;
                     Map map = next.Map;
                     Point pos = next.Position;
+                    int trapsDamage = isIntelligent ? ComputeTrapsMaxDamageForMe(game, map, pos) : 0;
 
                     // intelligent NPC: forbid stepping on deadly traps, unless starving or courageous (desperate).
-                    if (m_Actor.Model.Abilities.IsIntelligent && !imStarvingOrCourageous)
+                    if (isIntelligent && trapsDamage >= m_Actor.HitPoints)
                     {
-                        int trapsDamage = ComputeTrapsMaxDamageForMe(game, map, pos);
-                        if (trapsDamage >= m_Actor.HitPoints)
+                        if (!imStarvingOrCourageous.HasValue)
+                        {
+                            int threat;
+                            imStarvingOrCourageous = game.Rules.IsActorStarving(m_Actor) ||
+                                NpcCourage.Resolve(game, m_Actor, null, out threat) >= 15;
+                        }
+                        if (!imStarvingOrCourageous.Value)
                             return float.NaN;
                     }
 
@@ -751,12 +765,8 @@ namespace djack.RogueSurvivor.Gameplay.AI
                     if (mapObj != null && (mapObj.IsMovable || mapObj is DoorWindow))
                         score += EXPLORE_BARRICADES;
                     // 4th If intelligent punish stepping on unsafe traps. // alpha10
-                    if (isIntelligent)
-                    {
-                        int trapsDmg = ComputeTrapsMaxDamageForMe(game, map, pos);
-                        if (trapsDmg > 0)
-                            score += trapsDmg * AVOID_TRAPS;
-                    }
+                    if (trapsDamage > 0)
+                        score += trapsDamage * AVOID_TRAPS;
                     // 5th Prefer inside during the night vs outside during the day, and inside if sleepy // alpha10.1
                     bool isInside = map.GetTileAt(pos.X, pos.Y).IsInside;
                     if (isInside)

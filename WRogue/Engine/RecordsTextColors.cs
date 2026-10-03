@@ -25,7 +25,8 @@ namespace djack.RogueSurvivor.Engine
 
         readonly Dictionary<char, List<ColoredTerm>> terms = new Dictionary<char, List<ColoredTerm>>();
 
-        public RecordsTextColors(IEnumerable<ResidentRecord> residents)
+        public RecordsTextColors(IEnumerable<ResidentRecord> residents,
+            IDictionary<string, DistrictKind> districtKinds = null)
         {
             var residentsByName = new Dictionary<string, ColoredTerm>(StringComparer.Ordinal);
             foreach (ResidentRecord resident in residents)
@@ -47,6 +48,15 @@ namespace djack.RogueSurvivor.Engine
                 if (label != null && !residentsByName.ContainsKey(label))
                     Add(new ColoredTerm { Name = label, Color = Zone.BuildingColor(kind) });
             }
+            if (districtKinds != null)
+                foreach (KeyValuePair<string, DistrictKind> district in districtKinds)
+                {
+                    Color color = District.DisplayColor(district.Value);
+                    string label = District.KindLabel(district.Value) + " district " + district.Key;
+                    Add(new ColoredTerm { Name = label, Color = color });
+                    Add(new ColoredTerm { Name = "district " + district.Key, Color = color });
+                    Add(new ColoredTerm { Name = "District " + district.Key, Color = color });
+                }
             foreach (List<ColoredTerm> initial in terms.Values)
                 initial.Sort((a, b) => b.Name.Length.CompareTo(a.Name.Length));
         }

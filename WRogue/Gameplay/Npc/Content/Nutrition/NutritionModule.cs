@@ -67,9 +67,9 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             catalog.Perception(NpcPerceptionKind.Items, PerceiveItems);
             RegisterEvents(catalog);
             catalog.PlanSeed(FoodPlanOperators.Seed);
-            catalog.Operator(new NpcOperatorDefinition("food.take", NpcPlanAction.PickupFood, c => NpcFoodActions.Take(new NpcActionContext(c)), "food", NpcContentActions.FoodUnavailable));
-            catalog.Operator(new NpcOperatorDefinition("food.ask", NpcPlanAction.AskFood, c => NpcFoodActions.Request(new NpcActionContext(c))));
-            catalog.Operator(new NpcOperatorDefinition("food.trade", NpcPlanAction.BarterFood, c => new ActionNpcBarter(c.Owner, c.Game, c.Goal, c.Step, c.Target)));
+            catalog.Operator(new NpcOperatorDefinition("food.take", NpcPlanAction.PickupFood, c => NpcFoodActions.Take(new NpcActionContext(c)), "food", NpcContentActions.FoodUnavailable, archiveText: step => "collect food"));
+            catalog.Operator(new NpcOperatorDefinition("food.ask", NpcPlanAction.AskFood, c => NpcFoodActions.Request(new NpcActionContext(c)), archiveText: step => "ask for food"));
+            catalog.Operator(new NpcOperatorDefinition("food.trade", NpcPlanAction.BarterFood, c => new ActionNpcBarter(c.Owner, c.Game, c.Goal, c.Step, c.Target), archiveText: step => "trade for food"));
             catalog.Memory(new MemoryDefinition("traded_for_food", "Exchanged supplies for food", 2, 5,
                 new[] { new MemoryTrigger("bartered_food", (a, e) => a == e.Subject) },
                 new MemoryOutcome(null, null, Skills.IDs.CHARISMATIC)).Relate(MemoryRelationRole.Other, 2), false);
@@ -77,9 +77,9 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         void RegisterEvents(NpcCatalogBuilder catalog)
         {
             catalog.OnReport("requested_food", HearNeed);
-            catalog.Event(new NpcEventDefinition("requested_food", NpcRecordCategory.Help, true, e => (e.Subject ?? "Someone") + " asked " + (e.Other ?? "someone") + " for food.", f => f.SubjectName + " asked for food") { StoryStage = (g, s, e) => "contacted", AudibleReport = true, PlayerReply = new NpcPlayerReply("food", "food_promised", "request_refused", "Yes, I'll bring you food.", "No, I can't help with food.") });
+            catalog.Event(new NpcEventDefinition("requested_food", NpcRecordCategory.Help, true, e => (e.Subject ?? "Someone") + " asked " + (e.Other ?? "someone") + " for food.", f => f.ReportSubject + " asked " + (f.ReportOther == null ? "" : f.ReportOther + " ") + "for food") { StoryStage = (g, s, e) => "contacted", AudibleReport = true, PlayerReply = new NpcPlayerReply("food", "food_promised", "request_refused", "Yes, I'll bring you food.", "No, I can't help with food.") });
             catalog.Event(new NpcEventDefinition("food_offered", NpcRecordCategory.Help, true, e => (e.Subject ?? "Someone") + " offered to exchange food with " + (e.Other ?? "someone") + ".", null));
-            catalog.Event(new NpcEventDefinition("bartered_food", NpcRecordCategory.Help, false, e => (e.Subject ?? "Someone") + " obtained food by exchanging supplies with " + (e.Other ?? "someone") + ".", null));
+            catalog.Event(new NpcEventDefinition("bartered_food", NpcRecordCategory.Help, true, e => (e.Subject ?? "Someone") + " obtained food by exchanging supplies with " + (e.Other ?? "someone") + ".", null) { ReportActorRole = NpcReportActorRole.Both });
             catalog.Event(new NpcEventDefinition("supplies_acquired", NpcRecordCategory.None, false, e => (e.Subject ?? "Someone") + " acquired the supplies they were seeking.", null) { StoryStage = (g, s, e) => "acquired" });
             catalog.On("food_offered", NpcObservationPhase.Knowledge, OnKnowledge);
             catalog.On("requested_food", NpcObservationPhase.Knowledge, OnKnowledge);

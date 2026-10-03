@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Drawing;
 using djack.RogueSurvivor.Data;
 using djack.RogueSurvivor.Engine;
 using djack.RogueSurvivor.Engine.Actions;
@@ -9,16 +10,17 @@ namespace djack.RogueSurvivor.Gameplay.AI
 {
     abstract partial class BaseAI
     {
-        protected List<Actor> PrepareNpcIntents(RogueGame game, List<Percept> percepts)
+        protected List<Actor> PrepareNpcIntents(RogueGame game, List<Percept> percepts, HashSet<Point> currentFov)
         {
             if (!NpcIntentSystem.Enabled(m_Actor)) return null;
-            NpcKnowledgeSystem.Perceive(game, m_Actor, percepts);
+            NpcKnowledgeSystem.Perceive(game, m_Actor, percepts, currentFov);
             List<Actor> visible = new List<Actor>();
             if (percepts != null) foreach (Percept percept in percepts)
             {
                 Actor actor = percept.Percepted as Actor;
-                if (actor != null && percept.Turn == m_Actor.Location.Map.LocalTime.TurnCounter &&
-                    NpcIntentSystem.CanSee(game, m_Actor, actor)) visible.Add(actor);
+                if (actor != null && !actor.IsDead && percept.Turn == m_Actor.Location.Map.LocalTime.TurnCounter &&
+                    percept.Location.Map == m_Actor.Location.Map && actor.Location == percept.Location &&
+                    currentFov.Contains(actor.Location.Position)) visible.Add(actor);
             }
             bool danger = false;
             foreach (Actor actor in visible) if (game.Rules.AreEnemies(m_Actor, actor)) { danger = true; break; }

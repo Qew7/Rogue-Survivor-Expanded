@@ -21,6 +21,10 @@ Open [localhost:6080](http://localhost:6080), click the game window, and press E
 - NPC traits, memories, conversations, and emergent stories.
 - Claimable bases, storage rooms, and follower scavenging.
 
+## Reference
+
+- [All NPC personality traits and their effects](docs/npc-traits-guide.md)
+
 ## Contribute
 
 Read [AGENTS.md](AGENTS.md), make your change, and open a pull request. For gameplay changes, add a [scenario](docs/gameplay-scenarios.md) and run:

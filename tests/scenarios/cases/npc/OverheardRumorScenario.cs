@@ -21,7 +21,8 @@ static class OverheardRumorScenario
             Check.Equal(false, NpcIntentSupport.HasEvent(hidden, "attack"), "the wall blocks the original event");
             NpcFact fact = speaker.Personality.Knowledge.Facts.Find(f => f.Kind == "attack");
             Check.Equal(true, fact != null, "speaker has a witnessed fact to report");
-            var tell = new ActionNpcTell(speaker, world.Game, victim, fact);
+            Actor recipient = NpcIntentSupport.Actor(world, "recipient", 2, 2);
+            var tell = new ActionNpcTell(speaker, world.Game, recipient, fact);
             Check.Equal(true, tell.IsLegal(), "speaker can tell an adjacent person");
             speaker.ActionPoints = Rules.BASE_ACTION_COST;
             tell.Perform();

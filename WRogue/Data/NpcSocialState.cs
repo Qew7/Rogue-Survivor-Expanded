@@ -29,6 +29,27 @@ namespace djack.RogueSurvivor.Data
         public string Response;
     }
     [Serializable]
+    sealed class NpcSupplyPermission
+    {
+        public Guid Grantor;
+        public Location Place;
+        public string Resource;
+        public int ExpiresTurn, Units;
+        public long CauseId;
+    }
+    enum NpcServiceStatus { Offered, Accepted, Completed, Refused, Failed }
+    [Serializable]
+    sealed class NpcServiceAgreement
+    {
+        public long Id, CauseId;
+        public Guid Provider, Patient;
+        public string ProviderName, PatientName, StoryId;
+        public Location Shelter;
+        public int DueTurn;
+        public NpcServiceStatus Status;
+        public NpcServiceAgreement Copy() { return (NpcServiceAgreement)MemberwiseClone(); }
+    }
+    [Serializable]
     sealed class NpcAttachment
     {
         public string Kind, Name, Resource;
@@ -43,6 +64,12 @@ namespace djack.RogueSurvivor.Data
         List<NpcCommitment> m_Commitments;
         List<NpcResourceDispute> m_Disputes;
         List<NpcAttachment> m_Attachments;
+        [System.Runtime.Serialization.OptionalField] List<NpcSupplyPermission> m_Permissions;
+        [System.Runtime.Serialization.OptionalField] List<NpcServiceAgreement> m_ServiceAgreements;
+        [NonSerialized] bool? m_HasOpenServiceAgreements;
+        [System.Runtime.Serialization.OptionalField] Guid m_KnownSupplyRuleGroup;
+        [System.Runtime.Serialization.OptionalField] int m_KnownSupplyRule;
+        [System.Runtime.Serialization.OptionalField] long m_KnownSupplyRuleEvent;
         public bool HasCommitments { get { return m_Commitments != null && m_Commitments.Count > 0; } }
         public bool HasDisputes { get { return m_Disputes != null && m_Disputes.Count > 0; } }
         public bool HasAttachments { get { return m_Attachments != null && m_Attachments.Count > 0; } }
@@ -51,6 +78,59 @@ namespace djack.RogueSurvivor.Data
         public List<NpcCommitment> Commitments { get { return m_Commitments ?? (m_Commitments = new List<NpcCommitment>()); } }
         public List<NpcResourceDispute> Disputes { get { return m_Disputes ?? (m_Disputes = new List<NpcResourceDispute>()); } }
         public List<NpcAttachment> Attachments { get { return m_Attachments ?? (m_Attachments = new List<NpcAttachment>()); } }
+        public List<NpcSupplyPermission> Permissions { get { return m_Permissions ?? (m_Permissions = new List<NpcSupplyPermission>()); } }
+        public List<NpcServiceAgreement> ServiceAgreements { get { return m_ServiceAgreements ?? (m_ServiceAgreements = new List<NpcServiceAgreement>()); } }
+        public bool HasServiceAgreements { get { return m_ServiceAgreements != null && m_ServiceAgreements.Count > 0; } }
+        public bool CanRememberService { get { return m_ServiceAgreements == null || m_ServiceAgreements.Count < 8 ||
+            m_ServiceAgreements.Exists(a => a.Status != NpcServiceStatus.Offered && a.Status != NpcServiceStatus.Accepted); } }
+        public bool HasOpenServiceAgreements
+        {
+            get
+            {
+                if (!m_HasOpenServiceAgreements.HasValue)
+                    m_HasOpenServiceAgreements = m_ServiceAgreements != null && m_ServiceAgreements.Exists(a =>
+                        a.Status == NpcServiceStatus.Offered || a.Status == NpcServiceStatus.Accepted);
+                return m_HasOpenServiceAgreements.Value;
+            }
+        }
+        public void SetServiceStatus(NpcServiceAgreement agreement, NpcServiceStatus status)
+        { agreement.Status = status; m_HasOpenServiceAgreements = null; }
+        public int KnownSupplyRule(Guid group) { return group == m_KnownSupplyRuleGroup ? m_KnownSupplyRule : 0; }
+        public void LearnSupplyRule(Guid group, int rule, long eventId)
+        {
+            if (group == Guid.Empty || group == m_KnownSupplyRuleGroup && eventId <= m_KnownSupplyRuleEvent) return;
+            m_KnownSupplyRuleGroup = group; m_KnownSupplyRule = rule; m_KnownSupplyRuleEvent = eventId;
+        }
+        public bool RememberService(NpcServiceAgreement agreement)
+        {
+            if (ServiceAgreements.Exists(a => a.Id == agreement.Id)) return false;
+            if (ServiceAgreements.Count >= 8)
+            {
+                int old = ServiceAgreements.FindIndex(a => a.Status != NpcServiceStatus.Offered && a.Status != NpcServiceStatus.Accepted);
+                if (old < 0) return false;
+                ServiceAgreements.RemoveAt(old);
+            }
+            ServiceAgreements.Add(agreement.Copy()); m_HasOpenServiceAgreements = null; return true;
+        }
+        public void Permit(NpcSupplyPermission permission)
+        {
+            Permissions.RemoveAll(p => p.Grantor == permission.Grantor && p.Place == permission.Place && p.Resource == permission.Resource);
+            if (Permissions.Count >= 16) Permissions.RemoveAt(0);
+            Permissions.Add(permission);
+        }
+        public long UsePermission(Guid grantor, Location place, string resource, int turn, int requestedUnits, out int permittedUnits)
+        {
+            permittedUnits = 0;
+            if (m_Permissions == null || requestedUnits <= 0) return 0;
+            NpcSupplyPermission permission = m_Permissions.Find(p => p.Grantor == grantor && p.Place == place &&
+                p.Resource == resource && p.ExpiresTurn >= turn && p.Units > 0);
+            if (permission == null) return 0;
+            long cause = permission.CauseId;
+            permittedUnits = Math.Min(permission.Units, requestedUnits);
+            permission.Units -= permittedUnits;
+            if (permission.Units == 0) m_Permissions.Remove(permission);
+            return cause;
+        }
         public bool RememberCommitment(NpcCommitment promise)
         {
             if (Commitments.Exists(p => p.Id == promise.Id)) return false;

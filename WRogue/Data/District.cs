@@ -42,6 +42,32 @@ namespace djack.RogueSurvivor.Data
             get { return m_Kind; }
         }
 
+        public static Color DisplayColor(DistrictKind kind)
+        {
+            switch (kind)
+            {
+                case DistrictKind.BUSINESS: return Color.Red;
+                case DistrictKind.GENERAL: return Color.Gray;
+                case DistrictKind.GREEN: return Color.Green;
+                case DistrictKind.RESIDENTIAL: return Color.Orange;
+                case DistrictKind.SHOPPING: return Color.White;
+                default: throw new ArgumentOutOfRangeException("kind");
+            }
+        }
+
+        public static string KindLabel(DistrictKind kind)
+        {
+            switch (kind)
+            {
+                case DistrictKind.BUSINESS: return "business";
+                case DistrictKind.RESIDENTIAL: return "residential";
+                case DistrictKind.SHOPPING: return "shopping";
+                case DistrictKind.GREEN: return "green";
+                case DistrictKind.GENERAL: return "general";
+                default: throw new ArgumentOutOfRangeException("kind");
+            }
+        }
+
         public string Name
         {
             get { return m_Name; }

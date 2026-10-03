@@ -6,12 +6,15 @@ Run a named scenario without opening the game window:
 sh tests/scenario.sh --list
 sh tests/scenario.sh movement/wall
 sh tests/scenario.sh --all
+sh tests/scenario.sh --bench-npc-safety
 ```
 
 The first command builds a Docker image with the game and scenario runner.
 Later runs reuse Docker's build cache. A failed scenario exits nonzero and
 prints its name, random seed, exception, and final map. Regular
 `docker build --target test .` also runs every scenario alongside unit tests.
+`--bench-npc-safety` runs the route, hunger and sleep experiments in one process
+and prints one summary after all fixtures finish. See [npc-safety-experiment.md](npc-safety-experiment.md).
 
 `storage/save-budget` measures a large fixed world in isolated child processes
 and enforces a 10-second limit per save/load and a 50,000,000-byte limit per file.
@@ -28,6 +31,8 @@ invalid registration/payloads and private audiences. See
 cause, while `npc/knowledge-empty-caches`, `npc/resource-item-need`,
 `npc/report-prose` and `factions/social-group-nested-succession` cover the
 related review boundaries with real perception, reactions, speech and death.
+`npc/records-live-cache` checks archive refresh during a live session;
+`npc/operator-archive-text` checks registered plan wording.
 `npc/ask-location-unknown-place`, `npc/protection-missing-faction`,
 `npc/planner-barter-place-limit` and `npc/group-plan-participant-exit` cover
 unknown map data, bounded planner locations and shared-goal lifecycle.
@@ -35,6 +40,28 @@ unknown map data, bounded planner locations and shared-goal lifecycle.
 `npc/overheard-rumor` cover the talk command, Y/N consequences, audio range,
 walls, rumor learning and archive-only heard-speech search. The first also
 checks persistent promises; `world/talk-keybinding-migration` checks old keys.
+`npc/rumor-third-listener` checks that a hearer cannot be addressed the same
+rumor later, while `npc/perception-current-sensor` checks fresh and stale
+observations. `npc/service-open-agreements` checks the active-service guard and
+restored history.
+`npc/all-rumor-identities` checks the name/faction rule against every registered
+reportable event. `npc/supply-loss-rumor`, `npc/aid-trade-rumor`,
+`npc/barter-rumor`, `npc/base-loss-rumor`, `npc/raid-rumor` and
+`npc/raid-rumor-ai` exercise the corresponding real actions or event handlers.
+`npc/supply-loss-rumor-save`
+checks the new supply payload across save and load.
+`npc/resource-permission`, `npc/conflicting-testimony`,
+`npc/resource-permission-stack`, `npc/relayed-false-testimony`,
+`npc/group-supply-rule`, `npc/group-supply-trade`, `npc/contested-succession`,
+`npc/lone-succession-split`, `npc/goal-fallback-text`, `npc/service-agreement-capacity`,
+`npc/shelter-care-exchange`, `npc/shelter-care-deadline` and
+`npc/shelter-care-player-reply`
+exercise new social consequences through pickup, speech, trade, death,
+travel, treatment and deadlines. `npc/social-dynamics-save` checks their
+persistent state and archive text.
+`npc/courage-assessment`, `npc/courage-retreat` and `npc/courage-rumor-save`
+cover situational resolve, actual flight, witnesses, memory resolution, rumor
+consequences and save/load.
 
 Add each new scenario in its own file under the matching topic directory in
 `tests/scenarios/cases/`. Living and undead skills have separate directories.

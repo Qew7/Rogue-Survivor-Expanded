@@ -46,6 +46,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             foreach (NpcKnownPerson person in people)
             {
                 if (person.Id == self.Id || person.Dead || person.Hostile) continue;
+                if (owner.Personality.HasOpenServiceAgreements && owner.Personality.ServiceAgreements.Exists(a =>
+                    a.Provider == owner.PersonalityIdentity && a.Patient == person.Id && a.Status == NpcServiceStatus.Accepted)) continue;
                 if ((person.MedicalNeed > 0 || context.Pending(NpcGoalValue.MedicalCare, person.Id)) && turn - person.MedicalTurn <= 60)
                     offers.Add(person, NpcGoalValue.MedicalCare, context.Catalog.Capability("medical_aid"),
                         100 - person.MedicalNeed, 100, person.MedicalNeed, person.MedicalConfidence, person.MedicalCause, person.MedicalStory, resource: "medicine");
@@ -56,28 +58,30 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             catalog.Perception(NpcPerceptionKind.Items, PerceiveItems);
             catalog.Perception(NpcPerceptionKind.Person, c => NpcMedicalObservation.Perceive(c.Game, c.Owner, c.Person, c.Owner.Personality.Knowledge.Person(c.Person.PersonalityIdentity), c.Turn));
             RegisterEvents(catalog);
-            catalog.Operator(new NpcOperatorDefinition("medicine.ask", NpcPlanAction.AskMedicine, c => NpcMedicineActions.Ask(new NpcActionContext(c))));
-            catalog.Operator(new NpcOperatorDefinition("medicine.give", NpcPlanAction.GiveMedicine, c => NpcMedicineActions.Give(new NpcActionContext(c))));
-            catalog.Operator(new NpcOperatorDefinition("medicine.treat", NpcPlanAction.TreatPerson, c => NpcMedicineActions.Treat(new NpcActionContext(c))));
-            catalog.Operator(new NpcOperatorDefinition("medicine.trade", NpcPlanAction.BarterMedicine, c => new ActionNpcMedicineTrade(c.Owner, c.Game, c.Goal, c.Step, c.Target)));
-            catalog.Operator(new NpcOperatorDefinition("medicine.take", NpcPlanAction.PickupMedicine, c => NpcMedicineActions.Take(new NpcActionContext(c)), "medicine", NpcContentActions.MedicineUnavailable));
-            catalog.Operator(new NpcOperatorDefinition("medicine.use", NpcPlanAction.UseMedicine, c => NpcMedicineActions.Use(new NpcActionContext(c))));
+            catalog.Operator(new NpcOperatorDefinition("medicine.ask", NpcPlanAction.AskMedicine, c => NpcMedicineActions.Ask(new NpcActionContext(c)), archiveText: step => "ask for medicine"));
+            catalog.Operator(new NpcOperatorDefinition("medicine.give", NpcPlanAction.GiveMedicine, c => NpcMedicineActions.Give(new NpcActionContext(c)), archiveText: step => "give medicine"));
+            catalog.Operator(new NpcOperatorDefinition("medicine.treat", NpcPlanAction.TreatPerson, c => NpcMedicineActions.Treat(new NpcActionContext(c)), archiveText: step => "treat someone"));
+            catalog.Operator(new NpcOperatorDefinition("medicine.trade", NpcPlanAction.BarterMedicine, c => new ActionNpcMedicineTrade(c.Owner, c.Game, c.Goal, c.Step, c.Target), archiveText: step => "trade for medicine"));
+            catalog.Operator(new NpcOperatorDefinition("medicine.take", NpcPlanAction.PickupMedicine, c => NpcMedicineActions.Take(new NpcActionContext(c)), "medicine", NpcContentActions.MedicineUnavailable, archiveText: step => "collect medicine"));
+            catalog.Operator(new NpcOperatorDefinition("medicine.use", NpcPlanAction.UseMedicine, c => NpcMedicineActions.Use(new NpcActionContext(c)), archiveText: step => "use medicine"));
             NpcMemoryContent.Received(catalog, "medical_aid", "Received medicine or treatment", "shared_medicine", 8, "protector");
             NpcMemoryContent.Received(catalog, "medical_treatment", "Someone treated my wounds", "treated_person", 8, "protector");
         }
         void RegisterEvents(NpcCatalogBuilder catalog)
         {
+            catalog.OnReport("shared_medicine", c => NpcReputation.Help(c));
             catalog.OnReport("requested_medicine", c => {
-                NpcKnownPerson person = c.Listener.Personality.Knowledge.Person(c.Fact.SubjectId); NpcFact fact = c.Fact;
+                NpcFact fact = c.Fact;
+                NpcKnownPerson person = fact.NamesSubject ? c.Listener.Personality.Knowledge.Person(fact.SubjectId) : null;
                 if (person != null && (fact.EventTurn > person.MedicalTurn || fact.EventTurn == person.MedicalTurn && fact.Confidence > person.MedicalConfidence))
                 { person.MedicalNeed = 100; person.MedicalConfidence = fact.Confidence; person.MedicalTurn = fact.EventTurn; person.MedicalCause = fact.EventId; person.MedicalStory = fact.StoryId; }
             });
             catalog.Event(new NpcEventDefinition("medicine_acquired", NpcRecordCategory.Life, false, e => (e.Subject ?? "Someone") + " acquired medicine to treat their wounds.", null));
             catalog.Event(new NpcEventDefinition("treated_wounds", NpcRecordCategory.Life, false, e => (e.Subject ?? "Someone") + " treated their wounds with real medicine.", null));
-            catalog.Event(new NpcEventDefinition("requested_medicine", NpcRecordCategory.Help, true, e => (e.Subject ?? "Someone") + " asked " + (e.Other ?? "someone") + " for medicine.", f => f.SubjectName + " asked for medicine") { AudibleReport = true, PlayerReply = new NpcPlayerReply("medicine", "medicine_promised", "request_refused", "Yes, I'll bring you medicine.", "No, I can't help with medicine.") });
+            catalog.Event(new NpcEventDefinition("requested_medicine", NpcRecordCategory.Help, true, e => (e.Subject ?? "Someone") + " asked " + (e.Other ?? "someone") + " for medicine.", f => f.ReportSubject + " asked " + (f.ReportOther == null ? "" : f.ReportOther + " ") + "for medicine") { AudibleReport = true, PlayerReply = new NpcPlayerReply("medicine", "medicine_promised", "request_refused", "Yes, I'll bring you medicine.", "No, I can't help with medicine.") });
             catalog.Event(new NpcEventDefinition("medicine_offered", NpcRecordCategory.Help, true, e => (e.Subject ?? "Someone") + " offered medicine in exchange for supplies to " + (e.Other ?? "someone") + ".", null));
-            catalog.Event(new NpcEventDefinition("bartered_medicine", NpcRecordCategory.Help, false, e => (e.Subject ?? "Someone") + " obtained medicine by trading with " + (e.Other ?? "someone") + ".", null));
-            catalog.Event(new NpcEventDefinition("shared_medicine", NpcRecordCategory.Help, false, e => (e.Subject ?? "Someone") + " gave medicine to " + (e.Other ?? "someone") + ".", null));
+            catalog.Event(new NpcEventDefinition("bartered_medicine", NpcRecordCategory.Help, true, e => (e.Subject ?? "Someone") + " obtained medicine by trading with " + (e.Other ?? "someone") + ".", null) { ReportActorRole = NpcReportActorRole.Both });
+            catalog.Event(new NpcEventDefinition("shared_medicine", NpcRecordCategory.Help, true, e => (e.Subject ?? "Someone") + " gave medicine to " + (e.Other ?? "someone") + ".", null) { SelfReportTone = NpcSelfReportTone.Helpful });
             catalog.Event(new NpcEventDefinition("treated_person", NpcRecordCategory.Help, false, e => (e.Subject ?? "Someone") + " treated " + (e.Other ?? "someone") + "'s wounds.", null));
             catalog.On("medicine_offered", NpcObservationPhase.Knowledge, OnKnowledge);
             catalog.On("requested_medicine", NpcObservationPhase.Relationships, OnRelationships);

@@ -132,6 +132,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             // Make a snapshot: resolving a death may remove actors from this map.
             Actor privateOwner = eventDefinition == null || !eventDefinition.Private ? null : eventDefinition.PrivateAudience == null ? lifeEvent.Subject : eventDefinition.PrivateAudience(lifeEvent);
             if (eventDefinition != null && eventDefinition.Private && privateOwner == null) return;
+            IEnumerable<MemoryDefinition> memoryDefinitions = game.NpcContent.Personalities.ForEvent(lifeEvent.Kind);
             List<Actor> actors = privateOwner == null ? new List<Actor>(lifeEvent.Map.Actors) : new List<Actor> { privateOwner };
             Guid subjectId = lifeEvent.Subject == null ? Guid.Empty : lifeEvent.Subject.PersonalityIdentity;
             Guid otherId = lifeEvent.Other == null ? Guid.Empty : lifeEvent.Other.PersonalityIdentity;
@@ -164,7 +165,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                     bool known = false;
                     RelationshipRecord person = observer.Personality.Person(subjectId);
                     if (person != null)
-                        foreach (MemoryDefinition definition in game.NpcContent.Personalities.ForEvent(lifeEvent.Kind))
+                        foreach (MemoryDefinition definition in memoryDefinitions)
                             if (definition.OncePerPerson)
                                 foreach (MemoryInstance old in person.Memories)
                                     if (old.Id == definition.Id) known = true;
@@ -186,7 +187,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 NpcEventPipeline.BeforeMemories(eventObservation);
                 Session.Get.ResidentRecords.Observe(observer, observation);
                 NpcMemoryProcessor.Evidence(observer, game.NpcContent.Personalities, lifeEvent.Kind, lifeEvent.Turn);
-                foreach (MemoryDefinition definition in game.NpcContent.Personalities.ForEvent(lifeEvent.Kind))
+                foreach (MemoryDefinition definition in memoryDefinitions)
                     foreach (MemoryTrigger trigger in definition.Triggers)
                         if (trigger.EventKind == lifeEvent.Kind && trigger.Applies(observer, lifeEvent))
                         {

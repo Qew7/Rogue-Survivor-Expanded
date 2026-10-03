@@ -42,8 +42,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         void RegisterContent(NpcCatalogBuilder catalog)
         {
             RegisterEvents(catalog);
-            catalog.Operator(new NpcOperatorDefinition("person.ask_location", NpcPlanAction.AskLocation, c => new ActionNpcAskLocation(c.Owner, c.Game, c.Target, c.Goal)));
-            catalog.Operator(new NpcOperatorDefinition("person.reunite", NpcPlanAction.Reunite, c => NpcContactActions.Reunite(new NpcActionContext(c))));
+            catalog.Operator(new NpcOperatorDefinition("person.ask_location", NpcPlanAction.AskLocation, c => new ActionNpcAskLocation(c.Owner, c.Game, c.Target, c.Goal), archiveText: step => "ask for directions"));
+            catalog.Operator(new NpcOperatorDefinition("person.reunite", NpcPlanAction.Reunite, c => NpcContactActions.Reunite(new NpcActionContext(c)), archiveText: step => "reunite with someone"));
             catalog.Memory(new MemoryDefinition("found_a_companion", "Found a missing companion", 2, 5,
                 new[] { new MemoryTrigger("reunited", (a, e) => a == e.Subject) },
                 new MemoryOutcome(null, "protector", null), new MemoryOutcome(null, null, Skills.IDs.LEADERSHIP))

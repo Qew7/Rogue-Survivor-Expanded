@@ -9,6 +9,16 @@ namespace djack.RogueSurvivor.Data
     {
         public long EventId;
         public string Kind, SubjectName, OtherName, StoryId;
+        [System.Runtime.Serialization.OptionalField] public string Resource;
+        // The words used by the first observer stay fixed when the fact is retold.
+        [System.Runtime.Serialization.OptionalField] public string SubjectReportName;
+        [System.Runtime.Serialization.OptionalField] public string OtherReportName;
+        [System.Runtime.Serialization.OptionalField] public int? SubjectFactionId;
+        [System.Runtime.Serialization.OptionalField] public int? OtherFactionId;
+        public string ReportSubject { get { return SubjectReportName ?? SubjectName; } }
+        public string ReportOther { get { return OtherReportName ?? OtherName; } }
+        public bool NamesSubject { get { return SubjectId != Guid.Empty && !String.IsNullOrEmpty(SubjectName) && ReportSubject == SubjectName; } }
+        public bool NamesOther { get { return OtherId != Guid.Empty && !String.IsNullOrEmpty(OtherName) && ReportOther == OtherName; } }
         public Guid SubjectId, OtherId, SourceId;
         public int EventTurn, LearnedTurn, Confidence, Hops, Units, Risk;
         public Location Place;
@@ -17,7 +27,9 @@ namespace djack.RogueSurvivor.Data
         public NpcFact Retell(Guid speaker, int turn, int confidence)
         {
             return new NpcFact { EventId = EventId, Kind = Kind, SubjectName = SubjectName, OtherName = OtherName,
-                StoryId = StoryId, SubjectId = SubjectId, OtherId = OtherId, SourceId = speaker, EventTurn = EventTurn,
+                SubjectReportName = SubjectReportName, OtherReportName = OtherReportName,
+                SubjectFactionId = SubjectFactionId, OtherFactionId = OtherFactionId,
+                StoryId = StoryId, Resource = Resource, SubjectId = SubjectId, OtherId = OtherId, SourceId = speaker, EventTurn = EventTurn,
                 LearnedTurn = turn, Confidence = confidence, Hops = Hops + 1, Units = Units, Risk = Risk, Place = Place, Source = NpcKnowledgeSource.Told, NoSubjectLocation = NoSubjectLocation };
         }
     }
@@ -72,15 +84,25 @@ namespace djack.RogueSurvivor.Data
         public int NextTalkTurn, NextPlanTurn, Revision;
         public bool Learn(NpcFact fact)
         {
-            NpcFact old = Facts.Find(f => f.EventId == fact.EventId && f.Kind == fact.Kind);
-            if (old != null)
+            for (int i = 0; i < Facts.Count; i++)
             {
+                NpcFact old = Facts[i];
+                if (old.EventId != fact.EventId || old.Kind != fact.Kind) continue;
                 if (old.Confidence >= fact.Confidence) return false;
-                Facts.Remove(old);
+                Facts.RemoveAt(i);
+                break;
             }
             Facts.Add(fact); Trim(Facts, 48); Revision++; return true;
         }
-        public NpcKnownPerson Person(Guid id) { return People.Find(p => p.Id == id); }
+        public NpcKnownPerson Person(Guid id)
+        {
+            for (int i = 0; i < People.Count; i++)
+            {
+                NpcKnownPerson person = People[i];
+                if (person.Id == id) return person;
+            }
+            return null;
+        }
         public NpcKnownPerson See(Actor actor, int turn)
         {
             NpcKnownPerson person = Person(actor.PersonalityIdentity);

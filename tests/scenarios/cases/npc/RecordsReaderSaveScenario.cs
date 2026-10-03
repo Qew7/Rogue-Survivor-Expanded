@@ -38,7 +38,20 @@ static class RecordsReaderSaveScenario
                 Check.Equal(1, RecordsReader.Residents(saved).Count, "saved resident is loaded independently");
                 string all = String.Join(" ", new List<string>(RecordsReader.Lines(saved, null)).ToArray());
                 Check.Equal(true, all.Contains("faced starvation"), "saved event can be read");
+                IList<string> returned = RecordsReader.Lines(saved, null);
+                returned.Clear();
+                Check.Equal(true, String.Join(" ", RecordsReader.Lines(saved, null)).Contains("faced starvation"),
+                    "changing returned lines does not change cached archive text");
+                RecordsReader.Residents(saved)[0].Add("note:cache", 1, "Archive cache refreshes.");
+                Check.Equal(true, String.Join(" ", RecordsReader.Lines(saved, null)).Contains("Archive cache refreshes."),
+                    "new archive entries invalidate cached lines");
                 Check.Equal(false, saved.Records.IsPartial, "new save has complete recorded history");
+                RecordsReader.Residents(saved)[0].Name = "renamed resident";
+                Check.Equal(true, String.Join(" ", RecordsReader.Lines(saved, null)).Contains("renamed resident"),
+                    "renaming a resident invalidates cached lines");
+                saved.Records.IsPartial = true;
+                Check.Equal(true, RecordsReader.Lines(saved, null)[0].StartsWith("Partial history:"),
+                    "changing archive completeness invalidates cached lines");
                 world.Place(actor, 1, 1);
                 typeof(Session).GetField("m_ResidentRecords", BindingFlags.Instance | BindingFlags.NonPublic)
                     .SetValue(original, null);

@@ -87,7 +87,7 @@ and evidence confidence. It accepts no event kind: observations first update
 beliefs, and changed state then motivates a goal. Existing debt or injury can
 produce a goal without a new significant event. New urgent needs can replace a
 weaker generated goal at the decision boundary. Private starts record the
-current/desired values and utility explanation in Read Records.
+the goal and its relevant motive in Read Records; numeric scores remain internal.
 
 An actual food exchange creates the acquired `traded_for_food` memory, attributed
 to the trading partner. Its resolution can grant CHARISMATIC skill. An offer or
@@ -166,6 +166,31 @@ Rumors name the event's district and, when its position falls inside a typed
 building zone, the grocery, gun shop, home, park or other known place. The J
 journal and Read Records color these place labels by type. A report from a
 street or unclassified zone names only the district.
+For a witnessed event, the first reporter names an acquaintance but describes
+an unfamiliar visible participant by faction (for example, "a biker"). Later
+reporters repeat that description even if they have since learned the person's
+name. The same rule applies to every reportable event and each participant
+mentioned in its wording. Attack rumors explicitly describe who attacked whom.
+Participants describe themselves as involved in the event; only bystanders
+who saw it say that they witnessed it.
+An NPC offers a rumor about their own action only when their traits fit the
+action: compassionate, generous or social NPCs may talk about help; cruel,
+rebellious or aggressive NPCs may boast about violence or theft. Social or
+trade-minded NPCs may recount neutral actions. Victims and witnesses can still
+tell what happened without these self-report traits. This applies to both
+spontaneous NPC conversations and replies to player talk.
+Completed storage theft, food and medicine gifts, barter, ordinary trades, base
+loss and raids can also be retold. Storage-loss reports preserve the resource
+and quantity taken. The event's stable participant IDs remain in NPC knowledge
+for causal records. Faction-only hearsay does not identify a person for NPC
+targeting, even when the listener knows them from another encounter.
+Hearing a report about an attack, theft, broken or kept promise, or aid can
+change the listener's opinion. Law and compassion traits change approval or
+condemnation; courage changes fear of a reported attacker. The player uses the
+same reaction as NPC listeners. A named participant affects a personal
+relationship, while an unfamiliar participant affects only their reported
+faction, with a weaker reaction. Repeating the same report at unchanged
+confidence does not apply the reaction again.
 
 The catalog contains 50 starting and 66 advanced traits. Advanced traits
 are available only through memory resolution. Most require an existing trait;
@@ -179,6 +204,13 @@ specific possession and home attachments, and causal continuations are described
 in [npc-social-stories.md](npc-social-stories.md). Reports affect reputation with
 confidence discounting. An overdue promise is a private assessment until someone
 actually tells it to others.
+Base-resource permissions, contradictory testimony, learned group supply rules,
+contested succession and medicine-for-shelter agreements also use those existing
+event, memory, relationship and knowledge paths. A deceptive thief's permission
+claim can circulate as hearsay, while an eyewitness retains the real theft and
+can privately reject the contradiction. Group rule changes and splits are
+reportable; failed service agreements remain private until their beneficiary
+speaks about them.
 
 ## Experiences with unique characters, factions, and world events
 
@@ -275,9 +307,17 @@ For entries with an actual archived cause, Read Records adds a short
 linked to a witnessed theft. Search also matches that explanation. No motive
 is inferred from a trait alone: a refusal is linked to revenge only if the
 decision was really caused by a recorded grievance or goal.
-For a generated goal, a recorded trait reason states the measured increase in
-that goal's importance when the trait is present. Traits unrelated to the goal
-are omitted. The archive records the actual gained trait when a memory resolves;
+For a generated goal, the chronicle describes a pressing need only when it is
+relevant to that goal, and names a contributing trait when present. Numeric
+deficit, importance, confidence and utility scores stay in the saved model and
+do not appear to the player. The NPC's plan is described in ordinary language.
+When a travel step has a known place, the record names its building or map and
+district. Older plan entries retain only the action, so the archive describes
+their travel without inventing a destination. District labels use the same
+kind colors as the world map in Read Records and the heard journal.
+The chronicle keeps internal
+story IDs available for search but hides them from displayed lines. Traits
+unrelated to the goal are omitted. The archive records the actual gained trait when a memory resolves;
 a skill appears only if the eligible trait outcomes were unavailable.
 
 This main-menu reader reveals saved NPC records outside gameplay. Format-5
@@ -323,6 +363,41 @@ combine; **R** clears them. Up/Down and PgUp/PgDn scroll, Home/End jump, Escape
 returns. Changing a timeline filter does not change the resident's life score.
 Text prompts support Backspace, Ctrl+A to clear and Ctrl+V to paste names.
 
+
+## Courage and retreat
+
+Living intelligent NPCs choose their own courage. The follower directive menu no
+longer changes it. The starting point comes from their faction (civilians 0,
+survivors 5, armed gangs 10, police 18, army 25), and personality traits adjust
+it. For each encounter, health, stamina, equipped weapon and usable ammunition,
+relevant combat skills, sanity, and visible companions change the score. Firearm
+or bow training lowers confidence when the matching weapon or ammunition is
+missing. A healthy companion helps; an injured or fleeing one can spread fear.
+Low sanity usually lowers resolve, but it raises it for a maniac or berserker.
+Only visible nearby enemies count: their number, distance, reach and estimated
+damage determine the immediate threat. A severely outmatched NPC, or one that
+could die from the next adjacent or ranged hit, tries to retreat before firing.
+Undead, feral creatures and the player do not use this
+fear decision; the player chooses how to act.
+
+Once a living NPC decides to flee, planning traits affect its route. Organized
+and disciplined NPCs search up to four visible steps for a usable exit;
+vigilant, cautious and pragmatic NPCs search three; adaptable NPCs search two.
+Impulsive, careless and hotheaded traits shorten that search by two steps.
+The NPC checks the next step again on every action, avoiding blocked tiles,
+dangerous traps and tiles adjacent to a visible enemy. A visible enemy with a
+loaded ranged weapon prevents this exit plan. If no safe route is found, the
+existing retreat behavior applies. This does not change whether the NPC feels
+fear, and trait planning is disabled when NPC personalities are disabled.
+
+When a severe retreat actually moves the NPC, `fled_in_fear` enters the world
+record. Witnesses can pass it on as a rumor. A listener who learns the threat's
+identity treats that person as dangerous, with the flight event as evidence.
+The fleeing NPC gains a private `frightened_escape` memory, which temporarily
+reduces resolve and resolves after two to five days. Depending on existing
+traits, it may develop into panic attacks, trauma or hardening; otherwise the
+NPC can gain Strong Psyche. Repeated movement while that memory is pending
+does not generate another flight event.
 
 ## Verification
 

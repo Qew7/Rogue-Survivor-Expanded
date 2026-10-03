@@ -21,14 +21,20 @@ static class ReportProseScenario
                 OtherId = listener.PersonalityIdentity, OtherName = listener.UnmodifiedName, Place = helper.Location };
             speaker.Personality.Knowledge.Learn(offer);
             string neutral = NpcRecordDescriptions.Report(world.Game.NpcContent, offer);
-            Check.Equal(true, neutral.Contains("food offered") && neutral.Contains("helper") && !neutral.Contains("violence"),
+            Check.Equal(true, neutral.Contains("offered to exchange food") && neutral.Contains("helper") &&
+                neutral.Contains("listener") && !neutral.Contains("violence"),
                 "nonviolent report without custom prose stays neutral");
             Check.Equal(true, world.Try(new ActionNpcTell(speaker, world.Game, listener, offer)), "neutral fact is actually told and learned");
             Check.Equal(true, listener.Personality.Knowledge.Facts.Exists(f => f.EventId == offer.EventId), "listener retains the real report");
             var attack = new NpcFact { Kind = "attack", OtherId = helper.PersonalityIdentity, OtherName = helper.UnmodifiedName,
                 SubjectId = listener.PersonalityIdentity, SubjectName = listener.UnmodifiedName };
-            Check.Equal(true, NpcRecordDescriptions.Report(world.Game.NpcContent, attack).Contains("violence against"),
-                "actual attack keeps the violence wording");
+            Check.Equal(true, NpcRecordDescriptions.Report(world.Game.NpcContent, attack).Contains("helper attacked listener"),
+                "actual attack names its aggressor and victim");
+            var unknown = new NpcFact { Kind = "unregistered_story", SubjectName = "Secret Subject",
+                OtherName = "Secret Other", SubjectReportName = "a biker", OtherReportName = "a police officer" };
+            string fallback = NpcRecordDescriptions.Report(world.Game.NpcContent, unknown);
+            Check.Equal(true, fallback.Contains("a biker and a police officer") && !fallback.Contains("Secret"),
+                "unknown report kinds use both original actor descriptions");
         });
     }
 }

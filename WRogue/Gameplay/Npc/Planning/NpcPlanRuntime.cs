@@ -59,7 +59,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                     }
                     plan.Steps.AddRange(steps);
                     plan.Cursor = 0;
-                    Session.Get.ResidentRecords.PlanChanged(owner, goal);
+                    Session.Get.ResidentRecords.PlanChanged(owner, goal, catalog);
                     step = plan.Current;
                 }
                 NpcOperatorDefinition definition = catalog.Operator(step);

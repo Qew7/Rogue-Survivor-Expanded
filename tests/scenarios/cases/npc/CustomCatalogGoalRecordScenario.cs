@@ -19,8 +19,8 @@ static class CustomCatalogGoalRecordScenario
             Check.Equal(true, goal != null, "the custom module starts a real goal");
             bool attributed = false;
             foreach (ResidentEntry entry in Session.Get.ResidentRecords.Register(owner).Entries)
-                if (entry.Kind == "goal_started" && entry.Text.Contains("Recover stamina") &&
-                    entry.Text.Contains("because trait Restful")) attributed = true;
+                if (entry.Kind == "goal_started" && entry.Text.Contains("recover stamina") &&
+                    entry.Text.Contains("Restful trait made this goal more compelling")) attributed = true;
             Check.Equal(true, attributed, "records resolve custom goal prose and trait influence from the active catalog");
 
             Actor assigned = NpcIntentSupport.Actor(world, "assigned", 2, 1);
@@ -29,12 +29,23 @@ static class CustomCatalogGoalRecordScenario
             NpcIntent assignedGoal = NpcStorySystem.StartKnown(world.Game.NpcContent, assigned, assignedSelf,
                 world.Game.NpcContent.Capability("take_breath"));
             Check.Equal(true, assignedGoal != null, "the custom capability also starts an assigned goal");
+            assignedGoal.Plan = new NpcPlan();
+            assignedGoal.Plan.Steps.Add(new NpcPlanStep { OperatorId = "rest" });
+            Session.Get.ResidentRecords.PlanChanged(assigned, assignedGoal, world.Game.NpcContent);
             NpcIntentSystem.Finish(world.Game.NpcContent, assigned, assignedGoal,
                 NpcIntentStatus.Completed, "rested after taking a breath");
             bool namedFinish = false;
+            bool namedStory = false;
+            bool namedPlan = false;
             foreach (ResidentEntry entry in Session.Get.ResidentRecords.Register(assigned).Entries)
-                if (entry.Kind == "goal_completed" && entry.Text.Contains("Take a breath")) namedFinish = true;
+            {
+                if (entry.Kind == "goal_completed" && entry.Text.Contains("take a breath")) namedFinish = true;
+                if (entry.Kind == "story_stage" && entry.Text.Contains("take a breath")) namedStory = true;
+                if (entry.Kind == "goal_plan" && entry.Text.Contains("To take a breath")) namedPlan = true;
+            }
             Check.Equal(true, namedFinish, "finished assigned goals retain custom capability names in Read Records");
+            Check.Equal(true, namedStory, "finished stories use the active catalog's capability name");
+            Check.Equal(true, namedPlan, "plans use the active catalog's capability name");
 
             NpcKnownPerson self = new NpcKnownPerson { Id = owner.PersonalityIdentity,
                 Name = owner.UnmodifiedName, Place = owner.Location };

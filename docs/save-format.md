@@ -100,6 +100,11 @@ resolution, with its outcome and turn. Player relationships retain their own
 experienced/witnessed events and do not expose another NPC's private memory
 during gameplay.
 
+NPC courage is recalculated from current conditions and has no new saved stat.
+The `frightened_escape` memory, witnessed `fled_in_fear` fact and any reported
+threat cause use the existing personality, knowledge and archive fields.
+`npc/courage-rumor-save` checks all three across save and load.
+
 Social state keeps separate promise snapshots for each participant, including
 resource, remaining units, deadline, outcome and the promisor's original group
 and faction. Resource disputes and personal attachments also persist. Each of
@@ -190,6 +195,25 @@ sequences distinguish a newly founded group after a split. Assigned goals save
 group identity, destination, collector progress, coordinator identity/last known
 place and original observation turn, allowing continuation between pickup,
 gift and return report.
+The optional group supply rule and last contributing event ID survive save and
+load. Each member optionally saves the group identity, rule value and event ID
+of the rule they last witnessed or learned from a trusted report. A contested
+succession keeps the original group object for loyal members;
+departing members receive a new group identity and retain their individual
+relationship history.
+
+Personalities optionally save up to sixteen unit-limited permissions: grantor
+identity, map location, resource, expiry turn, remaining unit count and the
+spoken concession event ID. A used, expired or mismatched permission cannot
+authorize another base unit. Up to eight separate service agreements store
+provider/patient identities and names, visited shelter location, offer and
+accepted-event causes, deadline, story ID and status. Both participants save
+their own copy. Active offers and accepted agreements are retained until they
+reach a terminal status; a new offer requires capacity on both sides. Goals for
+the shared shelter trip retain their ordinary story,
+cause and destination fields. No new object points directly to an actor.
+`claimed_permission` and `false_testimony_exposed` are bounded knowledge facts
+with the original theft event ID; retellings preserve source and confidence.
 
 Each personality may optionally retain up to sixteen `NpcInterest` records:
 stable definition ID, subject identity, last known place, importance/need,
@@ -233,6 +257,9 @@ Resident records retain NPC identity/name, spawn/death turns, faction and
 leader-group snapshots, last inventory and traits, cumulative item acquisitions,
 and the snapshot turn. Entries retain ordered text, event kind, direct/witnessed
 status, participant IDs and whether resolution actually granted a trait.
+The archive optionally retains each district's kind by coordinate so
+`Read Records` can color district labels like the world map without loading the
+world graph. Older archives without this field leave district labels uncolored.
 Deduplication keys are preserved. Histories contain no Actor references and
 survive actor/corpse removal; entries are not evicted.
 Entries also retain event/cause/story IDs. Private intention starts and terminal
@@ -242,24 +269,48 @@ physical-event counts and the interesting-life score. Private missing-contact
 inferences, generated `goal_plan` action lists and story-stage entries use the
 same typed archive path and **Intentions and outcomes** filter, and also do not
 inflate those counts.
+New plan entries include known building or map destinations and their district.
+Older plan entries contain only action names, so their destinations cannot be
+reconstructed by the archive reader.
 Heard speech uses existing resident entries with kinds `heard_rumor`,
 `heard_request` and `heard_reply`. Only awake intelligent NPCs within audio range
 gain an entry; seeing the speaker is not required. Text, event ID and any known
 cause/story ID survive archive-only load, under the **Encounters** filter.
+Retained `NpcFact` entries optionally store `SubjectReportName` and
+`OtherReportName`, the observer's original spoken description of each participant.
+An acquaintance is named; an unfamiliar visible person is described by faction
+membership. Retelling and save/load preserve these descriptions while stable
+participant IDs remain available for causal records. Faction-only hearsay does
+not identify a person for NPC targeting. Older saves without these
+fields fall back to their existing participant names. Retained facts also store
+optional `SubjectFactionId` and `OtherFactionId` snapshots.
+These let a listener react to the named faction when the observer did not know
+the actor's name; older saves have no faction snapshot. A retained supply-loss
+fact also stores optional `Resource` and its existing `Units` count so a later
+report can describe the actual contents and amount. Older facts default to an
+unspecified supply loss.
 Unanswered player requests reuse saved `NpcReaction` state and expire after 30
 turns. Its optional `Overheard` field distinguishes requests made to someone
 else from requests addressed to the player. Player promises use the existing
 `NpcCommitment` state and deadline.
 The player's `PersonalityState` also has an optional bounded `HeardJournalEntry`
 list (up to 128 entries), storing turn, speech kind, identified or anonymous
-speaker, exact heard text and cause ID. It is populated only for awake players
-within hearing range; it is separate from NPC `ResidentRecords` and is displayed
-in game with J. Saves made before this field was added load with an empty list.
+speaker, text and cause ID. Heard speech is populated only for awake players
+within hearing range. Significant scripted discoveries and conversations also
+store short summaries in this list, including the prisoner's request and the
+facility directions after release. It is separate from NPC `ResidentRecords`
+and is displayed in game with J. Saves made before this field was added load
+with an empty list.
 Read Records builds a temporary index of archived event IDs and resolves a
 record's `CauseId` and `SupportingCauses` into up to two readable antecedents.
 Only prior, present archive entries are shown; missing links produce no text.
 The explanation and its searchable words are derived at read time, so this
 change adds no persistent fields or save-format version.
+The viewer keeps prepared display text and cause explanations on its `RecordsSave`
+instance and refreshes them when a live archive gains entries or advances a turn.
+Service agreements retain their existing saved status and history. The quick
+indicator for an offered or accepted agreement is transient and rebuilt on first
+access after loading; it adds no saved field.
 Resident snapshots retain stable group identity alongside the current leader
 label. Searching a story tag links its independent participants without loading
 the world.

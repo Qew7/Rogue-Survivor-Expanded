@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using djack.RogueSurvivor.Data;
 using djack.RogueSurvivor.Engine;
 using djack.RogueSurvivor.Engine.AI;
@@ -9,6 +10,15 @@ namespace djack.RogueSurvivor.Gameplay.Personality
 {
     static partial class NpcKnowledgeSystem
     {
+        static string ReportName(Actor observer, Actor participant, bool seen)
+        {
+            if (participant == null) return null;
+            if (!seen) return "someone";
+            RelationshipRecord relationship = observer.Personality.Person(participant.PersonalityIdentity);
+            if (participant == observer || relationship != null && relationship.Name == participant.UnmodifiedName)
+                return participant.UnmodifiedName;
+            return participant.Faction == null ? "someone" : "a " + participant.Faction.MemberName;
+        }
         public static bool Visible(RogueGame game, Actor actor, Location place)
         { return place.Map == actor.Location.Map && game.Rules.GridDistance(actor.Location.Position, place.Position) <=
             game.Rules.ActorFOV(actor, actor.Location.Map.LocalTime, game.Session.World.Weather) && LOS.CanTraceViewLine(actor.Location, place.Position); }
@@ -36,18 +46,28 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 Source = observation.Direct ? NpcKnowledgeSource.Participant : NpcKnowledgeSource.Witness, Confidence = observation.Direct ? 100 : 90,
                 SourceId = owner.PersonalityIdentity, SubjectId = !seesSubject ? Guid.Empty : source.Subject.PersonalityIdentity,
                 OtherId = !seesOther ? Guid.Empty : source.Other.PersonalityIdentity, SubjectName = !seesSubject ? null : source.Subject.UnmodifiedName,
-                OtherName = !seesOther ? null : source.Other.UnmodifiedName, Place = new Location(source.Map, source.Position), StoryId = source.StoryId });
+                OtherName = !seesOther ? null : source.Other.UnmodifiedName,
+                SubjectReportName = ReportName(owner, source.Subject, seesSubject),
+                OtherReportName = ReportName(owner, source.Other, seesOther),
+                SubjectFactionId = !seesSubject || source.Subject.Faction == null ? (int?)null : source.Subject.Faction.ID,
+                OtherFactionId = !seesOther || source.Other.Faction == null ? (int?)null : source.Other.Faction.ID,
+                Place = new Location(source.Map, source.Position), StoryId = source.StoryId,
+                Resource = source.Resource, Units = source.Units });
         }
-        public static void Perceive(RogueGame game, Actor actor, IList<Percept> percepts)
+        public static void Perceive(RogueGame game, Actor actor, IList<Percept> percepts,
+            HashSet<Point> currentFov = null)
         {
             NpcKnowledge knowledge = actor.Personality.Knowledge;
             int turn = actor.Location.Map.LocalTime.TurnCounter; knowledge.Expire(turn);
             if (percepts != null) foreach (Percept percept in percepts)
             {
-                if (percept.Turn != turn || !Visible(game, actor, percept.Location)) continue;
+                if (percept.Turn != turn || percept.Location.Map != actor.Location.Map ||
+                    (currentFov == null ? !Visible(game, actor, percept.Location) :
+                        !currentFov.Contains(percept.Location.Position))) continue;
                 Actor person = percept.Percepted as Actor;
                 if (person != null)
                 {
+                    if (person.IsDead || person.Location != percept.Location) continue;
                     NpcKnownPerson known = knowledge.See(person, turn);
                     known.Hostile = game.Rules.AreEnemies(actor, person);
                     game.NpcContent.Perceive(NpcPerceptionKind.Person, new NpcPerceptionContext(game, actor, percept.Location, person));
@@ -69,21 +89,41 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         }
         public static bool Hear(RogueGame game, Actor listener, Actor speaker, NpcFact source)
         {
-            RelationshipRecord trust = listener.Personality.Person(speaker.PersonalityIdentity);
-            int confidence = Math.Max(0, Math.Min(95, source.Confidence - 20 + (trust == null ? 0 : trust.Trust / 10) +
-                Math.Min(0, PersonalitySystem.Bias(listener, DecisionKind.Group)) / 2));
+            int confidence = ReportConfidence(listener, speaker, source);
             NpcFact fact = source.Retell(speaker.PersonalityIdentity, listener.Location.Map.LocalTime.TurnCounter, confidence);
+            bool refuted = false;
+            if (fact.Kind == "claimed_permission")
+            {
+                NpcFact contrary = listener.Personality.Knowledge.Facts.Find(f => f.EventId == fact.EventId && f.Kind == "base_theft");
+                refuted = contrary != null && contrary.Source != NpcKnowledgeSource.Told && contrary.Confidence >= 80;
+            }
             NpcFact previous = listener.Personality.Knowledge.Facts.Find(f => f.EventId == fact.EventId && f.Kind == fact.Kind);
             int improvement = Math.Max(0, confidence - (previous == null ? 0 : previous.Confidence));
             bool learned = listener.Personality.Knowledge.Learn(fact);
-            if (learned && fact.SubjectId != Guid.Empty && !fact.NoSubjectLocation)
-                listener.Personality.Knowledge.LearnPerson(new NpcKnownPerson { Id = fact.SubjectId, Name = fact.SubjectName, Place = fact.Place,
+            if (learned && refuted) NpcTestimony.Refute(game.NpcContent, listener, speaker, fact);
+            if (learned && fact.NamesSubject && !fact.NoSubjectLocation)
+                listener.Personality.Knowledge.LearnPerson(new NpcKnownPerson { Id = fact.SubjectId, Name = fact.ReportSubject, Place = fact.Place,
                     SeenTurn = fact.EventTurn, Confidence = confidence, Source = NpcKnowledgeSource.Told, Dead = game.NpcContent.Event(fact.Kind) != null && game.NpcContent.Event(fact.Kind).ProvesDeath && confidence >= 60 });
-            if (learned && fact.OtherId != Guid.Empty && listener.Personality.Knowledge.Person(fact.OtherId) == null)
-                listener.Personality.Knowledge.LearnPerson(new NpcKnownPerson { Id = fact.OtherId, Name = fact.OtherName, Place = fact.Place,
+            if (learned && fact.NamesOther && listener.Personality.Knowledge.Person(fact.OtherId) == null)
+                listener.Personality.Knowledge.LearnPerson(new NpcKnownPerson { Id = fact.OtherId, Name = fact.ReportOther, Place = fact.Place,
                     SeenTurn = fact.EventTurn, Confidence = confidence, Source = NpcKnowledgeSource.Told });
-            if (learned) game.NpcContent.Hear(new NpcReportContext(listener, fact, improvement, game.NpcContent));
+            if (learned) game.NpcContent.Hear(new NpcReportContext(listener, fact, refuted ? 0 : improvement, game.NpcContent));
             return learned;
+        }
+        public static int ReportConfidence(Actor listener, Actor speaker, NpcFact source)
+        {
+            RelationshipRecord trust = listener.Personality.Person(speaker.PersonalityIdentity);
+            int confidence = Math.Max(0, Math.Min(95, source.Confidence - 20 + (trust == null ? 0 : trust.Trust / 10) +
+                (trust == null ? 0 : -trust.Grievance / 5) +
+                Math.Min(0, PersonalitySystem.Bias(listener, DecisionKind.Group)) / 2));
+            if (source.Kind == "claimed_permission")
+            {
+                NpcFact contrary = listener.Personality.Knowledge.Facts.Find(f => f.EventId == source.EventId && f.Kind == "base_theft");
+                if (contrary != null && contrary.Source != NpcKnowledgeSource.Told && contrary.Confidence >= 80)
+                    return 20;
+                if (contrary != null && contrary.Confidence >= confidence) return Math.Min(confidence, 30);
+            }
+            return confidence;
         }
         public static void HearLocation(Actor listener, Actor speaker, NpcKnownPerson report, long eventId, NpcContentCatalog catalog)
         {

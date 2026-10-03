@@ -6,15 +6,15 @@ namespace djack.RogueSurvivor.Gameplay.Personality
     {
         void RegisterEvents(NpcCatalogBuilder c)
         {
-            Event(c, "threatened", " threatened ", NpcRecordCategory.Combat);
+            Event(c, "threatened", " threatened ", NpcRecordCategory.Combat, NpcSelfReportTone.Harmful);
             Event(c, "threat_accepted", " agreed to keep away from ", NpcRecordCategory.Combat);
             Event(c, "threat_defied", " refused to yield to ", NpcRecordCategory.Combat);
-            Event(c, "apologized", " apologized to ", NpcRecordCategory.Help);
+            Event(c, "apologized", " apologized to ", NpcRecordCategory.Help, NpcSelfReportTone.Helpful);
             Event(c, "apology_accepted", " accepted an apology from ", NpcRecordCategory.Help);
             Event(c, "apology_refused", " refused an apology from ", NpcRecordCategory.Help);
-            Event(c, "member_expelled", " expelled a companion: ", NpcRecordCategory.Encounters);
-            Event(c, "retaliated", " struck back at ", NpcRecordCategory.Combat);
-            Event(c, "defended_person", " intervened against ", NpcRecordCategory.Combat);
+            Event(c, "member_expelled", " expelled a companion: ", NpcRecordCategory.Encounters, NpcSelfReportTone.Harmful);
+            Event(c, "retaliated", " struck back at ", NpcRecordCategory.Combat, NpcSelfReportTone.Harmful);
+            Event(c, "defended_person", " intervened against ", NpcRecordCategory.Combat, NpcSelfReportTone.Helpful);
             NpcMemoryContent.Received(c, "was_threatened", "Someone threatened me", "threatened", -8, "mistrustful");
             NpcMemoryContent.Received(c, "accepted_apology", "Accepted an apology", "apology_accepted", 5, null);
             NpcMemoryContent.Received(c, "was_expelled", "Was expelled from a group", "member_expelled", -15, "hermit");
@@ -54,7 +54,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 if (person != null) { person.Violation = 0; o.Owner.Personality.Knowledge.Revision++; }
             });
         }
-        static void Event(NpcCatalogBuilder c, string id, string text, NpcRecordCategory category)
-        { c.Event(new NpcEventDefinition(id, category, true, e => (e.Subject ?? "Someone") + text + (e.Other ?? "someone") + ".")); }
+        static void Event(NpcCatalogBuilder c, string id, string text, NpcRecordCategory category,
+            NpcSelfReportTone tone = NpcSelfReportTone.Neutral)
+        { c.Event(new NpcEventDefinition(id, category, true, e => (e.Subject ?? "Someone") + text + (e.Other ?? "someone") + ".") { SelfReportTone = tone }); }
     }
 }

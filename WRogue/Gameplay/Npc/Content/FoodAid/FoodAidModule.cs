@@ -62,7 +62,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         void RegisterContent(NpcCatalogBuilder catalog)
         {
             RegisterEvents(catalog);
-            catalog.Operator(new NpcOperatorDefinition("food.give", NpcPlanAction.GiveFood, c => NpcFoodActions.Give(new NpcActionContext(c))));
+            catalog.Operator(new NpcOperatorDefinition("food.give", NpcPlanAction.GiveFood, c => NpcFoodActions.Give(new NpcActionContext(c)), archiveText: step => "give food"));
             catalog.Memory(new MemoryDefinition("refused_aid", "A request for aid was declined", 2, 6,
                 new[] { new MemoryTrigger("request_refused", (a, e) => a == e.Other) },
                 new MemoryOutcome(null, "mistrustful", null), new MemoryOutcome(null, null, Skills.IDs.CHARISMATIC))
@@ -70,8 +70,10 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         }
         void RegisterEvents(NpcCatalogBuilder catalog)
         {
-            catalog.Event(new NpcEventDefinition("helped", NpcRecordCategory.Help, true, e => (e.Other ?? "someone") + " helped " + (e.Subject ?? "Someone") + ".", null));
-            catalog.Event(new NpcEventDefinition("shared_food", NpcRecordCategory.Help, false, e => (e.Subject ?? "Someone") + " shared food with " + (e.Other ?? "someone") + ".", null) { StoryStage = (g, s, e) => NpcEpisodeProgress.FoodDelivery(g, s, e) });
+            catalog.OnReport("helped", c => NpcReputation.Help(c, true));
+            catalog.OnReport("shared_food", c => NpcReputation.Help(c));
+            catalog.Event(new NpcEventDefinition("helped", NpcRecordCategory.Help, true, e => (e.Other ?? "someone") + " helped " + (e.Subject ?? "Someone") + ".", null) { ReportActorRole = NpcReportActorRole.Other, SelfReportTone = NpcSelfReportTone.Helpful });
+            catalog.Event(new NpcEventDefinition("shared_food", NpcRecordCategory.Help, true, e => (e.Subject ?? "Someone") + " shared food with " + (e.Other ?? "someone") + ".", null) { StoryStage = (g, s, e) => NpcEpisodeProgress.FoodDelivery(g, s, e), SelfReportTone = NpcSelfReportTone.Helpful });
             catalog.Event(new NpcEventDefinition("request_refused", NpcRecordCategory.Help, false, e => (e.Subject ?? "Someone") + " declined " + (e.Other ?? "someone") + "'s request.", null));
             catalog.Event(new NpcEventDefinition("aid_acknowledged", NpcRecordCategory.Help, false, e => (e.Subject ?? "Someone") + " acknowledged aid from " + (e.Other ?? "someone") + ".", null));
             catalog.On("helped", NpcObservationPhase.Knowledge, OnKnowledge);

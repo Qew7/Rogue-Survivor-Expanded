@@ -81,11 +81,17 @@ namespace djack.RogueSurvivor.Engine
                 for (int i = player.Personality.HeardJournal.Count - 1; i >= 0; i--)
                 {
                     HeardJournalEntry heard = player.Personality.HeardJournal[i];
+                    if (heard.Kind == "story_note")
+                    {
+                        AppendJournalLine(lines, String.Format("Turn {0} | Story: {1}{2}", heard.Turn,
+                            heard.Speaker == "You" || String.IsNullOrEmpty(heard.Speaker) ? "" : heard.Speaker + ": ", heard.Text));
+                        continue;
+                    }
                     AppendJournalLine(lines, String.Format("Turn {0} | {1} | {2}: \"{3}\"", heard.Turn,
                         heard.Kind == "heard_rumor" ? "Rumor" : heard.Kind == "heard_request" ? "Request" : "Reply",
                         heard.Speaker, heard.Text));
                 }
-            if (lines.Count == 0) lines.Add("You have not heard any rumors or requests yet.");
+            if (lines.Count == 0) lines.Add("You have no story notes, rumors or requests yet.");
             return lines;
         }
 
@@ -95,6 +101,9 @@ namespace djack.RogueSurvivor.Engine
             while (line.Length > width)
             {
                 int split = line.LastIndexOf(' ', width);
+                int building = line.LastIndexOf(" at the ", StringComparison.Ordinal);
+                if (building >= 20 && split > building && line.Length - building < width - 4)
+                    split = building;
                 if (split < 20) split = width;
                 lines.Add(line.Substring(0, split));
                 line = "    " + line.Substring(split).TrimStart();
@@ -105,7 +114,8 @@ namespace djack.RogueSurvivor.Engine
         void HandleHeardJournal()
         {
             IList<string> lines = HeardJournalLines(m_Player);
-            var placeColors = new RecordsTextColors(new ResidentRecord[0]);
+            var placeColors = new RecordsTextColors(new ResidentRecord[0],
+                ResidentRecords.DistrictKindsFrom(m_Session.World));
             const int linesPerPage = 35;
             int page = 0;
             while (true)

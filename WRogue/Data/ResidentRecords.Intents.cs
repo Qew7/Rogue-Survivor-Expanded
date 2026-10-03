@@ -5,13 +5,17 @@ namespace djack.RogueSurvivor.Data
     sealed partial class ResidentRecords
     {
         public void PlanChanged(Actor actor, NpcIntent intent)
+        { PlanChanged(actor, intent, NpcContentCatalog.Default); }
+
+        public void PlanChanged(Actor actor, NpcIntent intent, NpcContentCatalog catalog)
         {
             ResidentRecord record = Register(actor); if (record == null) return;
             var methods = new System.Collections.Generic.List<string>();
-            foreach (NpcPlanStep step in intent.Plan.Steps) methods.Add(step.OperatorId ?? step.Action.ToString());
+            foreach (NpcPlanStep step in intent.Plan.Steps) methods.Add(PlanActionText(step, catalog));
             int turn = actor.Location.Map.LocalTime.TurnCounter;
             record.Add("plan:" + intent.Sequence + ":" + record.Entries.Count, turn,
-                "Plan: " + System.String.Join(" → ", methods.ToArray()) + ". [story " + intent.StoryId + "]",
+                "To " + GoalText(intent, catalog).ToLowerInvariant() + ", " + actor.UnmodifiedName +
+                " plans to " + System.String.Join(", then ", methods.ToArray()) + ".",
                 new ObservedEvent("goal_plan", turn, actor.UnmodifiedName, intent.TargetName, true,
                     causeId: intent.CauseId, storyId: intent.StoryId));
         }
@@ -22,10 +26,103 @@ namespace djack.RogueSurvivor.Data
             string targetName = intent.Generated != null && intent.Generated.SubjectId == actor.PersonalityIdentity ? actor.UnmodifiedName : intent.TargetName;
             ObservedEvent entry = new ObservedEvent("goal_" + state, turn, actor.UnmodifiedName, targetName,
                 true, false, actor.PersonalityIdentity, intent.Generated == null ? intent.TargetId : intent.Generated.SubjectId, causeId: intent.CauseId, storyId: intent.StoryId);
+            string goal = GoalText(intent, catalog);
+            string text;
+            if (state == "started")
+            {
+                text = actor.UnmodifiedName + " decided to " + goal.ToLowerInvariant();
+                if (targetName != actor.UnmodifiedName && !System.String.IsNullOrEmpty(targetName)) text += " for " + targetName;
+                if (intent.Generated != null)
+                {
+                    string context = GoalContext(intent.Generated.DefinitionId ?? intent.Generated.Value.ToString(),
+                        intent.Generated.Deficit, intent.Generated.Importance, targetName);
+                    if (context != null) text += ". " + context;
+                }
+                string trait = TraitReason(reason);
+                if (trait != null) text += ". " + trait;
+                text += ".";
+            }
+            else
+            {
+                string outcome = state == "completed" ? "achieved" : state == "abandoned" ? "gave up" : "could not achieve";
+                text = actor.UnmodifiedName + " " + outcome + " the goal to " + goal.ToLowerInvariant();
+                if (!System.String.IsNullOrEmpty(reason)) text += ": " + ReadableReason(reason);
+                text += ".";
+            }
+            record.Add("goal:" + intent.Sequence + ":" + state, turn, text, entry,
+                supportingCauses: intent.Generated == null ? null : intent.Generated.Causes);
+        }
+
+        static string GoalText(NpcIntent intent, NpcContentCatalog catalog)
+        {
             NpcIntentDefinition definition = catalog.Capability(intent.DefinitionId);
-            record.Add("goal:" + intent.Sequence + ":" + state, turn,
-                "Intent " + state + ": " + (intent.Generated != null ? intent.Generated.Description : definition == null ? intent.DefinitionId : definition.Name) + "; target " + targetName +
-                "; " + reason + ". [story " + intent.StoryId + "]", entry, supportingCauses: intent.Generated == null ? null : intent.Generated.Causes);
+            return intent.Generated != null ? intent.Generated.Description : definition == null ? Humanize(intent.DefinitionId) : definition.Name;
+        }
+
+        static string TraitReason(string reason)
+        {
+            const string marker = "because trait ";
+            int start = reason == null ? -1 : reason.IndexOf(marker, System.StringComparison.Ordinal);
+            if (start < 0) return null;
+            string detail = reason.Substring(start + marker.Length);
+            const string raised = " raised this goal's importance by ";
+            int split = detail.IndexOf(raised, System.StringComparison.Ordinal);
+            return split < 0 ? null : "The " + detail.Substring(0, split) + " trait made this goal more compelling";
+        }
+
+        internal static string GoalContext(string value, int deficit, int importance, string target)
+        {
+            if (deficit < 60) return null;
+            string need;
+            switch (value)
+            {
+                case "Nutrition": need = "Food was running low"; break;
+                case "FoodReserve": need = "Their food stores were running low"; break;
+                case "Care": need = "They believed " + (System.String.IsNullOrEmpty(target) ? "someone" : target) + " needed food"; break;
+                case "MedicalCare": need = "They believed " + (System.String.IsNullOrEmpty(target) ? "someone" : target) + " needed treatment"; break;
+                case "Recovery": need = "Their injuries needed attention"; break;
+                case "Safety": need = "They believed danger was close"; break;
+                default: return null;
+            }
+            return need + (importance >= 120 ? ", so this felt urgent" : "");
+        }
+
+        static string ReadableReason(string reason)
+        {
+            if (reason == "observed that the desired state was satisfied") return "the result was already in place";
+            if (reason == "motivation changed") return "their priorities changed";
+            if (reason == "deadline expired") return "time ran out";
+            return reason.TrimEnd('.');
+        }
+
+        static string PlanActionText(NpcPlanStep step, NpcContentCatalog catalog)
+        {
+            NpcOperatorDefinition definition = catalog.Operator(step);
+            if (definition != null && definition.ArchiveText != null) return definition.ArchiveText(step);
+            return Humanize(step.OperatorId ?? step.Action.ToString());
+        }
+
+        static string Humanize(string name)
+        { return (name ?? "act").Replace('_', ' ').Replace('-', ' ').ToLowerInvariant(); }
+
+        internal static string TravelText(Location place)
+        {
+            if (place.Map == null) return "travel onward";
+            District district = place.Map.District;
+            string coordinate = district == null ? null :
+                World.CoordToString(district.WorldPosition.X, district.WorldPosition.Y);
+            Zone building = Zone.BuildingAt(place);
+            if (building != null)
+                return "travel to the " + Zone.BuildingLabel(building.BuildingKind) +
+                    (coordinate == null ? "" : " in district " + coordinate);
+            if (district != null && place.Map == district.EntryMap)
+                return "travel to the " + District.KindLabel(district.Kind) + " district " + coordinate;
+            string map = place.Map.Name;
+            int suffix = map == null ? -1 : map.IndexOf('@');
+            if (suffix >= 0) map = map.Substring(0, suffix);
+            map = map == null ? "" : map.Trim();
+            return "travel to " + (map.Length == 0 ? "a known place" : map) +
+                (coordinate == null ? "" : " in district " + coordinate);
         }
     }
 }

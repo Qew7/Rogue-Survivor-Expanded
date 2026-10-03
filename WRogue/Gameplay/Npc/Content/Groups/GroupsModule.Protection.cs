@@ -22,7 +22,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 NpcFact incident = e.Subject.Personality.Knowledge.Facts.Find(f => f.EventId == plan.CauseId && f.Kind == "attack");
                 if (incident == null || e.Other == null || e.Other.PersonalityIdentity != incident.OtherId) return;
                 Session.Get.NpcDirector.End(story, "completed", e.Turn); plan.Stage = "completed"; plan.Destination = default(Location);
-                Session.Get.ResidentRecords.StoryChanged(e.Subject, story, e.Turn, e.Id);
+                Session.Get.ResidentRecords.StoryChanged(e.Subject, story, e.Turn, e.Id, game.NpcContent);
             });
         }
         static NpcCollectiveOffer ProtectionOffer(NpcCollectiveContext c)
@@ -31,7 +31,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             if (priority < 15) return null;
             foreach (NpcFact fact in c.Knowledge.Facts)
             {
-                if (fact.Kind != "attack" || c.Turn - fact.EventTurn >= 180 || !c.Group.Members.Contains(fact.SubjectId)) continue;
+                if (fact.Kind != "attack" || fact.Source == NpcKnowledgeSource.Told && (!fact.NamesSubject || !fact.NamesOther) ||
+                    c.Turn - fact.EventTurn >= 180 || !c.Group.Members.Contains(fact.SubjectId)) continue;
                 NpcKnownPerson threat = c.Knowledge.Person(fact.OtherId);
                 if (threat == null || threat.Dead || c.Group.Members.Contains(threat.Id)) continue;
                 foreach (Actor member in c.Visible)

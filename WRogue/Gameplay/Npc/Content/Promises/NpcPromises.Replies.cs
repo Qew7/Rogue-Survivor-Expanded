@@ -10,6 +10,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             if (source.Other != owner || source.Subject == null || owner.Personality.Reactions.Count >= 4 ||
                 game.Rules.AreEnemies(owner, source.Subject) || (source.Kind != "requested_food" && source.Kind != "requested_medicine")) return;
             bool medical = source.Kind == "requested_medicine";
+            if (medical && NpcServices.TryPrepare(game, owner, source)) return;
             bool supplies = medical ? NpcPlanExecution.Medicine(game, owner, owner.Location, true) != null : NpcFoodSupply.SpareFood(game, owner, source.Subject) != null;
             int compassion = PersonalitySystem.Bias(owner, DecisionKind.Compassion), law = PersonalitySystem.Bias(owner, DecisionKind.Law);
             if (medical && supplies && PersonalitySystem.Bias(owner, DecisionKind.Trade) >= 15 && compassion <= 0)

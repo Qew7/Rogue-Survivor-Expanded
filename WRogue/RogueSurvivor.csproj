@@ -173,6 +173,7 @@
     <Compile Include="Gameplay\Npc\Content\Promises\NpcPromises.Replies.cs" />
     <Compile Include="Gameplay\Npc\Content\Promises\NpcPromises.cs" />
     <Compile Include="Gameplay\Npc\Content\Promises\PromisesModule.cs" />
+    <Compile Include="Gameplay\Npc\Content\Promises\ServiceExchangeModule.cs" />
     <Compile Include="Gameplay\Npc\Content\ResourceCompetition\NpcResourceCompetition.cs" />
     <Compile Include="Gameplay\Npc\Content\ResourceCompetition\ResourceCompetitionModule.cs" />
     <Compile Include="Gameplay\Npc\Content\Safety\SafetyModule.Reports.cs" />
@@ -445,6 +446,8 @@
     <Compile Include="Gameplay\AI\BaseAI.Behaviors.Navigation.cs" />
     <Compile Include="Gameplay\AI\BaseAI.Behaviors.Equipment.cs" />
     <Compile Include="Gameplay\AI\BaseAI.Behaviors.Combat.cs" />
+    <Compile Include="Gameplay\AI\BaseAI.Behaviors.EscapePlanning.cs" />
+    <Compile Include="Gameplay\AI\NpcCourage.cs" />
     <Compile Include="Gameplay\AI\BaseAI.Helpers.cs" />
     <Compile Include="Gameplay\AI\BaseAI.Perception.cs" />
     <Compile Include="Gameplay\AI\BaseAI.Items.Inventory.cs" />

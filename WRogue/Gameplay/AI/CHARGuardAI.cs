@@ -55,7 +55,7 @@ namespace djack.RogueSurvivor.Gameplay.AI
         protected override ActorAction SelectAction(RogueGame game, List<Percept> percepts)
         {
             List<Percept> mapPercepts = FilterSameMap(game, percepts);
-            List<Actor> intentVisible = PrepareNpcIntents(game, mapPercepts);
+            List<Actor> intentVisible = PrepareNpcIntents(game, mapPercepts, m_LOSSensor.FOV);
 
             // alpha10
             // don't run by default.
@@ -109,6 +109,11 @@ namespace djack.RogueSurvivor.Gameplay.AI
             // get data.
             List<Percept> allEnemies = FilterEnemies(game, mapPercepts);
             List<Percept> currentEnemies = FilterCurrent(game, allEnemies);
+            NpcCourage.Assessment courageAssessment;
+            ActorAction panicRetreat = BehaviorPanicRetreat(game, currentEnemies, true, true,
+                FIGHT_EMOTES, RouteFinder.SpecialActions.JUMP | RouteFinder.SpecialActions.DOORS,
+                m_LOSSensor.FOV, out courageAssessment);
+            if (panicRetreat != null) return panicRetreat;
             bool checkOurLeader = m_Actor.HasLeader && !DontFollowLeader;
             bool hasAnyEnemies = allEnemies != null;
 
@@ -156,7 +161,8 @@ namespace djack.RogueSurvivor.Gameplay.AI
 
                 // fight or flee?
                 RouteFinder.SpecialActions allowedChargeActions = RouteFinder.SpecialActions.JUMP | RouteFinder.SpecialActions.DOORS; // alpha10
-                ActorAction fightOrFlee = BehaviorFightOrFlee(game, currentEnemies, true, true, ActorCourage.COURAGEOUS, FIGHT_EMOTES, allowedChargeActions);
+                ActorAction fightOrFlee = BehaviorFightOrFlee(game, currentEnemies, true, true,
+                    ActorCourage.COURAGEOUS, FIGHT_EMOTES, allowedChargeActions, m_LOSSensor.FOV, courageAssessment);
                 if (fightOrFlee != null)
                 {
                     return fightOrFlee;

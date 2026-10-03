@@ -23,7 +23,7 @@ case_files = Dir.glob(File.join(case_root, '**', '*Scenario.cs'))
 other_case_files = Dir.glob(File.join(case_root, '**', '*.cs')) - case_files
 abort "Misnamed scenario files: #{other_case_files.join(', ')}" unless other_case_files.empty?
 multi_case_files = case_files.reject do |path|
-  File.read(path).scan(/(?:ScenarioRunner\.Add|SkillScenario\.Register)\(/).length == 1
+  File.read(path, encoding: 'bom|utf-8').scan(/(?:ScenarioRunner\.Add|SkillScenario\.Register)\(/).length == 1
 end
 abort "Expected one scenario per file: #{multi_case_files.join(', ')}" unless multi_case_files.empty?
 large_tests = test_files.select { |path| File.foreach(path).count > 150 }

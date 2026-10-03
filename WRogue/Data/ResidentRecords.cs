@@ -36,6 +36,7 @@ namespace djack.RogueSurvivor.Data
         readonly List<ResidentEntry> m_Entries = new List<ResidentEntry>();
         readonly Dictionary<string, bool> m_Keys = new Dictionary<string, bool>();
         public IList<ResidentEntry> Entries { get { return m_Entries.AsReadOnly(); } }
+        public int EntryCount { get { return m_Entries.Count; } }
         public ResidentRecord(Actor actor)
         {
             Identity = actor.PersonalityIdentity;
@@ -61,9 +62,26 @@ namespace djack.RogueSurvivor.Data
     sealed partial class ResidentRecords
     {
         readonly Dictionary<Guid, ResidentRecord> m_Residents = new Dictionary<Guid, ResidentRecord>();
+        [System.Runtime.Serialization.OptionalField] Dictionary<string, DistrictKind> m_DistrictKinds;
         public bool IsPartial;
         public int RecoveryTurn;
         public ICollection<ResidentRecord> Residents { get { return m_Residents.Values; } }
+        public IDictionary<string, DistrictKind> DistrictKinds
+        { get { return m_DistrictKinds ?? (IDictionary<string, DistrictKind>)new Dictionary<string, DistrictKind>(); } }
+
+        public static Dictionary<string, DistrictKind> DistrictKindsFrom(World world)
+        {
+            var kinds = new Dictionary<string, DistrictKind>(StringComparer.Ordinal);
+            if (world == null) return kinds;
+            for (int x = 0; x < world.Size; x++)
+                for (int y = 0; y < world.Size; y++)
+                {
+                    District district = world[x, y];
+                    if (district != null)
+                        kinds[World.CoordToString(district.WorldPosition.X, district.WorldPosition.Y)] = district.Kind;
+                }
+            return kinds;
+        }
 
         public ResidentRecord Register(Actor actor)
         {
@@ -162,6 +180,7 @@ namespace djack.RogueSurvivor.Data
         {
             ResidentRecords records = new ResidentRecords {
                 IsPartial = true, RecoveryTurn = session.WorldTime.TurnCounter };
+            records.m_DistrictKinds = DistrictKindsFrom(session.World);
             if (session.World == null) return records;
             for (int x = 0; x < session.World.Size; x++)
                 for (int y = 0; y < session.World.Size; y++)

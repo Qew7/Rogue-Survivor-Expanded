@@ -43,7 +43,7 @@ static class RecordsCausesScenario
                     "the resulting action points to the same archived incident");
                 string found = String.Join(" ", new List<string>(RecordsReader.Lines(archive, saved, null,
                     "stole from owner's base", RecordsEventFilter.Intentions)).ToArray());
-                Check.Equal(true, found.Contains("Intent started"), "cause prose is searchable in the intended category");
+                Check.Equal(true, found.Contains("decided to"), "cause prose is searchable in the intended category");
                 string orphan = String.Join(" ", new List<string>(RecordsReader.Lines(archive, saved, null,
                     "orphan note", RecordsEventFilter.All)).ToArray());
                 Check.Equal(false, orphan.Contains("Connected to:"), "missing evidence never creates an invented reason");

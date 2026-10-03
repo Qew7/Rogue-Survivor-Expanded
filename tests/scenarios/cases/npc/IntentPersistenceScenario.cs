@@ -44,7 +44,7 @@ static class IntentPersistenceScenario
                 Check.Equal(1, profile.GoalsStarted, "creation is not repeated across saves");
                 Check.Equal(1, profile.GoalsCompleted, "completion is recorded once");
                 string lines = String.Join(" ", new List<string>(RecordsReader.Lines(records, record, null, "", RecordsEventFilter.Intentions)).ToArray());
-                Check.Equal(true, lines.Contains("Intent completed") && lines.Contains(saved.StoryId), "archive-only reader exposes the linked episode");
+                Check.Equal(true, lines.Contains("achieved the goal") && !lines.Contains(saved.StoryId), "archive-only reader explains the outcome without a story ID");
                 SignificantEvent replay = new SignificantEvent("helped", actor, player, restored.Map, actor.Location.Position, 0); replay.Id = source.Id;
                 PersonalitySystem.Report(restored.Game, replay);
                 Check.Equal(1, actor.Personality.Intents.Count, "old source cannot restart a completed intention after load");

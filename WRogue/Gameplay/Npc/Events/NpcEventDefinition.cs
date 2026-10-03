@@ -7,6 +7,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
     enum NpcObservationPhase { Knowledge, Relationships, Goals, Responses, Replies }
     [Flags] enum NpcRecordCategory { None = 0, Memories = 1, Combat = 2, Help = 4, Encounters = 8, World = 16, Life = 32, Intentions = 64 }
     [Flags] enum NpcEventFields { None = 0, Subject = 1, Other = 2, Resource = 4, ResourcePlace = 8, Task = 16, PositiveUnits = 32 }
+    [Flags] enum NpcReportActorRole { None = 0, Subject = 1, Other = 2, Both = Subject | Other }
+    enum NpcSelfReportTone { Neutral, Helpful, Harmful }
 
     sealed class NpcEventDefinition
     {
@@ -20,6 +22,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public Func<Actor, SignificantEvent, bool> CanWitness, CanObserve;
         public Func<SignificantEvent, Actor> PrivateAudience;
         public bool OncePerSubject, ProvesDeath, AudibleReport;
+        public NpcReportActorRole ReportActorRole = NpcReportActorRole.Subject;
+        public NpcSelfReportTone SelfReportTone;
         public Func<Actor, Actor, bool> CanReply;
         public NpcPlayerReply PlayerReply;
         public Func<djack.RogueSurvivor.Engine.RogueGame, NpcStory, SignificantEvent, string> StoryStage;

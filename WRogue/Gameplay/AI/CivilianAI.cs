@@ -162,7 +162,7 @@ namespace djack.RogueSurvivor.Gameplay.AI
         protected override ActorAction SelectAction(RogueGame game, List<Percept> percepts)
         {
             List<Percept> mapPercepts = FilterSameMap(game, percepts);
-            List<Actor> intentVisible = PrepareNpcIntents(game, mapPercepts);
+            List<Actor> intentVisible = PrepareNpcIntents(game, mapPercepts, m_LOSSensor.FOV);
 
             // DEBUG BOT
 #if DEBUG
@@ -344,6 +344,14 @@ namespace djack.RogueSurvivor.Gameplay.AI
             //}
             //#endregion
 
+            // Immediate danger takes priority over a shot that may not stop the attackers.
+            List<Percept> currentEnemies = FilterCurrent(game, enemies);
+            NpcCourage.Assessment courageAssessment;
+            ActorAction panicRetreat = BehaviorPanicRetreat(game, currentEnemies, seeLeader, isLeaderFighting,
+                m_Emotes, RouteFinder.SpecialActions.JUMP | RouteFinder.SpecialActions.DOORS,
+                m_LOSSensor.FOV, out courageAssessment);
+            if (panicRetreat != null) return panicRetreat;
+
             // 3 fire at nearest enemy
             #region
             if (hasEnemies && this.Directives.CanFireWeapons && m_Actor.GetEquippedWeapon() is ItemRangedWeapon)
@@ -402,7 +410,10 @@ namespace djack.RogueSurvivor.Gameplay.AI
                 }
                 // fight or flee.
                 RouteFinder.SpecialActions allowedChargeActions = RouteFinder.SpecialActions.JUMP | RouteFinder.SpecialActions.DOORS; // alpha10
-                ActorAction fightOrFlee = BehaviorFightOrFlee(game, enemies, seeLeader, isLeaderFighting, Directives.Courage, m_Emotes, allowedChargeActions);
+                NpcCourage.Assessment? priorAssessment = currentEnemies != null &&
+                    currentEnemies.Count == enemies.Count ? (NpcCourage.Assessment?)courageAssessment : null;
+                ActorAction fightOrFlee = BehaviorFightOrFlee(game, enemies, seeLeader, isLeaderFighting,
+                    Directives.Courage, m_Emotes, allowedChargeActions, m_LOSSensor.FOV, priorAssessment);
                 if (fightOrFlee != null)
                 {
                     return fightOrFlee;

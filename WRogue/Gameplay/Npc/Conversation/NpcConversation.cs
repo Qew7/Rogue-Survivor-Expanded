@@ -60,31 +60,76 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             game.DoSay(target, player, yes ? "Thank you. I'll remember." : "I understand.", RogueGame.Sayflags.IS_FREE_ACTION);
         }
 
-        public static NpcFact Rumor(Actor speaker, Actor listener)
+        public static bool CanTell(RogueGame game, Actor speaker, NpcFact fact)
+        {
+            if (speaker == null || fact == null || speaker.Personality == null) return false;
+            if (fact.Kind == "claimed_permission")
+            {
+                if (fact.Source == NpcKnowledgeSource.Told)
+                    return !speaker.Personality.Knowledge.Facts.Exists(f => f.EventId == fact.EventId &&
+                        (f.Kind == "base_theft" && f.Source != NpcKnowledgeSource.Told || f.Kind == "false_testimony_exposed"));
+                return speaker.Personality.HasTrait("deceptive") &&
+                    fact.SubjectId == speaker.PersonalityIdentity && fact.SourceId == speaker.PersonalityIdentity;
+            }
+            NpcEventDefinition definition = game.NpcContent.Event(fact.Kind);
+            if (definition == null) return true;
+            Guid id = speaker.PersonalityIdentity;
+            NpcReportActorRole role = definition.ReportActorRole;
+            bool ownAction = ((role & NpcReportActorRole.Subject) != 0 && fact.SubjectId == id) ||
+                ((role & NpcReportActorRole.Other) != 0 && fact.OtherId == id);
+            if (!ownAction) return true;
+            switch (definition.SelfReportTone)
+            {
+                case NpcSelfReportTone.Harmful:
+                    return speaker.Personality.HasTrait("cruel") || speaker.Personality.HasTrait("rebellious") ||
+                        speaker.Personality.HasTrait("hotheaded") || speaker.Personality.HasTrait("vindictive") ||
+                        PersonalitySystem.Bias(speaker, DecisionKind.Law, registry: game.NpcContent.Personalities) <= -15 &&
+                        PersonalitySystem.Bias(speaker, DecisionKind.Courage, registry: game.NpcContent.Personalities) >= 10;
+                case NpcSelfReportTone.Helpful:
+                    return PersonalitySystem.Bias(speaker, DecisionKind.Compassion, registry: game.NpcContent.Personalities) >= 15 ||
+                        PersonalitySystem.Bias(speaker, DecisionKind.Group, registry: game.NpcContent.Personalities) >= 15 ||
+                        PersonalitySystem.Bias(speaker, DecisionKind.Trade, registry: game.NpcContent.Personalities) >= 15;
+                default:
+                    return PersonalitySystem.Bias(speaker, DecisionKind.Group, registry: game.NpcContent.Personalities) >= 15 ||
+                        PersonalitySystem.Bias(speaker, DecisionKind.Trade, registry: game.NpcContent.Personalities) >= 15;
+            }
+        }
+
+        public static NpcFact Rumor(RogueGame game, Actor speaker, Actor listener)
         {
             if (speaker.Personality == null || !Session.Get.GamePreset.NpcPersonalitiesEnabled) return null;
             int turn = speaker.Location.Map.LocalTime.TurnCounter;
             NpcFact chosen = null;
             foreach (NpcFact fact in speaker.Personality.Knowledge.Facts)
-                if (fact.Place.Map != null && fact.Confidence >= 40 && fact.Hops < 3 &&
-                    turn - fact.EventTurn <= 2 * WorldTime.TURNS_PER_DAY &&
-                    !speaker.Personality.Knowledge.WasTold(fact.EventId, listener.PersonalityIdentity) &&
-                    (listener.Personality == null || !listener.Personality.Knowledge.Facts.Exists(known =>
-                        known.EventId == fact.EventId && known.Kind == fact.Kind)) &&
+                if (EligibleFact(game, speaker, fact, turn) && EligibleListener(speaker, listener, fact) &&
                     (chosen == null || fact.EventTurn > chosen.EventTurn)) chosen = fact;
             return chosen;
         }
 
+        public static bool EligibleFact(RogueGame game, Actor speaker, NpcFact fact, int turn)
+        { return fact != null && fact.Place.Map != null && fact.Confidence >= 40 && fact.Hops < 3 &&
+            turn - fact.EventTurn <= 2 * WorldTime.TURNS_PER_DAY && CanTell(game, speaker, fact); }
+
+        public static bool EligibleListener(Actor speaker, Actor listener, NpcFact fact)
+        { return listener != null && listener != speaker && listener.PersonalityIdentity != fact.SourceId &&
+            !speaker.Personality.Knowledge.WasTold(fact.EventId, listener.PersonalityIdentity) &&
+            (listener.Personality == null || !listener.Personality.Knowledge.Facts.Exists(known =>
+                known.EventId == fact.EventId && known.Kind == fact.Kind &&
+                known.Confidence >= NpcKnowledgeSystem.ReportConfidence(listener, speaker, fact))); }
+
         public static void ShareRumor(RogueGame game, Actor speaker, Actor listener, NpcFact fact, bool free)
         {
+            if (!CanTell(game, speaker, fact)) return;
             string report = NpcRecordDescriptions.Report(game.NpcContent, fact);
             District district = fact.Place.Map.District;
             string place = district == null ? "near " + fact.Place.Map.Name :
                 "in district " + World.CoordToString(district.WorldPosition.X, district.WorldPosition.Y);
             Zone building = Zone.BuildingAt(fact.Place);
             if (building != null) place += ", at the " + Zone.BuildingLabel(building.BuildingKind);
-            game.DoSay(speaker, listener, (fact.Source == NpcKnowledgeSource.Told ? "I was told that " :
-                fact.Source == NpcKnowledgeSource.Inferred ? "As far as I know, " : "I saw that ") + report +
+            game.DoSay(speaker, listener, (fact.Kind == "claimed_permission" && fact.SubjectId == speaker.PersonalityIdentity ? "I say that " :
+                fact.Source == NpcKnowledgeSource.Told ? "I was told that " :
+                fact.Source == NpcKnowledgeSource.Inferred ? "As far as I know, " :
+                fact.Source == NpcKnowledgeSource.Participant ? "I was involved when " : "I saw that ") + report +
                 " " + place + ".", RogueGame.Sayflags.IS_STORY | RogueGame.Sayflags.IS_RUMOR |
                 (free ? RogueGame.Sayflags.IS_FREE_ACTION : RogueGame.Sayflags.NONE), fact.EventId, fact.StoryId);
             foreach (Actor hearer in speaker.Location.Map.Actors)
@@ -93,6 +138,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                     hearer.Model.Abilities.IsUndead || game.Rules.StdDistance(hearer.Location.Position, speaker.Location.Position) > hearer.AudioRange) continue;
                 if (hearer.Personality == null) hearer.Personality = new PersonalityState();
                 NpcKnowledgeSystem.Hear(game, hearer, speaker, fact);
+                speaker.Personality.Knowledge.Told(fact.EventId, hearer.PersonalityIdentity,
+                    speaker.Location.Map.LocalTime.TurnCounter);
             }
             int turn = speaker.Location.Map.LocalTime.TurnCounter;
             speaker.Personality.Knowledge.Told(fact.EventId, listener.PersonalityIdentity, turn);

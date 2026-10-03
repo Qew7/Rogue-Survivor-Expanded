@@ -195,6 +195,13 @@ namespace djack.RogueSurvivor.Data
             return FactionRecords.TryGetValue(id, out record) ? record : null;
         }
 
+        public RelationshipRecord OpinionFaction(int id, string name)
+        {
+            RelationshipRecord record = Faction(id);
+            if (record == null) FactionRecords.Add(id, record = new RelationshipRecord(Guid.Empty, id, name));
+            return record;
+        }
+
         public void RememberPerson(Guid id, string name, MemoryInstance memory, int change)
         {
             if (id == Guid.Empty || memory == null) return;

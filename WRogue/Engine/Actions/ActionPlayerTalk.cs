@@ -31,7 +31,7 @@ namespace djack.RogueSurvivor.Engine.Actions
             NpcReaction pending = NpcConversation.Pending(m_Actor, target);
             if (pending != null) { NpcConversation.Reply(m_Game, m_Actor, target, pending, answer.Value); return; }
             m_Game.DoSay(m_Actor, target, "Any news?", RogueGame.Sayflags.NONE);
-            NpcFact rumor = NpcConversation.Rumor(target, m_Actor);
+            NpcFact rumor = NpcConversation.Rumor(m_Game, target, m_Actor);
             if (rumor != null) NpcConversation.ShareRumor(m_Game, target, m_Actor, rumor, true);
             else m_Game.DoSay(target, m_Actor, "Nothing new for now.", RogueGame.Sayflags.IS_FREE_ACTION);
         }

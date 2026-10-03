@@ -15,6 +15,53 @@ These general benchmarks are diagnostic. The save/load budget below is an
 automated pass/fail gate. Compare measurements on the same
 machine, Docker configuration, and runtime.
 
+## Changes after `0d243e6`
+
+Run the focused comparison with `bash tests/bench-post-0d243e.sh`. The script
+builds `0d243e6820d6b04c02df279450fb68324712fb40` and the current tree
+with the same `PostBaselineBenchmarks` source, then runs each version six times
+in alternating order. Each reported run is the median of five timed batches.
+The fixtures exercise real knowledge, planning, AI, base-trap, and archive code;
+setup and Docker builds are outside the timed batches. Readability-only edits
+have no isolated timing case.
+
+Local Docker/Mono measurements on October 3, 2026, comparing the baseline with
+production commit `54ab6f722800c90f31ddcae53259d77ff8dfdd1b` (median of six
+run medians; lower is faster):
+
+- Duplicate fact among 48 stored: 15.97 → 13.21 ms per 100,000 calls (17% faster).
+- First person among 32: 4.23 → 4.17 ms per 100,000 calls (effectively unchanged).
+- Last person among 32: 33.80 → 45.72 ms per 100,000 calls (35% slower).
+- Build a planning domain: 5.41 → 5.25 ms per 1,000 calls (3% faster).
+- Revisit a known planning place: 6.13 → 3.88 ms per 100,000 calls (37% faster).
+- Choose an AI wander move on an open 20×20 map: 30.17 → 27.12 ms per 10,000 calls (10% faster).
+- Move toward a goal without traps: 26.43 → 20.78 ms per 10,000 calls (21% faster).
+- Scan 100 base cells for trap placement: 229.18 → 235.69 ms per 1,000 calls (3% slower).
+- Render a 16-resident, 512-entry record timeline: 22.61 → 25.12 ms per 50 calls (11% slower).
+- Search that archive for absent text: 70.20 → 75.14 ms per 200 calls (7% slower).
+
+The last-person lookup is a clear regression in this bounded-list fixture.
+The archive cases also got slower for repeated reads of this synthetic history;
+other archive sizes, search terms, and live-session updates may differ. These
+numbers compare complete revisions, so they do not assign each difference to a
+single commit or imply the same change in whole-game frame or turn time.
+
+Follow-up fixes measured on the same Docker/Mono setup on October 3, 2026
+(six paired runs, median of run medians, baseline → fixed tree):
+
+- Last person among 32: 36.18 → 30.77 ms per 100,000 calls (15% faster).
+- Scan 100 base cells for trap placement: 235.81 → 4.00 ms per 1,000 calls (98% faster). Once a boundary cell at distance zero is found, the remaining cells cannot improve it.
+- Repeat the same 512-entry timeline: 23.21 → 0.09 ms per 50 calls. The archive reuses rendered lines and returns a separate list to callers.
+- Repeat an absent-text search: 72.76 → 0.28 ms per 200 calls with the same search term.
+- First timeline read from a fresh archive view: 23.71 → 22.37 ms per 50 calls (6% faster).
+- Search with a different absent term on every call: 65.76 → 35.83 ms per 200 calls (46% faster).
+
+The two repeat-read cases measure cache hits; they do not represent the first
+opening of an archive. The first-read and changing-search cases exercise the
+uncached path. Cache hits check resident names and the archive's partial-history
+flag as well as the search and event filter. Live-session views do not cache
+rendered lines.
+
 ## Automated save and load budget
 
 The regular `docker build --target test .` and `--all` scenario run include
@@ -312,6 +359,12 @@ it isolates decision cost rather than simulation cost. Actor placement uses a
 fixed seed and a newly prepared dense map for each timed sample.
 The lightweight arena fixture does not support a repeatable full-world
 generation benchmark yet; that needs a separate startup fixture.
+
+The same 40×40, 31 actor fixture now compares service history checks with
+eight closed agreements per actor. A 10,000-call sample checks every actor;
+Docker/Mono medians on 2026-10-03 were 8.01 ms for scanning the lists and
+2.16 ms for the transient open-agreement indicator. This isolates the guard
+cost; it is not a measurement of a full city turn.
 
 The measurements point first to field-of-view computation inside the sight
 sensor, then to repeated reachability checks for multiple targets. Potential

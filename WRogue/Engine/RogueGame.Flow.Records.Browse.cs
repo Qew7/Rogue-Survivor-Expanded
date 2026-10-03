@@ -44,7 +44,7 @@ namespace djack.RogueSurvivor.Engine
         void BrowseRecords(RecordsSave save)
         {
             RecordsQuery query = new RecordsQuery(); int selected = 0;
-            var names = new RecordsTextColors(save.Records.Residents);
+            var names = new RecordsTextColors(save.Records.Residents, save.Records.DistrictKinds);
             Logger.WriteLine(Logger.Stage.RUN_MAIN, "records browser ready");
             while (true)
             {
@@ -137,7 +137,7 @@ namespace djack.RogueSurvivor.Engine
         void ShowRecordsTimeline(RecordsSave save, ResidentRecord resident, RecordsQuery query)
         {
             string title = resident == null ? "All residents" : resident.Name;
-            var names = new RecordsTextColors(save.Records.Residents);
+            var names = new RecordsTextColors(save.Records.Residents, save.Records.DistrictKinds);
             Logger.WriteLine(Logger.Stage.RUN_MAIN, "records screen ready: " + title);
             string search = ""; RecordsEventFilter filter = RecordsEventFilter.All;
             int first = 0; const int pageSize = 40;

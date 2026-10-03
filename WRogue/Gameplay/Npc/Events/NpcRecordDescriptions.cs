@@ -30,9 +30,16 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         {
             NpcEventDefinition definition = catalog.Event(fact.Kind);
             if (definition != null && definition.DescribeReport != null) return definition.DescribeReport(fact);
-            if (fact.OtherId != Guid.Empty && (fact.Kind == "attack" || fact.Kind == "murder"))
-                return fact.OtherName + " was involved in violence against " + fact.SubjectName;
-            return "there was " + fact.Kind.Replace('_', ' ') + (fact.SubjectName == null ? "" : " involving " + fact.SubjectName);
+            if (definition != null && definition.Describe != null)
+            {
+                string report = definition.Describe(new ObservedEvent(fact.Kind, fact.EventTurn,
+                    fact.ReportSubject, fact.ReportOther, false, subjectId: fact.SubjectId, otherId: fact.OtherId));
+                if (!String.IsNullOrEmpty(report))
+                    return report.EndsWith(".", StringComparison.Ordinal) ? report.Substring(0, report.Length - 1) : report;
+            }
+            string participants = fact.ReportSubject == null ? fact.ReportOther :
+                fact.ReportOther == null ? fact.ReportSubject : fact.ReportSubject + " and " + fact.ReportOther;
+            return "there was " + fact.Kind.Replace('_', ' ') + (participants == null ? "" : " involving " + participants);
         }
     }
 }

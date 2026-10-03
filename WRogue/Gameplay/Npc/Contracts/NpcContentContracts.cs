@@ -49,9 +49,11 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public readonly Func<NpcExecutionContext, ActorAction> Execute;
         public readonly string Resource;
         public readonly Action<NpcExecutionContext> Unavailable;
+        public readonly Func<NpcPlanStep, string> ArchiveText;
         public NpcOperatorDefinition(string id, NpcPlanAction? legacy, Func<NpcExecutionContext, ActorAction> execute,
-            string resource = null, Action<NpcExecutionContext> unavailable = null)
-        { Id = id; LegacyAction = legacy; Execute = execute; Resource = resource; Unavailable = unavailable; }
+            string resource = null, Action<NpcExecutionContext> unavailable = null,
+            Func<NpcPlanStep, string> archiveText = null)
+        { Id = id; LegacyAction = legacy; Execute = execute; Resource = resource; Unavailable = unavailable; ArchiveText = archiveText; }
     }
 
     sealed class NpcIntentOutcome

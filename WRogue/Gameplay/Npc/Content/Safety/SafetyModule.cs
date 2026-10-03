@@ -60,9 +60,9 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 known.ThreatTurn = c.Turn; known.ThreatConfidence = 100;
             });
             RegisterEvents(catalog);
-            catalog.Operator(new NpcOperatorDefinition("safety.confirm", NpcPlanAction.ConfirmSafety, c => NpcSafetyActions.Confirm(new NpcActionContext(c))));
-            catalog.Operator(new NpcOperatorDefinition("shelter.enter", NpcPlanAction.EnterShelter, c => NpcSafetyActions.Shelter(new NpcActionContext(c))));
-            catalog.Operator(new NpcOperatorDefinition("group.leave", NpcPlanAction.LeaveGroup, c => NpcSafetyActions.Leave(new NpcActionContext(c.Game, c.Owner, c.Goal, c.Owner.Leader))));
+            catalog.Operator(new NpcOperatorDefinition("safety.confirm", NpcPlanAction.ConfirmSafety, c => NpcSafetyActions.Confirm(new NpcActionContext(c)), archiveText: step => "check that someone is safe"));
+            catalog.Operator(new NpcOperatorDefinition("shelter.enter", NpcPlanAction.EnterShelter, c => NpcSafetyActions.Shelter(new NpcActionContext(c)), archiveText: step => "enter the shelter"));
+            catalog.Operator(new NpcOperatorDefinition("group.leave", NpcPlanAction.LeaveGroup, c => NpcSafetyActions.Leave(new NpcActionContext(c.Game, c.Owner, c.Goal, c.Owner.Leader)), archiveText: step => "leave the group"));
             catalog.Memory(new MemoryDefinition("left_unsafe_group", "Left an unsafe group", 2, 6,
                 new[] { new MemoryTrigger("left_group", (a, e) => a == e.Subject) },
                 new MemoryOutcome(null, "hermit", null), new MemoryOutcome(null, null, Skills.IDs.STRONG_PSYCHE))
@@ -71,15 +71,28 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 new[] { new MemoryTrigger("left_group", (a, e) => a == e.Other) },
                 new MemoryOutcome(null, "protector", null), new MemoryOutcome(null, null, Skills.IDs.LEADERSHIP))
                 .Relate(MemoryRelationRole.Subject, -5), false);
+            catalog.Memory(new MemoryDefinition("frightened_escape", "Escaped a mortal threat", 2, 5,
+                new[] { new MemoryTrigger("fled_in_fear", (a, e) => a == e.Subject && !a.IsPlayer) },
+                new MemoryOutcome((a, m) => a.Personality.HasTrait("fearful"), "panic_attacks", null),
+                new MemoryOutcome((a, m) => a.Personality.HasTrait("timid"), "traumatized", null),
+                new MemoryOutcome((a, m) => a.Personality.HasTrait("brave"), "hardened", null),
+                new MemoryOutcome(null, null, Skills.IDs.STRONG_PSYCHE))
+                .Relate(MemoryRelationRole.Other, -5), false);
         }
         void RegisterEvents(NpcCatalogBuilder catalog)
         {
-            catalog.OnReport("attack", HearNeed);
-            catalog.OnReport("murder", HearNeed);
+            catalog.OnReport("attack", c => { HearNeed(c); NpcReputation.Attack(c); });
+            catalog.OnReport("murder", c => { HearNeed(c); NpcReputation.Attack(c); });
+            catalog.OnReport("fled_in_fear", HearNeed);
             catalog.Event(new NpcEventDefinition("left_group", NpcRecordCategory.Encounters, false, e => (e.Subject ?? "Someone") + " chose to leave " + (e.Other ?? "someone") + "'s group.", null) { StoryStage = (g, s, e) => "completed" });
             catalog.Event(new NpcEventDefinition("withdrew", NpcRecordCategory.None, false, e => (e.Subject ?? "Someone") + " withdrew from the last reported danger location.", null) { StoryStage = (g, s, e) => "completed" });
+            catalog.Event(new NpcEventDefinition("fled_in_fear", NpcRecordCategory.Combat | NpcRecordCategory.Life, true,
+                e => (e.Subject ?? "Someone") + " fled in fear of " + (e.Other ?? "a threat") + ".",
+                f => (f.ReportSubject ?? "someone") + " fled in fear of " + (f.ReportOther ?? "a threat"),
+                NpcEventFields.Subject | NpcEventFields.Other));
             catalog.On("attack", NpcObservationPhase.Knowledge, OnKnowledge);
             catalog.On("murder", NpcObservationPhase.Knowledge, OnKnowledge);
+            catalog.On("fled_in_fear", NpcObservationPhase.Knowledge, OnKnowledge);
             catalog.On("attack", NpcObservationPhase.Relationships, OnRelationships);
             catalog.On("murder", NpcObservationPhase.Relationships, OnRelationships);
         }
@@ -97,6 +110,9 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 other.ThreatConfidence = confidence; other.ThreatCause = source.Id; knowledge.Revision++;
                 other.ViolationTurn = source.Turn; other.ViolationConfidence = confidence; other.ViolationCause = source.Id;
             }
+            if (source.Kind == "fled_in_fear" && other != null && other.Id != owner.PersonalityIdentity)
+            { other.Danger = Math.Max(other.Danger, 70); other.ThreatTurn = source.Turn;
+                other.ThreatConfidence = confidence; other.ThreatCause = source.Id; knowledge.Revision++; }
         }
         static void OnRelationships(NpcObservation observation)
         {
