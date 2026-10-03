@@ -10,36 +10,58 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public static NpcIntent StartKnown(NpcContentCatalog catalog, Actor owner, NpcKnownPerson target,
             NpcIntentDefinition definition, long cause = 0, string storyId = null,
             Location destination = default(Location), Guid groupId = default(Guid))
-        { return NpcGoalLifecycle.Start(catalog, owner, target, definition, cause, storyId,
-            destination: destination, groupId: groupId); }
+        {
+            return NpcGoalLifecycle.Start(catalog, owner, target, definition, cause, storyId,
+                destination: destination, groupId: groupId);
+        }
+
         public static void EventFinished(RogueGame game, SignificantEvent source)
         {
             if (source.StoryId == null) return;
             NpcStoryDirector director = Session.Get.NpcDirector;
             lock (director)
             {
-                NpcStory story = director.Find(source.StoryId); if (story == null || story.Finished) return;
+                NpcStory story = director.Find(source.StoryId);
+                if (story == null || story.Finished) return;
                 NpcEventDefinition definition = game.NpcContent.Event(source.Kind);
-                string stage = definition == null || definition.StoryStage == null ? null : definition.StoryStage(game, story, source);
+                if (definition == null || definition.StoryStage == null) return;
+                string stage = definition.StoryStage(game, story, source);
                 if (stage == null || stage == story.Stage) return;
                 story.Stage = stage;
                 if (story.Finished) director.End(story, stage, source.Turn);
                 Session.Get.ResidentRecords.StoryChanged(source.Subject, story, source.Turn, source.Id);
                 SocialGroup group = source.Subject == null ? null : source.Subject.SocialGroup;
-                NpcGroupPlan faction = source.Other != null && source.Other.Personality != null && source.Other.Personality.FactionPlan != null && source.Other.Personality.FactionPlan.StoryId == story.Id ?
-                    source.Other.Personality.FactionPlan : source.Subject != null && source.Subject.Personality != null ? source.Subject.Personality.FactionPlan : null;
-                if (faction != null && faction.StoryId == story.Id)
-                { faction.Stage = stage; if (story.Finished) faction.Destination = default(Location); }
+                NpcGroupPlan factionPlan = null;
+                if (source.Other != null && source.Other.Personality != null)
+                {
+                    NpcGroupPlan otherPlan = source.Other.Personality.FactionPlan;
+                    if (otherPlan != null && otherPlan.StoryId == story.Id)
+                        factionPlan = otherPlan;
+                }
+                if (factionPlan == null && source.Subject != null && source.Subject.Personality != null)
+                    factionPlan = source.Subject.Personality.FactionPlan;
+                if (factionPlan != null && factionPlan.StoryId == story.Id)
+                {
+                    factionPlan.Stage = stage;
+                    if (story.Finished) factionPlan.Destination = default(Location);
+                }
                 if (group != null && group.Plan != null && group.Plan.StoryId == story.Id)
-                { group.Plan.Stage = stage; if (story.Finished) group.Plan.Destination = default(Location); }
+                {
+                    group.Plan.Stage = stage;
+                    if (story.Finished) group.Plan.Destination = default(Location);
+                }
             }
         }
+
         public static void GoalFinished(Actor owner, NpcIntent intent)
         {
             SocialGroup group = owner.SocialGroup;
             NpcStory story = Session.Get.NpcDirector.Find(intent.StoryId);
             if (group != null && group.Plan != null && group.Plan.StoryId == intent.StoryId && story != null && story.Finished)
-            { group.Plan.Stage = story.Stage; group.Plan.Destination = default(Location); }
+            {
+                group.Plan.Stage = story.Stage;
+                group.Plan.Destination = default(Location);
+            }
         }
         public static void Succession(RogueGame game, Actor leader)
         {
