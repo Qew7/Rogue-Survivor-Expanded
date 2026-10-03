@@ -48,8 +48,10 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             foreach (Actor follower in leader.Followers)
             {
                 if (!NpcIntentSystem.Enabled(follower) || follower.IsSleeping || follower.Location.Map != leader.Location.Map ||
-                    !NpcKnowledgeSystem.Visible(game, follower, leader.Location) || PersonalitySystem.Bias(follower, DecisionKind.Group) < 0) continue;
-                int value = PersonalitySystem.Bias(follower, DecisionKind.Group) + PersonalitySystem.Bias(follower, DecisionKind.Supplies) + game.Rules.ActorMaxFollowers(follower);
+                    !NpcKnowledgeSystem.Visible(game, follower, leader.Location)) continue;
+                int groupBias = PersonalitySystem.Bias(follower, DecisionKind.Group);
+                if (groupBias < 0) continue;
+                int value = groupBias + PersonalitySystem.Bias(follower, DecisionKind.Supplies) + game.Rules.ActorMaxFollowers(follower);
                 if (best == null || value > score || (value == score && follower.PersonalityIdentity.CompareTo(best.PersonalityIdentity) < 0)) { best = follower; score = value; }
             }
             if (best == null) return;

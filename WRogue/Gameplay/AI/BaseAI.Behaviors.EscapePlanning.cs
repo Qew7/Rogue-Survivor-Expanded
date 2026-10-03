@@ -5,6 +5,7 @@ using djack.RogueSurvivor.Data;
 using djack.RogueSurvivor.Engine;
 using djack.RogueSurvivor.Engine.Actions;
 using djack.RogueSurvivor.Engine.AI;
+using djack.RogueSurvivor.Engine.Items;
 using djack.RogueSurvivor.Gameplay.Personality;
 
 namespace djack.RogueSurvivor.Gameplay.AI
@@ -52,8 +53,10 @@ namespace djack.RogueSurvivor.Gameplay.AI
             foreach (Percept percept in enemies)
             {
                 Actor foe = percept.Percepted as Actor;
-                if (foe != null && foe.Location.Map == map && percept.Turn == map.LocalTime.TurnCounter &&
-                    foe.GetEquippedRangedWeapon() != null && foe.GetEquippedRangedWeapon().Ammo > 0)
+                if (foe == null || foe.Location.Map != map || percept.Turn != map.LocalTime.TurnCounter)
+                    continue;
+                ItemRangedWeapon weapon = foe.GetEquippedRangedWeapon();
+                if (weapon != null && weapon.Ammo > 0)
                     return null;
             }
             if (visible == null)
