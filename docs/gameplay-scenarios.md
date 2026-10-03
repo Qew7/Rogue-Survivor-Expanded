@@ -6,12 +6,15 @@ Run a named scenario without opening the game window:
 sh tests/scenario.sh --list
 sh tests/scenario.sh movement/wall
 sh tests/scenario.sh --all
+sh tests/scenario.sh --bench-npc-safety
 ```
 
 The first command builds a Docker image with the game and scenario runner.
 Later runs reuse Docker's build cache. A failed scenario exits nonzero and
 prints its name, random seed, exception, and final map. Regular
 `docker build --target test .` also runs every scenario alongside unit tests.
+`--bench-npc-safety` runs the route, hunger and sleep experiments in one process
+and prints one summary after all fixtures finish. See [npc-safety-experiment.md](npc-safety-experiment.md).
 
 `storage/save-budget` measures a large fixed world in isolated child processes
 and enforces a 10-second limit per save/load and a 50,000,000-byte limit per file.

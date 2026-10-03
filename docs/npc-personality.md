@@ -380,6 +380,16 @@ could die from the next adjacent or ranged hit, tries to retreat before firing.
 Undead, feral creatures and the player do not use this
 fear decision; the player chooses how to act.
 
+Once a living NPC decides to flee, planning traits affect its route. Organized
+and disciplined NPCs search up to four visible steps for a usable exit;
+vigilant, cautious and pragmatic NPCs search three; adaptable NPCs search two.
+Impulsive, careless and hotheaded traits shorten that search by two steps.
+The NPC checks the next step again on every action, avoiding blocked tiles,
+dangerous traps and tiles adjacent to a visible enemy. A visible enemy with a
+loaded ranged weapon prevents this exit plan. If no safe route is found, the
+existing retreat behavior applies. This does not change whether the NPC feels
+fear, and trait planning is disabled when NPC personalities are disabled.
+
 When a severe retreat actually moves the NPC, `fled_in_fear` enters the world
 record. Witnesses can pass it on as a rumor. A listener who learns the threat's
 identity treats that person as dangerous, with the flight event as evidence.

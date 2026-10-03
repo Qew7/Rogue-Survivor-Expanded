@@ -28,6 +28,11 @@ class Program
             AIAndGenerationBenchmarks.Run();
             return 0;
         }
+        if (args.Length == 1 && args[0] == "--bench-npc-safety")
+        {
+            NpcSafetyBenchmarks.Run();
+            return 0;
+        }
         if (args.Length == 1 && args[0] == "--bench-xpd")
         {
             XpdBaseBenchmarks.Run();
@@ -40,7 +45,7 @@ class Program
         }
         if (args.Length != 0)
         {
-            Console.Error.WriteLine("Usage: UnitTests.exe [--list|--all|--bench|--bench-ai|--bench-xpd|--bench-save copied-save-path|--check-save-budget copied-save-path|--audit-save copied-save-path|scenario-name]");
+            Console.Error.WriteLine("Usage: UnitTests.exe [--list|--all|--bench|--bench-ai|--bench-npc-safety|--bench-xpd|--bench-save copied-save-path|--check-save-budget copied-save-path|--audit-save copied-save-path|scenario-name]");
             return 2;
         }
         GameTests.Run();

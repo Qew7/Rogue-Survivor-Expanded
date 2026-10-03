@@ -715,6 +715,12 @@ namespace djack.RogueSurvivor.Gameplay.AI
 
                 // 3. Use exit?
                 #region
+                ActorAction plannedEscape = BehaviorPlannedEscape(game, enemies);
+                if (plannedEscape != null)
+                {
+                    m_Actor.Activity = Activity.FLEEING;
+                    return panic ? new ActionFearRetreat(m_Actor, game, plannedEscape, enemy) : plannedEscape;
+                }
                 if (m_Actor.Model.Abilities.AI_CanUseAIExits &&
                     game.Rules.RollChance(FLEE_THROUGH_EXIT_CHANCE))
                 {
