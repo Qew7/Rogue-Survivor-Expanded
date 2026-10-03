@@ -95,12 +95,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             if (fact.Kind == "claimed_permission")
             {
                 NpcFact contrary = listener.Personality.Knowledge.Facts.Find(f => f.EventId == fact.EventId && f.Kind == "base_theft");
-                if (contrary != null && contrary.Source != NpcKnowledgeSource.Told && contrary.Confidence >= 80)
-                {
-                    confidence = 20; fact.Confidence = confidence; refuted = true;
-                }
-                else if (contrary != null && contrary.Confidence >= confidence)
-                    fact.Confidence = confidence = Math.Min(confidence, 30);
+                refuted = contrary != null && contrary.Source != NpcKnowledgeSource.Told && contrary.Confidence >= 80;
             }
             NpcFact previous = listener.Personality.Knowledge.Facts.Find(f => f.EventId == fact.EventId && f.Kind == fact.Kind);
             int improvement = Math.Max(0, confidence - (previous == null ? 0 : previous.Confidence));
