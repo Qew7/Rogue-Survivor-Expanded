@@ -84,15 +84,22 @@ namespace djack.RogueSurvivor.Data
         public int NextTalkTurn, NextPlanTurn, Revision;
         public bool Learn(NpcFact fact)
         {
-            NpcFact old = Facts.Find(f => f.EventId == fact.EventId && f.Kind == fact.Kind);
-            if (old != null)
+            for (int i = 0; i < Facts.Count; i++)
             {
+                NpcFact old = Facts[i];
+                if (old.EventId != fact.EventId || old.Kind != fact.Kind) continue;
                 if (old.Confidence >= fact.Confidence) return false;
-                Facts.Remove(old);
+                Facts.RemoveAt(i);
+                break;
             }
             Facts.Add(fact); Trim(Facts, 48); Revision++; return true;
         }
-        public NpcKnownPerson Person(Guid id) { return People.Find(p => p.Id == id); }
+        public NpcKnownPerson Person(Guid id)
+        {
+            foreach (NpcKnownPerson person in People)
+                if (person.Id == id) return person;
+            return null;
+        }
         public NpcKnownPerson See(Actor actor, int turn)
         {
             NpcKnownPerson person = Person(actor.PersonalityIdentity);
