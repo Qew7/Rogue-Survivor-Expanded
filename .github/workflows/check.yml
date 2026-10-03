@@ -23,3 +23,8 @@ jobs:
       - uses: microsoft/setup-msbuild@v3
       - name: Build Windows game
         run: msbuild RogueSurvivor.sln /p:Configuration=Release '/p:Platform=Any CPU' /verbosity:minimal
+      - name: Test Windows package startup
+        shell: pwsh
+        run: |
+          Compress-Archive -Path 'WRogue/bin/Release/*' -DestinationPath windows-ci.zip
+          ./tests/windows-startup.ps1 windows-ci.zip

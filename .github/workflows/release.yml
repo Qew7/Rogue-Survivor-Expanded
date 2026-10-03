@@ -63,6 +63,9 @@ jobs:
           $archive = "RogueSurvivorExpanded-v$env:RELEASE_VERSION-windows.zip"
           Compress-Archive -Path "$output/*" -DestinationPath $archive -CompressionLevel Optimal
           if (-not (Test-Path $archive)) { throw 'Windows archive was not created' }
+      - name: Test Windows package startup
+        shell: pwsh
+        run: ./tests/windows-startup.ps1 "RogueSurvivorExpanded-v$env:RELEASE_VERSION-windows.zip"
       - name: Commit version and publish release
         shell: pwsh
         run: |
