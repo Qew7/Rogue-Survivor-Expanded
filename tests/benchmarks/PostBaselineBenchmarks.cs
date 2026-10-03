@@ -115,6 +115,12 @@ static class PostBaselineBenchmarks
             () => s_Sink = RecordsReader.Lines(save, null).Count);
         PerformanceBenchmarks.Measure("records absent search, 16x32 entries", 200,
             () => s_Sink = RecordsReader.Lines(save, null, null, "absent-query", RecordsEventFilter.All).Count);
+        PerformanceBenchmarks.Measure("records first timeline read, 16x32 entries", 50,
+            () => s_Sink = RecordsReader.Lines(new RecordsSave("benchmark", 100, records), null).Count);
+        int searchIndex = 0;
+        PerformanceBenchmarks.Measure("records changing absent search, 16x32 entries", 200,
+            () => s_Sink = RecordsReader.Lines(save, null, null,
+                "absent-query-" + searchIndex++, RecordsEventFilter.All).Count);
     }
 }
 

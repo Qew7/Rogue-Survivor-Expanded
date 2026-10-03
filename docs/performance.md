@@ -46,6 +46,20 @@ other archive sizes, search terms, and live-session updates may differ. These
 numbers compare complete revisions, so they do not assign each difference to a
 single commit or imply the same change in whole-game frame or turn time.
 
+Follow-up fixes measured on the same Docker/Mono setup on October 3, 2026
+(six paired runs, median of run medians, baseline → fixed tree):
+
+- Last person among 32: 34.70 → 29.91 ms per 100,000 calls (14% faster).
+- Scan 100 base cells for trap placement: 228.97 → 3.79 ms per 1,000 calls (98% faster). Once a boundary cell at distance zero is found, the remaining cells cannot improve it.
+- Repeat the same 512-entry timeline: 22.31 → 0.03 ms per 50 calls. The archive reuses rendered lines and returns a separate list to callers.
+- Repeat an absent-text search: 70.09 → 0.05 ms per 200 calls with the same search term.
+- First timeline read from a fresh archive view: 22.25 → 21.44 ms per 50 calls (4% faster).
+- Search with a different absent term on every call: 64.42 → 33.09 ms per 200 calls (49% faster).
+
+The two repeat-read cases measure cache hits; they do not represent the first
+opening of an archive. The first-read and changing-search cases exercise the
+uncached path. Live-session views do not cache rendered lines.
+
 ## Automated save and load budget
 
 The regular `docker build --target test .` and `--all` scenario run include

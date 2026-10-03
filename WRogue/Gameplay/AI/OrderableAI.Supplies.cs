@@ -15,6 +15,9 @@ namespace djack.RogueSurvivor.Gameplay.AI
         int m_XpdSupplyStage;
         Item m_XpdLoot;
         bool m_XpdFoodOnly;
+        static readonly Point[] s_CardinalSteps = {
+            new Point(-1, 0), new Point(1, 0), new Point(0, -1), new Point(0, 1)
+        };
         protected bool IsReturningXpdLoot
         {
             get { return Order != null && Order.Task == ActorTasks.SCAVENGE_SUPPLIES &&
@@ -36,14 +39,16 @@ namespace djack.RogueSurvivor.Gameplay.AI
             int bestDistance = Int32.MaxValue;
             foreach (Point cell in claim.Cells)
             {
+                int distance = game.Rules.GridDistance(m_Actor.Location.Position, cell);
+                if (distance >= bestDistance) continue;
                 if (!map.IsWalkable(cell.X, cell.Y) ||
                     (map.GetActorAt(cell) != null && map.GetActorAt(cell) != m_Actor) ||
                     (claim.FoodRoom != null && claim.FoodRoom.Value.Contains(cell)) ||
                     (claim.WeaponRoom != null && claim.WeaponRoom.Value.Contains(cell))) continue;
                 bool boundary = false;
-                foreach (Direction step in Direction.COMPASS_4)
+                foreach (Point step in s_CardinalSteps)
                 {
-                    Point neighbor = cell + step;
+                    Point neighbor = new Point(cell.X + step.X, cell.Y + step.Y);
                     if (map.IsInBounds(neighbor) && map.IsWalkable(neighbor.X, neighbor.Y) &&
                         !claim.Contains(neighbor)) { boundary = true; break; }
                 }
@@ -51,8 +56,7 @@ namespace djack.RogueSurvivor.Gameplay.AI
                 Inventory onGround = map.GetItemsAt(cell);
                 if (onGround != null && onGround.HasItemMatching(item =>
                     item is ItemTrap && ((ItemTrap)item).IsActivated)) continue;
-                int distance = game.Rules.GridDistance(m_Actor.Location.Position, cell);
-                if (distance < bestDistance) { best = cell; bestDistance = distance; }
+                best = cell; bestDistance = distance;
             }
             if (best == null) return null;
             if (best.Value != m_Actor.Location.Position)

@@ -17,9 +17,11 @@ namespace djack.RogueSurvivor.Engine
             get { return m_LiveSession == null ? m_SavedTurn : m_LiveSession.WorldTime.TurnCounter; }
         }
         public readonly ResidentRecords Records;
-        internal readonly Dictionary<ResidentEntry, string> Display = new Dictionary<ResidentEntry, string>();
-        internal readonly Dictionary<ResidentEntry, string> Context = new Dictionary<ResidentEntry, string>();
         internal Dictionary<long, ResidentEntry> Causes;
+        internal bool IsArchive { get { return m_LiveSession == null; } }
+        internal string CachedSearch;
+        internal RecordsEventFilter CachedFilter;
+        internal List<string> CachedLines;
         int m_CachedTurn = -1, m_CachedResidents = -1, m_CachedEntries = -1;
         internal void Prepare()
         {
@@ -28,15 +30,8 @@ namespace djack.RogueSurvivor.Engine
             if (Causes != null && m_CachedTurn == Turn && m_CachedResidents == Records.Residents.Count &&
                 m_CachedEntries == entries) return;
 
-            Display.Clear(); Context.Clear();
+            CachedLines = null;
             Causes = RecordsReader.CauseIndex(this);
-            foreach (ResidentRecord resident in Records.Residents)
-                foreach (ResidentEntry entry in resident.Entries)
-                {
-                    if (entry.Turn > Turn) continue;
-                    Display.Add(entry, RecordsReader.DisplayText(entry));
-                    Context.Add(entry, RecordsReader.CauseContext(entry, Causes));
-                }
             m_CachedTurn = Turn; m_CachedResidents = Records.Residents.Count; m_CachedEntries = entries;
             m_Profiles = null;
         }
@@ -98,8 +93,15 @@ namespace djack.RogueSurvivor.Engine
             if (String.IsNullOrEmpty(search)) return true;
             if (entry.Text.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0) return true;
             if (entry.StoryId != null && entry.StoryId.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0) return true;
-            if (save.Display[entry].IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0) return true;
-            string context = save.Context[entry];
+            // Plain text only loses surrounding whitespace when displayed, so it cannot
+            // gain a match that was absent from the original text.
+            if ((entry.Text.IndexOf(" [story ", StringComparison.Ordinal) >= 0 ||
+                entry.Kind == "goal_plan" || entry.Kind == "story_stage" ||
+                entry.Kind.StartsWith("goal_", StringComparison.Ordinal)) &&
+                DisplayText(entry).IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0) return true;
+            if (entry.CauseId <= 0 && (entry.SupportingCauses == null || entry.SupportingCauses.Length == 0))
+                return false;
+            string context = CauseContext(entry, save.Causes);
             return context != null && context.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
@@ -121,22 +123,32 @@ namespace djack.RogueSurvivor.Engine
             string search, RecordsEventFilter filter)
         {
             save.Prepare();
+            bool cacheable = save.IsArchive && selected == null && query == null;
+            if (cacheable && save.CachedLines != null && save.CachedSearch == search &&
+                save.CachedFilter == filter) return new List<string>(save.CachedLines);
+
             List<KeyValuePair<ResidentRecord, ResidentEntry>> entries = MatchingEntries(save, selected, query, search, filter);
             entries.Sort(CompareEntries);
 
-            List<string> lines = new List<string>();
+            List<string> lines = new List<string>(entries.Count);
             if (save.Records.IsPartial)
                 lines.Add("Partial history: only recoverable records were available when the archive was rebuilt.");
             foreach (KeyValuePair<ResidentRecord, ResidentEntry> pair in entries)
                 AddWrappedLine(lines, EntryLine(save, pair.Key, pair.Value));
             if (entries.Count == 0) lines.Add("No recorded events before this save.");
+            if (cacheable)
+            {
+                save.CachedSearch = search;
+                save.CachedFilter = filter;
+                save.CachedLines = new List<string>(lines);
+            }
             return lines;
         }
 
         static List<KeyValuePair<ResidentRecord, ResidentEntry>> MatchingEntries(RecordsSave save,
             ResidentRecord selected, RecordsQuery query, string search, RecordsEventFilter filter)
         {
-            IEnumerable<ResidentRecord> people = new List<ResidentRecord>(save.Records.Residents);
+            IEnumerable<ResidentRecord> people = save.Records.Residents;
             if (selected != null) people = new[] { selected };
             else if (query != null) people = query.Select(save).ConvertAll(p => p.Resident);
 
@@ -161,9 +173,12 @@ namespace djack.RogueSurvivor.Engine
 
         static string EntryLine(RecordsSave save, ResidentRecord resident, ResidentEntry entry)
         {
-            string line = new WorldTime(entry.Turn) + " | " + resident.Name + " | " + save.Display[entry];
-            string context = save.Context[entry];
-            if (context != null) line += " | " + context;
+            string line = new WorldTime(entry.Turn) + " | " + resident.Name + " | " + DisplayText(entry);
+            if (entry.CauseId > 0 || entry.SupportingCauses != null && entry.SupportingCauses.Length > 0)
+            {
+                string context = CauseContext(entry, save.Causes);
+                if (context != null) line += " | " + context;
+            }
             return line;
         }
 

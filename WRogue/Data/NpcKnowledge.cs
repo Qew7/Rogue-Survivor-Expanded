@@ -96,8 +96,11 @@ namespace djack.RogueSurvivor.Data
         }
         public NpcKnownPerson Person(Guid id)
         {
-            foreach (NpcKnownPerson person in People)
+            for (int i = 0; i < People.Count; i++)
+            {
+                NpcKnownPerson person = People[i];
                 if (person.Id == id) return person;
+            }
             return null;
         }
         public NpcKnownPerson See(Actor actor, int turn)
