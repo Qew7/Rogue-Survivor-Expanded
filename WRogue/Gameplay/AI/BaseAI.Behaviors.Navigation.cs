@@ -25,6 +25,7 @@ namespace djack.RogueSurvivor.Gameplay.AI
         /// <returns></returns>
         protected ActorAction BehaviorWander(RogueGame game, Predicate<Location> goodWanderLocFn, ExplorationData exploration)
         {
+            bool almostSleepy = game.Rules.IsAlmostSleepy(m_Actor);
             ChoiceEval<Direction> chooseDir = Choose<Direction>(game,
                 Direction.COMPASS_LIST,
                 (dir) =>
@@ -62,7 +63,8 @@ namespace djack.RogueSurvivor.Gameplay.AI
                     }
 
                     // alpha10.1 allowing break action prevent rare cases of getting stuck or going back and forth but we penalize it
-                    if (next.Map.GetMapObjectAt(next.Position) != null)
+                    MapObject mapObject = next.Map.GetMapObjectAt(next.Position);
+                    if (mapObject != null)
                     {
                         ActorAction bumpObjAction = game.Rules.IsBumpableFor(m_Actor, game, next);
                         if (bumpObjAction != null && (bumpObjAction is ActionBreak || bumpObjAction is ActionBashDoor))
@@ -72,7 +74,7 @@ namespace djack.RogueSurvivor.Gameplay.AI
                             else
                                 score += BREAKING_OBJ;
                             // if we have to break things, prefer objs we can break more quickly
-                            score -= GetObjectHitPoints(next.Map.GetMapObjectAt(next.Position));
+                            score -= GetObjectHitPoints(mapObject);
                         }
                     }
 
@@ -90,14 +92,14 @@ namespace djack.RogueSurvivor.Gameplay.AI
                     // alpha10.1 prefer wandering to doorwindows and exits.
                     // helps civs ai getting stuck in semi-infinite loop when running out of new exploration to do.
                     // as a side effect, make ais with no exploration data (eg zombies) more eager to visit door/windows and exits.
-                    DoorWindow doorWindow = next.Map.GetMapObjectAt(next.Position) as DoorWindow;
+                    DoorWindow doorWindow = mapObject as DoorWindow;
                     if (doorWindow != null)
                         score += DOORWINDOWS;
                     if (next.Map.GetExitAt(next.Position) != null)
                         score += EXITS;
 
                     // alpha10.1 prefer inside when almost sleepy
-                    if (game.Rules.IsAlmostSleepy(m_Actor) && next.Map.GetTileAt(next.Position).IsInside)
+                    if (almostSleepy && next.Map.GetTileAt(next.Position).IsInside)
                         score += INSIDE_WHEN_ALMOST_SLEEPY;
 
                     // alpha10.1 add random factor
