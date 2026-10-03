@@ -8,6 +8,9 @@ namespace djack.RogueSurvivor.Gameplay.Personality
 {
     sealed class NpcPlanDomain
     {
+        static readonly DecisionKind[] s_TraitDecisions = { DecisionKind.Group, DecisionKind.Compassion,
+            DecisionKind.Trade, DecisionKind.Explore, DecisionKind.Supplies, DecisionKind.Law,
+            DecisionKind.Courage };
         public readonly List<NpcPlanStep> Actions = new List<NpcPlanStep>();
         public ulong Initial;
         NpcPlanningState extraInitial;
@@ -29,8 +32,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         {
             Game = game; Owner = owner; Goal = goal; Visible = visible; plan = goal.Plan;
             Turn = owner.Location.Map.LocalTime.TurnCounter; Catalog = catalog ?? game.NpcContent;
-            foreach (DecisionKind kind in new[] { DecisionKind.Group, DecisionKind.Compassion, DecisionKind.Trade,
-                DecisionKind.Explore, DecisionKind.Supplies, DecisionKind.Law, DecisionKind.Courage })
+            foreach (DecisionKind kind in s_TraitDecisions)
                 Traits = unchecked(Traits * 31 + PersonalitySystem.Bias(owner, kind, registry: Catalog.Personalities));
             foreach (Action<NpcPlanDomain> seed in Catalog.PlanSeeds) seed(this);
             if (plan != null && plan.CompletedFacts != null) foreach (string name in plan.CompletedFacts)
@@ -42,8 +44,9 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public ulong At(Location place)
         {
             if (place.Map == null) return 0;
-            int index = places.FindIndex(p => p == place);
-            if (index < 0) { if (places.Count >= NpcFactLayout.MaximumPlaces) return 0; index = places.Count; places.Add(place); }
+            int index = 0;
+            while (index < places.Count && places[index] != place) index++;
+            if (index == places.Count) { if (places.Count >= NpcFactLayout.MaximumPlaces) return 0; places.Add(place); }
             ulong flag = NpcFactLayout.Location(index);
             if (place.Map == Owner.Location.Map && Game.Rules.GridDistance(place.Position, Owner.Location.Position) <= 1) Initial |= flag;
             return flag;
