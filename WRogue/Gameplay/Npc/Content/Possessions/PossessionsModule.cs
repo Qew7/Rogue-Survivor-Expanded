@@ -51,7 +51,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             catalog.Perception(NpcPerceptionKind.Items, PerceiveItems);
             catalog.Perception(NpcPerceptionKind.Surroundings, c => NpcHomeObservation.RememberHome(c.Owner));
             RegisterEvents(catalog);
-            catalog.Operator(new NpcOperatorDefinition("item.take", NpcPlanAction.PickupValuedItem, c => new ActionNpcValuedItem(c.Owner, c.Game, c.Goal, c.Step), "item"));
+            catalog.Operator(new NpcOperatorDefinition("item.take", NpcPlanAction.PickupValuedItem, c => new ActionNpcValuedItem(c.Owner, c.Game, c.Goal, c.Step), "item", archiveText: step => "retrieve a valued item"));
         }
         void RegisterEvents(NpcCatalogBuilder catalog)
         {

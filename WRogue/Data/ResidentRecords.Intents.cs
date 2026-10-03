@@ -5,13 +5,16 @@ namespace djack.RogueSurvivor.Data
     sealed partial class ResidentRecords
     {
         public void PlanChanged(Actor actor, NpcIntent intent)
+        { PlanChanged(actor, intent, NpcContentCatalog.Default); }
+
+        public void PlanChanged(Actor actor, NpcIntent intent, NpcContentCatalog catalog)
         {
             ResidentRecord record = Register(actor); if (record == null) return;
             var methods = new System.Collections.Generic.List<string>();
-            foreach (NpcPlanStep step in intent.Plan.Steps) methods.Add(PlanActionText(step));
+            foreach (NpcPlanStep step in intent.Plan.Steps) methods.Add(PlanActionText(step, catalog));
             int turn = actor.Location.Map.LocalTime.TurnCounter;
             record.Add("plan:" + intent.Sequence + ":" + record.Entries.Count, turn,
-                "To " + GoalText(intent, NpcContentCatalog.Default).ToLowerInvariant() + ", " + actor.UnmodifiedName +
+                "To " + GoalText(intent, catalog).ToLowerInvariant() + ", " + actor.UnmodifiedName +
                 " plans to " + System.String.Join(", then ", methods.ToArray()) + ".",
                 new ObservedEvent("goal_plan", turn, actor.UnmodifiedName, intent.TargetName, true,
                     causeId: intent.CauseId, storyId: intent.StoryId));
@@ -92,43 +95,17 @@ namespace djack.RogueSurvivor.Data
             return reason.TrimEnd('.');
         }
 
-        static string PlanActionText(NpcPlanStep step)
+        static string PlanActionText(NpcPlanStep step, NpcContentCatalog catalog)
         {
-            if (!System.String.IsNullOrEmpty(step.OperatorId) &&
-                step.OperatorId.IndexOf('.') < 0 && step.OperatorId != "travel" && step.OperatorId != "retreat" &&
-                step.OperatorId != step.Action.ToString())
-                return Humanize(step.OperatorId);
-            switch (step.Action)
-            {
-                case NpcPlanAction.Travel: return TravelText(step.Place);
-                case NpcPlanAction.EnterShelter: return "enter the shelter";
-                case NpcPlanAction.PickupFood: return "collect food";
-                case NpcPlanAction.AskFood: return "ask for food";
-                case NpcPlanAction.GiveFood: return "give food";
-                case NpcPlanAction.ReportDelivery: return "report the delivery";
-                case NpcPlanAction.AskLocation: return "ask for directions";
-                case NpcPlanAction.Reunite: return "reunite with someone";
-                case NpcPlanAction.Warn: return "warn someone";
-                case NpcPlanAction.Retreat: return "retreat";
-                case NpcPlanAction.ConfirmSafety: return "check that someone is safe";
-                case NpcPlanAction.LeaveGroup: return "leave the group";
-                case NpcPlanAction.BarterFood: return "trade for food";
-                case NpcPlanAction.PickupMedicine: return "collect medicine";
-                case NpcPlanAction.UseMedicine: return "use medicine";
-                case NpcPlanAction.AskMedicine: return "ask for medicine";
-                case NpcPlanAction.GiveMedicine: return "give medicine";
-                case NpcPlanAction.TreatPerson: return "treat someone";
-                case NpcPlanAction.BarterMedicine: return "trade for medicine";
-                case NpcPlanAction.PickupValuedItem: return "retrieve a valued item";
-                case NpcPlanAction.DemandRestitution: return "demand restitution";
-                default: return Humanize(step.OperatorId ?? step.Action.ToString());
-            }
+            NpcOperatorDefinition definition = catalog.Operator(step);
+            if (definition != null && definition.ArchiveText != null) return definition.ArchiveText(step);
+            return Humanize(step.OperatorId ?? step.Action.ToString());
         }
 
         static string Humanize(string name)
         { return (name ?? "act").Replace('_', ' ').Replace('-', ' ').ToLowerInvariant(); }
 
-        static string TravelText(Location place)
+        internal static string TravelText(Location place)
         {
             if (place.Map == null) return "travel onward";
             District district = place.Map.District;

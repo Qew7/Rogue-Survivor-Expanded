@@ -60,9 +60,9 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 known.ThreatTurn = c.Turn; known.ThreatConfidence = 100;
             });
             RegisterEvents(catalog);
-            catalog.Operator(new NpcOperatorDefinition("safety.confirm", NpcPlanAction.ConfirmSafety, c => NpcSafetyActions.Confirm(new NpcActionContext(c))));
-            catalog.Operator(new NpcOperatorDefinition("shelter.enter", NpcPlanAction.EnterShelter, c => NpcSafetyActions.Shelter(new NpcActionContext(c))));
-            catalog.Operator(new NpcOperatorDefinition("group.leave", NpcPlanAction.LeaveGroup, c => NpcSafetyActions.Leave(new NpcActionContext(c.Game, c.Owner, c.Goal, c.Owner.Leader))));
+            catalog.Operator(new NpcOperatorDefinition("safety.confirm", NpcPlanAction.ConfirmSafety, c => NpcSafetyActions.Confirm(new NpcActionContext(c)), archiveText: step => "check that someone is safe"));
+            catalog.Operator(new NpcOperatorDefinition("shelter.enter", NpcPlanAction.EnterShelter, c => NpcSafetyActions.Shelter(new NpcActionContext(c)), archiveText: step => "enter the shelter"));
+            catalog.Operator(new NpcOperatorDefinition("group.leave", NpcPlanAction.LeaveGroup, c => NpcSafetyActions.Leave(new NpcActionContext(c.Game, c.Owner, c.Goal, c.Owner.Leader)), archiveText: step => "leave the group"));
             catalog.Memory(new MemoryDefinition("left_unsafe_group", "Left an unsafe group", 2, 6,
                 new[] { new MemoryTrigger("left_group", (a, e) => a == e.Subject) },
                 new MemoryOutcome(null, "hermit", null), new MemoryOutcome(null, null, Skills.IDs.STRONG_PSYCHE))

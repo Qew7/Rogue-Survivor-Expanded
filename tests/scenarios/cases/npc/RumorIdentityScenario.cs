@@ -16,7 +16,6 @@ static class RumorIdentityScenario
             Actor attacker = NpcIntentSupport.Actor(world, "Vasily", 2, 1);
             attacker.Faction = world.Game.GameFactions.TheBikers;
             Actor listener = NpcIntentSupport.Actor(world, "listener", 6, 1);
-            Actor next = NpcIntentSupport.Actor(world, "next", 8, 1);
             Actor player = NpcIntentSupport.Player(world, 7, 1);
             witness.Personality.Opinion(victim.PersonalityIdentity, victim.UnmodifiedName);
 
@@ -36,7 +35,7 @@ static class RumorIdentityScenario
             Check.Equal("a biker", fact.ReportOther, "an earlier report does not gain a name retroactively");
 
             world.Place(witness, 5, 0); world.Place(listener, 6, 0);
-            world.Place(next, 8, 0); world.Place(player, 7, 0);
+            world.Place(player, 7, 0);
             var tell = new ActionNpcTell(witness, world.Game, listener, fact);
             Check.Equal(true, tell.IsLegal(), "witness can speak to listener");
             tell.Perform();
@@ -46,6 +45,7 @@ static class RumorIdentityScenario
             Check.Equal(true, Heard(player, "a biker attacked Peter Steel"),
                 "player hears explicit attacker and victim wording");
 
+            Actor next = NpcIntentSupport.Actor(world, "next", 8, 0);
             listener.Personality.Opinion(attacker.PersonalityIdentity, attacker.UnmodifiedName);
             var retell = new ActionNpcTell(listener, world.Game, next, heard);
             Check.Equal(true, retell.IsLegal(), "listener can retell the report");

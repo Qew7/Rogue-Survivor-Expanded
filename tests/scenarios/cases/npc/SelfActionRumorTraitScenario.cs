@@ -33,7 +33,8 @@ static class SelfActionRumorTraitScenario
                 "player conversation can now select the actor's own attack");
             Check.Equal(true, world.Try(new ActionNpcTell(victim, world.Game, listener, victimReport)),
                 "victim can tell about the attack without a self-report trait");
-            Check.Equal(true, world.Try(new ActionNpcTell(witness, world.Game, listener, witnessed)),
+            Actor fresh = NpcIntentSupport.Actor(world, "fresh listener", 9, 1);
+            Check.Equal(true, world.Try(new ActionNpcTell(witness, world.Game, fresh, witnessed)),
                 "eyewitness can tell about someone else's attack");
 
             Actor helper = NpcIntentSupport.Actor(world, "helper", 2, 2);

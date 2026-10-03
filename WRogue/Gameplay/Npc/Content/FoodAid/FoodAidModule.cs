@@ -62,7 +62,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         void RegisterContent(NpcCatalogBuilder catalog)
         {
             RegisterEvents(catalog);
-            catalog.Operator(new NpcOperatorDefinition("food.give", NpcPlanAction.GiveFood, c => NpcFoodActions.Give(new NpcActionContext(c))));
+            catalog.Operator(new NpcOperatorDefinition("food.give", NpcPlanAction.GiveFood, c => NpcFoodActions.Give(new NpcActionContext(c)), archiveText: step => "give food"));
             catalog.Memory(new MemoryDefinition("refused_aid", "A request for aid was declined", 2, 6,
                 new[] { new MemoryTrigger("request_refused", (a, e) => a == e.Other) },
                 new MemoryOutcome(null, "mistrustful", null), new MemoryOutcome(null, null, Skills.IDs.CHARISMATIC))

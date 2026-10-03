@@ -31,6 +31,21 @@ static class AIAndGenerationBenchmarks
                 fasterActors++;
         Console.WriteLine("PROFILE actors faster than one action/turn: {0}/{1}",
             fasterActors, world.Map.CountActors);
+        var serviceStates = new List<PersonalityState>();
+        foreach (Actor resident in world.Map.Actors)
+        {
+            var state = new PersonalityState();
+            for (int i = 0; i < 8; i++)
+                state.RememberService(new NpcServiceAgreement {
+                    Id = i + 1, Status = NpcServiceStatus.Completed });
+            serviceStates.Add(state);
+        }
+        PerformanceBenchmarks.Measure("dense city service history scan, 8 closed", 10000,
+            () => { foreach (PersonalityState state in serviceStates)
+                state.ServiceAgreements.Exists(a => a.Status == NpcServiceStatus.Offered ||
+                    a.Status == NpcServiceStatus.Accepted); });
+        PerformanceBenchmarks.Measure("dense city open service indicator, 8 closed", 10000,
+            () => { foreach (PersonalityState state in serviceStates) { bool open = state.HasOpenServiceAgreements; } });
         LOSSensor sight = new LOSSensor(LOSSensor.SensingFilter.ACTORS |
             LOSSensor.SensingFilter.ITEMS);
         PerformanceBenchmarks.Measure("NPC sight, 30 actors, 40x40", 1000,

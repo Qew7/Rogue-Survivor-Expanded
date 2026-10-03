@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using djack.RogueSurvivor.Data;
 using djack.RogueSurvivor.Engine;
 using djack.RogueSurvivor.Engine.AI;
@@ -53,16 +54,20 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 Place = new Location(source.Map, source.Position), StoryId = source.StoryId,
                 Resource = source.Resource, Units = source.Units });
         }
-        public static void Perceive(RogueGame game, Actor actor, IList<Percept> percepts)
+        public static void Perceive(RogueGame game, Actor actor, IList<Percept> percepts,
+            HashSet<Point> currentFov = null)
         {
             NpcKnowledge knowledge = actor.Personality.Knowledge;
             int turn = actor.Location.Map.LocalTime.TurnCounter; knowledge.Expire(turn);
             if (percepts != null) foreach (Percept percept in percepts)
             {
-                if (percept.Turn != turn || !Visible(game, actor, percept.Location)) continue;
+                if (percept.Turn != turn || percept.Location.Map != actor.Location.Map ||
+                    (currentFov == null ? !Visible(game, actor, percept.Location) :
+                        !currentFov.Contains(percept.Location.Position))) continue;
                 Actor person = percept.Percepted as Actor;
                 if (person != null)
                 {
+                    if (person.IsDead || person.Location != percept.Location) continue;
                     NpcKnownPerson known = knowledge.See(person, turn);
                     known.Hostile = game.Rules.AreEnemies(actor, person);
                     game.NpcContent.Perceive(NpcPerceptionKind.Person, new NpcPerceptionContext(game, actor, percept.Location, person));
@@ -84,10 +89,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         }
         public static bool Hear(RogueGame game, Actor listener, Actor speaker, NpcFact source)
         {
-            RelationshipRecord trust = listener.Personality.Person(speaker.PersonalityIdentity);
-            int confidence = Math.Max(0, Math.Min(95, source.Confidence - 20 + (trust == null ? 0 : trust.Trust / 10) +
-                (trust == null ? 0 : -trust.Grievance / 5) +
-                Math.Min(0, PersonalitySystem.Bias(listener, DecisionKind.Group)) / 2));
+            int confidence = ReportConfidence(listener, speaker, source);
             NpcFact fact = source.Retell(speaker.PersonalityIdentity, listener.Location.Map.LocalTime.TurnCounter, confidence);
             bool refuted = false;
             if (fact.Kind == "claimed_permission")
@@ -112,6 +114,21 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                     SeenTurn = fact.EventTurn, Confidence = confidence, Source = NpcKnowledgeSource.Told });
             if (learned) game.NpcContent.Hear(new NpcReportContext(listener, fact, refuted ? 0 : improvement, game.NpcContent));
             return learned;
+        }
+        public static int ReportConfidence(Actor listener, Actor speaker, NpcFact source)
+        {
+            RelationshipRecord trust = listener.Personality.Person(speaker.PersonalityIdentity);
+            int confidence = Math.Max(0, Math.Min(95, source.Confidence - 20 + (trust == null ? 0 : trust.Trust / 10) +
+                (trust == null ? 0 : -trust.Grievance / 5) +
+                Math.Min(0, PersonalitySystem.Bias(listener, DecisionKind.Group)) / 2));
+            if (source.Kind == "claimed_permission")
+            {
+                NpcFact contrary = listener.Personality.Knowledge.Facts.Find(f => f.EventId == source.EventId && f.Kind == "base_theft");
+                if (contrary != null && contrary.Source != NpcKnowledgeSource.Told && contrary.Confidence >= 80)
+                    return 20;
+                if (contrary != null && contrary.Confidence >= confidence) return Math.Min(confidence, 30);
+            }
+            return confidence;
         }
         public static void HearLocation(Actor listener, Actor speaker, NpcKnownPerson report, long eventId, NpcContentCatalog catalog)
         {

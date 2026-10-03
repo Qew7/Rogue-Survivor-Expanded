@@ -36,6 +36,7 @@ namespace djack.RogueSurvivor.Data
         readonly List<ResidentEntry> m_Entries = new List<ResidentEntry>();
         readonly Dictionary<string, bool> m_Keys = new Dictionary<string, bool>();
         public IList<ResidentEntry> Entries { get { return m_Entries.AsReadOnly(); } }
+        public int EntryCount { get { return m_Entries.Count; } }
         public ResidentRecord(Actor actor)
         {
             Identity = actor.PersonalityIdentity;

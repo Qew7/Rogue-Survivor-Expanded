@@ -31,6 +31,8 @@ invalid registration/payloads and private audiences. See
 cause, while `npc/knowledge-empty-caches`, `npc/resource-item-need`,
 `npc/report-prose` and `factions/social-group-nested-succession` cover the
 related review boundaries with real perception, reactions, speech and death.
+`npc/records-live-cache` checks archive refresh during a live session;
+`npc/operator-archive-text` checks registered plan wording.
 `npc/ask-location-unknown-place`, `npc/protection-missing-faction`,
 `npc/planner-barter-place-limit` and `npc/group-plan-participant-exit` cover
 unknown map data, bounded planner locations and shared-goal lifecycle.
@@ -38,6 +40,10 @@ unknown map data, bounded planner locations and shared-goal lifecycle.
 `npc/overheard-rumor` cover the talk command, Y/N consequences, audio range,
 walls, rumor learning and archive-only heard-speech search. The first also
 checks persistent promises; `world/talk-keybinding-migration` checks old keys.
+`npc/rumor-third-listener` checks that a hearer cannot be addressed the same
+rumor later, while `npc/perception-current-sensor` checks fresh and stale
+observations. `npc/service-open-agreements` checks the active-service guard and
+restored history.
 `npc/all-rumor-identities` checks the name/faction rule against every registered
 reportable event. `npc/supply-loss-rumor`, `npc/aid-trade-rumor`,
 `npc/barter-rumor`, `npc/base-loss-rumor`, `npc/raid-rumor` and

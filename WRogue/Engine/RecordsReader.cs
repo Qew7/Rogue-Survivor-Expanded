@@ -10,17 +10,41 @@ namespace djack.RogueSurvivor.Engine
     sealed class RecordsSave
     {
         public readonly string Path;
-        public readonly int Turn;
+        readonly int m_SavedTurn;
+        readonly Session m_LiveSession;
+        public int Turn { get { return m_LiveSession == null ? m_SavedTurn : m_LiveSession.WorldTime.TurnCounter; } }
         public readonly ResidentRecords Records;
+        internal readonly Dictionary<ResidentEntry, string> Display = new Dictionary<ResidentEntry, string>();
+        internal readonly Dictionary<ResidentEntry, string> Context = new Dictionary<ResidentEntry, string>();
+        internal Dictionary<long, ResidentEntry> Causes;
+        int m_CachedTurn = -1, m_CachedResidents = -1, m_CachedEntries = -1;
+        internal void Prepare()
+        {
+            int entries = 0;
+            foreach (ResidentRecord resident in Records.Residents) entries += resident.EntryCount;
+            if (Causes != null && m_CachedTurn == Turn && m_CachedResidents == Records.Residents.Count && m_CachedEntries == entries) return;
+            Display.Clear(); Context.Clear();
+            Causes = RecordsReader.CauseIndex(this);
+            foreach (ResidentRecord resident in Records.Residents)
+                foreach (ResidentEntry entry in resident.Entries)
+                {
+                    if (entry.Turn > Turn) continue;
+                    Display.Add(entry, RecordsReader.DisplayText(entry));
+                    Context.Add(entry, RecordsReader.CauseContext(entry, Causes));
+                }
+            m_CachedTurn = Turn; m_CachedResidents = Records.Residents.Count; m_CachedEntries = entries;
+            m_Profiles = null;
+        }
         List<RecordsProfile> m_Profiles;
         public IList<RecordsProfile> Profiles { get {
+            Prepare();
             if (m_Profiles == null) { m_Profiles = new List<RecordsProfile>();
                 foreach (ResidentRecord resident in Records.Residents) m_Profiles.Add(new RecordsProfile(resident, Turn)); }
             return m_Profiles; } }
         public RecordsSave(string path, Session session)
-        { Path = path; Turn = session.WorldTime.TurnCounter; Records = session.ResidentRecords; }
+        { Path = path; m_LiveSession = session; Records = session.ResidentRecords; }
         public RecordsSave(string path, int turn, ResidentRecords records)
-        { Path = path; Turn = turn; Records = records; }
+        { Path = path; m_SavedTurn = turn; Records = records; }
     }
 
     static partial class RecordsReader
@@ -51,15 +75,14 @@ namespace djack.RogueSurvivor.Engine
             return saves;
         }
 
-        static bool EntryMatches(ResidentEntry entry, string search, RecordsEventFilter filter,
-            Dictionary<long, ResidentEntry> causes)
+        static bool EntryMatches(RecordsSave save, ResidentEntry entry, string search, RecordsEventFilter filter)
         {
             if (filter != RecordsEventFilter.All &&
                 !NpcRecordDescriptions.Matches(entry, (NpcRecordCategory)(1 << ((int)filter - 1)))) return false;
             if (String.IsNullOrEmpty(search) || entry.Text.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0 ||
                 (!String.IsNullOrEmpty(entry.StoryId) && entry.StoryId.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0) ||
-                DisplayText(entry).IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0) return true;
-            string context = CauseContext(entry, causes);
+                save.Display[entry].IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0) return true;
+            string context = save.Context[entry];
             return context != null && context.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
@@ -81,14 +104,14 @@ namespace djack.RogueSurvivor.Engine
         {
             List<KeyValuePair<ResidentRecord, ResidentEntry>> entries =
                 new List<KeyValuePair<ResidentRecord, ResidentEntry>>();
-            Dictionary<long, ResidentEntry> causes = CauseIndex(save);
+            save.Prepare();
             IEnumerable<ResidentRecord> people = selected == null
                 ? (IEnumerable<ResidentRecord>)(query == null ? new List<ResidentRecord>(save.Records.Residents) :
                     query.Select(save).ConvertAll(p => p.Resident)) : new[] { selected };
             foreach (ResidentRecord resident in people)
                 foreach (ResidentEntry entry in resident.Entries)
                     if (entry.Turn <= save.Turn && !SelfEncounter(resident, entry) &&
-                        EntryMatches(entry, search, filter, causes))
+                        EntryMatches(save, entry, search, filter))
                         entries.Add(new KeyValuePair<ResidentRecord, ResidentEntry>(resident, entry));
             entries.Sort((a, b) => {
                 int turn = a.Value.Turn.CompareTo(b.Value.Turn);
@@ -102,8 +125,8 @@ namespace djack.RogueSurvivor.Engine
             foreach (KeyValuePair<ResidentRecord, ResidentEntry> entry in entries)
             {
                 string line = new WorldTime(entry.Value.Turn) + " | " + entry.Key.Name +
-                    " | " + DisplayText(entry.Value);
-                string context = CauseContext(entry.Value, causes);
+                    " | " + save.Display[entry.Value];
+                string context = save.Context[entry.Value];
                 if (context != null) line += " | " + context;
                 const string indent = "    ";
                 bool continuation = false;
@@ -130,7 +153,7 @@ namespace djack.RogueSurvivor.Engine
                     entry.Kind.StartsWith("met_", StringComparison.Ordinal));
         }
 
-        static string DisplayText(ResidentEntry entry)
+        internal static string DisplayText(ResidentEntry entry)
         {
             string text = entry.Text;
             if (text == null) return "";

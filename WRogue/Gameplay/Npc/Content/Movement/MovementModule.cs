@@ -10,8 +10,10 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public void Register(NpcCatalogBuilder catalog)
         {
             catalog.Perception(NpcPerceptionKind.Surroundings, PerceiveSurroundings);
-            catalog.Operator(new NpcOperatorDefinition("travel", NpcPlanAction.Travel, Travel));
-            catalog.Operator(new NpcOperatorDefinition("retreat", NpcPlanAction.Retreat, Retreat));
+            catalog.Operator(new NpcOperatorDefinition("travel", NpcPlanAction.Travel, Travel,
+                archiveText: step => ResidentRecords.TravelText(step.Place)));
+            catalog.Operator(new NpcOperatorDefinition("retreat", NpcPlanAction.Retreat, Retreat,
+                archiveText: step => "retreat"));
         }
         static ActorAction Wrap(NpcExecutionContext context, ActorAction movement)
         {

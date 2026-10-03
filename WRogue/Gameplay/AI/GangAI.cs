@@ -75,7 +75,7 @@ namespace djack.RogueSurvivor.Gameplay.AI
         {
             HashSet<Point> FOV = m_LOSSensor.FOV;
             List<Percept> mapPercepts = FilterSameMap(game, percepts);
-            List<Actor> intentVisible = PrepareNpcIntents(game, mapPercepts);
+            List<Actor> intentVisible = PrepareNpcIntents(game, mapPercepts, m_LOSSensor.FOV);
 
             // alpha10
             // don't run by default.

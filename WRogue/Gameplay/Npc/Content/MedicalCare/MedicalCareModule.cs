@@ -46,7 +46,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             foreach (NpcKnownPerson person in people)
             {
                 if (person.Id == self.Id || person.Dead || person.Hostile) continue;
-                if (owner.Personality.HasServiceAgreements && owner.Personality.ServiceAgreements.Exists(a =>
+                if (owner.Personality.HasOpenServiceAgreements && owner.Personality.ServiceAgreements.Exists(a =>
                     a.Provider == owner.PersonalityIdentity && a.Patient == person.Id && a.Status == NpcServiceStatus.Accepted)) continue;
                 if ((person.MedicalNeed > 0 || context.Pending(NpcGoalValue.MedicalCare, person.Id)) && turn - person.MedicalTurn <= 60)
                     offers.Add(person, NpcGoalValue.MedicalCare, context.Catalog.Capability("medical_aid"),
@@ -58,12 +58,12 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             catalog.Perception(NpcPerceptionKind.Items, PerceiveItems);
             catalog.Perception(NpcPerceptionKind.Person, c => NpcMedicalObservation.Perceive(c.Game, c.Owner, c.Person, c.Owner.Personality.Knowledge.Person(c.Person.PersonalityIdentity), c.Turn));
             RegisterEvents(catalog);
-            catalog.Operator(new NpcOperatorDefinition("medicine.ask", NpcPlanAction.AskMedicine, c => NpcMedicineActions.Ask(new NpcActionContext(c))));
-            catalog.Operator(new NpcOperatorDefinition("medicine.give", NpcPlanAction.GiveMedicine, c => NpcMedicineActions.Give(new NpcActionContext(c))));
-            catalog.Operator(new NpcOperatorDefinition("medicine.treat", NpcPlanAction.TreatPerson, c => NpcMedicineActions.Treat(new NpcActionContext(c))));
-            catalog.Operator(new NpcOperatorDefinition("medicine.trade", NpcPlanAction.BarterMedicine, c => new ActionNpcMedicineTrade(c.Owner, c.Game, c.Goal, c.Step, c.Target)));
-            catalog.Operator(new NpcOperatorDefinition("medicine.take", NpcPlanAction.PickupMedicine, c => NpcMedicineActions.Take(new NpcActionContext(c)), "medicine", NpcContentActions.MedicineUnavailable));
-            catalog.Operator(new NpcOperatorDefinition("medicine.use", NpcPlanAction.UseMedicine, c => NpcMedicineActions.Use(new NpcActionContext(c))));
+            catalog.Operator(new NpcOperatorDefinition("medicine.ask", NpcPlanAction.AskMedicine, c => NpcMedicineActions.Ask(new NpcActionContext(c)), archiveText: step => "ask for medicine"));
+            catalog.Operator(new NpcOperatorDefinition("medicine.give", NpcPlanAction.GiveMedicine, c => NpcMedicineActions.Give(new NpcActionContext(c)), archiveText: step => "give medicine"));
+            catalog.Operator(new NpcOperatorDefinition("medicine.treat", NpcPlanAction.TreatPerson, c => NpcMedicineActions.Treat(new NpcActionContext(c)), archiveText: step => "treat someone"));
+            catalog.Operator(new NpcOperatorDefinition("medicine.trade", NpcPlanAction.BarterMedicine, c => new ActionNpcMedicineTrade(c.Owner, c.Game, c.Goal, c.Step, c.Target), archiveText: step => "trade for medicine"));
+            catalog.Operator(new NpcOperatorDefinition("medicine.take", NpcPlanAction.PickupMedicine, c => NpcMedicineActions.Take(new NpcActionContext(c)), "medicine", NpcContentActions.MedicineUnavailable, archiveText: step => "collect medicine"));
+            catalog.Operator(new NpcOperatorDefinition("medicine.use", NpcPlanAction.UseMedicine, c => NpcMedicineActions.Use(new NpcActionContext(c)), archiveText: step => "use medicine"));
             NpcMemoryContent.Received(catalog, "medical_aid", "Received medicine or treatment", "shared_medicine", 8, "protector");
             NpcMemoryContent.Received(catalog, "medical_treatment", "Someone treated my wounds", "treated_person", 8, "protector");
         }

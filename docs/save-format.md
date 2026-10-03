@@ -304,6 +304,11 @@ record's `CauseId` and `SupportingCauses` into up to two readable antecedents.
 Only prior, present archive entries are shown; missing links produce no text.
 The explanation and its searchable words are derived at read time, so this
 change adds no persistent fields or save-format version.
+The viewer keeps prepared display text and cause explanations on its `RecordsSave`
+instance and refreshes them when a live archive gains entries or advances a turn.
+Service agreements retain their existing saved status and history. The quick
+indicator for an offered or accepted agreement is transient and rebuilt on first
+access after loading; it adds no saved field.
 Resident snapshots retain stable group identity alongside the current leader
 label. Searching a story tag links its independent participants without loading
 the world.

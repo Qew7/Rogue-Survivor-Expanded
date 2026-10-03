@@ -101,14 +101,21 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             int turn = speaker.Location.Map.LocalTime.TurnCounter;
             NpcFact chosen = null;
             foreach (NpcFact fact in speaker.Personality.Knowledge.Facts)
-                if (CanTell(game, speaker, fact) && fact.Place.Map != null && fact.Confidence >= 40 && fact.Hops < 3 &&
-                    turn - fact.EventTurn <= 2 * WorldTime.TURNS_PER_DAY &&
-                    !speaker.Personality.Knowledge.WasTold(fact.EventId, listener.PersonalityIdentity) &&
-                    (listener.Personality == null || !listener.Personality.Knowledge.Facts.Exists(known =>
-                        known.EventId == fact.EventId && known.Kind == fact.Kind)) &&
+                if (EligibleFact(game, speaker, fact, turn) && EligibleListener(speaker, listener, fact) &&
                     (chosen == null || fact.EventTurn > chosen.EventTurn)) chosen = fact;
             return chosen;
         }
+
+        public static bool EligibleFact(RogueGame game, Actor speaker, NpcFact fact, int turn)
+        { return fact != null && fact.Place.Map != null && fact.Confidence >= 40 && fact.Hops < 3 &&
+            turn - fact.EventTurn <= 2 * WorldTime.TURNS_PER_DAY && CanTell(game, speaker, fact); }
+
+        public static bool EligibleListener(Actor speaker, Actor listener, NpcFact fact)
+        { return listener != null && listener != speaker && listener.PersonalityIdentity != fact.SourceId &&
+            !speaker.Personality.Knowledge.WasTold(fact.EventId, listener.PersonalityIdentity) &&
+            (listener.Personality == null || !listener.Personality.Knowledge.Facts.Exists(known =>
+                known.EventId == fact.EventId && known.Kind == fact.Kind &&
+                known.Confidence >= NpcKnowledgeSystem.ReportConfidence(listener, speaker, fact))); }
 
         public static void ShareRumor(RogueGame game, Actor speaker, Actor listener, NpcFact fact, bool free)
         {
@@ -131,6 +138,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                     hearer.Model.Abilities.IsUndead || game.Rules.StdDistance(hearer.Location.Position, speaker.Location.Position) > hearer.AudioRange) continue;
                 if (hearer.Personality == null) hearer.Personality = new PersonalityState();
                 NpcKnowledgeSystem.Hear(game, hearer, speaker, fact);
+                speaker.Personality.Knowledge.Told(fact.EventId, hearer.PersonalityIdentity,
+                    speaker.Location.Map.LocalTime.TurnCounter);
             }
             int turn = speaker.Location.Map.LocalTime.TurnCounter;
             speaker.Personality.Knowledge.Told(fact.EventId, listener.PersonalityIdentity, turn);

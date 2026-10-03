@@ -55,8 +55,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         void RegisterContent(NpcCatalogBuilder catalog)
         {
             RegisterEvents(catalog);
-            catalog.Operator(new NpcOperatorDefinition("boundary.warn", NpcPlanAction.Warn, c => NpcContactActions.Warn(new NpcActionContext(c))));
-            catalog.Operator(new NpcOperatorDefinition("restitution.demand", NpcPlanAction.DemandRestitution, c => new ActionNpcRestitutionDemand(c.Owner, c.Game, c.Goal, c.Step, c.Target)));
+            catalog.Operator(new NpcOperatorDefinition("boundary.warn", NpcPlanAction.Warn, c => NpcContactActions.Warn(new NpcActionContext(c)), archiveText: step => "warn someone"));
+            catalog.Operator(new NpcOperatorDefinition("restitution.demand", NpcPlanAction.DemandRestitution, c => new ActionNpcRestitutionDemand(c.Owner, c.Game, c.Goal, c.Step, c.Target), archiveText: step => "demand restitution"));
             NpcMemoryContent.Received(catalog, "boundary_accepted", "Someone accepted a boundary", "boundary_accepted", 4, null);
             NpcMemoryContent.Received(catalog, "boundary_defied", "Someone rejected a boundary", "boundary_defied", -8, "mistrustful");
             NpcMemoryContent.Received(catalog, "restitution", "Someone replaced lost supplies", "restitution_given", 10, null);

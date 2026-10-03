@@ -17,7 +17,6 @@ static class ParticipantRumorWordingScenario
             Actor witness = NpcIntentSupport.Actor(world, "witness", 1, 2);
             Actor sleeper = NpcIntentSupport.Actor(world, "sleeper", 0, 1);
             sleeper.IsSleeping = true;
-            Actor listener = NpcIntentSupport.Actor(world, "listener", 3, 1);
             Actor player = NpcIntentSupport.Player(world, 4, 1);
             PersonalitySystem.Report(world.Game, new SignificantEvent("shared_food", actor, recipient,
                 world.Map, actor.Location.Position, 0));
@@ -31,11 +30,13 @@ static class ParticipantRumorWordingScenario
             Check.Equal(false, sleeper.Personality.Knowledge.Facts.Exists(f => f.Kind == "shared_food"),
                 "sleeping bystander does not witness the action");
 
+            Actor listener = NpcIntentSupport.Actor(world, "listener", 3, 1);
             Check.Equal(true, world.Try(new ActionNpcTell(actor, world.Game, listener, participantFact)),
                 "participant tells the event");
             Check.Equal(true, Heard(player, "I was involved when", participantFact.EventId),
                 "participant does not claim to be a witness of their own action");
-            Check.Equal(true, world.Try(new ActionNpcTell(witness, world.Game, listener, witnessFact)),
+            Actor second = NpcIntentSupport.Actor(world, "second listener", 0, 2);
+            Check.Equal(true, world.Try(new ActionNpcTell(witness, world.Game, second, witnessFact)),
                 "witness tells the same event");
             Check.Equal(true, Heard(player, "I saw that", witnessFact.EventId),
                 "actual witness still speaks as a witness");

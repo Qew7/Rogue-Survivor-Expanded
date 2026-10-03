@@ -53,7 +53,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         {
             catalog.Perception(NpcPerceptionKind.Surroundings, PerceiveSurroundings);
             RegisterEvents(catalog);
-            catalog.Operator(new NpcOperatorDefinition("group.report_delivery", NpcPlanAction.ReportDelivery, c => NpcGroupSupplyActions.Report(new NpcActionContext(c))));
+            catalog.Operator(new NpcOperatorDefinition("group.report_delivery", NpcPlanAction.ReportDelivery, c => NpcGroupSupplyActions.Report(new NpcActionContext(c)), archiveText: step => "report the delivery"));
             catalog.Memory(new MemoryDefinition("completed_group_delivery", "Completed a group supply mission", 2, 5,
                 new[] { new MemoryTrigger("supplies_delivered", (a, e) => a == e.Subject) },
                 new MemoryOutcome(null, "selfless", null), new MemoryOutcome(null, null, Skills.IDs.LEADERSHIP))

@@ -29,12 +29,14 @@ namespace djack.RogueSurvivor.Gameplay.AI
             foreach (NpcFact fact in knowledge.Facts)
             {
                 if (fact.Kind == "missing_companion" || (fact.SubjectId == Guid.Empty && fact.Kind != "food_cache" && fact.Kind != "medicine_cache" && fact.Kind != "raid")) continue;
+                if (!NpcConversation.EligibleFact(game, m_Actor, fact, turn)) continue;
                 foreach (Actor person in visible)
                 {
-                    if (person == m_Actor || person.PersonalityIdentity == fact.SourceId) continue;
+                    if (!NpcConversation.EligibleListener(m_Actor, person, fact)) continue;
                     RelationshipRecord opinion = m_Actor.Personality.Person(person.PersonalityIdentity);
                     if (opinion != null && (opinion.Trust < opinion.Fear || opinion.Feeling < -20)) continue;
-                    var action = new ActionNpcTell(m_Actor, game, person, fact); if (action.IsLegal()) return action;
+                    if (ActionNpcTell.CanAddress(game, m_Actor, person, fact))
+                        return new ActionNpcTell(m_Actor, game, person, fact);
                 }
             }
             return null;

@@ -66,6 +66,7 @@ namespace djack.RogueSurvivor.Data
         List<NpcAttachment> m_Attachments;
         [System.Runtime.Serialization.OptionalField] List<NpcSupplyPermission> m_Permissions;
         [System.Runtime.Serialization.OptionalField] List<NpcServiceAgreement> m_ServiceAgreements;
+        [NonSerialized] bool? m_HasOpenServiceAgreements;
         [System.Runtime.Serialization.OptionalField] Guid m_KnownSupplyRuleGroup;
         [System.Runtime.Serialization.OptionalField] int m_KnownSupplyRule;
         [System.Runtime.Serialization.OptionalField] long m_KnownSupplyRuleEvent;
@@ -80,6 +81,18 @@ namespace djack.RogueSurvivor.Data
         public List<NpcSupplyPermission> Permissions { get { return m_Permissions ?? (m_Permissions = new List<NpcSupplyPermission>()); } }
         public List<NpcServiceAgreement> ServiceAgreements { get { return m_ServiceAgreements ?? (m_ServiceAgreements = new List<NpcServiceAgreement>()); } }
         public bool HasServiceAgreements { get { return m_ServiceAgreements != null && m_ServiceAgreements.Count > 0; } }
+        public bool HasOpenServiceAgreements
+        {
+            get
+            {
+                if (!m_HasOpenServiceAgreements.HasValue)
+                    m_HasOpenServiceAgreements = m_ServiceAgreements != null && m_ServiceAgreements.Exists(a =>
+                        a.Status == NpcServiceStatus.Offered || a.Status == NpcServiceStatus.Accepted);
+                return m_HasOpenServiceAgreements.Value;
+            }
+        }
+        public void SetServiceStatus(NpcServiceAgreement agreement, NpcServiceStatus status)
+        { agreement.Status = status; m_HasOpenServiceAgreements = null; }
         public int KnownSupplyRule(Guid group) { return group == m_KnownSupplyRuleGroup ? m_KnownSupplyRule : 0; }
         public void LearnSupplyRule(Guid group, int rule, long eventId)
         {
@@ -95,7 +108,7 @@ namespace djack.RogueSurvivor.Data
                 if (old < 0) return false;
                 ServiceAgreements.RemoveAt(old);
             }
-            ServiceAgreements.Add(agreement.Copy()); return true;
+            ServiceAgreements.Add(agreement.Copy()); m_HasOpenServiceAgreements = null; return true;
         }
         public void Permit(NpcSupplyPermission permission)
         {

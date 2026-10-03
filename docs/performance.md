@@ -313,6 +313,12 @@ fixed seed and a newly prepared dense map for each timed sample.
 The lightweight arena fixture does not support a repeatable full-world
 generation benchmark yet; that needs a separate startup fixture.
 
+The same 40×40, 31 actor fixture now compares service history checks with
+eight closed agreements per actor. A 10,000-call sample checks every actor;
+Docker/Mono medians on 2026-10-03 were 8.01 ms for scanning the lists and
+2.16 ms for the transient open-agreement indicator. This isolates the guard
+cost; it is not a measurement of a full city turn.
+
 The measurements point first to field-of-view computation inside the sight
 sensor, then to repeated reachability checks for multiple targets. Potential
 next experiments are a map-revision-aware FOV cache and a shared traversal for

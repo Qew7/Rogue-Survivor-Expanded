@@ -102,16 +102,16 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             NpcServiceAgreement agreement = owner.Personality.ServiceAgreements.Find(a => a.Id == source.CauseId);
             if (agreement == null) return;
             if (source.Kind == "shelter_care_accepted")
-            { agreement.Status = NpcServiceStatus.Accepted; agreement.CauseId = source.Id;
+            { owner.Personality.SetServiceStatus(agreement, NpcServiceStatus.Accepted); agreement.CauseId = source.Id;
                 if (owner.PersonalityIdentity == agreement.Provider)
                     foreach (NpcIntent goal in owner.Personality.Intents)
                         if (!goal.Finished && goal.DefinitionId == "medical_aid" && goal.TargetId == agreement.Patient)
                             NpcIntentSystem.Finish(observation.Game.NpcContent, owner, goal, NpcIntentStatus.Abandoned,
                                 "care is promised after the shelter trip");
             }
-            else if (source.Kind == "shelter_care_refused") agreement.Status = NpcServiceStatus.Refused;
+            else if (source.Kind == "shelter_care_refused") owner.Personality.SetServiceStatus(agreement, NpcServiceStatus.Refused);
             else if (source.Kind == "shelter_care_completed")
-            { agreement.Status = NpcServiceStatus.Completed;
+            { owner.Personality.SetServiceStatus(agreement, NpcServiceStatus.Completed);
                 Actor peer = owner == source.Subject ? source.Other : source.Subject;
                 owner.Personality.Opinion(peer.PersonalityIdentity, peer.UnmodifiedName).AdjustSocial(trust: 12, attachment: 5);
             }
@@ -157,8 +157,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         }
         public static void Advance(RogueGame game, Actor owner)
         {
-            Expire(game.NpcContent, owner);
-            if (!owner.Personality.HasServiceAgreements) return;
+            if (!owner.Personality.HasOpenServiceAgreements) return;
             foreach (NpcServiceAgreement agreement in owner.Personality.ServiceAgreements)
             {
                 if (agreement.Status != NpcServiceStatus.Accepted || agreement.Provider != owner.PersonalityIdentity ||
@@ -180,7 +179,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public static void Delivery(RogueGame game, SignificantEvent source)
         {
             if (source.Subject == null || source.Other == null || source.Subject.Personality == null ||
-                !source.Subject.Personality.HasServiceAgreements) return;
+                !source.Subject.Personality.HasOpenServiceAgreements) return;
             NpcServiceAgreement agreement = source.Subject.Personality.ServiceAgreements.Find(a => a.Status == NpcServiceStatus.Accepted &&
                 a.Provider == source.Subject.PersonalityIdentity && a.Patient == source.Other.PersonalityIdentity &&
                 a.Shelter.Map == source.Map && source.Map.GetTileAt(source.Subject.Location.Position).IsInside &&
@@ -193,14 +192,14 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         }
         public static void Expire(NpcContentCatalog catalog, Actor owner)
         {
-            if (owner.Personality == null || !owner.Personality.HasServiceAgreements || owner.IsSleeping || owner.IsDead) return;
+            if (owner.Personality == null || !owner.Personality.HasOpenServiceAgreements || owner.IsSleeping || owner.IsDead) return;
             int turn = owner.Location.Map.LocalTime.TurnCounter;
             foreach (NpcServiceAgreement agreement in owner.Personality.ServiceAgreements)
             {
                 if (turn < agreement.DueTurn) continue;
-                if (agreement.Status == NpcServiceStatus.Offered) { agreement.Status = NpcServiceStatus.Refused; continue; }
+                if (agreement.Status == NpcServiceStatus.Offered) { owner.Personality.SetServiceStatus(agreement, NpcServiceStatus.Refused); continue; }
                 if (agreement.Status != NpcServiceStatus.Accepted) continue;
-                agreement.Status = NpcServiceStatus.Failed;
+                owner.Personality.SetServiceStatus(agreement, NpcServiceStatus.Failed);
                 if (agreement.Patient != owner.PersonalityIdentity) continue;
                 owner.Personality.Opinion(agreement.Provider, agreement.ProviderName).AdjustSocial(trust: -15, grievance: 12);
                 long id = Session.Get.NextPersonalityEventId();

@@ -7,7 +7,7 @@ namespace djack.RogueSurvivor.Engine
     static partial class RecordsReader
     {
         // Resolve only evidence retained in the archive; no world or live NPC state is consulted.
-        static Dictionary<long, ResidentEntry> CauseIndex(RecordsSave save)
+        internal static Dictionary<long, ResidentEntry> CauseIndex(RecordsSave save)
         {
             var index = new Dictionary<long, ResidentEntry>();
             foreach (ResidentRecord resident in save.Records.Residents)
@@ -21,7 +21,7 @@ namespace djack.RogueSurvivor.Engine
             return index;
         }
 
-        static string CauseContext(ResidentEntry entry, Dictionary<long, ResidentEntry> index)
+        internal static string CauseContext(ResidentEntry entry, Dictionary<long, ResidentEntry> index)
         {
             if (entry.CauseId <= 0 && (entry.SupportingCauses == null || entry.SupportingCauses.Length == 0)) return null;
             var ids = new List<long>(3);
