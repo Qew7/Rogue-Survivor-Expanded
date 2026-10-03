@@ -1,3 +1,4 @@
+using System.Linq;
 using djack.RogueSurvivor.Data;
 using djack.RogueSurvivor.Engine;
 using djack.RogueSurvivor.Engine.Actions;
@@ -27,7 +28,10 @@ static class ContestedSuccessionScenario
             Check.Equal(true, rival.SocialGroup != original && ally.SocialGroup == rival.SocialGroup,
                 "dissenters form a separate group with its own identity");
             Check.Equal(true, NpcIntentSupport.HasEvent(supporter, "group_split"), "split is witnessed by the old group");
-            Check.Equal(true, rival.Personality.Memories.Count > 0, "rival retains a memory of the split");
+            Check.Equal(true, rival.Personality.Memories.Any(m => m.Id == "left_after_succession"),
+                "rival retains a memory of the split");
+            Check.Equal(true, ally.Personality.Memories.Any(m => m.Id == "left_after_succession"),
+                "each dissenter retains a memory of leaving");
             NpcFact report = supporter.Personality.Knowledge.Facts.Find(f => f.Kind == "group_split");
             Check.Equal(true, report != null, "witness retains a reportable fact");
             Actor listener = NpcIntentSupport.Actor(world, "listener", 4, 1);

@@ -17,7 +17,7 @@ static class ResourcePermissionScenario
             Actor taker = NpcIntentSupport.Actor(world, "taker", 1, 1, "lawful", "sociable");
             Point at = new Point(1, 2);
             world.Map.AddXpdBase(new XpdBase(owner, new[] { at }));
-            var food = new ItemFood(world.Game.GameItems.CANNED_FOOD) { Quantity = 2 };
+            var food = new ItemFood(world.Game.GameItems.CANNED_FOOD);
             world.Map.DropItemAt(food, at);
             Location place = new Location(world.Map, at);
             PersonalitySystem.Report(world.Game, new SignificantEvent("resource_contested", taker, owner,

@@ -78,9 +78,11 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 { rival = dissenter; rivalScore = value; }
             }
             foreach (Actor dissenter in dissenters) best.RemoveFollower(dissenter);
+            rival.InitializeSocialGroup();
             foreach (Actor dissenter in dissenters) if (dissenter != rival) rival.AddFollower(dissenter);
-            PersonalitySystem.Report(game, new SignificantEvent("group_split", rival, best, rival.Location.Map, rival.Location.Position,
-                rival.Location.Map.LocalTime.TurnCounter));
+            foreach (Actor dissenter in dissenters)
+                PersonalitySystem.Report(game, new SignificantEvent("group_split", dissenter, best,
+                    dissenter.Location.Map, dissenter.Location.Position, dissenter.Location.Map.LocalTime.TurnCounter));
         }
     }
 }

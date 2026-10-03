@@ -81,6 +81,8 @@ namespace djack.RogueSurvivor.Data
         public List<NpcSupplyPermission> Permissions { get { return m_Permissions ?? (m_Permissions = new List<NpcSupplyPermission>()); } }
         public List<NpcServiceAgreement> ServiceAgreements { get { return m_ServiceAgreements ?? (m_ServiceAgreements = new List<NpcServiceAgreement>()); } }
         public bool HasServiceAgreements { get { return m_ServiceAgreements != null && m_ServiceAgreements.Count > 0; } }
+        public bool CanRememberService { get { return m_ServiceAgreements == null || m_ServiceAgreements.Count < 8 ||
+            m_ServiceAgreements.Exists(a => a.Status != NpcServiceStatus.Offered && a.Status != NpcServiceStatus.Accepted); } }
         public bool HasOpenServiceAgreements
         {
             get
@@ -104,7 +106,7 @@ namespace djack.RogueSurvivor.Data
             if (ServiceAgreements.Exists(a => a.Id == agreement.Id)) return false;
             if (ServiceAgreements.Count >= 8)
             {
-                int old = ServiceAgreements.FindIndex(a => a.Status != NpcServiceStatus.Accepted);
+                int old = ServiceAgreements.FindIndex(a => a.Status != NpcServiceStatus.Offered && a.Status != NpcServiceStatus.Accepted);
                 if (old < 0) return false;
                 ServiceAgreements.RemoveAt(old);
             }
@@ -116,14 +118,16 @@ namespace djack.RogueSurvivor.Data
             if (Permissions.Count >= 16) Permissions.RemoveAt(0);
             Permissions.Add(permission);
         }
-        public long UsePermission(Guid grantor, Location place, string resource, int turn)
+        public long UsePermission(Guid grantor, Location place, string resource, int turn, int requestedUnits, out int permittedUnits)
         {
-            if (m_Permissions == null) return 0;
+            permittedUnits = 0;
+            if (m_Permissions == null || requestedUnits <= 0) return 0;
             NpcSupplyPermission permission = m_Permissions.Find(p => p.Grantor == grantor && p.Place == place &&
                 p.Resource == resource && p.ExpiresTurn >= turn && p.Units > 0);
             if (permission == null) return 0;
             long cause = permission.CauseId;
-            permission.Units--;
+            permittedUnits = Math.Min(permission.Units, requestedUnits);
+            permission.Units -= permittedUnits;
             if (permission.Units == 0) m_Permissions.Remove(permission);
             return cause;
         }

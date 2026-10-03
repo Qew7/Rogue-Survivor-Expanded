@@ -42,7 +42,7 @@ namespace djack.RogueSurvivor.Data
                 if (CountFollowers > 0) InitializeSocialGroup();
             }
             return m_SocialGroup; } }
-        void InitializeSocialGroup()
+        internal void InitializeSocialGroup()
         {
             lock (this)
             {

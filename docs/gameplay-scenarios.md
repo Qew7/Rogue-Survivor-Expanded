@@ -51,7 +51,9 @@ reportable event. `npc/supply-loss-rumor`, `npc/aid-trade-rumor`,
 `npc/supply-loss-rumor-save`
 checks the new supply payload across save and load.
 `npc/resource-permission`, `npc/conflicting-testimony`,
+`npc/resource-permission-stack`, `npc/relayed-false-testimony`,
 `npc/group-supply-rule`, `npc/group-supply-trade`, `npc/contested-succession`,
+`npc/lone-succession-split`, `npc/goal-fallback-text`, `npc/service-agreement-capacity`,
 `npc/shelter-care-exchange`, `npc/shelter-care-deadline` and
 `npc/shelter-care-player-reply`
 exercise new social consequences through pickup, speech, trade, death,

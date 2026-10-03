@@ -477,15 +477,17 @@ namespace djack.RogueSurvivor.Engine
         {
             Map map = thief.Location.Map;
             string resource = item is ItemFood ? "food" : item is ItemMedicine ? "medicine" : "item";
+            int permittedUnits = 0;
             long permissionCause = thief.Personality == null || !m_Session.GamePreset.NpcPersonalitiesEnabled ? 0 :
                 thief.Personality.UsePermission(baseClaim.GroupLeader.PersonalityIdentity, new Location(map, position), resource,
-                    map.LocalTime.TurnCounter);
+                    map.LocalTime.TurnCounter, units, out permittedUnits);
             if (permissionCause != 0)
             {
                 Gameplay.Personality.PersonalitySystem.Report(this, new Gameplay.Personality.SignificantEvent("permission_used", thief,
                     baseClaim.GroupLeader, map, position, map.LocalTime.TurnCounter, false, causeId: permissionCause, storyId: storyId)
-                    { Units = units, ModelId = item.Model.ID, Resource = resource });
-                return;
+                    { Units = permittedUnits, ModelId = item.Model.ID, Resource = resource });
+                units -= permittedUnits;
+                if (units == 0) return;
             }
             Gameplay.Personality.PersonalitySystem.Report(this, new Gameplay.Personality.SignificantEvent("base_theft", thief, baseClaim.GroupLeader,
                 map, position, map.LocalTime.TurnCounter, false, causeId: causeId, storyId: storyId) { Units = units, ModelId = item.Model.ID, Resource = item is ItemFood ? "food" : item is ItemMedicine ? "medicine" : "item" });

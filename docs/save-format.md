@@ -202,13 +202,15 @@ succession keeps the original group object for loyal members;
 departing members receive a new group identity and retain their individual
 relationship history.
 
-Personalities optionally save up to sixteen one-pickup permissions: grantor
-identity, map location, resource, expiry turn, remaining pickup count and the
+Personalities optionally save up to sixteen unit-limited permissions: grantor
+identity, map location, resource, expiry turn, remaining unit count and the
 spoken concession event ID. A used, expired or mismatched permission cannot
-authorize another base pickup. Up to eight separate service agreements store
+authorize another base unit. Up to eight separate service agreements store
 provider/patient identities and names, visited shelter location, offer and
 accepted-event causes, deadline, story ID and status. Both participants save
-their own copy. Goals for the shared shelter trip retain their ordinary story,
+their own copy. Active offers and accepted agreements are retained until they
+reach a terminal status; a new offer requires capacity on both sides. Goals for
+the shared shelter trip retain their ordinary story,
 cause and destination fields. No new object points directly to an actor.
 `claimed_permission` and `false_testimony_exposed` are bounded knowledge facts
 with the original theft event ID; retellings preserve source and confidence.

@@ -26,11 +26,14 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 e => (e.Subject ?? "Someone") + " offered medicine in exchange for help reaching shelter from " + (e.Other ?? "someone") + ".",
                 f => f.ReportSubject + " offered " + (f.ReportOther ?? "someone") + " medicine for help reaching shelter")
                 { SelfReportTone = NpcSelfReportTone.Helpful,
+                    CanReply = (provider, recipient) => provider.Personality != null && recipient.Personality != null &&
+                        provider.Personality.CanRememberService && recipient.Personality.CanRememberService,
                     PlayerReply = new NpcPlayerReply("medicine for a shared trip to shelter", "shelter_care_accepted", "shelter_care_refused",
                         "I'll go with you to shelter.", "I won't make that agreement.") });
             catalog.Event(new NpcEventDefinition("shelter_care_accepted", NpcRecordCategory.Help, true,
                 e => (e.Subject ?? "Someone") + " agreed to help " + (e.Other ?? "someone") + " reach shelter in exchange for medicine.",
-                f => f.ReportSubject + " agreed to a shelter trip with " + (f.ReportOther ?? "someone") + " for medicine"));
+                f => f.ReportSubject + " agreed to a shelter trip with " + (f.ReportOther ?? "someone") + " for medicine")
+                { CanReply = (acceptor, provider) => NpcServices.CanAccept(acceptor, provider) });
             catalog.Event(new NpcEventDefinition("shelter_care_refused", NpcRecordCategory.Help, true,
                 e => (e.Subject ?? "Someone") + " declined " + (e.Other ?? "someone") + "'s shelter and medicine agreement.",
                 f => f.ReportSubject + " declined " + (f.ReportOther ?? "someone") + "'s shelter and medicine agreement"));
@@ -67,7 +70,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public static bool TryPrepare(RogueGame game, Actor provider, SignificantEvent request)
         {
             if (request.Kind != "requested_medicine" || request.Other != provider || request.Subject == null ||
-                request.Subject.IsDead || provider.Personality.Reactions.Count >= 4 ||
+                request.Subject.IsDead || request.Subject.Personality == null || provider.Personality.Reactions.Count >= 4 ||
+                !provider.Personality.CanRememberService || !request.Subject.Personality.CanRememberService ||
                 PersonalitySystem.Bias(provider, DecisionKind.Trade) < 15 ||
                 PersonalitySystem.Bias(provider, DecisionKind.Compassion) > 0 ||
                 provider.Personality.ServiceAgreements.Exists(a => a.Patient == request.Subject.PersonalityIdentity &&
@@ -125,6 +129,14 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 (patient.HitPoints < observation.Game.Rules.ActorMaxHPs(patient) ? 20 : -40);
             NpcReplies.Reply(patient, offer.Subject, offer, willingness >= 0 ? "shelter_care_accepted" : "shelter_care_refused",
                 "I'll help you get to shelter.", "I won't make that trip.");
+        }
+        internal static bool CanAccept(Actor patient, Actor provider, long offerId = 0)
+        {
+            if (patient == null || provider == null || patient.Personality == null || provider.Personality == null) return false;
+            return patient.Personality.ServiceAgreements.Exists(a => a.Status == NpcServiceStatus.Offered &&
+                a.Provider == provider.PersonalityIdentity && a.Patient == patient.PersonalityIdentity &&
+                (offerId == 0 || a.Id == offerId) &&
+                provider.Personality.ServiceAgreements.Exists(b => b.Id == a.Id && b.Status == NpcServiceStatus.Offered));
         }
         public static void StartTravel(RogueGame game, SignificantEvent accepted)
         {

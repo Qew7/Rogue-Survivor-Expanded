@@ -56,7 +56,7 @@ namespace djack.RogueSurvivor.Data
         static string GoalText(NpcIntent intent, NpcContentCatalog catalog)
         {
             NpcIntentDefinition definition = catalog.Capability(intent.DefinitionId);
-            return intent.Generated != null ? intent.Generated.Description : definition == null ? intent.DefinitionId : definition.Name;
+            return intent.Generated != null ? intent.Generated.Description : definition == null ? Humanize(intent.DefinitionId) : definition.Name;
         }
 
         static string TraitReason(string reason)

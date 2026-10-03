@@ -277,9 +277,7 @@ namespace djack.RogueSurvivor.Gameplay.AI
             bool canCheckBreak, bool canCheckPush)
         {
             float currentDistance = game.Rules.StdDistance(m_Actor.Location.Position, goal);
-            int threat;
-            bool imStarvingOrCourageous = game.Rules.IsActorStarving(m_Actor) ||
-                NpcCourage.Resolve(game, m_Actor, null, out threat) >= 15;
+            bool? imStarvingOrCourageous = null;
 
             ActorAction bump = BehaviorBumpToward(game, goal,
                 canCheckBreak, canCheckPush,
@@ -294,10 +292,16 @@ namespace djack.RogueSurvivor.Gameplay.AI
                         return float.NaN;
 
                     // avoid stepping on damaging traps, unless starving or courageous.
-                    if (!imStarvingOrCourageous)
+                    int trapsDamage = ComputeTrapsMaxDamageForMe(game, m_Actor.Location.Map, ptA);
+                    if (trapsDamage > 0)
                     {
-                        int trapsDamage = ComputeTrapsMaxDamageForMe(game, m_Actor.Location.Map, ptA);
-                        if (trapsDamage > 0)
+                        if (!imStarvingOrCourageous.HasValue)
+                        {
+                            int threat;
+                            imStarvingOrCourageous = game.Rules.IsActorStarving(m_Actor) ||
+                                NpcCourage.Resolve(game, m_Actor, null, out threat) >= 15;
+                        }
+                        if (!imStarvingOrCourageous.Value)
                         {
                             // if instant death, don't do it.
                             if (trapsDamage >= m_Actor.HitPoints)
@@ -666,9 +670,7 @@ namespace djack.RogueSurvivor.Gameplay.AI
         {
             // prepare data.
             Direction prevDirection = Direction.FromVector(m_Actor.Location.Position.X - m_prevLocation.Position.X, m_Actor.Location.Position.Y - m_prevLocation.Position.Y);
-            int threat;
-            bool imStarvingOrCourageous = game.Rules.IsActorStarving(m_Actor) ||
-                NpcCourage.Resolve(game, m_Actor, null, out threat) >= 15;
+            bool? imStarvingOrCourageous = null;
             bool isIntelligent = m_Actor.Model.Abilities.IsIntelligent;
 
             // eval all adjacent tiles for exploration utility and get the best one.
@@ -702,11 +704,20 @@ namespace djack.RogueSurvivor.Gameplay.AI
                     Point pos = next.Position;
 
                     // intelligent NPC: forbid stepping on deadly traps, unless starving or courageous (desperate).
-                    if (m_Actor.Model.Abilities.IsIntelligent && !imStarvingOrCourageous)
+                    if (m_Actor.Model.Abilities.IsIntelligent)
                     {
                         int trapsDamage = ComputeTrapsMaxDamageForMe(game, map, pos);
                         if (trapsDamage >= m_Actor.HitPoints)
-                            return float.NaN;
+                        {
+                            if (!imStarvingOrCourageous.HasValue)
+                            {
+                                int threat;
+                                imStarvingOrCourageous = game.Rules.IsActorStarving(m_Actor) ||
+                                    NpcCourage.Resolve(game, m_Actor, null, out threat) >= 15;
+                            }
+                            if (!imStarvingOrCourageous.Value)
+                                return float.NaN;
+                        }
                     }
 
                     // Heuristic scoring:

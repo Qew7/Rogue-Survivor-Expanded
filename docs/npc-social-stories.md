@@ -131,18 +131,19 @@ budgets remain. These limits bound reasoning without guaranteeing a plan.
 ## Permissions, testimony, group rules and service exchanges
 
 When a base owner actually yields a disputed resource, the requester receives a
-saved permission for one pickup at that place and for that resource, lasting 180
-turns. A successful pickup consumes it and reports `permission_used` rather than
-`base_theft`; a second pickup, different resource or expired permission uses the
-ordinary theft rules. The spoken concession and actual pickup remain separate
-events, so witnesses can tell either part of the story.
+saved permission for one unit at that place and for that resource, lasting 180
+turns. A pickup reports `permission_used` for permitted units and `base_theft`
+for any excess from the same stack; later pickups, different resources and
+expired permissions use the ordinary theft rules. The spoken concession and
+actual pickup remain separate events, so witnesses can tell either part of the story.
 
 A deceptive thief can claim that the owner allowed a witnessed base pickup.
 The claim refers to the actual theft event and is spoken as a rumor; it never
 changes the physical theft. Listeners discount reports from people they hold a
 grievance against. Someone who directly saw the theft rejects a contrary
 permission claim, records a private `false_testimony_exposed` assessment and
-develops a grievance against its speaker. A listener without direct evidence can provisionally
+develops a grievance against the original claimant, even if someone else relayed
+the claim. A listener without direct evidence can provisionally
 believe the claim and retell it with normal confidence loss. An eyewitness does
 not retell the refuted claim as fact, but can tell others about the
 contradiction; that report can harm the liar's reputation. Duplicate telling
@@ -156,8 +157,9 @@ continue using their last known rule. Members remember changes and approve or
 resent them according to their law, supplies and group biases. Unseen theft does not change
 the group's rule. After succession, followers with serious grievance or low
 trust in the successor can leave together under a rival, giving the new group a
-new identity while loyal followers retain the original one. The split changes
-real follower links and creates memories, relationship changes and rumors.
+new identity while loyal followers retain the original one. Even a lone rival
+forms a group; each departing follower receives a split memory and reportable
+event. The split changes real follower links, relationships and rumors.
 
 A trade-minded medicine holder who knows a visited indoor shelter may answer a
 medicine request with an offer: travel there together, then provide medicine.
@@ -165,7 +167,8 @@ The patient independently accepts or refuses; the player can answer through the
 ordinary talk reply. Acceptance creates saved copies of one agreement and
 separate travel goals. The provider follows a visible patient who falls behind.
 Only an actual medicine gift or treatment after both reach the shelter completes
-the agreement. The provider's ordinary medical aid goal waits until then. An
+the agreement. An offer requires room in both participants' saved agreement
+lists, and acceptance requires both to retain the same offer. The provider's ordinary medical aid goal waits until then. An
 accepted agreement still outstanding at its 180-turn deadline causes a private
 disappointment and grievance; it affects reputation only if the patient later
 tells someone. An offer that was never accepted expires without an accusation.
@@ -189,8 +192,10 @@ status without keeping actor references.
 - Sustained interaction: `npc/emergent-life` executes production AI for 360
   turns, checking resource conservation, legal actions and state budgets.
 - Additional social consequences: `npc/resource-permission`,
-  `npc/conflicting-testimony`, `npc/group-supply-rule`, `npc/group-supply-trade`,
-  `npc/contested-succession`, `npc/shelter-care-exchange`,
+  `npc/resource-permission-stack`, `npc/conflicting-testimony`,
+  `npc/relayed-false-testimony`, `npc/group-supply-rule`, `npc/group-supply-trade`,
+  `npc/contested-succession`, `npc/lone-succession-split`, `npc/shelter-care-exchange`,
+  `npc/service-agreement-capacity`,
   `npc/shelter-care-deadline`, `npc/shelter-care-player-reply` and
   `npc/social-dynamics-save`.
 
