@@ -503,3 +503,17 @@ the current AI intentionally rejects paths that first move no closer to its
 target. None of the 31 actors in this benchmark fixture had enough speed for
 more than one ordinary action per map turn. A FOV cache therefore needs a
 measured hit rate in actual play before its invalidation cost is justified.
+
+## Precomputed FOV rays
+
+On October 5, 2026, six alternating Docker/Mono runs of the crowded NPC-turn
+fixture compared the previous Bresenham trace with precomputed ray geometry.
+The median for eight map turns fell from 107.7 to 102.7 ms; FOV time within
+those turns fell from 30.9 to 29.0 ms. The 40×40 open-arena FOV microbenchmark
+changed from 8.24 to 8.01 ms per 1,000 calls. The improvement is modest and
+run-to-run variation is visible. Transparency is still checked each call, so
+moving objects and doors take effect immediately. The FOV equivalence scenario
+compares the visible cells across door, lighting, and sleeping changes.
+
+Recursive shadowcasting was also prototyped. It changed visibility at corners
+and was slower on the open arena, so it was not kept.

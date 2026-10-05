@@ -37,6 +37,13 @@ static class FieldOfViewEquivalenceScenario
             Check.Equal(true, world.Try(new ActionCloseDoor(observer, world.Game, door)),
                 "door closes in the same turn");
             Compare(world, observer, "closed again");
+            observer.IsSleeping = true;
+            Compare(world, observer, "zero-range sleeping observer");
+            observer.IsSleeping = false;
+            world.Map.Lighting = Lighting.DARKNESS;
+            Compare(world, observer, "darkness changes the cached ray radius");
+            world.Map.Lighting = Lighting.LIT;
+            Compare(world, observer, "restored lighting restores the old radius");
         });
     }
 
