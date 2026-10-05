@@ -17,14 +17,15 @@ RUN find /src/tests /src/benchmarks -name '*.cs' -print0 | xargs -0 mcs -r:Syste
 
 FROM test-build AS test
 RUN MONO_PATH=/src/WRogue/bin/Release mono /src/tests/UnitTests.exe \
-    && ROGUE_PROJECT_ROOT=/src ruby /src/tests/layout.rb
+    && ROGUE_PROJECT_ROOT=/src ruby /src/tests/layout.rb \
+    && ruby /src/benchmarks/test_npc_flamegraph.rb
 
 FROM test-build AS scenarios
 ENV MONO_PATH=/src/WRogue/bin/Release
 ENTRYPOINT ["mono", "/src/tests/UnitTests.exe"]
 
 FROM test-build AS profile
-RUN apt-get update && apt-get install -y --no-install-recommends mono-utils libmono-profiler python3-minimal \
+RUN apt-get update && apt-get install -y --no-install-recommends mono-utils libmono-profiler \
     && rm -rf /var/lib/apt/lists/*
 ENV MONO_PATH=/src/WRogue/bin/Release
 

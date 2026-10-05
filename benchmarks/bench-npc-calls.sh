@@ -20,7 +20,7 @@ test -n "$window"
 docker run --rm --mount "type=bind,source=$profile_dir,target=/profile" \
   --entrypoint sh rogue-survivor-profile -ec \
   'mprof-report --reports=call --traces --maxframes=64 --time="$1" /profile/npc.mlpd > /profile/calls.txt 2> /profile/report-warnings.txt
-   python3 /src/benchmarks/npc_flamegraph.py /profile/calls.txt /profile/flamegraph.svg /profile/flamegraph.folded' \
+   ruby /src/benchmarks/npc_flamegraph.rb /profile/calls.txt /profile/flamegraph.svg /profile/flamegraph.folded' \
   sh "$window"
 awk '/^[[:space:]]*[0-9]+[[:space:]]+[0-9]+[[:space:]]+[0-9]+[[:space:]]/ { print }' \
   "$profile_dir/calls.txt" > "$profile_dir/summary.txt"
