@@ -129,6 +129,15 @@ namespace djack.RogueSurvivor.Engine
 
             // Trigger stuff.
             OnActorEnterTile(actor);
+            if (!actor.IsPlayer && !actor.IsDead && actor.Personality != null &&
+                m_Session.GamePreset.NpcPersonalitiesEnabled && actor.Location == newLocation)
+            {
+                Zone building = Zone.BuildingAt(newLocation);
+                if (building != null && Zone.BuildingAt(oldLocation) != building &&
+                    !actor.Personality.Knowledge.Facts.Exists(f => f.Kind == "building_explored" &&
+                        Zone.BuildingAt(f.Place) == building))
+                    ReportPersonalityEvent("building_explored", actor, null, newLocation.Map, newLocation.Position);
+            }
         }
 
         public void DoMoveActor(Actor actor, Direction direction)

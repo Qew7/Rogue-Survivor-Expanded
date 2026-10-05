@@ -13,8 +13,8 @@ fi
 baseline_dir=$(mktemp -d "${TMPDIR:-/tmp}/rogue-post-bench.XXXXXX")
 trap 'rm -rf "$baseline_dir"' EXIT
 git -C "$repo" archive "$baseline" | LC_ALL=C tar -x -C "$baseline_dir"
-cp "$repo/tests/Program.cs" "$baseline_dir/tests/Program.cs"
-cp "$repo/tests/benchmarks/PostBaselineBenchmarks.cs" "$baseline_dir/tests/benchmarks/"
+cp "$repo/benchmarks/PostBaselineBenchmarks.cs" "$baseline_dir/tests/benchmarks/"
+LC_ALL=C perl -0pi -e 's/ScenarioRunner\.RegisterAll\(\);/ScenarioRunner.RegisterAll();\n        if (args.Length == 1 \&\& args[0] == "--bench-post-0d243e") { PostBaselineBenchmarks.Run(); return 0; }/' "$baseline_dir/tests/Program.cs"
 
 docker build --target scenarios --quiet -t rogue-post-bench-baseline "$baseline_dir"
 docker build --target scenarios --quiet -t rogue-post-bench-current "$repo"

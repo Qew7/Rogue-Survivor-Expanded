@@ -1,5 +1,8 @@
 # Performance measurements
 
+Benchmark sources, scripts, and the list of project skills are in
+[`benchmarks/`](../benchmarks/README.md).
+
 Run the headless benchmarks with:
 
 ```sh
@@ -17,7 +20,7 @@ the maximum 75 configured civilians (plus any building residents) and 200
 shambling zombies, with fresh fixture runs for warmup and
 five timed samples. It reports the median run's map upkeep, actor dispatch,
 AI sensing, field-of-view computation, decision, intent preparation, route
-checks, legality and action execution; the named subphases are inclusive and
+checks, zone lookup, legality and action execution; the named subphases are inclusive and
 some can overlap. The top action types rank
 decision time by the action returned. World setup, rendering, other districts
 and background simulation are outside the timed interval. These timings show
@@ -41,9 +44,48 @@ These general benchmarks are diagnostic. The save/load budget below is an
 automated pass/fail gate. Compare measurements on the same
 machine, Docker configuration, and runtime.
 
+## NPC method call profile
+
+Run `sh benchmarks/bench-npc-calls.sh` to record the same seeded 100×100 fixture for
+one eight-turn run. The script prints the busiest methods and creates
+`summary.txt` (methods sorted by inclusive time), `calls.txt` (the same
+times plus caller chains), `flamegraph.svg` (a visual call tree), and
+`flamegraph.folded` (text stacks and attributed microseconds) in the temporary directory shown at the end. Pass an
+output directory as the first argument to keep the text at a known path. Set
+`PROFILE_KEEP_RAW=1` to retain the large `npc.mlpd` file for another
+`mprof-report` query; otherwise the script removes it after generating text.
+
+The `Total(ms)` column includes callees; `Self(ms)` excludes them. `Calls` and
+caller chains come from Mono's method enter/leave events. The script selects
+the measured turn loop by its process time and checks that `RunTurns` appears
+once in the report. The window has a 0.1-second margin around the loop, so a
+few setup/teardown calls can remain. Methods inlined by Mono and native runtime
+work do not have separate managed call entries. When a method has several
+callers, the report gives its combined time, while its chains show call counts
+per caller rather than time per caller. The flamegraph divides each method's
+self time among its caller chains in proportion to their call counts. Its
+widths are estimates; hover over a block to see the chain and attributed time.
+
+**Do not use the profiled milliseconds as game speed.** Method entry/exit
+instrumentation makes millions of tiny calls much slower and can change their
+relative costs. Use this report to find call paths and counts; use
+`--bench-npc-turn` for the unprofiled elapsed time. See the [Mono log profiler
+documentation](https://www.mono-project.com/docs/debug+profile/profile/profiler/)
+for the meaning and overhead of its call report.
+
+On October 5, 2026, four alternating runs of the same 100×100 fixture before
+and after a zone row index gave medians of **16.4 → 2.7 ms** for 6,406 zone
+lookups over eight map turns (84% less), and **112.3 → 96.3 ms** for the full
+eight turns (14% less). Each run itself was the median of five fresh fixture
+samples. The index narrows the zone scan by map row, preserves overlapping
+zones and their order, and rebuilds after zone additions, removals, bounds
+changes, or deserialization. It is transient and does not change the save
+format. These numbers are for one surface; runtime on other map layouts and
+resident counts may differ.
+
 ## Changes after `0d243e6`
 
-Run the focused comparison with `bash tests/bench-post-0d243e.sh`. The script
+Run the focused comparison with `bash benchmarks/bench-post-0d243e.sh`. The script
 builds `0d243e6820d6b04c02df279450fb68324712fb40` and the current tree
 with the same `PostBaselineBenchmarks` source, then runs each version six times
 in alternating order. Each reported run is the median of five timed batches.

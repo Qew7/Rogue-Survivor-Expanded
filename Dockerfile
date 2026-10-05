@@ -11,7 +11,8 @@ RUN chmod +x /usr/local/bin/csc && ruby /build.rb \
 
 FROM build AS test-build
 COPY tests/ /src/tests/
-RUN find /src/tests -name '*.cs' -print0 | xargs -0 mcs -r:System.Drawing -r:System.Windows.Forms \
+COPY benchmarks/ /src/benchmarks/
+RUN find /src/tests /src/benchmarks -name '*.cs' -print0 | xargs -0 mcs -r:System.Drawing -r:System.Windows.Forms \
     -r:/src/WRogue/bin/Release/RogueSurvivor.exe -out:/src/tests/UnitTests.exe
 
 FROM test-build AS test
@@ -21,6 +22,11 @@ RUN MONO_PATH=/src/WRogue/bin/Release mono /src/tests/UnitTests.exe \
 FROM test-build AS scenarios
 ENV MONO_PATH=/src/WRogue/bin/Release
 ENTRYPOINT ["mono", "/src/tests/UnitTests.exe"]
+
+FROM test-build AS profile
+RUN apt-get update && apt-get install -y --no-install-recommends mono-utils libmono-profiler python3-minimal \
+    && rm -rf /var/lib/apt/lists/*
+ENV MONO_PATH=/src/WRogue/bin/Release
 
 FROM debian:bookworm-slim
 RUN apt-get update && apt-get install -y --no-install-recommends \

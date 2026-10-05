@@ -166,6 +166,12 @@ Rumors name the event's district and, when its position falls inside a typed
 building zone, the grocery, gun shop, home, park or other known place. The J
 journal and Read Records color these place labels by type. A report from a
 street or unclassified zone names only the district.
+An NPC's first entry into a known building can become an exploration report.
+The explorer remembers it as a participant; NPCs who see the entry, including
+nearby group members, remember it as witnesses and can pass it on as a rumor.
+Reentering the same building does not create another report while the explorer
+still retains that fact. Explorers can recount their discovery without a
+particular self-report trait.
 For a witnessed event, the first reporter names an acquaintance but describes
 an unfamiliar visible participant by faction (for example, "a biker"). Later
 reporters repeat that description even if they have since learned the person's

@@ -22,6 +22,7 @@ static partial class NpcTurnBenchmarks
         BindingFlags.Instance | BindingFlags.NonPublic, null, new[] { typeof(Map), SimFlags }, null);
     static readonly object FullTurn = Enum.Parse(SimFlags, "NOT_SIMULATING");
     static Role currentRole;
+    static Sample currentSample;
 
     sealed class Role
     {
@@ -47,8 +48,8 @@ static partial class NpcTurnBenchmarks
 
     sealed class Sample
     {
-        public long Total, MapTurn, Dispatch;
-        public int TurnsDone, InitialCivilians, InitialZombies;
+        public long Total, MapTurn, Dispatch, ZoneLookup;
+        public int TurnsDone, InitialCivilians, InitialZombies, ZoneCalls;
         public readonly Role Civilians = new Role();
         public readonly Role Zombies = new Role();
     }
@@ -58,6 +59,7 @@ static partial class NpcTurnBenchmarks
         LOSSensor.ProfileFov = RecordFov;
         BaseAI.ProfileRouteCheck = RecordRoute;
         CivilianAI.ProfileIntentPrep = RecordIntent;
+        Map.ProfileZoneLookup = RecordZone;
         try
         {
             RunOne(); // JIT and model warmup, excluded from the samples.
@@ -75,6 +77,7 @@ static partial class NpcTurnBenchmarks
                 median.Civilians.Actions, median.Zombies.Actions);
             Print("map upkeep", median.MapTurn, median.Total, median.TurnsDone);
             Print("actor dispatch", median.Dispatch, median.Total, median.Civilians.Actions + median.Zombies.Actions);
+            Print("zone lookup", median.ZoneLookup, median.Total, median.ZoneCalls);
             PrintRole("civilian", median.Civilians, median.Total);
             PrintRole("zombie", median.Zombies, median.Total);
             Console.WriteLine("Subphases are inclusive and can overlap: FOV is inside sense; route and intent preparation are inside decide.");
@@ -83,15 +86,30 @@ static partial class NpcTurnBenchmarks
         finally
         {
             currentRole = null;
+            currentSample = null;
             LOSSensor.ProfileFov = null;
             BaseAI.ProfileRouteCheck = null;
             CivilianAI.ProfileIntentPrep = null;
+            Map.ProfileZoneLookup = null;
         }
+    }
+
+    public static void Profile()
+    {
+        Sample sample = RunOne(true);
+        Console.WriteLine("PROFILE_TURNS {0} civilian and {1} zombie actions in {2} map turns",
+            sample.Civilians.Actions, sample.Zombies.Actions, sample.TurnsDone);
     }
 
     static void RecordFov(long ticks) { currentRole.Fov += ticks; currentRole.FovCalls++; }
     static void RecordRoute(long ticks) { currentRole.Route += ticks; currentRole.RouteCalls++; }
     static void RecordIntent(long ticks) { currentRole.Intent += ticks; currentRole.IntentCalls++; }
+    static void RecordZone(long ticks)
+    {
+        if (currentSample == null) return;
+        currentSample.ZoneLookup += ticks;
+        currentSample.ZoneCalls++;
+    }
 
     static double Ms(long ticks) { return ticks * 1000.0 / Stopwatch.Frequency; }
 

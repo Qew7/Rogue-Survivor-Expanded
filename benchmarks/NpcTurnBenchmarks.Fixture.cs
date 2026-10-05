@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using djack.RogueSurvivor.Data;
 using djack.RogueSurvivor.Engine;
 using djack.RogueSurvivor.Engine.AI;
@@ -12,7 +13,7 @@ using djack.RogueSurvivor.Gameplay.Generators;
 
 static partial class NpcTurnBenchmarks
 {
-    static Sample RunOne()
+    static Sample RunOne(bool profile = false)
     {
         ScenarioWorld world = TownScenarioFactory.Create(7360, false);
         Session.Get.GamePreset = GamePreset.BuiltIn(GameMode.GM_STANDARD);
@@ -67,7 +68,27 @@ static partial class NpcTurnBenchmarks
 
         GC.Collect();
         GC.WaitForPendingFinalizers();
+        double profileStart = profile ? ProcessAgeSeconds() : 0;
         long runStart = Stopwatch.GetTimestamp();
+        currentSample = sample;
+        try { RunTurns(world, map, player, sample); }
+        finally { currentSample = null; }
+        sample.Total = Stopwatch.GetTimestamp() - runStart;
+        if (profile)
+            Console.WriteLine("PROFILE_WINDOW {0:F3} {1:F3}", profileStart, ProcessAgeSeconds());
+        if (map.LocalTime.TurnCounter != Turns || sample.Civilians.Actions == 0 || sample.Zombies.Actions == 0)
+            throw new InvalidOperationException("NPC fixture did not advance both actor types");
+        return sample;
+    }
+
+    static double ProcessAgeSeconds()
+    {
+        return (DateTime.UtcNow - Process.GetCurrentProcess().StartTime.ToUniversalTime()).TotalSeconds;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void RunTurns(ScenarioWorld world, Map map, Actor player, Sample sample)
+    {
         for (int turn = 0; turn < Turns; turn++)
         {
             long start = Stopwatch.GetTimestamp();
@@ -100,9 +121,5 @@ static partial class NpcTurnBenchmarks
                 if (step == 4999) throw new InvalidOperationException("NPC action loop did not finish");
             }
         }
-        sample.Total = Stopwatch.GetTimestamp() - runStart;
-        if (map.LocalTime.TurnCounter != Turns || sample.Civilians.Actions == 0 || sample.Zombies.Actions == 0)
-            throw new InvalidOperationException("NPC fixture did not advance both actor types");
-        return sample;
     }
 }

@@ -41,6 +41,7 @@ namespace djack.RogueSurvivor.Data
     [Serializable]
     class Map : ISerializable
     {        
+        internal static Action<long> ProfileZoneLookup;
         #region Constants
         public const int GROUND_INVENTORY_SLOTS = 10;
         #endregion
@@ -104,6 +105,12 @@ namespace djack.RogueSurvivor.Data
         // scent hash
         [NonSerialized]
         Dictionary<Point, List<OdorScent>> m_aux_ScentsByPosition;
+
+        [NonSerialized]
+        List<Zone>[] m_aux_ZonesByRow;
+
+        [NonSerialized]
+        int m_aux_ZonesByRowVersion;
         #endregion
 
         #endregion
@@ -436,12 +443,14 @@ namespace djack.RogueSurvivor.Data
         #region Zones
         public void AddZone(Zone zone)
         {
-            m_Zones.Add(zone);            
+            m_Zones.Add(zone);
+            m_aux_ZonesByRow = null;
         }
 
         public void RemoveZone(Zone zone)
         {
             m_Zones.Remove(zone);
+            m_aux_ZonesByRow = null;
         }
 
         public void RemoveAllZonesAt(int x, int y)
@@ -455,16 +464,46 @@ namespace djack.RogueSurvivor.Data
 
         public List<Zone> GetZonesAt(int x, int y)
         {
+            Action<long> profile = ProfileZoneLookup;
+            long started = profile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
             List<Zone> list = null;
-
-            foreach(Zone zone in m_Zones)
-                if (zone.Bounds.Contains(x, y))
+            List<Zone> candidates = null;
+            if (y >= 0 && y < m_Height)
+            {
+                int boundsVersion = Zone.BoundsVersion;
+                if (m_aux_ZonesByRow == null || m_aux_ZonesByRowVersion != boundsVersion)
                 {
-                    if (list == null)
-                        list = new List<Zone>(m_Zones.Count / 4);
-                    list.Add(zone);
+                    // ponytail: changing any zone bounds rebuilds indexes on queried maps;
+                    // track owners only if runtime bounds edits become common.
+                    List<Zone>[] rows = new List<Zone>[m_Height];
+                    foreach (Zone zone in m_Zones)
+                    {
+                        Rectangle bounds = zone.Bounds;
+                        int first = Math.Max(0, bounds.Top);
+                        int last = Math.Min(m_Height, bounds.Bottom);
+                        for (int row = first; row < last; row++)
+                        {
+                            if (rows[row] == null) rows[row] = new List<Zone>();
+                            rows[row].Add(zone);
+                        }
+                    }
+                    m_aux_ZonesByRowVersion = boundsVersion;
+                    m_aux_ZonesByRow = rows;
                 }
+                candidates = m_aux_ZonesByRow[y];
+            }
+            else
+                candidates = m_Zones;
 
+            if (candidates != null)
+                foreach (Zone zone in candidates)
+                    if (zone.Bounds.Contains(x, y))
+                    {
+                        if (list == null) list = new List<Zone>(2);
+                        list.Add(zone);
+                    }
+
+            if (profile != null) profile(System.Diagnostics.Stopwatch.GetTimestamp() - started);
             return list;
         }
 
