@@ -33,6 +33,10 @@ diagnostic rather than a controlled paired comparison. The FOV scenario checks
 the complete visible-cell set against the original algorithm across positions,
 walls and door-state changes. There is no cross-call cache: moved actors and
 newly opened doors are recomputed on the next observation.
+A follow-up on the same fixture reused that per-call visible-cell state during
+the wall-fix pass. The current-branch median changed from 116.7 to 109.0 ms
+per eight turns; FOV changed from 34.3 to 27.9 ms (19% less FOV time). These
+were separate five-sample runs, so the whole-turn difference is approximate.
 These general benchmarks are diagnostic. The save/load budget below is an
 automated pass/fail gate. Compare measurements on the same
 machine, Docker configuration, and runtime.

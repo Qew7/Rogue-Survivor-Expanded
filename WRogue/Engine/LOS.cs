@@ -358,12 +358,15 @@ namespace djack.RogueSurvivor.Engine
                 foreach (Direction d in Direction.COMPASS)
                 {
                     Point next = wallP + d;
-                    if (visibleSet.Contains(next))
+                    if (next.X >= xmin && next.X <= xmax &&
+                        next.Y >= ymin && next.Y <= ymax &&
+                        (cells[(next.X - xmin) * height + next.Y - ymin] & 4) != 0)
                     {
                         Tile tile = map.GetTileAt(next.X, next.Y);
                         if (tile.Model.IsTransparent && tile.Model.IsWalkable)
                             ++count;
                     }
+                    if (count >= 3) break;
                 }
                 if (count >= 3)
                     fixedWalls.Add(wallP);
