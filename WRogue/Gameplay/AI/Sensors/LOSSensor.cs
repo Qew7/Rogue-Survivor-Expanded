@@ -64,9 +64,9 @@ namespace djack.RogueSurvivor.Gameplay.AI.Sensors
             // compute FOV
             Action<long> profileFov = ProfileFov;
             long fovStart = profileFov == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
-            m_FOV = LOS.ComputeFOVFor(game.Rules, actor, actor.Location.Map.LocalTime, game.Session.World.Weather);
+            int maxRange;
+            m_FOV = LOS.ComputeFOVFor(game.Rules, actor, actor.Location.Map.LocalTime, game.Session.World.Weather, out maxRange);
             if (profileFov != null) profileFov(System.Diagnostics.Stopwatch.GetTimestamp() - fovStart);
-            int maxRange = game.Rules.ActorFOV(actor, actor.Location.Map.LocalTime, game.Session.World.Weather);
 
             // compute percepts.
             List<Percept> list = new List<Percept>();

@@ -16,8 +16,10 @@ git -C "$repo" archive "$baseline" | LC_ALL=C tar -x -C "$baseline_dir"
 cp "$repo/benchmarks/PostBaselineBenchmarks.cs" "$baseline_dir/tests/benchmarks/"
 LC_ALL=C perl -0pi -e 's/ScenarioRunner\.RegisterAll\(\);/ScenarioRunner.RegisterAll();\n        if (args.Length == 1 \&\& args[0] == "--bench-post-0d243e") { PostBaselineBenchmarks.Run(); return 0; }/' "$baseline_dir/tests/Program.cs"
 
-docker build --target scenarios --quiet -t rogue-post-bench-baseline "$baseline_dir"
-docker build --target scenarios --quiet -t rogue-post-bench-current "$repo"
+printf 'Building baseline image\n' >&2
+docker build --progress=plain --target scenarios -t rogue-post-bench-baseline "$baseline_dir"
+printf 'Building current image\n' >&2
+docker build --progress=plain --target scenarios -t rogue-post-bench-current "$repo"
 run_bench()
 {
     local label=$1 image=$2 revision=$3 run=$4

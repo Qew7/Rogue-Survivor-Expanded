@@ -285,11 +285,17 @@ namespace djack.RogueSurvivor.Engine
 
         public static HashSet<Point> ComputeFOVFor(Rules rules, Actor actor, WorldTime time, Weather weather)
         {
+            int maxRange;
+            return ComputeFOVFor(rules, actor, time, weather, out maxRange);
+        }
+
+        internal static HashSet<Point> ComputeFOVFor(Rules rules, Actor actor, WorldTime time, Weather weather, out int maxRange)
+        {
             Location fromLocation = actor.Location;
             HashSet<Point> visibleSet = new HashSet<Point>();
             Point from = fromLocation.Position;
             Map map = fromLocation.Map;
-            int maxRange = rules.ActorFOV(actor, time, weather);
+            maxRange = rules.ActorFOV(actor, time, weather);
 
             //////////////////////////////////////////////
             // Precomputed Bresenham rays with the original wall fix pass.

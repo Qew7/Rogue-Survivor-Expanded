@@ -18,8 +18,10 @@ cleanup() {
 }
 trap cleanup EXIT
 
-docker compose -p "$project" up --build -d
+printf 'Building and starting isolated game container\n' >&2
+docker compose --progress plain -p "$project" up --build -d
 container="$(docker compose -p "$project" ps -q game)"
+printf 'Waiting for game health check (up to 60s)\n' >&2
 for attempt in {1..60}; do
     status="$(docker inspect --format '{{.State.Health.Status}}' "$container")"
     if [[ "$status" == healthy ]]; then break; fi

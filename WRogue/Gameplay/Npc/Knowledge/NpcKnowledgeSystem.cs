@@ -20,8 +20,11 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             return participant.Faction == null ? "someone" : "a " + participant.Faction.MemberName;
         }
         public static bool Visible(RogueGame game, Actor actor, Location place)
-        { return place.Map == actor.Location.Map && game.Rules.GridDistance(actor.Location.Position, place.Position) <=
-            game.Rules.ActorFOV(actor, actor.Location.Map.LocalTime, game.Session.World.Weather) && LOS.CanTraceViewLine(actor.Location, place.Position); }
+        { return place.Map == actor.Location.Map && Visible(game, actor, place,
+            game.Rules.ActorFOV(actor, actor.Location.Map.LocalTime, game.Session.World.Weather)); }
+        internal static bool Visible(RogueGame game, Actor actor, Location place, int maxRange)
+        { return place.Map == actor.Location.Map && game.Rules.GridDistance(actor.Location.Position, place.Position) <= maxRange &&
+            LOS.CanTraceViewLine(actor.Location, place.Position); }
         internal static void ObserveParticipants(NpcObservation observation)
         {
             Actor owner = observation.Owner; SignificantEvent source = observation.Source;

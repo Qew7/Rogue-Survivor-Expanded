@@ -9,7 +9,9 @@ rm -f "$profile_dir/npc.mlpd" "$profile_dir/run.txt" "$profile_dir/calls.txt" \
   "$profile_dir/summary.txt" "$profile_dir/report-warnings.txt" \
   "$profile_dir/flamegraph.svg" "$profile_dir/flamegraph.folded"
 
-docker build --quiet --target profile -t rogue-survivor-profile . >&2
+printf 'Building profiler image\n' >&2
+docker build --progress=plain --target profile -t rogue-survivor-profile . >&2
+printf 'Profiling NPC turns\n' >&2
 docker run --rm --mount "type=bind,source=$profile_dir,target=/profile" \
   --entrypoint sh rogue-survivor-profile -c \
   'mono --profile=log:calls,noalloc,calldepth=40,output=/profile/npc.mlpd /src/tests/UnitTests.exe --profile-npc-turn > /profile/run.txt'
@@ -17,6 +19,7 @@ docker run --rm --mount "type=bind,source=$profile_dir,target=/profile" \
 test -s "$profile_dir/npc.mlpd"
 window=$(awk '/^PROFILE_WINDOW / { printf "%.3f-%.3f", $2 - 0.1, $3 + 0.1 }' "$profile_dir/run.txt")
 test -n "$window"
+printf 'Generating call report and flamegraph\n' >&2
 docker run --rm --mount "type=bind,source=$profile_dir,target=/profile" \
   --entrypoint sh rogue-survivor-profile -ec \
   'mprof-report --reports=call --traces --maxframes=64 --time="$1" /profile/npc.mlpd > /profile/calls.txt 2> /profile/report-warnings.txt
