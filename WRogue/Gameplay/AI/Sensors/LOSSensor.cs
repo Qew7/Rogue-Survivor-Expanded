@@ -11,6 +11,7 @@ namespace djack.RogueSurvivor.Gameplay.AI.Sensors
     [Serializable]
     class LOSSensor : Sensor
     {
+        internal static Action<long> ProfileFov;
         #region Types
         [Flags]
         public enum SensingFilter
@@ -61,8 +62,11 @@ namespace djack.RogueSurvivor.Gameplay.AI.Sensors
         public override List<Percept> Sense(RogueGame game, Actor actor)
         {
             // compute FOV
-            m_FOV = LOS.ComputeFOVFor(game.Rules, actor, actor.Location.Map.LocalTime, game.Session.World.Weather);
-            int maxRange = game.Rules.ActorFOV(actor, actor.Location.Map.LocalTime, game.Session.World.Weather);
+            Action<long> profileFov = ProfileFov;
+            long fovStart = profileFov == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
+            int maxRange;
+            m_FOV = LOS.ComputeFOVFor(game.Rules, actor, actor.Location.Map.LocalTime, game.Session.World.Weather, out maxRange);
+            if (profileFov != null) profileFov(System.Diagnostics.Stopwatch.GetTimestamp() - fovStart);
 
             // compute percepts.
             List<Percept> list = new List<Percept>();

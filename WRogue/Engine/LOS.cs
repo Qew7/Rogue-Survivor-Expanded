@@ -257,16 +257,48 @@ namespace djack.RogueSurvivor.Engine
         #endregion
 
         #region Computing FOV
+        // Ray geometry is independent of walls and doors; only transparency is read per call.
+        static readonly Dictionary<int, Point[][]> s_FovRays = new Dictionary<int, Point[][]>();
+        static readonly Func<int, int, bool> s_TraceOpen = (x, y) => true;
+
+        static Point[][] FovRays(int range)
+        {
+            lock (s_FovRays)
+            {
+                Point[][] rays;
+                if (s_FovRays.TryGetValue(range, out rays)) return rays;
+                int side = 2 * range + 1;
+                rays = new Point[side * side][];
+                for (int dx = -range; dx <= range; dx++)
+                    for (int dy = -range; dy <= range; dy++)
+                    {
+                        if (0.75f * (dx * dx + dy * dy) > range * range) continue;
+                        List<Point> line = new List<Point>();
+                        AsymetricBresenhamTrace(range, null, 0, 0, dx, dy, line, s_TraceOpen);
+                        line.RemoveAt(0);
+                        rays[(dx + range) * side + dy + range] = line.ToArray();
+                    }
+                s_FovRays.Add(range, rays);
+                return rays;
+            }
+        }
+
         public static HashSet<Point> ComputeFOVFor(Rules rules, Actor actor, WorldTime time, Weather weather)
+        {
+            int maxRange;
+            return ComputeFOVFor(rules, actor, time, weather, out maxRange);
+        }
+
+        internal static HashSet<Point> ComputeFOVFor(Rules rules, Actor actor, WorldTime time, Weather weather, out int maxRange)
         {
             Location fromLocation = actor.Location;
             HashSet<Point> visibleSet = new HashSet<Point>();
             Point from = fromLocation.Position;
             Map map = fromLocation.Map;
-            int maxRange = rules.ActorFOV(actor, time, weather);
+            maxRange = rules.ActorFOV(actor, time, weather);
 
             //////////////////////////////////////////////
-            // Brute force ray-casting with wall fix pass
+            // Precomputed Bresenham rays with the original wall fix pass.
             //////////////////////////////////////////////
             int xmin = from.X - maxRange;
             int xmax = from.X + maxRange;
@@ -276,14 +308,11 @@ namespace djack.RogueSurvivor.Engine
             map.TrimToBounds(ref xmax, ref ymax);
             Point to = new Point();
             List<Point> wallsToFix = new List<Point>();
-            Point traceGoal = Point.Empty;
-            Func<int, int, bool> trace = (x, y) =>
-            {
-                bool viewThrough = (x == traceGoal.X && y == traceGoal.Y) ||
-                    map.IsTransparent(x, y);
-                if (viewThrough) visibleSet.Add(new Point(x, y));
-                return viewThrough;
-            };
+            int height = ymax - ymin + 1;
+            // Per-call cell state: 1 transparent, 2 opaque, 4 already visible.
+            byte[] cells = new byte[(xmax - xmin + 1) * height];
+            Point[][] rays = FovRays(maxRange);
+            int raySide = 2 * maxRange + 1;
 
             // 1st pass : trace line and remember walls that are not visible for 2nd pass.
             for (int x = xmin; x <= xmax; x++)
@@ -300,13 +329,37 @@ namespace djack.RogueSurvivor.Engine
                         continue;
 
                     // If we already know tile is visible, pass.
-                    if (visibleSet.Contains(to))
+                    int index = (x - xmin) * height + y - ymin;
+                    if ((cells[index] & 4) != 0)
                         continue;
 
-                    // Trace line.
-                    traceGoal = to;
-                    if(!AsymetricBresenhamTrace(maxRange, map,
-                        from.X, from.Y, to.X, to.Y, null, trace))
+                    // Check the precomputed ray against this map's current transparency.
+                    Point[] ray = rays[(dx + maxRange) * raySide + dy + maxRange];
+                    bool reached = true;
+                    for (int step = 0; step < ray.Length; step++)
+                    {
+                        int rayX = from.X + ray[step].X;
+                        int rayY = from.Y + ray[step].Y;
+                        int cell = (rayX - xmin) * height + rayY - ymin;
+                        bool through = step == ray.Length - 1;
+                        if (!through)
+                        {
+                            byte cached = (byte)(cells[cell] & 3);
+                            if (cached == 0)
+                            {
+                                cached = (byte)(map.IsTransparent(rayX, rayY) ? 1 : 2);
+                                cells[cell] |= cached;
+                            }
+                            through = cached == 1;
+                        }
+                        if (!through) { reached = false; break; }
+                        if ((cells[cell] & 4) == 0)
+                        {
+                            cells[cell] |= 4;
+                            visibleSet.Add(new Point(rayX, rayY));
+                        }
+                    }
+                    if (!reached)
                     {                        
                         // if its a wall (in FoV terms), remember.
                         bool isFovWall = false;
@@ -324,7 +377,11 @@ namespace djack.RogueSurvivor.Engine
                     }
 
                     // Visible.
-                    visibleSet.Add(to);
+                    if ((cells[index] & 4) == 0)
+                    {
+                        cells[index] |= 4;
+                        visibleSet.Add(to);
+                    }
                 }
             }
 
@@ -336,12 +393,15 @@ namespace djack.RogueSurvivor.Engine
                 foreach (Direction d in Direction.COMPASS)
                 {
                     Point next = wallP + d;
-                    if (visibleSet.Contains(next))
+                    if (next.X >= xmin && next.X <= xmax &&
+                        next.Y >= ymin && next.Y <= ymax &&
+                        (cells[(next.X - xmin) * height + next.Y - ymin] & 4) != 0)
                     {
                         Tile tile = map.GetTileAt(next.X, next.Y);
                         if (tile.Model.IsTransparent && tile.Model.IsWalkable)
                             ++count;
                     }
+                    if (count >= 3) break;
                 }
                 if (count >= 3)
                     fixedWalls.Add(wallP);

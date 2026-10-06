@@ -16,6 +16,8 @@ namespace djack.RogueSurvivor.Data
     [Serializable]
     class Zone
     {
+        static int s_BoundsVersion;
+        internal static int BoundsVersion { get { return System.Threading.Volatile.Read(ref s_BoundsVersion); } }
         #region Fields
         string m_Name = "unnamed zone";
         Rectangle m_Bounds;
@@ -33,7 +35,7 @@ namespace djack.RogueSurvivor.Data
         public Rectangle Bounds
         {
             get { return m_Bounds; }
-            set { m_Bounds = value; }
+            set { m_Bounds = value; System.Threading.Interlocked.Increment(ref s_BoundsVersion); }
         }
         public BuildingKind BuildingKind
         {

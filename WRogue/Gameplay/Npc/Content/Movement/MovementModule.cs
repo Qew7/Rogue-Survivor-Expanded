@@ -9,6 +9,10 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public string Id { get { return "movement"; } }
         public void Register(NpcCatalogBuilder catalog)
         {
+            catalog.Event(new NpcEventDefinition("building_explored", NpcRecordCategory.World, true,
+                e => (e.Subject ?? "Someone") + " explored a building.",
+                f => (f.ReportSubject ?? "someone") + " explored a building",
+                NpcEventFields.Subject) { ReportActorRole = NpcReportActorRole.None });
             catalog.Perception(NpcPerceptionKind.Surroundings, PerceiveSurroundings);
             catalog.Operator(new NpcOperatorDefinition("travel", NpcPlanAction.Travel, Travel,
                 archiveText: step => ResidentRecords.TravelText(step.Place)));

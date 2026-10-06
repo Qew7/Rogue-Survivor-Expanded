@@ -1,23 +1,91 @@
 # Performance measurements
 
+Benchmark sources, scripts, and the list of project skills are in
+[`benchmarks/`](../benchmarks/README.md).
+
 Run the headless benchmarks with:
 
 ```sh
 sh tests/scenario.sh --bench
 sh tests/scenario.sh --bench-ai
+sh tests/scenario.sh --bench-npc-turn
 ```
 
 The runner warms each case, runs five timed samples, and prints the median.
 `--bench-ai` runs just the AI and generation cases for quicker iteration.
 The test UI omits actual graphics driver work, so the minimap case measures
 game-side traversal and dispatch.
+`--bench-npc-turn` runs eight real map turns on a seeded 100×100 surface with
+the maximum 75 configured civilians (plus any building residents) and 200
+shambling zombies, with fresh fixture runs for warmup and
+five timed samples. It reports the median run's map upkeep, actor dispatch,
+AI sensing, field-of-view computation, decision, intent preparation, route
+checks, zone lookup, legality and action execution; the named subphases are inclusive and
+some can overlap. The top action types rank
+decision time by the action returned. World setup, rendering, other districts
+and background simulation are outside the timed interval. These timings show
+which phase dominates this fixture, not a full-city turn or an exact cost of
+every NPC behavior.
+On October 4, 2026, the same Docker/Mono fixture on `ea156b1` measured
+141.0 ms per eight map turns, including 57.1 ms in 1,800 FOV computations.
+With per-call transparency and visible-cell state in `LOS.ComputeFOVFor`, it
+measured 121.3 ms per eight turns, including 35.2 ms in FOV (38% less FOV time,
+14% less total time). Each figure is the median of five fresh runs after one
+warmup; the before/after samples were run sequentially, so treat these as
+diagnostic rather than a controlled paired comparison. The FOV scenario checks
+the complete visible-cell set against the original algorithm across positions,
+walls and door-state changes. There is no cross-call cache: moved actors and
+newly opened doors are recomputed on the next observation.
+A follow-up on the same fixture reused that per-call visible-cell state during
+the wall-fix pass. The current-branch median changed from 116.7 to 109.0 ms
+per eight turns; FOV changed from 34.3 to 27.9 ms (19% less FOV time). These
+were separate five-sample runs, so the whole-turn difference is approximate.
 These general benchmarks are diagnostic. The save/load budget below is an
 automated pass/fail gate. Compare measurements on the same
 machine, Docker configuration, and runtime.
 
+## NPC method call profile
+
+Run `sh benchmarks/bench-npc-calls.sh` to record the same seeded 100×100 fixture for
+one eight-turn run. The script prints the busiest methods and creates
+`summary.txt` (methods sorted by inclusive time), `calls.txt` (the same
+times plus caller chains), `flamegraph.svg` (a visual call tree), and
+`flamegraph.folded` (text stacks and attributed microseconds) in the temporary directory shown at the end. Pass an
+output directory as the first argument to keep the text at a known path. Set
+`PROFILE_KEEP_RAW=1` to retain the large `npc.mlpd` file for another
+`mprof-report` query; otherwise the script removes it after generating text.
+
+The `Total(ms)` column includes callees; `Self(ms)` excludes them. `Calls` and
+caller chains come from Mono's method enter/leave events. The script selects
+the measured turn loop by its process time and checks that `RunTurns` appears
+once in the report. The window has a 0.1-second margin around the loop, so a
+few setup/teardown calls can remain. Methods inlined by Mono and native runtime
+work do not have separate managed call entries. When a method has several
+callers, the report gives its combined time, while its chains show call counts
+per caller rather than time per caller. The flamegraph divides each method's
+self time among its caller chains in proportion to their call counts. Its
+widths are estimates; hover over a block to see the chain and attributed time.
+
+**Do not use the profiled milliseconds as game speed.** Method entry/exit
+instrumentation makes millions of tiny calls much slower and can change their
+relative costs. Use this report to find call paths and counts; use
+`--bench-npc-turn` for the unprofiled elapsed time. See the [Mono log profiler
+documentation](https://www.mono-project.com/docs/debug+profile/profile/profiler/)
+for the meaning and overhead of its call report.
+
+On October 5, 2026, four alternating runs of the same 100×100 fixture before
+and after a zone row index gave medians of **16.4 → 2.7 ms** for 6,406 zone
+lookups over eight map turns (84% less), and **112.3 → 96.3 ms** for the full
+eight turns (14% less). Each run itself was the median of five fresh fixture
+samples. The index narrows the zone scan by map row, preserves overlapping
+zones and their order, and rebuilds after zone additions, removals, bounds
+changes, or deserialization. It is transient and does not change the save
+format. These numbers are for one surface; runtime on other map layouts and
+resident counts may differ.
+
 ## Changes after `0d243e6`
 
-Run the focused comparison with `bash tests/bench-post-0d243e.sh`. The script
+Run the focused comparison with `bash benchmarks/bench-post-0d243e.sh`. The script
 builds `0d243e6820d6b04c02df279450fb68324712fb40` and the current tree
 with the same `PostBaselineBenchmarks` source, then runs each version six times
 in alternating order. Each reported run is the median of five timed batches.
@@ -339,6 +407,30 @@ avoid introducing first-use pauses during play.
 For a concise list of the changes behind these measurements, see
 [optimizations.md](../optimizations.md).
 
+## NPC turn profile
+
+Local Docker/Mono run on October 4, 2026, using `--bench-npc-turn` on one
+100×100 generated surface: 75 configured civilians plus six building residents,
+200 shambling zombies, eight full map turns. The median of five fresh runs was
+136.0 ms total, or 17.0 ms per map turn. It performed 813 civilian and 987
+zombie actions. In that median run:
+
+- Field-of-view computation used 27.3 ms for civilians and 28.3 ms for zombies:
+  **55.6 ms combined, 40.9%** of the total.
+- Civilian decision logic used 44.4 ms, including 16.2 ms preparing NPC
+  intents and 1.5 ms in 924 reachability checks. Zombie decisions used 15.5 ms.
+- Performing chosen actions used 4.1 ms for civilians and 1.6 ms for zombies.
+  Map upkeep used 1.3 ms; action legality and actor dispatch were smaller.
+
+These are inclusive measurements: field of view is part of sensing, and intent
+preparation and route checks are part of decision time. The benchmark replaces
+the generated controllers with timing subclasses, performs their real legal
+actions and advances the real map clock. It does not advance basements or other
+districts, draw the UI, or include fixture generation in the timed interval.
+The fixture has only shambling zombies so their controller phase can be measured
+consistently; different zombie mixes, longer runs and denser social interactions
+may change the ranking. The timing hooks also add some measurement overhead.
+
 ## AI and generation profile
 
 Local Docker/Mono measurements on a 40×40 map (median of five runs):
@@ -411,3 +503,17 @@ the current AI intentionally rejects paths that first move no closer to its
 target. None of the 31 actors in this benchmark fixture had enough speed for
 more than one ordinary action per map turn. A FOV cache therefore needs a
 measured hit rate in actual play before its invalidation cost is justified.
+
+## Precomputed FOV rays
+
+On October 5, 2026, six alternating Docker/Mono runs of the crowded NPC-turn
+fixture compared the previous Bresenham trace with precomputed ray geometry.
+The median for eight map turns fell from 107.7 to 102.7 ms; FOV time within
+those turns fell from 30.9 to 29.0 ms. The 40×40 open-arena FOV microbenchmark
+changed from 8.24 to 8.01 ms per 1,000 calls. The improvement is modest and
+run-to-run variation is visible. Transparency is still checked each call, so
+moving objects and doors take effect immediately. The FOV equivalence scenario
+compares the visible cells across door, lighting, and sleeping changes.
+
+Recursive shadowcasting was also prototyped. It changed visibility at corners
+and was slower on the open arena, so it was not kept.
