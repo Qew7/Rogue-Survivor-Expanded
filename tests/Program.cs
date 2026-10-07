@@ -38,6 +38,16 @@ class Program
             NpcTurnBenchmarks.Profile();
             return 0;
         }
+        if (args.Length == 1 && args[0] == "--bench-radio")
+        {
+            RadioBenchmarks.Run();
+            return 0;
+        }
+        if (args.Length == 1 && args[0] == "--profile-radio")
+        {
+            RadioBenchmarks.Profile();
+            return 0;
+        }
         if (args.Length == 1 && args[0] == "--bench-post-0d243e")
         {
             PostBaselineBenchmarks.Run();

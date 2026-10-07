@@ -85,6 +85,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             W("floods_raid", "Floods raid", "floods_caution", "Floods caution", "cautious", DecisionKind.Courage, -15, DecisionKind.Supplies, 20, Skills.IDs.UNSUSPICIOUS, GameFactions.IDs.TheGangstas, -20),
             W("blackops_raid", "BlackOps operation", "blackops_distrust", "BlackOps distrust", "suspicious", DecisionKind.Group, -15, DecisionKind.Explore, -15, Skills.IDs.STRONG_PSYCHE, GameFactions.IDs.TheBlackOps, -20),
             W("survivors_arrival", "Survivor convoy", "convoy_hope", "Convoy hope", "sociable", DecisionKind.Group, 25, DecisionKind.Trade, 10, Skills.IDs.CHARISMATIC, GameFactions.IDs.TheSurvivors, 10),
+            W("psychopaths_arrival", "Psychopaths sighted", "psychopath_watch", "Psychopath watch", "vigilant", DecisionKind.Courage, 10, DecisionKind.Supplies, 10, Skills.IDs.STRONG_PSYCHE, GameFactions.IDs.ThePsychopaths, -20),
             W("char_discovered", "CHAR facility uncovered", "char_whistleblower", "CHAR whistleblower", "skeptic", DecisionKind.Explore, 20, DecisionKind.Law, 10, Skills.IDs.UNSUSPICIOUS, GameFactions.IDs.TheCHARCorporation, -15),
             W("prisoner_transformed", "Prisoner's transformation", "betrayal_scar", "Betrayal scar", "suspicious", DecisionKind.Group, -25, DecisionKind.Courage, -10, Skills.IDs.STRONG_PSYCHE, GameFactions.IDs.TheCHARCorporation, -15)
         };

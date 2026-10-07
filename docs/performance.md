@@ -517,3 +517,49 @@ compares the visible cells across door, lighting, and sleeping changes.
 
 Recursive shadowcasting was also prototyped. It changed visibility at corners
 and was slower on the open arena, so it was not kept.
+
+## Radio broadcasts
+
+On October 7, 2026, a Docker/Mono fixture with nine maps, 216 NPC sources,
+3,456 tellable `shared_food` facts and 20 nearby listeners measured 80
+broadcasts across 40 actual game hours. Five-run medians, repeated twice,
+were 11.1–12.0 ms for Survivor Network, 1.5–1.6 ms for Military Dispatch,
+11.3–11.6 ms for Local Calls and 4.1 ms for Gang Frequency before skipping
+repeat listeners in the same hour. With that check, the same fixture measures
+10.5 ms for Survivor Network and 10.4 ms for Local Calls. Military and
+Gang have no matching facts in this fixture. With no nearby listener the
+same city takes 0.2 ms for 80 broadcasts. These are radio delivery and
+selection costs, not complete game turns or world generation.
+
+Earlier fixed-slot runs fell from 44.6 to 19.1 ms for 80 survivor broadcasts
+after avoiding world scans without listeners. An interim shared-program
+fixture used 60-turn slots, which are two game hours, so its 6.6–6.9 ms
+result is not directly comparable with the corrected hourly fixture. The
+current implementation indexes the player's known event and story IDs before
+ranking headlines, skips copying a rumor the listener already knows, and
+checks `shared_food` directly on Local Calls before substring matching. A
+listener processes each station program once per hour, even when several
+receivers are nearby.
+
+The archival [before](../benchmarks/profiles/radio-before.svg) and
+[after](../benchmarks/profiles/radio-after.svg) flamegraphs show the fixed-slot
+optimization. The [shared-program graph](../benchmarks/profiles/radio-shared.svg)
+profiles the corrected 40-hour fixture with a live station host. Its inclusive
+root time is 465 ms with Mono call instrumentation: 310 ms under
+`BuildRadioProgram` for 40 generated programs, 107 ms under
+`NpcKnowledgeSystem.Hear` for 5,200 listener deliveries, and 1 ms in shared
+`NpcConversation.Chapter` assembly.
+Profiler overhead means these values are not game frame times. The benchmark
+is reproducible with `--bench-radio` and
+`PROFILE_KIND=radio sh benchmarks/bench-npc-calls.sh`.
+
+A further October 7 pass reused station-kind decisions and stopped ranking a
+fact once even its maximum player-familiarity bonus could not beat the current
+headline. On the same fixture, 80-broadcast medians changed from 9.9 to 7.3 ms
+for Survivor Network, 10.4 to 6.5 ms for Local Calls, and 5.0 to 1.1 ms for
+Gang Frequency. Military Dispatch stayed near 1.2–1.5 ms. The call profile
+fell from 103,080 to 37,008 known-event lookups per 80 survivor broadcasts;
+its instrumented root fell from 475 to 278 ms. The
+[pruned-program flamegraph](../benchmarks/profiles/radio-pruned.svg) captures
+the final profile. The fixture has one repeated fact kind, so the kind-cache
+gain will vary with the mix of events in a city.

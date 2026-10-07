@@ -350,12 +350,16 @@ namespace djack.RogueSurvivor.Engine
             if (s_Options.SuppliesDropFactor == 0)
                 return false;
 
+            if (m_Session.RadioDropTurn > 0)
+                return map.District != null && map.District.WorldPosition == m_Session.RadioDropDistrict &&
+                    m_Session.WorldTime.TurnCounter >= m_Session.RadioDropTurn && !map.LocalTime.IsNight;
+
             // during day only.
             if (map.LocalTime.IsNight)
                 return false;
 
             // date.
-            if (map.LocalTime.Day < ARMY_SUPPLIES_DAY)
+            if (m_Session.WorldTime.Day < ARMY_SUPPLIES_DAY - 2)
                 return false;
 
             // check chance.
@@ -369,8 +373,12 @@ namespace djack.RogueSurvivor.Engine
             if (foodPerLiving >= (s_Options.SuppliesDropFactor / 100f) * ARMY_SUPPLIES_FACTOR)
                 return false;
 
-            // clear.
-            return true;
+            // Commit to a district one or two days before the flight, so radio news is truthful.
+            if (map.District == null) return false;
+            m_Session.RadioDropDistrict = map.District.WorldPosition;
+            m_Session.RadioDropTurn = Math.Max(ARMY_SUPPLIES_DAY * WorldTime.TURNS_PER_DAY,
+                m_Session.WorldTime.TurnCounter + m_Rules.Roll(1, 3) * WorldTime.TURNS_PER_DAY);
+            return false;
         }
 
         void FireEvent_ArmySupplies(Map map)
@@ -384,6 +392,7 @@ namespace djack.RogueSurvivor.Engine
             // 1. Pick drop point.
             Point dropPoint;
             bool dropped = FindDropSuppliesPoint(map, out dropPoint);
+            m_Session.RadioDropTurn = 0;
             if (!dropped)
                 return;
 

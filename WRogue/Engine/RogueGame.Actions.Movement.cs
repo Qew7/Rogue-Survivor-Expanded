@@ -179,6 +179,7 @@ namespace djack.RogueSurvivor.Engine
                         KillActor(null, actor, "trap");
                 }
             }
+            DiscoverXpdBaseLosses(actor);
         }
 
         bool TryActorLeaveTile(Actor actor)
@@ -540,6 +541,11 @@ namespace djack.RogueSurvivor.Engine
             // 3. Enter map (+corpse)
             exit.ToMap.PlaceActorAt(actor, exit.ToPosition);
             exit.ToMap.MoveActorToFirstPosition(actor);
+            if (actor.Faction == GameFactions.ThePsychopaths && exit.ToMap.District != null &&
+                (fromMap.District != exit.ToMap.District ||
+                 fromMap != exit.ToMap.District.EntryMap && exit.ToMap == exit.ToMap.District.EntryMap))
+                ReportPersonalityEvent("psychopaths_arrival", actor, null, exit.ToMap,
+                    actor.Location.Position, false, false);
             if (actor.DraggedCorpse != null)
             {
                 exit.ToMap.AddCorpseAt(actor.DraggedCorpse, exit.ToPosition);

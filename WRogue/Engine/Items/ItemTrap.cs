@@ -66,6 +66,7 @@ namespace djack.RogueSurvivor.Engine.Items
         public ItemTrap Clone()
         {
             ItemTrap c = new ItemTrap(TrapModel);
+            c.CopyTheftFrom(this);
             return c;
         }
         #endregion

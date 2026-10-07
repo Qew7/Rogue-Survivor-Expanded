@@ -90,6 +90,12 @@ namespace djack.RogueSurvivor.Data
         [NonSerialized]
         Dictionary<Point, MapObject> m_aux_MapObjectsByPosition;
 
+        // A recent audible radio signal. Renewed while a receiver remains on.
+        [NonSerialized] public Point? RadioNoisePosition;
+        [NonSerialized] public int RadioNoiseUntil;
+
+        [NonSerialized] int m_aux_UnnoticedBaseLossCount;
+
         [NonSerialized]
         List<Inventory> m_aux_GroundItemsList;
 
@@ -228,6 +234,23 @@ namespace djack.RogueSurvivor.Data
             return null;
         }
 
+        public bool HasUnnoticedBaseLosses { get { return m_aux_UnnoticedBaseLossCount > 0; } }
+
+        public void AddUnnoticedBaseLoss(XpdBase claim, Point position, string resource, int units, long causeId, string storyId)
+        {
+            if (claim.AddUnnoticedLoss(position, resource, units, causeId, storyId)) m_aux_UnnoticedBaseLossCount++;
+        }
+
+        public void AddUnnoticedBaseCasualty(XpdBase claim, Point position, Actor victim, long causeId, string storyId)
+        {
+            if (claim.AddUnnoticedCasualty(position, victim, causeId, storyId)) m_aux_UnnoticedBaseLossCount++;
+        }
+
+        public void RemoveUnnoticedBaseLoss(XpdBase claim, XpdBaseLoss loss)
+        {
+            if (claim.UnnoticedLosses.Remove(loss)) m_aux_UnnoticedBaseLossCount--;
+        }
+
         public void AddXpdBase(XpdBase baseClaim)
         {
             if (baseClaim == null) throw new ArgumentNullException("baseClaim");
@@ -236,11 +259,14 @@ namespace djack.RogueSurvivor.Data
                 if (!IsInBounds(cell) || XpdBaseAt(cell) != null)
                     throw new InvalidOperationException("Base overlaps another base or the map edge");
             m_XpdBases.Add(baseClaim);
+            if (baseClaim.UnnoticedLosses != null) m_aux_UnnoticedBaseLossCount += baseClaim.UnnoticedLosses.Count;
         }
 
         public bool RemoveXpdBase(XpdBase baseClaim)
         {
-            return m_XpdBases != null && m_XpdBases.Remove(baseClaim);
+            if (m_XpdBases == null || !m_XpdBases.Remove(baseClaim)) return false;
+            if (baseClaim.UnnoticedLosses != null) m_aux_UnnoticedBaseLossCount -= baseClaim.UnnoticedLosses.Count;
+            return true;
         }
 
         public IEnumerable<Inventory> GroundInventories
@@ -1335,6 +1361,10 @@ namespace djack.RogueSurvivor.Data
             // have an owner and must not block the territory permanently.
             if (m_XpdBases != null)
                 m_XpdBases.RemoveAll(baseClaim => baseClaim == null || baseClaim.GroupLeader == null);
+            m_aux_UnnoticedBaseLossCount = 0;
+            if (m_XpdBases != null)
+                foreach (XpdBase claim in m_XpdBases)
+                    if (claim.UnnoticedLosses != null) m_aux_UnnoticedBaseLossCount += claim.UnnoticedLosses.Count;
             ///////////////////////////////
             // Reconstruct auxiliary fields
             ///////////////////////////////

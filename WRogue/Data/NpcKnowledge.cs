@@ -10,6 +10,8 @@ namespace djack.RogueSurvivor.Data
         public long EventId;
         public string Kind, SubjectName, OtherName, StoryId;
         [System.Runtime.Serialization.OptionalField] public string Resource;
+        [System.Runtime.Serialization.OptionalField] public Guid ClaimantGroupId;
+        [System.Runtime.Serialization.OptionalField] public Guid ItemId;
         // The words used by the first observer stay fixed when the fact is retold.
         [System.Runtime.Serialization.OptionalField] public string SubjectReportName;
         [System.Runtime.Serialization.OptionalField] public string OtherReportName;
@@ -29,7 +31,8 @@ namespace djack.RogueSurvivor.Data
             return new NpcFact { EventId = EventId, Kind = Kind, SubjectName = SubjectName, OtherName = OtherName,
                 SubjectReportName = SubjectReportName, OtherReportName = OtherReportName,
                 SubjectFactionId = SubjectFactionId, OtherFactionId = OtherFactionId,
-                StoryId = StoryId, Resource = Resource, SubjectId = SubjectId, OtherId = OtherId, SourceId = speaker, EventTurn = EventTurn,
+                StoryId = StoryId, Resource = Resource, ClaimantGroupId = ClaimantGroupId, ItemId = ItemId,
+                SubjectId = SubjectId, OtherId = OtherId, SourceId = speaker, EventTurn = EventTurn,
                 LearnedTurn = turn, Confidence = confidence, Hops = Hops + 1, Units = Units, Risk = Risk, Place = Place, Source = NpcKnowledgeSource.Told, NoSubjectLocation = NoSubjectLocation };
         }
     }
@@ -165,6 +168,20 @@ namespace djack.RogueSurvivor.Data
     }
     sealed partial class PersonalityState
     {
+        [System.Runtime.Serialization.OptionalField] int m_LastRadioDropTurn;
+        public int LastRadioDropTurn { get { return m_LastRadioDropTurn; } set { m_LastRadioDropTurn = value; } }
+        [System.Runtime.Serialization.OptionalField] int[] m_LastRadioSlots;
+        public bool FirstRadioHearing(int station, int slot)
+        {
+            if (m_LastRadioSlots == null)
+            {
+                m_LastRadioSlots = new int[4];
+                for (int i = 0; i < m_LastRadioSlots.Length; i++) m_LastRadioSlots[i] = -1;
+            }
+            if (m_LastRadioSlots[station] == slot) return false;
+            m_LastRadioSlots[station] = slot;
+            return true;
+        }
         NpcKnowledge m_Knowledge;
         public NpcKnowledge Knowledge { get { return m_Knowledge ?? (m_Knowledge = new NpcKnowledge()); } }
         internal bool HasKnowledge { get { return m_Knowledge != null; } }

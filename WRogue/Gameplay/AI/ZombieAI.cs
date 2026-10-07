@@ -155,6 +155,19 @@ namespace djack.RogueSurvivor.Gameplay.AI
             }
             #endregion
 
+            // A nearby running radio can draw an undead away from aimless wandering.
+            Point? radio = m_Actor.Location.Map.RadioNoisePosition;
+            if (radio.HasValue && m_Actor.Location.Map.LocalTime.TurnCounter <= m_Actor.Location.Map.RadioNoiseUntil)
+            {
+                int distance = game.Rules.GridDistance(m_Actor.Location.Position, radio.Value);
+                if (distance > 1 && distance <= 6)
+                {
+                    ActorAction approachRadio = BehaviorStupidBumpToward(game, radio.Value, false, false);
+                    if (approachRadio != null)
+                    { m_Actor.Activity = Activity.TRACKING; return approachRadio; }
+                }
+            }
+
             // 2 eat corpses.
             List<Percept> corpses = FilterCorpses(game, mapPercepts);
             if (corpses != null)

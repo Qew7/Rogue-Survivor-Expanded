@@ -622,6 +622,16 @@ namespace djack.RogueSurvivor.Engine
                 #endregion
                 #endregion
 
+                // Scheduled relief flights also arrive in districts that are not being simulated.
+                if (district == m_Session.CurrentMap.District && m_Session.RadioDropTurn > 0 &&
+                    m_Session.WorldTime.TurnCounter >= m_Session.RadioDropTurn && !m_Session.WorldTime.IsNight)
+                {
+                    Point target = m_Session.RadioDropDistrict;
+                    District destination = m_Session.World[target.X, target.Y];
+                    if (destination != null) FireEvent_ArmySupplies(destination.EntryMap);
+                    else m_Session.RadioDropTurn = 0;
+                }
+
                 // 3. Simulate nearby districts?
                 #region
                 // if player is sleeping in this map and option enabled.

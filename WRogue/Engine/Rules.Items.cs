@@ -341,6 +341,12 @@ namespace djack.RogueSurvivor.Engine
                     return false;
                 }
             }
+            else if (it is ItemRadio)
+            {
+                ItemRadio radio = (ItemRadio)it;
+                if (actor.IsSleeping || !actor.Model.Abilities.IsIntelligent || (!radio.IsOn && radio.Batteries <= 0))
+                { reason = "radio cannot be used now"; return false; }
+            }
 
             // (3. Actor cant use item in his present state.)
             // todo if needed.
@@ -927,6 +933,14 @@ namespace djack.RogueSurvivor.Engine
                         return new ActionSwitchPowerGenerator(actor, game, powGen);
 
                     // Can do nothing by bumping.
+                    return null;
+                }
+
+                RadioReceiver radio = mapObj as RadioReceiver;
+                if (radio != null)
+                {
+                    if (IsSwitchableFor(actor, radio, out reason))
+                        return new ActionSwitchRadio(actor, game, radio);
                     return null;
                 }
 

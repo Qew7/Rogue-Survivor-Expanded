@@ -91,6 +91,30 @@ The graph retains map ownership and exits, local/world clocks and RNG state,
 actor/item positions, corpse references, trap and base ownership, item dropper
 attribution, NPC orders, selected presets/options, and connected base sections.
 Auxiliary map indexes are not serialized and are rebuilt for gameplay.
+An XPD base optionally keeps up to 32 unseen theft losses or fatal raids with
+their position, source event and story IDs. Theft losses retain resource and
+quantity but no thief identity; a raid retains the killed member's actor link.
+An owner or group member discovers one only after returning to the base and
+seeing the affected cell or the member's corpse.
+Stolen item instances retain the original victim group's stable identity, the
+leader's identity and name snapshot, and the theft event and story IDs. Inventory
+stacking keeps stolen goods from different thefts and clean goods separate.
+The marker survives dropping, corpse loot, gifts, trades and save/load; a later
+find or transfer can add a fact to the original theft story without storing a
+long-lived actor reference on the item. Stolen-goods facts retain the claimant
+group and item IDs as well, so members can recognize a retold loss after the
+original leader is out of sight and a visible item does not create the same
+discovery every turn. `items/stolen-goods` checks this state.
+
+Radio receivers retain their tuning state, and portable receivers retain their
+station, power state and batteries. The Session retains the survivor station
+host's actor identity and the district and due turn of one scheduled military
+drop. Its four current hourly programs retain their text, source and facts so
+receivers remain synchronized after loading. Each listener retains the last
+forecast and the last hourly slot per station they heard, preventing repeated
+knowledge and sanity effects. The player's journal retains the broadcast text.
+Radio noise targets are transient and are restored by the next
+broadcast after loading.
 
 Personality state retains traits, pending memories, bounded observations,
 evidence turns, persistent actor identities, and person/group/faction

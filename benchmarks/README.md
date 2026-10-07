@@ -9,6 +9,8 @@ live here; `Dockerfile` compiles the C# files into the scenario runner image.
 | AI, FOV, and generation | `sh tests/scenario.sh --bench-ai` | `rogue-bench-ai` |
 | Full NPC map turns | `sh tests/scenario.sh --bench-npc-turn` | `rogue-bench-npc-turn` |
 | NPC method calls and flamegraph | `sh benchmarks/bench-npc-calls.sh` | `rogue-bench-npc-calls` |
+| Radio broadcasts | `sh tests/scenario.sh --bench-radio` | 4 stations, 9 maps, 80 broadcasts across 40 hourly slots |
+| Radio method calls and flamegraph | `PROFILE_KIND=radio sh benchmarks/bench-npc-calls.sh` | Mono call profile |
 | Comparison with `0d243e6` | `bash benchmarks/bench-post-0d243e.sh` | `rogue-bench-post-baseline` |
 | NPC route, hunger, and sleep | `sh tests/scenario.sh --bench-npc-safety` | `rogue-bench-npc-safety` |
 | XPD base and supply routing | `sh tests/scenario.sh --bench-xpd` | `rogue-bench-xpd` |

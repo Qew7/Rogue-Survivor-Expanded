@@ -563,6 +563,7 @@ namespace djack.RogueSurvivor.Engine
             }   // skipped in lodetail turns.
 
             AdvanceMapTimers(map);
+            AdvanceRadios(map);
             Gameplay.Personality.PersonalitySystem.ObserveEncounters(this, map);
 
             // -- Advance local time.

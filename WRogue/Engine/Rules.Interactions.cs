@@ -15,6 +15,15 @@ namespace djack.RogueSurvivor.Engine
     partial class Rules
     {
         #region Switching Map Objects
+        public bool IsSwitchableFor(Actor actor, RadioReceiver radio, out string reason)
+        {
+            if (actor == null || radio == null || radio.Location.Map != actor.Location.Map ||
+                !actor.Model.Abilities.CanUseMapObjects || actor.IsSleeping ||
+                !IsAdjacent(actor.Location, radio.Location))
+            { reason = "cannot operate radio"; return false; }
+            reason = ""; return true;
+        }
+
         public bool IsSwitchableFor(Actor actor, PowerGenerator powGen, out string reason)
         {
             if (actor == null)

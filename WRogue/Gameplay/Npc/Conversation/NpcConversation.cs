@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using djack.RogueSurvivor.Data;
 using djack.RogueSurvivor.Engine;
 
@@ -66,14 +67,20 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             if (fact.Kind == "claimed_permission")
             {
                 if (fact.Source == NpcKnowledgeSource.Told)
-                    return !speaker.Personality.Knowledge.Facts.Exists(f => f.EventId == fact.EventId &&
-                        (f.Kind == "base_theft" && f.Source != NpcKnowledgeSource.Told || f.Kind == "false_testimony_exposed"));
+                {
+                    foreach (NpcFact known in speaker.Personality.Knowledge.Facts)
+                        if (known.EventId == fact.EventId &&
+                            (known.Kind == "base_theft" && known.Source != NpcKnowledgeSource.Told ||
+                             known.Kind == "false_testimony_exposed")) return false;
+                    return true;
+                }
                 return speaker.Personality.HasTrait("deceptive") &&
                     fact.SubjectId == speaker.PersonalityIdentity && fact.SourceId == speaker.PersonalityIdentity;
             }
+            Guid id = speaker.PersonalityIdentity;
+            if (fact.SubjectId != id && fact.OtherId != id) return true;
             NpcEventDefinition definition = game.NpcContent.Event(fact.Kind);
             if (definition == null) return true;
-            Guid id = speaker.PersonalityIdentity;
             NpcReportActorRole role = definition.ReportActorRole;
             bool ownAction = ((role & NpcReportActorRole.Subject) != 0 && fact.SubjectId == id) ||
                 ((role & NpcReportActorRole.Other) != 0 && fact.OtherId == id);
@@ -120,31 +127,60 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public static void ShareRumor(RogueGame game, Actor speaker, Actor listener, NpcFact fact, bool free)
         {
             if (!CanTell(game, speaker, fact)) return;
-            string report = NpcRecordDescriptions.Report(game.NpcContent, fact);
-            District district = fact.Place.Map.District;
-            string place = district == null ? "near " + fact.Place.Map.Name :
-                "in district " + World.CoordToString(district.WorldPosition.X, district.WorldPosition.Y);
-            Zone building = Zone.BuildingAt(fact.Place);
-            if (building != null) place += ", at the " + Zone.BuildingLabel(building.BuildingKind);
-            game.DoSay(speaker, listener, (fact.Kind == "claimed_permission" && fact.SubjectId == speaker.PersonalityIdentity ? "I say that " :
-                fact.Source == NpcKnowledgeSource.Told ? "I was told that " :
-                fact.Source == NpcKnowledgeSource.Inferred ? "As far as I know, " :
-                fact.Source == NpcKnowledgeSource.Participant ? "I was involved when " : "I saw that ") + report +
-                " " + place + ".", RogueGame.Sayflags.IS_STORY | RogueGame.Sayflags.IS_RUMOR |
+            int turn = speaker.Location.Map.LocalTime.TurnCounter;
+            List<NpcFact> chapter = Chapter(game, speaker, listener, fact);
+            List<string> lines = new List<string>();
+            foreach (NpcFact part in chapter) lines.Add(ReportSentence(game, speaker, part));
+            game.DoSay(speaker, listener, String.Join(" Then ", lines.ToArray()), RogueGame.Sayflags.IS_STORY | RogueGame.Sayflags.IS_RUMOR |
                 (free ? RogueGame.Sayflags.IS_FREE_ACTION : RogueGame.Sayflags.NONE), fact.EventId, fact.StoryId);
+            List<Actor> hearers = new List<Actor>();
             foreach (Actor hearer in speaker.Location.Map.Actors)
             {
                 if (hearer == speaker || hearer.IsDead || hearer.IsSleeping || !hearer.Model.Abilities.IsIntelligent ||
                     hearer.Model.Abilities.IsUndead || game.Rules.StdDistance(hearer.Location.Position, speaker.Location.Position) > hearer.AudioRange) continue;
                 if (hearer.Personality == null) hearer.Personality = new PersonalityState();
-                NpcKnowledgeSystem.Hear(game, hearer, speaker, fact);
-                speaker.Personality.Knowledge.Told(fact.EventId, hearer.PersonalityIdentity,
-                    speaker.Location.Map.LocalTime.TurnCounter);
+                hearers.Add(hearer);
             }
-            int turn = speaker.Location.Map.LocalTime.TurnCounter;
-            speaker.Personality.Knowledge.Told(fact.EventId, listener.PersonalityIdentity, turn);
+            foreach (NpcFact part in chapter)
+            {
+                foreach (Actor hearer in hearers)
+                {
+                    NpcKnowledgeSystem.Hear(game, hearer, speaker, part);
+                    speaker.Personality.Knowledge.Told(part.EventId, hearer.PersonalityIdentity, turn);
+                }
+                speaker.Personality.Knowledge.Told(part.EventId, listener.PersonalityIdentity, turn);
+            }
             speaker.Personality.Knowledge.NextTalkTurn = turn + 30;
             NpcEvents.Publish(game, "rumor_shared", speaker, listener, fact.EventId, fact.StoryId);
+        }
+
+        public static List<NpcFact> Chapter(RogueGame game, Actor speaker, Actor listener, NpcFact fact, int turn = -1)
+        {
+            if (turn < 0) turn = speaker.Location.Map.LocalTime.TurnCounter;
+            List<NpcFact> chapter = new List<NpcFact> { fact };
+            if (!String.IsNullOrEmpty(fact.StoryId))
+                foreach (NpcFact related in speaker.Personality.Knowledge.Facts)
+                    if (related != fact && related.StoryId == fact.StoryId &&
+                        EligibleFact(game, speaker, related, turn) &&
+                        (listener == null || EligibleListener(speaker, listener, related)))
+                        chapter.Add(related);
+            chapter.Sort((a, b) => a.EventTurn != b.EventTurn ? a.EventTurn.CompareTo(b.EventTurn) : a.EventId.CompareTo(b.EventId));
+            while (chapter.Count > 10) chapter.RemoveAt(chapter[0] == fact ? 1 : 0);
+            return chapter;
+        }
+
+        public static string ReportSentence(RogueGame game, Actor speaker, NpcFact fact)
+        {
+            District district = fact.Place.Map.District;
+            string place = district == null ? "near " + fact.Place.Map.Name :
+                "in district " + World.CoordToString(district.WorldPosition.X, district.WorldPosition.Y);
+            Zone building = Zone.BuildingAt(fact.Place);
+            if (building != null) place += ", at the " + Zone.BuildingLabel(building.BuildingKind);
+            return (fact.Kind == "claimed_permission" && fact.SubjectId == speaker.PersonalityIdentity ? "I say that " :
+                fact.Source == NpcKnowledgeSource.Told ? "I was told that " :
+                fact.Source == NpcKnowledgeSource.Inferred ? "As far as I know, " :
+                fact.Source == NpcKnowledgeSource.Participant ? "I was involved when " : "I saw that ") +
+                NpcRecordDescriptions.Report(game.NpcContent, fact) + " " + place + ".";
         }
     }
 }

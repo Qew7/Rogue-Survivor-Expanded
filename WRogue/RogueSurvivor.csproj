@@ -311,6 +311,10 @@
     <Compile Include="Engine\MapObjects\Board.cs" />
     <Compile Include="Engine\MapObjects\Fortification.cs" />
     <Compile Include="Engine\MapObjects\PowerGenerator.cs" />
+    <Compile Include="Engine\MapObjects\RadioReceiver.cs" />
+    <Compile Include="Engine\Items\ItemRadio.cs" />
+    <Compile Include="Engine\Actions\ActionSwitchRadio.cs" />
+    <Compile Include="Engine\RogueGame.Radio.cs" />
     <Compile Include="Engine\NullSoundManager.cs" />
     <Compile Include="Engine\Scoring.cs" />
     <Compile Include="Engine\Session.cs" />
