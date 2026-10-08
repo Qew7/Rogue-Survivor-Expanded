@@ -99,7 +99,11 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         {
             int confidence = ReportConfidence(listener, speaker, source);
             NpcKnowledge knowledge = listener.Personality.Knowledge;
-            NpcFact previous = knowledge.Facts.Find(f => f.EventId == source.EventId && f.Kind == source.Kind);
+            NpcFact previous = null;
+            List<NpcFact> facts = knowledge.Facts;
+            for (int i = facts.Count - 1; i >= 0; i--)
+                if (facts[i].EventId == source.EventId && facts[i].Kind == source.Kind)
+                { previous = facts[i]; break; }
             if (previous != null && previous.Confidence >= confidence) return false;
             NpcFact fact = source.Retell(speaker.PersonalityIdentity, listener.Location.Map.LocalTime.TurnCounter, confidence);
             bool refuted = false;

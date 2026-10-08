@@ -563,3 +563,14 @@ its instrumented root fell from 475 to 278 ms. The
 [pruned-program flamegraph](../benchmarks/profiles/radio-pruned.svg) captures
 the final profile. The fixture has one repeated fact kind, so the kind-cache
 gain will vary with the mix of events in a city.
+
+On October 8, retelling checks were changed to scan recent facts without a
+`List.Find` delegate, and headline ranking reuses the known-story decision
+for consecutive facts in the same story. Alternating two clean-checkout runs
+with two optimized runs gave 7.1–8.4 versus 5.7–7.1 ms for Survivor Network
+and 6.5 versus 5.4–5.8 ms for Local Calls per 80 broadcasts. The Mono call
+profile fell from 319 to 239 ms inclusive at `RadioBenchmarks.RunBroadcasts`;
+`NpcKnowledgeSystem.Hear` fell from 115 to 65 ms and `BuildRadioProgram` from
+153 to 125 ms. The [updated flamegraph](../benchmarks/profiles/radio-recent.svg)
+shows the remaining call costs. These are fixture timings, and the
+instrumented profile is not a frame-time measurement.

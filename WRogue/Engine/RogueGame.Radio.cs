@@ -211,6 +211,8 @@ namespace djack.RogueSurvivor.Engine
             HashSet<string> knownStories = null;
             string lastKind = null;
             bool lastKindMatches = false;
+            string lastStoryId = null;
+            bool lastStoryKnown = false;
             if (playerFacts != null && playerFacts.Count > 0)
             {
                 knownIds = new HashSet<long>();
@@ -256,7 +258,12 @@ namespace djack.RogueSurvivor.Engine
                                     foreach (NpcFact known in playerFacts)
                                         if (known.EventId == fact.EventId && known.Kind == fact.Kind)
                                         { knownEvent = true; break; }
-                                bool knownStory = !String.IsNullOrEmpty(fact.StoryId) && knownStories.Contains(fact.StoryId);
+                                if (fact.StoryId != lastStoryId)
+                                {
+                                    lastStoryId = fact.StoryId;
+                                    lastStoryKnown = !String.IsNullOrEmpty(lastStoryId) && knownStories.Contains(lastStoryId);
+                                }
+                                bool knownStory = lastStoryKnown;
                                 if (!knownEvent) score += 12;
                                 if (knownStory && !knownEvent) score += 20;
                             }
