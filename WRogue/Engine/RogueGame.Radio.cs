@@ -93,6 +93,7 @@ namespace djack.RogueSurvivor.Engine
                     if (radio.Batteries <= 0) { radio.IsOn = false; continue; }
                     --radio.Batteries;
                     BroadcastRadio(radio.Station, map, actor.Location.Position, actor);
+                    if (radio.Batteries == 0) radio.IsOn = false;
                 }
             }
         }

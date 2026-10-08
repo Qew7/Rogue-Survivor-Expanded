@@ -45,7 +45,7 @@ static class RadioBenchmarks
         GC.Collect();
         GC.WaitForPendingFinalizers();
         double start = ProcessAgeSeconds();
-        RunBroadcasts(fixture, Broadcasts);
+        RunBroadcasts(fixture, Broadcasts, 2);
         Console.WriteLine("PROFILE_WINDOW {0:F3} {1:F3}", start, ProcessAgeSeconds());
         Console.WriteLine("PROFILE_RADIO {0} broadcasts across 40 hourly slots, 9 maps, 216 sources, 3456 facts, 20 listeners", Broadcasts);
     }
@@ -58,7 +58,7 @@ static class RadioBenchmarks
         RunBroadcasts(fixture, 1);
         GC.Collect();
         long start = Stopwatch.GetTimestamp();
-        RunBroadcasts(fixture, Broadcasts);
+        RunBroadcasts(fixture, Broadcasts, 2);
         return (Stopwatch.GetTimestamp() - start) * 1000.0 / Stopwatch.Frequency;
     }
 
@@ -66,13 +66,13 @@ static class RadioBenchmarks
     { return (DateTime.UtcNow - Process.GetCurrentProcess().StartTime.ToUniversalTime()).TotalSeconds; }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static void RunBroadcasts(Fixture fixture, int count)
+    static void RunBroadcasts(Fixture fixture, int count, int firstHour = 1)
     {
         for (int i = 0; i < count; i++)
         {
             // Two receivers hear each shared hourly program; the next pair forces a new selection.
-            fixture.World.Map.LocalTime.TurnCounter = WorldTime.TURNS_PER_HOUR * (1 + i / 2);
-            Session.Get.WorldTime.TurnCounter = WorldTime.TURNS_PER_HOUR * (1 + i / 2);
+            fixture.World.Map.LocalTime.TurnCounter = WorldTime.TURNS_PER_HOUR * (firstHour + i / 2);
+            Session.Get.WorldTime.TurnCounter = WorldTime.TURNS_PER_HOUR * (firstHour + i / 2);
             Broadcast.Invoke(fixture.World.Game, new object[] { fixture.Station, fixture.World.Map, fixture.Position, null });
         }
     }

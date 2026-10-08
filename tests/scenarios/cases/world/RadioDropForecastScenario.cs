@@ -2,6 +2,7 @@ using System;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using djack.RogueSurvivor.Data;
 using djack.RogueSurvivor.Engine;
 using djack.RogueSurvivor.Engine.Actions;
@@ -67,6 +68,41 @@ static class RadioDropForecastScenario
             Check.Equal(true, Enumerable.Range(0, world.Map.Width).Any(x =>
                 Enumerable.Range(0, world.Map.Height).Any(y => world.Map.GetItemsAt(x, y) != null)),
                 "real supplies are dropped");
+
+            Map remoteMap = new Map(4639, "remote drop", 20, 4);
+            for (int y = 0; y < remoteMap.Height; y++)
+                for (int x = 0; x < remoteMap.Width; x++)
+                    remoteMap.SetTileModelAt(x, y, world.Game.GameTiles.FLOOR_ASPHALT);
+            District remote = new District(new Point(1, 0), DistrictKind.RESIDENTIAL);
+            remote.EntryMap = remoteMap;
+            World city = new World(2);
+            city[0, 0] = world.Map.District;
+            city[1, 0] = remote;
+            Session.Get.World = city;
+            int[,,] raids = new int[(int)RaidType._COUNT, 2, 2];
+            for (int type = 0; type < (int)RaidType._COUNT; type++)
+                for (int x = 0; x < 2; x++)
+                    for (int y = 0; y < 2; y++) raids[type, x, y] = -1;
+            typeof(Session).GetField("m_Event_Raids", BindingFlags.Instance | BindingFlags.NonPublic)
+                .SetValue(Session.Get, raids);
+            remoteMap.LocalTime.TurnCounter = Session.Get.WorldTime.TurnCounter;
+            Session.Get.RadioDropDistrict = remote.WorldPosition;
+            Session.Get.RadioDropTurn = Session.Get.WorldTime.TurnCounter;
+            Check.Equal(false, (bool)Check.Call(world.Game, "CheckForEvent_ArmySupplies", remoteMap),
+                "simulated destination cannot fire the same scheduled flight");
+            player.FoodPoints = 10000;
+            Type flags = typeof(RogueGame).GetNestedType("SimFlags", BindingFlags.NonPublic);
+            Check.Call(world.Game, "AdvancePlay", new[] { typeof(District), flags },
+                world.Map.District, Enum.Parse(flags, "NOT_SIMULATING"));
+            Check.Equal(0, Session.Get.RadioDropTurn, "current district dispatches the remote flight once");
+            int remoteStacks = Enumerable.Range(0, remoteMap.Width).Sum(x =>
+                Enumerable.Range(0, remoteMap.Height).Count(y => remoteMap.GetItemsAt(x, y) != null));
+            Check.Equal(true, remoteStacks > 0, "remote district receives actual supplies");
+            Check.Call(world.Game, "AdvancePlay", new[] { typeof(District), flags },
+                world.Map.District, Enum.Parse(flags, "NOT_SIMULATING"));
+            Check.Equal(remoteStacks, Enumerable.Range(0, remoteMap.Width).Sum(x =>
+                Enumerable.Range(0, remoteMap.Height).Count(y => remoteMap.GetItemsAt(x, y) != null)),
+                "later turns cannot repeat the same flight");
         });
     }
 }

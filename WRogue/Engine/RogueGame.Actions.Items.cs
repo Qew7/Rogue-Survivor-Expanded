@@ -470,7 +470,7 @@ namespace djack.RogueSurvivor.Engine
             int quantityAdded;
             int quantityBefore = it.Quantity;
             actor.Inventory.AddAsMuchAsPossible(it, out quantityAdded);
-            if (quantityAdded == 0 && provisionalTheft) it.ClearTheft();
+            if (quantityAdded < quantityBefore && provisionalTheft) it.ClearTheft();
             // if added all, remove from map.
             if (quantityAdded == quantityBefore)
             {

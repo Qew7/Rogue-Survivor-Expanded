@@ -351,7 +351,9 @@ namespace djack.RogueSurvivor.Engine
                 return false;
 
             if (m_Session.RadioDropTurn > 0)
-                return map.District != null && map.District.WorldPosition == m_Session.RadioDropDistrict &&
+                // The main turn handles remote destinations; the simulation worker must not fire this schedule.
+                return m_Session.CurrentMap != null && map.District == m_Session.CurrentMap.District &&
+                    map.District.WorldPosition == m_Session.RadioDropDistrict &&
                     m_Session.WorldTime.TurnCounter >= m_Session.RadioDropTurn && !map.LocalTime.IsNight;
 
             // during day only.

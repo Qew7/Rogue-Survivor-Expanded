@@ -398,7 +398,7 @@ namespace djack.RogueSurvivor.Engine
 
                     // tracker?
                     ItemTracker tracker = leftItem as ItemTracker;
-                    if (tracker != null)
+                    if (tracker != null && !(tracker is ItemRadio))
                     {
                         if (tracker.Batteries > 0)
                         {
