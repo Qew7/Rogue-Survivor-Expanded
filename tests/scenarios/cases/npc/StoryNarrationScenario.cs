@@ -14,10 +14,12 @@ static class StoryNarrationScenario
         return count;
     }
 
-    static void CheckStory(string text, string place)
+    static void CheckStory(string text, string place, bool radio)
     {
-        Check.Equal(1, Count(text, "I was told that"), "repeated hearsay introduction is omitted");
-        Check.Equal(1, Count(text, "I saw that"), "changed evidence source remains explicit");
+        Check.Equal(1, Count(text, radio ? "A secondhand report says that" : "I was told that"),
+            "repeated hearsay introduction is omitted");
+        Check.Equal(1, Count(text, radio ? "A witness says that" : "I saw that"),
+            "changed evidence source remains explicit");
         Check.Equal(1, Count(text, place), "shared location is stated once");
         Check.Equal(true, text.Contains(" After that, "), "first later event has a transition");
         Check.Equal(true, text.Contains(" Later, "), "later events use varied transitions");
@@ -50,11 +52,11 @@ static class StoryNarrationScenario
             Session.Get.WorldTime.TurnCounter = WorldTime.TURNS_PER_DAY;
             RadioProgram radio = (RadioProgram)Check.Call(world.Game, "GetRadioProgram", 3, 24);
             Check.Equal(4, radio.Facts.Length, "radio retains every event in the chapter");
-            CheckStory(radio.Text, place);
+            CheckStory(radio.Text, place, true);
 
             NpcConversation.ShareRumor(world.Game, speaker, listener,
                 speaker.Personality.Knowledge.Facts[0], true);
-            CheckStory(player.Personality.HeardJournal.Last().Text, place);
+            CheckStory(player.Personality.HeardJournal.Last().Text, place, false);
             Check.Equal(4, listener.Personality.Knowledge.Facts.Count(f => f.StoryId == "narration"),
                 "listener learns every event despite shorter narration");
         });

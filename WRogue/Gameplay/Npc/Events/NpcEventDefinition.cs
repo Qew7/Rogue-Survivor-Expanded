@@ -30,6 +30,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public Func<IList<NpcFact>, string> SummarizeReports;
         public bool ReportConclusion;
         public string[] ReportDisputesKinds;
+        public int ReportPriority;
         readonly List<Action<NpcObservation>>[] observers = {
             new List<Action<NpcObservation>>(), new List<Action<NpcObservation>>(),
             new List<Action<NpcObservation>>(), new List<Action<NpcObservation>>(), new List<Action<NpcObservation>>() };

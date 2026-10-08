@@ -36,8 +36,8 @@ static class RadioStoryContinuationScenario
             RadioProgram update = (RadioProgram)Check.Call(world.Game, "GetRadioProgram", 0, 26);
             Check.Equal(2, update.Facts.Length, "broadcast retains the complete episode");
             Check.Equal(true, update.Text.StartsWith("Follow-up from survivors: ", StringComparison.Ordinal) &&
-                update.Text.Contains("Ben") && !update.Text.Contains("Ada"),
-                "familiar story reports only the new development");
+                update.Text.Contains("Earlier reports said that Ada") && update.Text.Contains("Ben"),
+                "familiar story gives one factual reminder before the new development");
             Check.Call(world.Game, "BroadcastRadio",
                 new[] { typeof(int), typeof(Map), typeof(System.Drawing.Point), typeof(Actor) },
                 0, world.Map, player.Location.Position, player);

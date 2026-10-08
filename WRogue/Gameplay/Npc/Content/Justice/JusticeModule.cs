@@ -118,7 +118,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             catalog.Event(new NpcEventDefinition("false_testimony_exposed", NpcRecordCategory.Encounters, false,
                 e => (e.Other ?? "Someone") + " rejected " + (e.Subject ?? "someone") + "'s permission claim after witnessing the theft.",
                 f => f.ReportSubject + " gave an account contradicted by an eyewitness", isPrivate: true)
-                { ReportDisputesKinds = new[] { "base_theft", "claimed_permission" } });
+                { ReportDisputesKinds = new[] { "base_theft", "claimed_permission" }, ReportPriority = 8 });
             catalog.Memory(new MemoryDefinition("false_testimony_exposed", "Caught a contradictory permission claim", 2, 5,
                 new[] { new MemoryTrigger("false_testimony_exposed", (a, e) => a == e.Other) },
                 new MemoryOutcome(null, "mistrustful", null), new MemoryOutcome(null, null, Skills.IDs.STRONG_PSYCHE))

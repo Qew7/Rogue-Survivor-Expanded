@@ -329,7 +329,7 @@ namespace djack.RogueSurvivor.Engine
             HashSet<string> reports = new HashSet<string>(StringComparer.Ordinal);
             foreach (NpcFact fact in chapter)
             {
-                string line = NpcConversation.ReportSentence(this, source, fact);
+                string line = NpcConversation.ReportSentence(this, source, fact, true);
                 if (!reports.Add(line)) continue;
                 if (station == 3)
                 {
@@ -360,14 +360,26 @@ namespace djack.RogueSurvivor.Engine
                     if (playerFacts.Exists(known => known.EventId == reported[i].EventId && known.Kind == reported[i].Kind))
                     { reported.RemoveAt(i); lines.RemoveAt(i); }
             }
-            program.Text = reported.Count == 0 ? RadioUpdateLeads[station] + "No new details on that story." :
-                (familiarStory ? RadioUpdateLeads[station] : RadioStoryLeads[station]) +
-                NpcConversation.StoryText(NpcContent, source, reported, lines);
-            NpcStory activeStory = String.IsNullOrEmpty(headline.StoryId) ? null : m_Session.NpcDirector.Find(headline.StoryId);
-            if (activeStory != null && !activeStory.Finished && headline.Place.Map.District != null)
+            string recap = "";
+            if (familiarStory && reported.Count > 0)
             {
-                Point district = headline.Place.Map.District.WorldPosition;
-                program.Text += " The story is still unfolding in district " + World.CoordToString(district.X, district.Y) + ".";
+                NpcFact previous = null;
+                foreach (NpcFact fact in chapter)
+                    if (fact.EventTurn <= reported[0].EventTurn &&
+                        playerFacts.Exists(known => known.EventId == fact.EventId && known.Kind == fact.Kind))
+                        previous = fact;
+                if (previous != null)
+                    recap = "Earlier reports said that " + NpcRecordDescriptions.Report(NpcContent, previous) + ". ";
+            }
+            program.Text = reported.Count == 0 ? RadioUpdateLeads[station] + "No new details on that story." :
+                (familiarStory ? RadioUpdateLeads[station] : RadioStoryLeads[station]) + recap +
+                NpcConversation.StoryText(NpcContent, source, reported, lines, true);
+            NpcStory activeStory = String.IsNullOrEmpty(headline.StoryId) ? null : m_Session.NpcDirector.Find(headline.StoryId);
+            NpcFact latest = chapter[chapter.Count - 1];
+            if (activeStory != null && !activeStory.Finished && latest.Place.Map.District != null)
+            {
+                Point district = latest.Place.Map.District.WorldPosition;
+                program.Text += " The latest report came from district " + World.CoordToString(district.X, district.Y) + ".";
             }
             program.Source = source;
             program.Facts = chapter.ToArray();

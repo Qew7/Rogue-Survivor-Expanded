@@ -177,9 +177,9 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             return chapter;
         }
 
-        public static string ReportSentence(RogueGame game, Actor speaker, NpcFact fact)
+        public static string ReportSentence(RogueGame game, Actor speaker, NpcFact fact, bool radio = false)
         {
-            return ReportLead(speaker, fact) + NpcRecordDescriptions.Report(game.NpcContent, fact) + " " + ReportPlace(fact) + ".";
+            return ReportLead(speaker, fact, radio) + NpcRecordDescriptions.Report(game.NpcContent, fact) + " " + ReportPlace(fact) + ".";
         }
 
         struct StoryPart
@@ -190,20 +190,21 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             { First = first; Last = last; Text = text; }
         }
 
-        static bool CanGroup(Actor speaker, IList<NpcFact> run, NpcFact next)
+        static bool CanGroup(Actor speaker, IList<NpcFact> run, NpcFact next, bool radio)
         {
             NpcFact first = run[0];
             if (first.SubjectId == Guid.Empty || first.OtherId == Guid.Empty || next.OtherId == Guid.Empty ||
                 first.CauseId != 0 || next.CauseId != 0 || first.Kind != next.Kind ||
                 first.SubjectId != next.SubjectId || first.ReportSubject != next.ReportSubject ||
                 String.IsNullOrEmpty(first.ReportOther) || String.IsNullOrEmpty(next.ReportOther) ||
-                ReportLead(speaker, first) != ReportLead(speaker, next) || ReportPlace(first) != ReportPlace(next)) return false;
+                ReportLead(speaker, first, radio) != ReportLead(speaker, next, radio) || ReportPlace(first) != ReportPlace(next)) return false;
             foreach (NpcFact prior in run)
                 if (prior.OtherId == next.OtherId || prior.ReportOther == next.ReportOther) return false;
             return true;
         }
 
-        public static string StoryText(NpcContentCatalog catalog, Actor speaker, IList<NpcFact> facts, IList<string> lines)
+        public static string StoryText(NpcContentCatalog catalog, Actor speaker, IList<NpcFact> facts, IList<string> lines,
+            bool radio = false)
         {
             if (lines.Count == 0) return "";
             var parts = new List<StoryPart>();
@@ -212,7 +213,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 NpcEventDefinition definition = catalog.Event(facts[i].Kind);
                 var run = new List<NpcFact> { facts[i] };
                 if (definition != null && definition.SummarizeReports != null)
-                    while (i + run.Count < facts.Count && CanGroup(speaker, run, facts[i + run.Count]))
+                    while (i + run.Count < facts.Count && CanGroup(speaker, run, facts[i + run.Count], radio))
                         run.Add(facts[i + run.Count]);
                 if (run.Count > 1)
                 {
@@ -220,7 +221,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                     if (!String.IsNullOrEmpty(summary))
                     {
                         parts.Add(new StoryPart(run[0], run[run.Count - 1],
-                            ReportLead(speaker, run[0]) + summary + " " + ReportPlace(run[0]) + "."));
+                            ReportLead(speaker, run[0], radio) + summary + " " + ReportPlace(run[0]) + "."));
                         i += run.Count;
                         continue;
                     }
@@ -228,20 +229,42 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 parts.Add(new StoryPart(facts[i], facts[i], lines[i]));
                 i++;
             }
+            if (parts.Count > 4)
+            {
+                bool[] keep = new bool[parts.Count];
+                keep[0] = keep[parts.Count - 1] = true;
+                for (int chosen = 2; chosen < 4; chosen++)
+                {
+                    int best = -1, bestScore = Int32.MinValue;
+                    for (int i = 1; i < parts.Count - 1; i++)
+                    {
+                        if (keep[i]) continue;
+                        int score = ReportBeatScore(catalog, speaker, parts, i);
+                        if (score > bestScore || score == bestScore && i > best)
+                        { best = i; bestScore = score; }
+                    }
+                    keep[best] = true;
+                }
+                for (int i = parts.Count - 1; i >= 0; i--) if (!keep[i]) parts.RemoveAt(i);
+            }
             string story = parts[0].Text;
             string previousPlace = ReportPlace(parts[0].Last);
             for (int i = 1; i < parts.Count; i++)
             {
                 NpcFact fact = parts[i].First, previous = parts[i - 1].Last;
                 string line = parts[i].Text;
-                string lead = ReportLead(speaker, fact);
-                bool sameLead = lead == ReportLead(speaker, previous);
+                string lead = ReportLead(speaker, fact, radio);
+                bool sameLead = lead == ReportLead(speaker, previous, radio);
                 if (sameLead && line.StartsWith(lead, StringComparison.Ordinal))
                     line = line.Substring(lead.Length);
                 string currentPlace = ReportPlace(fact);
                 string placeSuffix = " " + currentPlace + ".";
                 if (currentPlace == previousPlace && line.EndsWith(placeSuffix, StringComparison.Ordinal))
                     line = line.Substring(0, line.Length - placeSuffix.Length) + ".";
+                if (sameLead && fact.NamesSubject && previous.NamesSubject &&
+                    fact.SubjectId == previous.SubjectId &&
+                    line.StartsWith(fact.ReportSubject + " ", StringComparison.Ordinal))
+                    line = "they" + line.Substring(fact.ReportSubject.Length);
                 NpcEventDefinition definition = catalog.Event(fact.Kind);
                 string transition = definition != null && definition.ReportDisputesKinds != null &&
                     Array.IndexOf(definition.ReportDisputesKinds, previous.Kind) >= 0 &&
@@ -257,6 +280,35 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             return story;
         }
 
+        static int ReportBeatScore(NpcContentCatalog catalog, Actor speaker, IList<StoryPart> parts, int index)
+        {
+            NpcFact fact = parts[index].First;
+            NpcEventDefinition definition = catalog.Event(fact.Kind);
+            int score = definition == null ? 0 : definition.ReportPriority;
+            if (definition != null && definition.ReportConclusion) score += 8;
+            if (fact.Units > 0 || !String.IsNullOrEmpty(fact.Resource)) score += 3;
+            if (parts[index - 1].Last.Kind != fact.Kind) score += 2;
+            for (int i = 0; i < parts.Count; i++)
+            {
+                if (i == index) continue;
+                if (fact.CauseId > 0 && fact.CauseId == parts[i].Last.EventId ||
+                    parts[i].First.CauseId > 0 && parts[i].First.CauseId == parts[index].Last.EventId)
+                    score += 5;
+                if (definition != null && definition.ReportDisputesKinds != null &&
+                    fact.EventId == parts[i].Last.EventId &&
+                    Array.IndexOf(definition.ReportDisputesKinds, parts[i].Last.Kind) >= 0)
+                    score += 8;
+            }
+            if (speaker.Personality != null && definition != null)
+            {
+                if (speaker.Personality.HasTrait("timid") &&
+                    (definition.Categories & NpcRecordCategory.Combat) != 0) score += 3;
+                if (speaker.Personality.HasTrait("compassionate") &&
+                    (definition.Categories & NpcRecordCategory.Help) != 0) score += 3;
+            }
+            return score;
+        }
+
         static string ReportPlace(NpcFact fact)
         {
             District district = fact.Place.Map.District;
@@ -267,8 +319,15 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             return place;
         }
 
-        static string ReportLead(Actor speaker, NpcFact fact)
+        static string ReportLead(Actor speaker, NpcFact fact, bool radio = false)
         {
+            if (radio)
+                return fact.Kind == "claimed_permission" && fact.SubjectId == speaker.PersonalityIdentity ?
+                    "The person involved claims that " :
+                    fact.Source == NpcKnowledgeSource.Told ? "A secondhand report says that " :
+                    fact.Source == NpcKnowledgeSource.Inferred ? "A source believes that " :
+                    fact.Source == NpcKnowledgeSource.Participant ? "Someone involved says that " :
+                    "A witness says that ";
             return fact.Kind == "claimed_permission" && fact.SubjectId == speaker.PersonalityIdentity ? "I say that " :
                 fact.Source == NpcKnowledgeSource.Told ? "I was told that " :
                 fact.Source == NpcKnowledgeSource.Inferred ? "As far as I know, " :
