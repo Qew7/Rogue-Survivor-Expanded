@@ -8,6 +8,7 @@ namespace djack.RogueSurvivor.Data
     sealed class NpcFact
     {
         public long EventId;
+        [System.Runtime.Serialization.OptionalField] public long CauseId;
         public string Kind, SubjectName, OtherName, StoryId;
         [System.Runtime.Serialization.OptionalField] public string Resource;
         [System.Runtime.Serialization.OptionalField] public Guid ClaimantGroupId;
@@ -28,7 +29,7 @@ namespace djack.RogueSurvivor.Data
         public bool NoSubjectLocation;
         public NpcFact Retell(Guid speaker, int turn, int confidence)
         {
-            return new NpcFact { EventId = EventId, Kind = Kind, SubjectName = SubjectName, OtherName = OtherName,
+            return new NpcFact { EventId = EventId, CauseId = CauseId, Kind = Kind, SubjectName = SubjectName, OtherName = OtherName,
                 SubjectReportName = SubjectReportName, OtherReportName = OtherReportName,
                 SubjectFactionId = SubjectFactionId, OtherFactionId = OtherFactionId,
                 StoryId = StoryId, Resource = Resource, ClaimantGroupId = ClaimantGroupId, ItemId = ItemId,

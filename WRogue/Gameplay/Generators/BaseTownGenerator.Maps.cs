@@ -162,7 +162,7 @@ namespace djack.RogueSurvivor.Gameplay.Generators
             host.IsProperName = true;
             host.IsUnique = true;
             basement.PlaceActorAt(host, new Point(4, 4));
-            RadioReceiver transmitter = new RadioReceiver(GameImages.ITEM_POLICE_RADIO);
+            RadioReceiver transmitter = new RadioReceiver(GameImages.OBJ_RADIO);
             transmitter.IsMovable = false;
             transmitter.SetState(1);
             basement.PlaceMapObjectAt(transmitter, new Point(5, 4));

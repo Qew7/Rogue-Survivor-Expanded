@@ -30,7 +30,7 @@ static class StoryChapterRumorScenario
                 "listener learns both real facts from one speech");
             Check.Equal(0, listener.Personality.Knowledge.Facts.Count(f => f.StoryId == "other"),
                 "unrelated report stays separate");
-            Check.Equal(true, player.Personality.HeardJournal.Last().Text.Contains(" Then "),
+            Check.Equal(true, player.Personality.HeardJournal.Last().Text.Contains(" After that, "),
                 "player hears a connected chapter rather than isolated fragments");
             Check.Equal(false, NpcConversation.EligibleListener(teller, listener, chosen),
                 "chapter is not repeated at unchanged confidence");

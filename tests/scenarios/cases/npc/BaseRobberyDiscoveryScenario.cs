@@ -84,6 +84,7 @@ static class BaseRobberyDiscoveryScenario
             Check.Equal(NpcKnowledgeSource.Told,
                 listener.Personality.Knowledge.Facts.Find(f => f.EventId == discovered.EventId).Source,
                 "listener keeps the account as hearsay");
+            player.Personality.Knowledge.Facts.Clear();
             bool broadcast = false;
             for (int slot = 1; slot <= 12; slot++)
             {

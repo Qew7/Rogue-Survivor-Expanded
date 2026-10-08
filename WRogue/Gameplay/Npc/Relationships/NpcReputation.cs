@@ -115,7 +115,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             listener.Personality.Knowledge.Learn(new NpcFact { EventId = claim.EventId, Kind = "false_testimony_exposed",
                 SubjectId = claimant, SubjectName = claimantName, EventTurn = turn, LearnedTurn = turn,
                 Source = NpcKnowledgeSource.Inferred, SourceId = listener.PersonalityIdentity, Confidence = 100,
-                Place = listener.Location, NoSubjectLocation = true });
+                Place = listener.Location, StoryId = claim.StoryId, NoSubjectLocation = true });
             MemoryDefinition definition = catalog.Personalities.Memory("false_testimony_exposed");
             if (definition != null) NpcMemoryProcessor.Add(listener, definition, turn, claimantName, null,
                 subjectId: claimant, relations: speaker.PersonalityIdentity == claimant ?

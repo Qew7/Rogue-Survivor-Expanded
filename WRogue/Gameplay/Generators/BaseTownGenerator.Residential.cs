@@ -430,7 +430,7 @@ namespace djack.RogueSurvivor.Gameplay.Generators
                 MapObjectPlaceInGoodPosition(map, b.InsideRect,
                     pt => map.GetTileAt(pt).IsInside && map.GetTileAt(pt).Model.IsWalkable &&
                         map.GetMapObjectAt(pt) == null && map.GetExitAt(pt) == null,
-                    m_DiceRoller, pt => new RadioReceiver(GameImages.ITEM_POLICE_RADIO));
+                    m_DiceRoller, pt => new RadioReceiver(GameImages.OBJ_RADIO));
             if (m_DiceRoller.RollChance(8))
             {
                 bool placedRadio = false;

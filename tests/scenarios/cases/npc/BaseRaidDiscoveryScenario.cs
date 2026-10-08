@@ -71,6 +71,7 @@ static class BaseRaidDiscoveryScenario
             Actor listener = NpcIntentSupport.Actor(active, "listener", 2, 2);
             Check.Equal(true, active.Try(new ActionNpcTell(owner, active.Game, listener, discovered)),
                 "discoverer shares the fatal raid through the existing rumor action");
+            player.Personality.Knowledge.Facts.Clear();
             bool broadcast = false;
             for (int slot = 1; slot <= 12; slot++)
             {

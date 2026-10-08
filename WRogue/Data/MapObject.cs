@@ -98,6 +98,7 @@ namespace djack.RogueSurvivor.Data
         public string HiddenImageID
         {
             get { return m_HiddenImageID; }
+            protected set { m_HiddenImageID = value; }
         }
 
         public Location Location

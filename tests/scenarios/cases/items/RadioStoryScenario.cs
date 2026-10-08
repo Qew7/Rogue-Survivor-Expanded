@@ -37,6 +37,7 @@ static class RadioStoryScenario
             NpcConversation.ShareRumor(world.Game, witness, relay, first, true);
             Check.Equal(0, player.Personality.Knowledge.Facts.Count, "wall hides original chapter");
 
+            // A legacy receiver in an older save still refers to the handheld item sprite.
             var receiver = new RadioReceiver(GameImages.ITEM_POLICE_RADIO);
             world.Map.PlaceMapObjectAt(receiver, new Point(8, 1));
             int ap = player.ActionPoints;
@@ -45,7 +46,7 @@ static class RadioStoryScenario
             Check.Equal(true, player.ActionPoints < ap, "tuning costs an action");
             Check.Equal(2, player.Personality.Knowledge.Facts.Count(f => f.StoryId == "radio-chapter"),
                 "broadcast transmits both linked facts as hearsay");
-            Check.Equal(true, player.Personality.HeardJournal.Last().Text.Contains(" Then "),
+            Check.Equal(true, player.Personality.HeardJournal.Last().Text.Contains(" After that, "),
                 "broadcast is saved as one connected story");
             Check.Equal(startingSanity - 1, player.Sanity,
                 "personal attack and aid news affect a timid listener once each");
@@ -124,7 +125,12 @@ static class RadioStoryScenario
             {
                 BinarySaveStore.Save(path, Session.Get);
                 Session saved = BinarySaveStore.Load<Session>(path);
+                saved.World[0, 0].EntryMap.ReconstructAuxiliaryFields();
                 RadioReceiver savedReceiver = saved.World[0, 0].EntryMap.MapObjects.OfType<RadioReceiver>().First();
+                Check.Equal(GameImages.OBJ_RADIO, savedReceiver.ImageID,
+                    "loading an older radio switches its visible tile to the dedicated sprite");
+                Check.Equal(GameImages.OBJ_RADIO, savedReceiver.HiddenImageID,
+                    "loading an older radio switches its remembered tile too");
                 Actor savedPlayer = NpcIntentSupport.Find(saved.World[0, 0].EntryMap, player.PersonalityIdentity);
                 Check.Equal(false, savedReceiver.IsOn, "map radio state survives saving");
                 Check.Equal(true, savedPlayer.Inventory.Items.OfType<ItemRadio>().Any(), "portable radio survives saving");

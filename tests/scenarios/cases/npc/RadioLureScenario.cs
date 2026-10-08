@@ -3,6 +3,7 @@ using djack.RogueSurvivor.Data;
 using djack.RogueSurvivor.Engine;
 using djack.RogueSurvivor.Engine.Actions;
 using djack.RogueSurvivor.Engine.MapObjects;
+using djack.RogueSurvivor.Gameplay;
 using djack.RogueSurvivor.Gameplay.AI;
 
 static class RadioLureScenario
@@ -14,7 +15,7 @@ static class RadioLureScenario
         {
             NpcIntentSupport.Player(world, 0, 1);
             Actor operatorNpc = NpcIntentSupport.Actor(world, "operator", 8, 0);
-            RadioReceiver radio = new RadioReceiver("radio");
+            RadioReceiver radio = new RadioReceiver(GameImages.OBJ_RADIO);
             world.Map.PlaceMapObjectAt(radio, new Point(8, 1));
             Actor zombie = new Actor(world.Game.GameActors.Zombie, world.Game.GameFactions.TheUndeads,
                 "zombie", false, false, 0);

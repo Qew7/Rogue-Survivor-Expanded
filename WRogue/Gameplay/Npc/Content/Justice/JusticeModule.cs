@@ -80,7 +80,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                     SubjectReportName = theft.SubjectReportName, OtherReportName = theft.OtherReportName,
                     SubjectFactionId = theft.SubjectFactionId, OtherFactionId = theft.OtherFactionId,
                     EventTurn = e.Turn, LearnedTurn = e.Turn, Source = NpcKnowledgeSource.Participant,
-                    SourceId = e.Subject.PersonalityIdentity, Confidence = 90, Place = theft.Place });
+                    SourceId = e.Subject.PersonalityIdentity, Confidence = 90, Place = theft.Place,
+                    StoryId = theft.StoryId });
             });
             catalog.OnReport("boundary_defied", c => NpcReputation.Reputation(c, false, false, true));
             catalog.Event(new NpcEventDefinition("confronted", NpcRecordCategory.None, false, e => (e.Subject ?? "Someone") + " warned " + (e.Other ?? "someone") + " about known misconduct.", null) { StoryStage = (g, s, e) => "completed" });
@@ -102,7 +103,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 e => (e.Subject ?? "Someone") + " found stolen supplies.",
                 f => (f.ReportSubject ?? "Someone") + " found " + (f.Resource ?? "supplies") +
                     " stolen from " + (f.ReportOther ?? "a survivor") + "'s shelter")
-                { ReportActorRole = NpcReportActorRole.None,
+                { ReportActorRole = NpcReportActorRole.None, ReportConclusion = true,
                   CanObserve = (a, e) => KnowsStolenVictim(a, e),
                   CanWitness = (a, e) => KnowsStolenVictim(a, e) });
             catalog.Event(new NpcEventDefinition("base_raid", NpcRecordCategory.Combat | NpcRecordCategory.World, true,
@@ -116,7 +117,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 { SelfReportTone = NpcSelfReportTone.Neutral });
             catalog.Event(new NpcEventDefinition("false_testimony_exposed", NpcRecordCategory.Encounters, false,
                 e => (e.Other ?? "Someone") + " rejected " + (e.Subject ?? "someone") + "'s permission claim after witnessing the theft.",
-                f => f.ReportSubject + " gave an account contradicted by an eyewitness", isPrivate: true));
+                f => f.ReportSubject + " gave an account contradicted by an eyewitness", isPrivate: true)
+                { ReportDisputesKinds = new[] { "base_theft", "claimed_permission" } });
             catalog.Memory(new MemoryDefinition("false_testimony_exposed", "Caught a contradictory permission claim", 2, 5,
                 new[] { new MemoryTrigger("false_testimony_exposed", (a, e) => a == e.Other) },
                 new MemoryOutcome(null, "mistrustful", null), new MemoryOutcome(null, null, Skills.IDs.STRONG_PSYCHE))

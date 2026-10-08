@@ -317,6 +317,10 @@ gain an entry; seeing the speaker is not required. Text, event ID and any known
 cause/story ID survive archive-only load, under the **Encounters** filter.
 Retained `NpcFact` entries optionally store `SubjectReportName` and
 `OtherReportName`, the observer's original spoken description of each participant.
+They also optionally store `CauseId`, copied from the significant event and
+preserved on retelling. A story uses it for causal wording only when the linked
+earlier event is the immediately preceding visible report. Older saves default
+to zero and retain neutral chronological transitions.
 An acquaintance is named; an unfamiliar visible person is described by faction
 membership. Retelling and save/load preserve these descriptions while stable
 participant IDs remain available for causal records. Faction-only hearsay does
@@ -363,6 +367,10 @@ counts another acquisition. This is not a count of distinct physical items.
 An explicitly missing archive can still be rebuilt from available actors,
 corpses and personality records and marked partial. This does not add support
 for old world envelopes or invent discarded events.
+
+On map reconstruction, radios saved with the old handheld-item image ID switch
+both their visible and remembered image IDs to the dedicated map-object tile.
+Their station, on/off state and location remain unchanged.
 
 ## Verification
 

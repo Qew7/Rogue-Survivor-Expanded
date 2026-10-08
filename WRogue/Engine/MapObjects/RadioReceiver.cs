@@ -1,5 +1,6 @@
 using System;
 using djack.RogueSurvivor.Data;
+using djack.RogueSurvivor.Gameplay;
 
 namespace djack.RogueSurvivor.Engine.MapObjects
 {
@@ -14,6 +15,12 @@ namespace djack.RogueSurvivor.Engine.MapObjects
         {
             IsMovable = true;
             Weight = 4;
+        }
+
+        internal void RestoreImage()
+        {
+            if (ImageID == GameImages.ITEM_POLICE_RADIO) ImageID = GameImages.OBJ_RADIO;
+            if (HiddenImageID == GameImages.ITEM_POLICE_RADIO) HiddenImageID = GameImages.OBJ_RADIO;
         }
 
         public void TuneNext() { SetState((State + 1) % 5); }

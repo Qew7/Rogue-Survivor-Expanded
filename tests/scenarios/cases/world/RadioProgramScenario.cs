@@ -50,14 +50,14 @@ static class RadioProgramScenario
             player.Personality.Knowledge.Facts.Add(new NpcFact { EventId = 1, Kind = "shared_food",
                 StoryId = "familiar", EventTurn = 0, Place = source.Location,
                 Source = NpcKnowledgeSource.Told, Confidence = 60, Hops = 1, SubjectName = "Ada" });
-            RadioReceiver homeRadio = new RadioReceiver(GameImages.ITEM_POLICE_RADIO);
+            RadioReceiver homeRadio = new RadioReceiver(GameImages.OBJ_RADIO);
             world.Map.PlaceMapObjectAt(homeRadio, new Point(2, 1));
             Check.Equal(true, world.Try(new ActionSwitchRadio(player, world.Game, homeRadio)),
                 "home receiver starts the station's shared program");
             RadioProgram program = Session.Get.RadioPrograms[0];
             Check.Equal(true, program.Facts != null && program.Facts.Length > 0, "news segment uses an actual NPC fact");
             int heard = player.Personality.HeardJournal.Count;
-            RadioReceiver remoteRadio = new RadioReceiver(GameImages.ITEM_POLICE_RADIO);
+            RadioReceiver remoteRadio = new RadioReceiver(GameImages.OBJ_RADIO);
             remote.PlaceMapObjectAt(remoteRadio, new Point(2, 1));
             Check.Equal(true, world.Try(new ActionSwitchRadio(listener, world.Game, remoteRadio)),
                 "other district receives the station");

@@ -96,6 +96,14 @@ namespace djack.RogueSurvivor
             Invalidate(true);
         }
 
+        protected override void OnMouseWheel(MouseEventArgs e)
+        {
+            if (e is HandledMouseEventArgs && ((HandledMouseEventArgs)e).Handled)
+                return;
+            base.OnMouseWheel(e);
+            UI_PostMouseWheelDelta(e.Delta);
+        }
+
         protected override void OnClosing(CancelEventArgs e)
         {
             if (m_Game.IsGameRunning)
@@ -147,6 +155,9 @@ namespace djack.RogueSurvivor
                     m_HasKey = false;
                     return m_InKey;
                 }
+                int wheel = UI_PeekMouseWheelDelta();
+                if (wheel != 0)
+                    return new KeyEventArgs(wheel > 0 ? Keys.Up : Keys.Down);
                 if (m_HeldMenuKey != Keys.None &&
                     unchecked(Environment.TickCount - m_NextMenuRepeat) >= 0)
                 {
@@ -308,6 +319,7 @@ namespace djack.RogueSurvivor
 
         bool m_HasMouseButtons = false;
         MouseButtons m_MouseButtons;
+        int m_MouseWheelDelta;
 
         public void UI_PostMouseButtons(MouseButtons buttons)
         {
@@ -322,6 +334,18 @@ namespace djack.RogueSurvivor
 
             m_HasMouseButtons = false;
             return m_MouseButtons;
+        }
+
+        public void UI_PostMouseWheelDelta(int delta)
+        {
+            m_MouseWheelDelta += delta;
+        }
+
+        public int UI_PeekMouseWheelDelta()
+        {
+            int delta = m_MouseWheelDelta;
+            m_MouseWheelDelta = 0;
+            return delta;
         }
 
         public void UI_SetCursor(Cursor cursor)

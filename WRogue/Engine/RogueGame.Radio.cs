@@ -24,6 +24,10 @@ namespace djack.RogueSurvivor.Engine
     partial class RogueGame
     {
         static readonly string[] RadioStationNames = { "Survivor Network", "Military Dispatch", "Local Calls", "Gang Frequency" };
+        static readonly string[] RadioStoryLeads = { "From local survivors: ", "Situation report: ",
+            "A caller says: ", "Word on the street: " };
+        static readonly string[] RadioUpdateLeads = { "Follow-up from survivors: ", "Dispatch update: ",
+            "The caller adds: ", "New word on the street: " };
         static readonly string[] RadioShelterNames = { "shelter", "hideout", "safehouse", "refuge", "home", "camp",
             "outpost", "haven", "dwelling", "squat", "stronghold", "den" };
         static readonly string[][] RadioBarks = {
@@ -223,7 +227,7 @@ namespace djack.RogueSurvivor.Engine
                 foreach (Map sourceMap in district.Maps)
                     foreach (Actor candidate in sourceMap.Actors)
                     {
-                        if (candidate.IsDead || candidate.Personality == null) continue;
+                        if (candidate.IsDead || candidate.IsPlayer || candidate.Personality == null) continue;
                         List<NpcFact> facts = candidate.Personality.Knowledge.Facts;
                         for (int f = facts.Count - 1; f >= 0; f--)
                         {
@@ -266,9 +270,12 @@ namespace djack.RogueSurvivor.Engine
             if (headline == null) { program.Text = RadioBark(station, slot); return program; }
             List<NpcFact> chapter = NpcConversation.Chapter(this, source, null, headline, now);
             List<string> lines = new List<string>();
+            List<NpcFact> reported = new List<NpcFact>();
+            HashSet<string> reports = new HashSet<string>(StringComparer.Ordinal);
             foreach (NpcFact fact in chapter)
             {
                 string line = NpcConversation.ReportSentence(this, source, fact);
+                if (!reports.Add(line)) continue;
                 if (station == 3)
                 {
                     switch (fact.Kind)
@@ -288,8 +295,19 @@ namespace djack.RogueSurvivor.Engine
                     line = System.Text.RegularExpressions.Regex.Replace(line, @"\bbase\b", noun);
                 }
                 lines.Add(line);
+                reported.Add(fact);
             }
-            program.Text = String.Join(" Then ", lines.ToArray());
+            bool familiarStory = !String.IsNullOrEmpty(headline.StoryId) && knownStories != null &&
+                knownStories.Contains(headline.StoryId);
+            if (familiarStory)
+            {
+                for (int i = reported.Count - 1; i >= 0; i--)
+                    if (playerFacts.Exists(known => known.EventId == reported[i].EventId && known.Kind == reported[i].Kind))
+                    { reported.RemoveAt(i); lines.RemoveAt(i); }
+            }
+            program.Text = reported.Count == 0 ? RadioUpdateLeads[station] + "No new details on that story." :
+                (familiarStory ? RadioUpdateLeads[station] : RadioStoryLeads[station]) +
+                NpcConversation.StoryText(NpcContent, source, reported, lines);
             NpcStory activeStory = String.IsNullOrEmpty(headline.StoryId) ? null : m_Session.NpcDirector.Find(headline.StoryId);
             if (activeStory != null && !activeStory.Finished && headline.Place.Map.District != null)
             {

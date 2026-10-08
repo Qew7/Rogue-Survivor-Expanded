@@ -197,6 +197,7 @@ namespace djack.RogueSurvivor.Gameplay
         public const string OBJ_BED = @"MapObjects\bed";
         public const string OBJ_WARDROBE = @"MapObjects\wardrobe";
         public const string OBJ_TABLE = @"MapObjects\table";
+        public const string OBJ_RADIO = @"MapObjects\radio";
         public const string OBJ_FRIDGE = @"MapObjects\fridge";
         public const string OBJ_DRAWER = @"MapObjects\drawer";
         public const string OBJ_CHAIR = @"MapObjects\chair";
@@ -686,6 +687,7 @@ namespace djack.RogueSurvivor.Gameplay
             Load(OBJ_BED);
             Load(OBJ_WARDROBE);
             Load(OBJ_TABLE);
+            Load(OBJ_RADIO);
             Load(OBJ_FRIDGE);
             Load(OBJ_DRAWER);
             Load(OBJ_CHAIR);

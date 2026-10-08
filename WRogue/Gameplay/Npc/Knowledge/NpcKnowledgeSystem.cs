@@ -49,7 +49,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 (owner.PersonalityIdentity == source.ClaimantId ||
                  owner.SocialGroup != null && owner.SocialGroup.Identity == source.ClaimantGroupId ||
                  owner.Personality.Person(source.ClaimantId) != null || owner.Personality.Knowledge.Person(source.ClaimantId) != null);
-            owner.Personality.Knowledge.Learn(new NpcFact { EventId = source.Id, Kind = source.Kind, EventTurn = source.Turn, LearnedTurn = source.Turn,
+            owner.Personality.Knowledge.Learn(new NpcFact { EventId = source.Id, CauseId = source.CauseId, Kind = source.Kind, EventTurn = source.Turn, LearnedTurn = source.Turn,
                 Source = observation.Direct ? NpcKnowledgeSource.Participant : NpcKnowledgeSource.Witness, Confidence = observation.Direct ? 100 : 90,
                 SourceId = owner.PersonalityIdentity, SubjectId = !seesSubject ? Guid.Empty : source.Subject.PersonalityIdentity,
                 OtherId = knowsClaimant ? source.ClaimantId : !seesOther ? Guid.Empty : source.Other.PersonalityIdentity, SubjectName = !seesSubject ? null : source.Subject.UnmodifiedName,

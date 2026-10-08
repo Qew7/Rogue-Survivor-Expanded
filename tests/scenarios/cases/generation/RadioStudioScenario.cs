@@ -4,6 +4,7 @@ using System.Linq;
 using djack.RogueSurvivor.Data;
 using djack.RogueSurvivor.Engine;
 using djack.RogueSurvivor.Engine.MapObjects;
+using djack.RogueSurvivor.Gameplay;
 using djack.RogueSurvivor.Gameplay.Generators;
 
 static class RadioStudioScenario
@@ -27,7 +28,9 @@ static class RadioStudioScenario
                 "studio is unique");
             Actor host = studio.Actors.First(a => a.PersonalityIdentity == Session.Get.RadioHostId);
             Check.Equal(false, host.IsDead, "broadcaster starts alive");
-            Check.Equal(true, studio.MapObjects.OfType<RadioReceiver>().Any(), "studio contains transmitter");
+            Check.Equal(true, studio.MapObjects.OfType<RadioReceiver>().Any(r =>
+                r.ImageID == GameImages.OBJ_RADIO && r.HiddenImageID == GameImages.OBJ_RADIO),
+                "studio transmitter uses the dedicated map tile");
             Exit upstairs = studio.GetExitAt(1, 1);
             Check.Equal(surface, upstairs.ToMap, "studio has a surface exit");
             Check.Equal(studio, surface.GetExitAt(upstairs.ToPosition).ToMap, "surface stairs lead back");

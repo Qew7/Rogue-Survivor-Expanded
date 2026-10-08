@@ -10,14 +10,17 @@ sealed class ScenarioUI : IRogueUI
     readonly Queue<KeyEventArgs> keys = new Queue<KeyEventArgs>();
     readonly Queue<KeyEventArgs> waitKeys = new Queue<KeyEventArgs>();
     readonly Queue<MouseButtons?> buttons = new Queue<MouseButtons?>();
+    readonly Queue<int> wheels = new Queue<int>();
     public readonly Dictionary<Point, Color> MinimapColors = new Dictionary<Point, Color>();
     public readonly List<string> DrawnImages = new List<string>();
     public readonly List<string> DrawnStrings = new List<string>();
     public readonly List<Tuple<Color, string>> DrawnBold = new List<Tuple<Color, string>>();
+    public readonly List<Tuple<string, int, int>> DrawnText = new List<Tuple<string, int, int>>();
     public int MinimapTileWrites { get; private set; }
     public Point MousePosition { get; set; }
     public void QueueKey(Keys key) { keys.Enqueue(null); keys.Enqueue(new KeyEventArgs(key)); }
     public void QueueClick(MouseButtons button) { buttons.Enqueue(button); }
+    public void QueueWheel(int delta) { wheels.Enqueue(delta); }
     public void QueueWaitKey(Keys key) { waitKeys.Enqueue(new KeyEventArgs(key)); }
     public KeyEventArgs UI_WaitKey()
     {
@@ -30,6 +33,8 @@ sealed class ScenarioUI : IRogueUI
     public Point UI_GetMousePosition() { return MousePosition; }
     public MouseButtons? UI_PeekMouseButtons() { return buttons.Count == 0 ? null : buttons.Dequeue(); }
     public void UI_PostMouseButtons(MouseButtons buttons) { }
+    public int UI_PeekMouseWheelDelta() { return wheels.Count == 0 ? 0 : wheels.Dequeue(); }
+    public void UI_PostMouseWheelDelta(int delta) { wheels.Enqueue(delta); }
     public void UI_SetCursor(Cursor cursor) { }
     public void UI_Wait(int msecs) { }
     public void UI_Repaint() { }
@@ -43,9 +48,10 @@ sealed class ScenarioUI : IRogueUI
     public void UI_DrawLine(Color color, int x1, int y1, int x2, int y2) { }
     public void UI_DrawRect(Color color, Rectangle rect) { }
     public void UI_FillRect(Color color, Rectangle rect) { }
-    public void UI_DrawString(Color color, string text, int x, int y, Color? shadow = null) { }
+    public void UI_DrawString(Color color, string text, int x, int y, Color? shadow = null)
+    { DrawnText.Add(Tuple.Create(text, x, y)); }
     public void UI_DrawStringBold(Color color, string text, int x, int y, Color? shadow = null)
-    { DrawnStrings.Add(text); DrawnBold.Add(Tuple.Create(color, text)); }
+    { DrawnStrings.Add(text); DrawnBold.Add(Tuple.Create(color, text)); DrawnText.Add(Tuple.Create(text, x, y)); }
     public int UI_BoldTextWidth(string text) { return text.Length * 8; }
     public void UI_DrawPopup(string[] lines, Color text, Color border, Color fill, int x, int y) { }
     public void UI_DrawPopupTitle(string title, Color titleColor, string[] lines, Color text, Color border, Color fill, int x, int y) { }

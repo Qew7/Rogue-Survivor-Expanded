@@ -27,6 +27,9 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public Func<Actor, Actor, bool> CanReply;
         public NpcPlayerReply PlayerReply;
         public Func<djack.RogueSurvivor.Engine.RogueGame, NpcStory, SignificantEvent, string> StoryStage;
+        public Func<IList<NpcFact>, string> SummarizeReports;
+        public bool ReportConclusion;
+        public string[] ReportDisputesKinds;
         readonly List<Action<NpcObservation>>[] observers = {
             new List<Action<NpcObservation>>(), new List<Action<NpcObservation>>(),
             new List<Action<NpcObservation>>(), new List<Action<NpcObservation>>(), new List<Action<NpcObservation>>() };

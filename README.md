@@ -19,7 +19,8 @@ Open [localhost:6080](http://localhost:6080), click the game window, and press E
 - Mouse movement and context menus.
 - Mods and configurable game presets.
 - NPC traits, memories, conversations, and emergent stories.
-- Linked rumors of up to ten events and four radio stations with one shared hourly program per station. Familiar stories are favored, while unknown reports and station interludes still air. Bump a household radio to tune it; use a portable receiver from the inventory. Base robberies become news when witnessed or when their losses are discovered later; fatal raids can also be reported by witnesses or group members who find a body. Stolen goods keep the victim group's identity across gifts, trades, drops and death, allowing someone who recognizes them by sight or on pickup to continue the same story. Reports name a thief only when a witness identified them. The survivor station covers psychopath sightings, the gang station covers crew arrivals, and broadcasts use varied names for shelters.
+- Four radio stations carry shared hourly programs, NPC stories and follow-ups; household and portable receivers let players tune in.
+- Base thefts and raids become rumors when witnessed or discovered later. Stolen items retain their victim group's identity through trades, drops and deaths.
 - Claimable bases, storage rooms, and follower scavenging.
 
 ## Reference

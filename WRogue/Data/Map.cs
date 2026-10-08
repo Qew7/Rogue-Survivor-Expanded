@@ -1382,7 +1382,11 @@ namespace djack.RogueSurvivor.Data
 
             m_aux_MapObjectsByPosition = new Dictionary<Point, MapObject>();
             foreach (MapObject obj in m_MapObjectsList)
+            {
+                Engine.MapObjects.RadioReceiver radio = obj as Engine.MapObjects.RadioReceiver;
+                if (radio != null) radio.RestoreImage();
                 m_aux_MapObjectsByPosition.Add(obj.Location.Position, obj);
+            }
 
             m_aux_ScentsByPosition = new Dictionary<Point, List<OdorScent>>();
             foreach (OdorScent scent in m_Scents)
