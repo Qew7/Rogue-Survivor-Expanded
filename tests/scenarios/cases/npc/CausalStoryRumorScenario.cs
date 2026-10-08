@@ -59,8 +59,8 @@ static class CausalStoryRumorScenario
                 "another retelling preserves the link");
 
             player.Personality.Knowledge.Facts.Clear();
-            Session.Get.WorldTime.TurnCounter = 2;
-            RadioProgram radio = (RadioProgram)Check.Call(world.Game, "GetRadioProgram", 0, 2);
+            Session.Get.WorldTime.TurnCounter = 26 * WorldTime.TURNS_PER_HOUR;
+            RadioProgram radio = (RadioProgram)Check.Call(world.Game, "GetRadioProgram", 0, 26);
             Check.Equal(true, radio.Facts.Any(f => f.EventId == kept.Id),
                 "radio includes the linked event");
             Check.Equal(1, Count(radio.Text, " As a result, "),

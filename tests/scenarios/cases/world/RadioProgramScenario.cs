@@ -50,6 +50,8 @@ static class RadioProgramScenario
             player.Personality.Knowledge.Facts.Add(new NpcFact { EventId = 1, Kind = "shared_food",
                 StoryId = "familiar", EventTurn = 0, Place = source.Location,
                 Source = NpcKnowledgeSource.Told, Confidence = 60, Hops = 1, SubjectName = "Ada" });
+            Session.Get.WorldTime.TurnCounter = WorldTime.TURNS_PER_DAY;
+            world.Map.LocalTime.TurnCounter = WorldTime.TURNS_PER_DAY;
             RadioReceiver homeRadio = new RadioReceiver(GameImages.OBJ_RADIO);
             world.Map.PlaceMapObjectAt(homeRadio, new Point(2, 1));
             Check.Equal(true, world.Try(new ActionSwitchRadio(player, world.Game, homeRadio)),
@@ -95,7 +97,7 @@ static class RadioProgramScenario
             // Keep the player's prior episode fixed while sampling later shared slots.
             player.Personality.Knowledge.Facts.RemoveAll(f => f.EventId != 1);
             int continuation = 0, unfamiliar = 0, filler = 0;
-            for (int slot = 1; slot <= 30; slot++)
+            for (int slot = 25; slot <= 47; slot++)
             {
                 Session.Get.WorldTime.TurnCounter = slot * WorldTime.TURNS_PER_HOUR;
                 RadioProgram next = (RadioProgram)Check.Call(world.Game, "GetRadioProgram", 0, slot);
@@ -140,10 +142,11 @@ static class RadioProgramScenario
                 "expired reports leave an incidental broadcast, not a stale story");
             source.Personality.Knowledge.Facts.Clear();
             source.Personality.Knowledge.Facts.Add(new NpcFact { EventId = 4, Kind = "shared_food",
-                StoryId = "weak", EventTurn = 52 * WorldTime.TURNS_PER_HOUR, Place = source.Location,
+                StoryId = "weak", EventTurn = 52 * WorldTime.TURNS_PER_HOUR,
+                LearnedTurn = 52 * WorldTime.TURNS_PER_HOUR, Place = source.Location,
                 Source = NpcKnowledgeSource.Told, Confidence = 39, Hops = 1, SubjectName = "Cy" });
-            Session.Get.WorldTime.TurnCounter = 53 * WorldTime.TURNS_PER_HOUR;
-            RadioProgram weak = (RadioProgram)Check.Call(world.Game, "GetRadioProgram", 0, 53);
+            Session.Get.WorldTime.TurnCounter = 77 * WorldTime.TURNS_PER_HOUR;
+            RadioProgram weak = (RadioProgram)Check.Call(world.Game, "GetRadioProgram", 0, 77);
             Check.Equal(null, weak.Facts, "unreliable hearsay cannot headline the program");
         });
     }

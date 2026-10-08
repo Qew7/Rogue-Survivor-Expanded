@@ -51,7 +51,7 @@ static class StoryDisputedAccountsScenario
                     actor.Personality.Knowledge.Facts.RemoveAll(f => f.Source == NpcKnowledgeSource.Told);
             player.Personality.Knowledge.Facts.Clear();
             RadioProgram radio = null;
-            for (int slot = 0; slot < 6; slot++)
+            for (int slot = 24; slot < 30; slot++)
             {
                 Session.Get.WorldTime.TurnCounter = slot * WorldTime.TURNS_PER_HOUR + 1;
                 radio = (RadioProgram)Check.Call(world.Game, "GetRadioProgram", 0, slot);

@@ -69,7 +69,7 @@ static class BaseCrimeRadioScenario
                 "wall prevents the player from witnessing the theft");
 
             bool broadcast = false;
-            for (int slot = 1; slot <= 18; slot++)
+            for (int slot = 25; slot <= 42; slot++)
             {
                 Session.Get.WorldTime.TurnCounter = slot * WorldTime.TURNS_PER_HOUR;
                 RadioProgram program = (RadioProgram)Check.Call(world.Game, "GetRadioProgram", 3, slot);
@@ -93,6 +93,7 @@ static class BaseCrimeRadioScenario
                 newListener.Personality.Knowledge.Facts.Exists(f => f.EventId == named.EventId),
                 "direct conversation delivers the robbery, damage, and identified continuation together");
             world.Place(witness, 0, 1);
+            world.Map.LocalTime.TurnCounter = Session.Get.WorldTime.TurnCounter;
             world.Game.KillActor(killer, member, "scenario", false);
             NpcFact raid = witness.Personality.Knowledge.Facts.Find(f => f.Kind == "base_raid");
             NpcFact murder = witness.Personality.Knowledge.Facts.Find(f => f.Kind == "murder");
@@ -102,7 +103,7 @@ static class BaseCrimeRadioScenario
                 "witness can report a fatal base raid");
             Check.Equal(true, NpcKnowledgeSystem.Hear(world.Game, lawful, witness, raid), "raid news can reach radio sources");
             bool raidBroadcast = false;
-            for (int slot = 19; slot <= 40; slot++)
+            for (int slot = 48; slot <= 71; slot++)
             {
                 Session.Get.WorldTime.TurnCounter = slot * WorldTime.TURNS_PER_HOUR;
                 RadioProgram program = (RadioProgram)Check.Call(world.Game, "GetRadioProgram", 3, slot);

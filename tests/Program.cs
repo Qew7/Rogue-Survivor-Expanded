@@ -43,6 +43,16 @@ class Program
             RadioBenchmarks.Run();
             return 0;
         }
+        if (args.Length == 1 && args[0] == "--bench-radio-news")
+        {
+            RadioBenchmarks.CompareNewsStrategies();
+            return 0;
+        }
+        if (args.Length == 1 && args[0] == "--bench-radio-rolling")
+        {
+            RadioBenchmarks.RollingBroadcasts();
+            return 0;
+        }
         if (args.Length == 1 && args[0] == "--profile-radio")
         {
             RadioBenchmarks.Profile();
@@ -70,7 +80,7 @@ class Program
         }
         if (args.Length != 0)
         {
-            Console.Error.WriteLine("Usage: UnitTests.exe [--list|--all|--bench|--bench-ai|--bench-npc-turn|--profile-npc-turn|--bench-post-0d243e|--bench-npc-safety|--bench-xpd|--bench-save copied-save-path|--check-save-budget copied-save-path|--audit-save copied-save-path|scenario-name]");
+            Console.Error.WriteLine("Usage: UnitTests.exe [--list|--all|--bench|--bench-ai|--bench-npc-turn|--profile-npc-turn|--bench-radio|--bench-radio-news|--bench-radio-rolling|--profile-radio|--bench-post-0d243e6|--bench-npc-safety|--bench-xpd|--bench-save copied-save-path|--check-save-budget copied-save-path|--audit-save copied-save-path|scenario-name]");
             return 2;
         }
         GameTests.Run();

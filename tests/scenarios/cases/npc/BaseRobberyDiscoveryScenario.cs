@@ -86,7 +86,7 @@ static class BaseRobberyDiscoveryScenario
                 "listener keeps the account as hearsay");
             player.Personality.Knowledge.Facts.Clear();
             bool broadcast = false;
-            for (int slot = 1; slot <= 12; slot++)
+            for (int slot = 25; slot <= 36; slot++)
             {
                 Session.Get.WorldTime.TurnCounter = slot * WorldTime.TURNS_PER_HOUR;
                 RadioProgram program = (RadioProgram)Check.Call(active.Game, "GetRadioProgram", 3, slot);

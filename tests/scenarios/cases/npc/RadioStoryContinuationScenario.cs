@@ -6,9 +6,10 @@ using djack.RogueSurvivor.Gameplay.Personality;
 
 static class RadioStoryContinuationScenario
 {
-    static NpcFact Fact(Actor source, long id, string kind, string story, string name)
+    static NpcFact Fact(Actor source, long id, string kind, string story, string name, int turn = -1)
     {
-        return new NpcFact { EventId = id, Kind = kind, StoryId = story, EventTurn = (int)id,
+        int when = turn < 0 ? (int)id : turn;
+        return new NpcFact { EventId = id, Kind = kind, StoryId = story, EventTurn = when, LearnedTurn = when,
             Place = source.Location, Source = NpcKnowledgeSource.Told, Confidence = 80, Hops = 1,
             SubjectName = name, OtherName = "Bo" };
     }
@@ -31,8 +32,8 @@ static class RadioStoryContinuationScenario
             source.Personality.Knowledge.Facts.Add(news);
             player.Personality.Knowledge.Facts.Add(old.Retell(source.PersonalityIdentity, 11, 60));
 
-            Session.Get.WorldTime.TurnCounter = 2 * WorldTime.TURNS_PER_HOUR;
-            RadioProgram update = (RadioProgram)Check.Call(world.Game, "GetRadioProgram", 0, 2);
+            Session.Get.WorldTime.TurnCounter = 26 * WorldTime.TURNS_PER_HOUR;
+            RadioProgram update = (RadioProgram)Check.Call(world.Game, "GetRadioProgram", 0, 26);
             Check.Equal(2, update.Facts.Length, "broadcast retains the complete episode");
             Check.Equal(true, update.Text.StartsWith("Follow-up from survivors: ", StringComparison.Ordinal) &&
                 update.Text.Contains("Ben") && !update.Text.Contains("Ada"),
@@ -45,22 +46,22 @@ static class RadioStoryContinuationScenario
             Check.Equal(update.Text, player.Personality.HeardJournal.Last().Text,
                 "journal keeps the concise continuation");
 
-            Session.Get.WorldTime.TurnCounter = 3 * WorldTime.TURNS_PER_HOUR;
-            RadioProgram repeated = (RadioProgram)Check.Call(world.Game, "GetRadioProgram", 0, 3);
+            Session.Get.WorldTime.TurnCounter = 27 * WorldTime.TURNS_PER_HOUR;
+            RadioProgram repeated = (RadioProgram)Check.Call(world.Game, "GetRadioProgram", 0, 27);
             Check.Equal(true, repeated.Text.Contains("No new details on that story.") &&
                 !repeated.Text.Contains("Ada") && !repeated.Text.Contains("Ben"),
                 "later broadcast does not replay an unchanged story");
             Check.Equal(2, repeated.Facts.Length, "unchanged broadcast retains its underlying facts");
 
             source.Personality.Knowledge.Facts.Clear();
-            source.Personality.Knowledge.Facts.Add(Fact(source, 12, "army_supplies", "dispatch", "Cy"));
-            source.Personality.Knowledge.Facts.Add(Fact(source, 13, "requested_medicine", "call", "Di"));
-            source.Personality.Knowledge.Facts.Add(Fact(source, 14, "attack", "street", "Eli"));
+            source.Personality.Knowledge.Facts.Add(Fact(source, 12, "army_supplies", "dispatch", "Cy", 732));
+            source.Personality.Knowledge.Facts.Add(Fact(source, 13, "requested_medicine", "call", "Di", 733));
+            source.Personality.Knowledge.Facts.Add(Fact(source, 14, "attack", "street", "Eli", 734));
             string[] leads = { null, "Situation report: ", "A caller says: ", "Word on the street: " };
             for (int station = 1; station < 4; station++)
             {
                 RadioProgram program = null;
-                for (int slot = 4; slot < 10; slot++)
+                for (int slot = 52; slot < 58; slot++)
                 {
                     Session.Get.WorldTime.TurnCounter = slot * WorldTime.TURNS_PER_HOUR;
                     program = (RadioProgram)Check.Call(world.Game, "GetRadioProgram", station, slot);

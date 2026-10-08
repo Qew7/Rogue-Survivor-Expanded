@@ -54,8 +54,8 @@ static class StoryRequestGroupingScenario
             Check.Equal(true, relayed.Source == NpcKnowledgeSource.Told && relayed.Confidence >= 40 &&
                 relayed.Hops < 3 && NpcConversation.CanTell(world.Game, relay, relayed),
                 "relay has an eligible radio source");
-            Session.Get.WorldTime.TurnCounter = WorldTime.TURNS_PER_HOUR + 5;
-            RadioProgram radio = (RadioProgram)Check.Call(world.Game, "GetRadioProgram", 2, 1);
+            Session.Get.WorldTime.TurnCounter = 25 * WorldTime.TURNS_PER_HOUR + 5;
+            RadioProgram radio = (RadioProgram)Check.Call(world.Game, "GetRadioProgram", 2, 25);
             Check.Equal(true, radio.Facts != null, "local calls selects a news chapter: " + radio.Text);
             Check.Equal(6, radio.Facts.Length, "radio retains all requests and their outcome");
             Check.Equal(true, radio.Text.Contains("Mara asked Juan, Harry, and Gilbert for medicine"),

@@ -23,6 +23,57 @@ namespace djack.RogueSurvivor.Engine
 
     partial class RogueGame
     {
+        sealed class RadioDayNews
+        {
+            public Actor Source;
+            public NpcFact[] Facts;
+        }
+
+        Session m_RadioDaySession;
+        World m_RadioDayWorld;
+        int m_RadioDay = -1;
+        List<RadioDayNews> m_RadioDayNews;
+
+        // Build once when the day's first news slot is requested. The midnight
+        // cutoff keeps later retellings and new events out of today's script.
+        List<RadioDayNews> PreviousRadioNews(int now)
+        {
+            int day = now / WorldTime.TURNS_PER_DAY;
+            World world = m_Session.World;
+            if (m_RadioDaySession == m_Session && m_RadioDayWorld == world && m_RadioDay == day)
+                return m_RadioDayNews;
+            int midnight = day * WorldTime.TURNS_PER_DAY;
+            var news = new List<RadioDayNews>();
+            for (int x = 0; x < world.Size; x++) for (int y = 0; y < world.Size; y++)
+            {
+                District district = world[x, y];
+                if (district == null) continue;
+                foreach (Map sourceMap in district.Maps)
+                    foreach (Actor source in sourceMap.Actors)
+                    {
+                        if (source.IsDead || source.IsPlayer || source.Personality == null ||
+                            !source.Personality.HasKnowledge) continue;
+                        List<NpcFact> facts = source.Personality.Knowledge.Facts;
+                        List<NpcFact> available = null;
+                        bool reportable = false;
+                        foreach (NpcFact fact in facts)
+                        {
+                            if (fact.Place.Map == null || fact.EventTurn >= midnight || fact.LearnedTurn >= midnight ||
+                                now - fact.EventTurn > 2 * WorldTime.TURNS_PER_DAY ||
+                                fact.Confidence < 40 || fact.Hops >= 3) continue;
+                            if (available == null) available = new List<NpcFact>();
+                            available.Add(fact);
+                            if (fact.Source == NpcKnowledgeSource.Told) reportable = true;
+                        }
+                        if (reportable) news.Add(new RadioDayNews { Source = source, Facts = available.ToArray() });
+                    }
+            }
+            m_RadioDaySession = m_Session;
+            m_RadioDayWorld = world;
+            m_RadioDay = day;
+            return m_RadioDayNews = news;
+        }
+
         static readonly string[] RadioStationNames = { "Survivor Network", "Military Dispatch", "Local Calls", "Gang Frequency" };
         static readonly string[] RadioStoryLeads = { "From local survivors: ", "Situation report: ",
             "A caller says: ", "Word on the street: " };
@@ -223,60 +274,56 @@ namespace djack.RogueSurvivor.Engine
                     if (!String.IsNullOrEmpty(known.StoryId)) knownStories.Add(known.StoryId);
                 }
             }
-            for (int x = 0; x < world.Size; x++) for (int y = 0; y < world.Size; y++)
+            RadioDayNews selected = null;
+            foreach (RadioDayNews news in PreviousRadioNews(now))
             {
-                District district = world[x, y];
-                if (district == null) continue;
-                foreach (Map sourceMap in district.Maps)
-                    foreach (Actor candidate in sourceMap.Actors)
+                Actor candidate = news.Source;
+                if (candidate.IsDead) continue;
+                NpcFact[] facts = news.Facts;
+                for (int f = facts.Length - 1; f >= 0; f--)
+                {
+                    NpcFact fact = facts[f];
+                    int age = now - fact.EventTurn;
+                    if (fact.Source != NpcKnowledgeSource.Told || fact.Place.Map == null ||
+                        age > 2 * WorldTime.TURNS_PER_DAY || fact.Confidence < 40 || fact.Hops >= 3) continue;
+                    if (station != 0)
                     {
-                        if (candidate.IsDead || candidate.IsPlayer || candidate.Personality == null) continue;
-                        List<NpcFact> facts = candidate.Personality.Knowledge.Facts;
-                        for (int f = facts.Count - 1; f >= 0; f--)
-                        {
-                            NpcFact fact = facts[f];
-                            int age = now - fact.EventTurn;
-                            if (fact.Source != NpcKnowledgeSource.Told || fact.Place.Map == null ||
-                                age > 2 * WorldTime.TURNS_PER_DAY || fact.Confidence < 40 || fact.Hops >= 3) continue;
-                            if (station != 0)
-                            {
-                                if (lastKind == null || fact.Kind != lastKind)
-                                { lastKind = fact.Kind; lastKindMatches = RadioMatches(station, lastKind); }
-                                if (!lastKindMatches) continue;
-                            }
-                            int score = (2 * WorldTime.TURNS_PER_DAY - Math.Max(0, age)) /
-                                (WorldTime.TURNS_PER_DAY / 24);
-                            score += (int)((uint)(fact.EventId * 1103515245L + slot * 101L +
-                                station * 37L + seed) % 64u);
-                            // Player familiarity can add at most 32 points.
-                            if (headline != null && score + 32 < best) continue;
-                            if (knownIds != null)
-                            {
-                                bool knownEvent = false;
-                                // One event ID can have several testimony kinds.
-                                if (knownIds.Contains(fact.EventId))
-                                    foreach (NpcFact known in playerFacts)
-                                        if (known.EventId == fact.EventId && known.Kind == fact.Kind)
-                                        { knownEvent = true; break; }
-                                if (fact.StoryId != lastStoryId)
-                                {
-                                    lastStoryId = fact.StoryId;
-                                    lastStoryKnown = !String.IsNullOrEmpty(lastStoryId) && knownStories.Contains(lastStoryId);
-                                }
-                                bool knownStory = lastStoryKnown;
-                                if (!knownEvent) score += 12;
-                                if (knownStory && !knownEvent) score += 20;
-                            }
-                            if ((headline == null || score > best ||
-                                score == best && (fact.EventTurn > headline.EventTurn ||
-                                fact.EventTurn == headline.EventTurn && fact.EventId > headline.EventId)) &&
-                                NpcConversation.CanTell(this, candidate, fact))
-                            { source = candidate; headline = fact; best = score; }
-                        }
+                        if (lastKind == null || fact.Kind != lastKind)
+                        { lastKind = fact.Kind; lastKindMatches = RadioMatches(station, lastKind); }
+                        if (!lastKindMatches) continue;
                     }
+                    int score = (2 * WorldTime.TURNS_PER_DAY - Math.Max(0, age)) /
+                        (WorldTime.TURNS_PER_DAY / 24);
+                    score += (int)((uint)(fact.EventId * 1103515245L + slot * 101L +
+                        station * 37L + seed) % 64u);
+                    // Player familiarity can add at most 32 points.
+                    if (headline != null && score + 32 < best) continue;
+                    if (knownIds != null)
+                    {
+                        bool knownEvent = false;
+                        // One event ID can have several testimony kinds.
+                        if (knownIds.Contains(fact.EventId))
+                            foreach (NpcFact known in playerFacts)
+                                if (known.EventId == fact.EventId && known.Kind == fact.Kind)
+                                { knownEvent = true; break; }
+                        if (fact.StoryId != lastStoryId)
+                        {
+                            lastStoryId = fact.StoryId;
+                            lastStoryKnown = !String.IsNullOrEmpty(lastStoryId) && knownStories.Contains(lastStoryId);
+                        }
+                        bool knownStory = lastStoryKnown;
+                        if (!knownEvent) score += 12;
+                        if (knownStory && !knownEvent) score += 20;
+                    }
+                    if ((headline == null || score > best ||
+                        score == best && (fact.EventTurn > headline.EventTurn ||
+                        fact.EventTurn == headline.EventTurn && fact.EventId > headline.EventId)) &&
+                        NpcConversation.CanTell(this, candidate, fact))
+                    { source = candidate; selected = news; headline = fact; best = score; }
+                }
             }
             if (headline == null) { program.Text = RadioBark(station, slot); return program; }
-            List<NpcFact> chapter = NpcConversation.Chapter(this, source, null, headline, now);
+            List<NpcFact> chapter = NpcConversation.Chapter(this, source, null, headline, now, selected.Facts);
             List<string> lines = new List<string>();
             List<NpcFact> reported = new List<NpcFact>();
             HashSet<string> reports = new HashSet<string>(StringComparer.Ordinal);

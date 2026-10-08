@@ -28,7 +28,7 @@ static class RadioArrivalsScenario
             Check.Equal(true, NpcKnowledgeSystem.Hear(world.Game, broadcaster, witness, arrival),
                 "sighting can become a retold radio source");
             bool survivorAired = false;
-            for (int slot = 1; slot <= 24; slot++)
+            for (int slot = 24; slot <= 47; slot++)
             {
                 Session.Get.WorldTime.TurnCounter = slot * WorldTime.TURNS_PER_HOUR;
                 RadioProgram program = (RadioProgram)Check.Call(world.Game, "GetRadioProgram", 0, slot);
@@ -44,6 +44,7 @@ static class RadioArrivalsScenario
             Check.Equal(sanity - 1, player.Sanity, "a timid player is unsettled by the psychopath warning");
 
             world.Map.RemoveActor(broadcaster);
+            world.Map.LocalTime.TurnCounter = Session.Get.WorldTime.TurnCounter;
             Actor biker = NpcIntentSupport.Actor(world, "biker", 4, 1);
             biker.Faction = world.Game.GameFactions.TheBikers;
             Check.Call(world.Game, "NotifyOrderablesAI",
@@ -54,7 +55,7 @@ static class RadioArrivalsScenario
             Check.Equal(true, gang != null && NpcKnowledgeSystem.Hear(world.Game, broadcaster, witness, gang),
                 "real gang arrival reaches a broadcaster as hearsay");
             bool gangAired = false;
-            for (int slot = 25; slot <= 55; slot++)
+            for (int slot = 48; slot <= 71; slot++)
             {
                 Session.Get.WorldTime.TurnCounter = slot * WorldTime.TURNS_PER_HOUR;
                 RadioProgram program = (RadioProgram)Check.Call(world.Game, "GetRadioProgram", 3, slot);

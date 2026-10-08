@@ -41,7 +41,8 @@ static class StoryReportCollapseScenario
             string distinctReport = NpcRecordDescriptions.Report(world.Game.NpcContent, distinct);
             Check.Equal(false, repeatedLine == distinctLine, "different reports remain distinct");
 
-            RadioProgram radio = (RadioProgram)Check.Call(world.Game, "GetRadioProgram", 3, 0);
+            Session.Get.WorldTime.TurnCounter = WorldTime.TURNS_PER_DAY;
+            RadioProgram radio = (RadioProgram)Check.Call(world.Game, "GetRadioProgram", 3, 24);
             Check.Equal(3, radio.Facts.Length, "radio retains all underlying events");
             Check.Equal(1, Count(radio.Text, repeatedLine), "radio says repeated report once");
             Check.Equal(1, Count(radio.Text, distinctReport), "radio keeps different report");

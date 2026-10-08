@@ -40,6 +40,8 @@ static class RadioStoryScenario
             // A legacy receiver in an older save still refers to the handheld item sprite.
             var receiver = new RadioReceiver(GameImages.ITEM_POLICE_RADIO);
             world.Map.PlaceMapObjectAt(receiver, new Point(8, 1));
+            world.Map.LocalTime.TurnCounter = WorldTime.TURNS_PER_DAY;
+            Session.Get.WorldTime.TurnCounter = WorldTime.TURNS_PER_DAY;
             int ap = player.ActionPoints;
             Check.Equal(true, world.Try(new ActionSwitchRadio(player, world.Game, receiver)), "player tunes house radio");
             Check.Equal(0, receiver.Station, "first station is survivors");
@@ -56,19 +58,19 @@ static class RadioStoryScenario
                 "changing survivor host does not reset another channel midhour");
             Session.Get.RadioHostId = Guid.Empty;
 
-            world.Map.LocalTime.TurnCounter = 4;
-            Session.Get.WorldTime.TurnCounter = 4;
+            world.Map.LocalTime.TurnCounter = WorldTime.TURNS_PER_DAY + 4;
+            Session.Get.WorldTime.TurnCounter = WorldTime.TURNS_PER_DAY + 4;
             PersonalitySystem.Report(world.Game, new SignificantEvent("shared_food", victim, attacker,
-                world.Map, victim.Location.Position, 3, storyId: "radio-chapter"));
+                world.Map, victim.Location.Position, WorldTime.TURNS_PER_DAY + 3, storyId: "radio-chapter"));
             NpcFact continuation = victim.Personality.Knowledge.Facts.Last(f => f.StoryId == "radio-chapter");
             NpcKnowledgeSystem.Hear(world.Game, witness, victim, continuation);
             NpcConversation.ShareRumor(world.Game, witness, relay, continuation, true);
             PersonalitySystem.Report(world.Game, new SignificantEvent("shared_food", victim, attacker,
-                world.Map, victim.Location.Position, 4, storyId: "unrelated"));
+                world.Map, victim.Location.Position, WorldTime.TURNS_PER_DAY + 4, storyId: "unrelated"));
             NpcFact unrelated = victim.Personality.Knowledge.Facts.Last(f => f.StoryId == "unrelated");
             NpcKnowledgeSystem.Hear(world.Game, witness, victim, unrelated);
             NpcConversation.ShareRumor(world.Game, witness, relay, unrelated, true);
-            for (int slot = 1; slot <= 24; slot++)
+            for (int slot = 48; slot <= 71; slot++)
             {
                 world.Map.LocalTime.TurnCounter = slot * WorldTime.TURNS_PER_HOUR;
                 Session.Get.WorldTime.TurnCounter = slot * WorldTime.TURNS_PER_HOUR;

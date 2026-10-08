@@ -161,12 +161,13 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             NpcEvents.Publish(game, "rumor_shared", speaker, listener, fact.EventId, fact.StoryId);
         }
 
-        public static List<NpcFact> Chapter(RogueGame game, Actor speaker, Actor listener, NpcFact fact, int turn = -1)
+        public static List<NpcFact> Chapter(RogueGame game, Actor speaker, Actor listener, NpcFact fact, int turn = -1,
+            IList<NpcFact> sourceFacts = null)
         {
             if (turn < 0) turn = speaker.Location.Map.LocalTime.TurnCounter;
             List<NpcFact> chapter = new List<NpcFact> { fact };
             if (!String.IsNullOrEmpty(fact.StoryId))
-                foreach (NpcFact related in speaker.Personality.Knowledge.Facts)
+                foreach (NpcFact related in sourceFacts ?? (IList<NpcFact>)speaker.Personality.Knowledge.Facts)
                     if (related != fact && related.StoryId == fact.StoryId &&
                         EligibleFact(game, speaker, related, turn) &&
                         (listener == null || EligibleListener(speaker, listener, related)))

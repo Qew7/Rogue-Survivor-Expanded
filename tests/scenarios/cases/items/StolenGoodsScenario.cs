@@ -74,7 +74,7 @@ static class StolenGoodsScenario
             Check.Equal(true, NpcConversation.Chapter(world.Game, stranger, null, heardFind).Count >= 3,
                 "theft, handoff and discovery form one chapter for spoken rumors");
             bool aired = false;
-            for (int slot = 1; slot <= 24; slot++)
+            for (int slot = 24; slot <= 47; slot++)
             {
                 Session.Get.WorldTime.TurnCounter = slot * WorldTime.TURNS_PER_HOUR;
                 RadioProgram program = (RadioProgram)Check.Call(world.Game, "GetRadioProgram", 3, slot);

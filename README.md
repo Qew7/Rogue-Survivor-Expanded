@@ -19,7 +19,7 @@ Open [localhost:6080](http://localhost:6080), click the game window, and press E
 - Mouse movement and context menus.
 - Mods and configurable game presets.
 - NPC traits, memories, conversations, and emergent stories.
-- Four radio stations carry shared hourly programs, NPC stories and follow-ups; household and portable receivers let players tune in.
+- Four radio stations carry shared hourly programs and NPC stories.
 - Base thefts and raids become rumors when witnessed or discovered later. Stolen items retain their victim group's identity through trades, drops and deaths.
 - Claimable bases, storage rooms, and follower scavenging.
 

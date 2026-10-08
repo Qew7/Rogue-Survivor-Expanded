@@ -47,7 +47,8 @@ static class StoryNarrationScenario
                 });
             string place = "in district " + World.CoordToString(world.Map.District.WorldPosition.X,
                 world.Map.District.WorldPosition.Y);
-            RadioProgram radio = (RadioProgram)Check.Call(world.Game, "GetRadioProgram", 3, 0);
+            Session.Get.WorldTime.TurnCounter = WorldTime.TURNS_PER_DAY;
+            RadioProgram radio = (RadioProgram)Check.Call(world.Game, "GetRadioProgram", 3, 24);
             Check.Equal(4, radio.Facts.Length, "radio retains every event in the chapter");
             CheckStory(radio.Text, place);
 
