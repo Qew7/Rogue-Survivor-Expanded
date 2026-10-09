@@ -131,7 +131,7 @@ namespace djack.RogueSurvivor.Engine
 
         void AdvanceRadios(Map map)
         {
-            if (map.LocalTime.TurnCounter % 30 != 0) return;
+            if (map.LocalTime.TurnCounter % WorldTime.TURNS_PER_HOUR != 0) return;
             foreach (MapObject obj in map.MapObjects)
             {
                 RadioReceiver radio = obj as RadioReceiver;

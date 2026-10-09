@@ -72,6 +72,12 @@ namespace djack.RogueSurvivor.Data
 
             m_ModelID = model.ID;
         }
+
+        internal Tile(int modelID, int flags)
+        {
+            m_ModelID = modelID;
+            m_Flags = (Flags)flags;
+        }
         #endregion
 
         #region Decorations

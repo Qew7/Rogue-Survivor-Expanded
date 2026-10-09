@@ -729,3 +729,25 @@ comparisons showed about a 2% gain, while the open-map FOV microbenchmark was
 effectively unchanged. Two further FOV experiments, a custom `Point` hash
 and different ray-cell arithmetic, were removed after failing to show a
 consistent gain. The full Docker test target passed 366 scenarios.
+
+## Current Docker save and tile loading, October 10, 2026
+
+The running game's `save.dat` was 64,480,804 bytes (61.5 MiB) at turn 5,877;
+its backup was 55,798,195 bytes. The current file contains a 19,547,440-byte
+compressed resident archive and a 44,933,314-byte compressed world graph. The
+two sections expand to 125,788,131 and 307,271,822 bytes respectively. Docker
+log timestamps for the game's actual load span 56.04 seconds. A separate
+archive-only load from a copy took 10.08 seconds and peaked at 1.14 GB RSS.
+The live save exceeds the synthetic fixture's 50 MB file budget; that budget
+was never intended as a limit for all worlds.
+
+The graph reader previously used reflection and a temporary object array for
+every tile. It now restores the saved model ID and flags through a direct Tile
+constructor, preserving individual tile identity and the existing decoration
+reference fixup. On the fixed 1,124,864-tile save-budget fixture, two full
+fresh-process loads fell from 7.43–7.61 seconds to 6.68–6.72 seconds. A repeat
+run of the old image after the new image took 7.45–7.49 seconds. The file size
+was unchanged at 10,054,061 bytes; first-generation GC counts fell from 404
+to 376. `storage/compact-save` verifies tile flags, decoration sharing, and
+reference identity. The 64 MB live save has not been reloaded with this change,
+so its exact post-change load time is not yet measured.
