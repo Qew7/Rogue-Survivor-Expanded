@@ -9,13 +9,11 @@ using djack.RogueSurvivor.Engine.Actions;
 using djack.RogueSurvivor.Engine.Items;
 using djack.RogueSurvivor.Engine.MapObjects;
 using djack.RogueSurvivor.Gameplay;
-
 static class RadioProgramScenario
 {
     public static void Register()
     {
-        ScenarioRunner.Add("world/radio-program", () => TownScenarioFactory.Arena(4636,
-            "........", "........", "........", "........"), world =>
+        ScenarioRunner.Add("world/radio-program", () => TownScenarioFactory.Arena(4636, "........", "........", "........", "........"), world =>
         {
             Session.Get.GamePreset = GamePreset.BuiltIn(GameMode.GM_STANDARD);
             Actor player = NpcIntentSupport.Player(world, 1, 1);
@@ -33,12 +31,10 @@ static class RadioProgramScenario
             }
             Session.Get.World = city;
             Map remote = city[1, 0].EntryMap;
-            Actor listener = new Actor(world.Game.GameActors.MaleCivilian,
-                world.Game.GameFactions.TheCivilians, "remote listener", true, false, 0);
+            Actor listener = new Actor(world.Game.GameActors.MaleCivilian, world.Game.GameFactions.TheCivilians, "remote listener", true, false, 0);
             listener.Personality = new PersonalityState();
             remote.PlaceActorAt(listener, new Point(1, 1));
-            Actor source = new Actor(world.Game.GameActors.MaleCivilian,
-                world.Game.GameFactions.TheCivilians, "source", true, false, 0);
+            Actor source = new Actor(world.Game.GameActors.MaleCivilian, world.Game.GameFactions.TheCivilians, "source", true, false, 0);
             source.Personality = new PersonalityState();
             remote.PlaceActorAt(source, new Point(6, 1));
             source.Personality.Knowledge.Facts.Add(new NpcFact { EventId = 2, Kind = "shared_food",
@@ -52,6 +48,7 @@ static class RadioProgramScenario
                 Source = NpcKnowledgeSource.Told, Confidence = 60, Hops = 1, SubjectName = "Ada" });
             Session.Get.WorldTime.TurnCounter = WorldTime.TURNS_PER_DAY;
             world.Map.LocalTime.TurnCounter = WorldTime.TURNS_PER_DAY;
+            remote.LocalTime.TurnCounter = WorldTime.TURNS_PER_DAY;
             RadioReceiver homeRadio = new RadioReceiver(GameImages.OBJ_RADIO);
             world.Map.PlaceMapObjectAt(homeRadio, new Point(2, 1));
             Check.Equal(true, world.Try(new ActionSwitchRadio(player, world.Game, homeRadio)),

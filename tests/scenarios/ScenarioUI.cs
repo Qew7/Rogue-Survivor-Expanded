@@ -17,6 +17,7 @@ sealed class ScenarioUI : IRogueUI
     public readonly List<Tuple<Color, string>> DrawnBold = new List<Tuple<Color, string>>();
     public readonly List<Tuple<string, int, int>> DrawnText = new List<Tuple<string, int, int>>();
     public int MinimapTileWrites { get; private set; }
+    public int RepaintCount { get; private set; }
     public Point MousePosition { get; set; }
     public void QueueKey(Keys key) { keys.Enqueue(null); keys.Enqueue(new KeyEventArgs(key)); }
     public void QueueClick(MouseButtons button) { buttons.Enqueue(button); }
@@ -37,7 +38,7 @@ sealed class ScenarioUI : IRogueUI
     public void UI_PostMouseWheelDelta(int delta) { wheels.Enqueue(delta); }
     public void UI_SetCursor(Cursor cursor) { }
     public void UI_Wait(int msecs) { }
-    public void UI_Repaint() { }
+    public void UI_Repaint() { RepaintCount++; }
     public void UI_Clear(Color color) { }
     public void UI_DrawImage(string id, int x, int y) { DrawnImages.Add(id); }
     public void UI_DrawImage(string id, int x, int y, Color tint) { }

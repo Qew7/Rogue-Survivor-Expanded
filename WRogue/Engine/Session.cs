@@ -407,6 +407,8 @@ namespace djack.RogueSurvivor.Engine
         int m_RadioDropX, m_RadioDropY;
         [OptionalField]
         RadioProgram[] m_RadioPrograms;
+        [OptionalField]
+        Dictionary<long, RadioProgram> m_RadioProgramHistory;
         #endregion
 
         #region Scoring
@@ -471,6 +473,8 @@ namespace djack.RogueSurvivor.Engine
         public Point RadioDropDistrict { get { return new Point(m_RadioDropX, m_RadioDropY); }
             set { m_RadioDropX = value.X; m_RadioDropY = value.Y; } }
         internal RadioProgram[] RadioPrograms { get { return m_RadioPrograms ?? (m_RadioPrograms = new RadioProgram[4]); } }
+        internal Dictionary<long, RadioProgram> RadioProgramHistory { get { return m_RadioProgramHistory ??
+            (m_RadioProgramHistory = new Dictionary<long, RadioProgram>()); } }
 
         public ModStamp[] Mods
         {
@@ -587,6 +591,7 @@ namespace djack.RogueSurvivor.Engine
             m_RadioHostId = Guid.Empty;
             m_RadioDropTurn = 0;
             m_RadioPrograms = null;
+            m_RadioProgramHistory = null;
             m_PersonalityEventSequence = 0;
             m_WorldTime = new WorldTime();
             this.LastTurnPlayerActed = 0;

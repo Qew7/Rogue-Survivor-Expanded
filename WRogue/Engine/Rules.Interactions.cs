@@ -104,6 +104,21 @@ namespace djack.RogueSurvivor.Engine
                 return false;
             }
 
+            if (!actor.IsPlayer && GridDistance(actor.Location.Position, exitPoint) > 1)
+            {
+                reason = "exit is not adjacent";
+                return false;
+            }
+
+            Exit exit = actor.Location.Map.GetExitAt(exitPoint);
+            if (!actor.IsPlayer && exit.ToMap.District != actor.Location.Map.District &&
+                (exit.ToMap.LocalTime.TurnCounter < actor.Location.Map.LocalTime.TurnCounter ||
+                 exit.ToMap.LocalTime.TurnCounter > actor.Location.Map.LocalTime.TurnCounter + 1))
+            {
+                reason = "destination district is at another time";
+                return false;
+            }
+
             // 2. AI: can't use AI exits.
             // alpha10.1 handle bots
             if ((!actor.IsPlayer || actor.IsBotPlayer) && !actor.Model.Abilities.AI_CanUseAIExits)

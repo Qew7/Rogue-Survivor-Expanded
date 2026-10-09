@@ -86,11 +86,19 @@ a Session root immediately.
 Numeric model/content IDs and string personality IDs remain stable. Tile,
 actor and item model definitions and personality callbacks are rebuilt from
 content; the save retains their IDs and instance state.
+The optional preset field `DisableDistantSimulationDuringRest` defaults to false
+for existing presets and saves, so distant districts advance during sleep and
+waiting unless the player disables it before a new game.
+Recent hourly radio programs are retained in the session, so a district catching
+up after loading hears the same broadcast already heard elsewhere. Older saves
+without this optional history rebuild a program when first requested.
 
 The graph retains map ownership and exits, local/world clocks and RNG state,
 actor/item positions, corpse references, trap and base ownership, item dropper
 attribution, NPC orders, selected presets/options, and connected base sections.
 Auxiliary map indexes are not serialized and are rebuilt for gameplay.
+`world/rest-simulates-distant-districts` saves after a distant rest turn and
+reloads the district clock, NPC, and rumor learned from another NPC.
 An XPD base optionally keeps up to 32 unseen theft losses or fatal raids with
 their position, source event and story IDs. Theft losses retain resource and
 quantity but no thief identity; a raid retains the killed member's actor link.

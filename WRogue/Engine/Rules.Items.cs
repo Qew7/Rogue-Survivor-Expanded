@@ -810,6 +810,10 @@ namespace djack.RogueSurvivor.Engine
             ///////////////////////////////
             if (!map.IsInBounds(x, y))
             {
+                Exit border = map.GetExitAt(x, y);
+                if (!actor.IsPlayer && border != null && border.IsAnAIExit &&
+                    CanActorUseExit(actor, new Point(x, y), out reason))
+                    return new ActionUseExit(actor, new Point(x, y), game);
                 if (CanActorLeaveMap(actor, out reason))
                 {
                     reason = "";

@@ -259,11 +259,16 @@ namespace djack.RogueSurvivor.Engine
                                         m_MusicManager.Stop();
                                         m_MusicManager.PlayLooping(GameMusics.SLEEP, MusicPriority.PRIORITY_EVENT);
                                     }
-                                    // message.
-                                    AddMessage(new Message("...zzZZZzzZ...", map.LocalTime.TurnCounter, Color.DarkCyan));
-                                    RedrawPlayScreen();
-                                    // give some time to sim thread.
-                                    if (s_Options.SimThread)
+                                    // Keep the sleep display responsive without rendering every simulated turn.
+                                    long now = System.Diagnostics.Stopwatch.GetTimestamp();
+                                    if (now - m_RestProgressLastDraw >= System.Diagnostics.Stopwatch.Frequency / 4)
+                                    {
+                                        AddMessage(new Message("...zzZZZzzZ...", map.LocalTime.TurnCounter, Color.DarkCyan));
+                                        RedrawPlayScreen();
+                                        m_RestProgressLastDraw = now;
+                                    }
+                                    // Yield only while a simulation worker exists.
+                                    if (m_SimWorker != null)
                                         Thread.Sleep(10);
                                 }
                                 else if (m_Rules.RollChance(MESSAGE_NPC_SLEEP_SNORE_CHANCE) && IsVisibleToPlayer(actor))

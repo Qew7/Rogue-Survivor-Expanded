@@ -75,6 +75,7 @@ static class BaseCrimeRadioScenario
                 RadioProgram program = (RadioProgram)Check.Call(world.Game, "GetRadioProgram", 3, slot);
                 if (program.Facts == null || Array.Find(program.Facts, f => f.EventId == named.EventId) == null) continue;
                 Check.Equal(true, program.Text.Contains("Vasily stole"), "crime station names the identified thief");
+                world.Map.LocalTime.TurnCounter = Session.Get.WorldTime.TurnCounter;
                 Check.Call(world.Game, "BroadcastRadio", new[] { typeof(int), typeof(Map), typeof(Point), typeof(Actor) },
                     3, world.Map, player.Location.Position, null);
                 Check.Equal(true, player.Personality.Person(thief.PersonalityIdentity).Feeling < 0,

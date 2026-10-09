@@ -5,6 +5,7 @@ using System.Drawing;
 using System.Threading;
 using System.Windows.Forms;
 using System.IO;
+using System.Diagnostics;
 
 using djack.RogueSurvivor.Data;
 using djack.RogueSurvivor.Engine.Actions;
@@ -230,6 +231,87 @@ namespace djack.RogueSurvivor.Engine
             AdvancePlay(d, ComputeSimFlagsForTurn(d.EntryMap.LocalTime.TurnCounter));
         }
 
+        int RemainingRestTurns()
+        {
+            if (m_Player.IsSleeping)
+            {
+                int regen = m_Rules.ActorSleepRegen(m_Player, m_Rules.IsOnCouch(m_Player));
+                return regen > 0 ? Math.Max(0,
+                    (m_Rules.ActorMaxSleep(m_Player) - m_Player.SleepPoints + regen - 1) / regen) : 0;
+            }
+            return m_IsPlayerLongWait && !m_IsPlayerLongWaitForcedStop ?
+                Math.Max(0, m_PlayerLongWaitEnd.TurnCounter - m_Session.WorldTime.TurnCounter) : 0;
+        }
+
+        void SimulateDistantDistrictsThrough(int turn, int remainingRestTurns = 0)
+        {
+            World world = m_Session.World;
+            int total = 0, districtsDue = 0;
+            for (int x = 0; x < world.Size; x++)
+                for (int y = 0; y < world.Size; y++)
+                {
+                    District district = world[x, y];
+                    if (district != null && district != m_Session.CurrentMap.District)
+                    {
+                        int due = Math.Max(0, turn - district.EntryMap.LocalTime.TurnCounter);
+                        total += due;
+                        if (due > 0) districtsDue++;
+                    }
+                }
+            if (total == 0)
+            {
+                m_RestHasDeferredSimulation = false;
+                return;
+            }
+            // Budget the new district turns plus a share of older debt; simulate oldest turns first.
+            int budget = remainingRestTurns > 0 ? Math.Min(total, districtsDue +
+                (total - districtsDue + remainingRestTurns) / (remainingRestTurns + 1)) : total;
+            int done = 0;
+            Stopwatch elapsed = Stopwatch.StartNew();
+            bool showedProgress = false;
+            if (m_RestProgressLastDraw == 0) m_RestProgressLastDraw = Stopwatch.GetTimestamp();
+            while (done < budget)
+            {
+                District next = null;
+                for (int x = 0; x < world.Size; x++)
+                    for (int y = 0; y < world.Size; y++)
+                    {
+                        District district = world[x, y];
+                        if (district == null || district == m_Session.CurrentMap.District ||
+                            district.EntryMap.LocalTime.TurnCounter >= turn) continue;
+                        if (next == null || district.EntryMap.LocalTime.TurnCounter < next.EntryMap.LocalTime.TurnCounter)
+                            next = district;
+                    }
+                if (next == null) break;
+                long now = Stopwatch.GetTimestamp();
+                if (now - m_RestProgressLastDraw >= Stopwatch.Frequency / 4)
+                {
+                    string eta = done == 0 ? "estimating" :
+                        String.Format("~{0}s left", Math.Ceiling(elapsed.Elapsed.TotalSeconds * (budget - done) / done));
+                    m_RestSimulationProgress = String.Format("Simulating city: {0}/{1} district turns, {2}", done, budget, eta);
+                    RedrawPlayScreen();
+                    m_RestProgressLastDraw = now;
+                    showedProgress = true;
+                }
+                SimulateDistrict(next);
+                done++;
+                if (!m_IsGameRunning || m_HasLoadedGame || m_Player == null || m_Player.IsDead) break;
+                if (m_IsPlayerLongWaitForcedStop || !m_Player.IsSleeping && !m_IsPlayerLongWait)
+                    budget = total;
+            }
+            m_RestHasDeferredSimulation = done < total;
+            m_RestSimulationProgress = null;
+            if (showedProgress && m_IsGameRunning && !m_HasLoadedGame && m_Player != null && !m_Player.IsDead)
+                RedrawPlayScreen();
+        }
+
+        void FinishRestSimulationIfNeeded()
+        {
+            if (m_RestHasDeferredSimulation && s_Options.IsSimON &&
+                m_Session.GamePreset != null && !m_Session.GamePreset.DisableDistantSimulationDuringRest)
+                SimulateDistantDistrictsThrough(m_Session.WorldTime.TurnCounter);
+        }
+
         /// <summary>
         ///
         /// </summary>
@@ -255,6 +337,7 @@ namespace djack.RogueSurvivor.Engine
                         continue;
 
                     District otherDistrict = m_Session.World[dx, dy];
+                    if (otherDistrict == null) continue;
 
                     // don't sim if up to date!
                     int dTurns = d.EntryMap.LocalTime.TurnCounter - otherDistrict.EntryMap.LocalTime.TurnCounter;
@@ -277,7 +360,8 @@ namespace djack.RogueSurvivor.Engine
         bool m_RestartSimulationAfterReincarnation;
         void StartSimThread()
         {
-            if (s_Options.IsSimON && s_Options.SimThread)
+            if (s_Options.IsSimON && s_Options.SimThread &&
+                (m_Session.GamePreset == null || m_Session.GamePreset.DisableDistantSimulationDuringRest))
             {
                 if (m_SimWorker == null)
                 {

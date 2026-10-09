@@ -31,8 +31,7 @@ namespace djack.RogueSurvivor.Engine
 
         Session m_RadioDaySession;
         World m_RadioDayWorld;
-        int m_RadioDay = -1;
-        List<RadioDayNews> m_RadioDayNews;
+        Dictionary<int, List<RadioDayNews>> m_RadioNewsByDay = new Dictionary<int, List<RadioDayNews>>();
 
         // Build once when the day's first news slot is requested. The midnight
         // cutoff keeps later retellings and new events out of today's script.
@@ -40,8 +39,14 @@ namespace djack.RogueSurvivor.Engine
         {
             int day = now / WorldTime.TURNS_PER_DAY;
             World world = m_Session.World;
-            if (m_RadioDaySession == m_Session && m_RadioDayWorld == world && m_RadioDay == day)
-                return m_RadioDayNews;
+            if (m_RadioDaySession != m_Session || m_RadioDayWorld != world)
+            {
+                m_RadioNewsByDay.Clear();
+                m_RadioDaySession = m_Session;
+                m_RadioDayWorld = world;
+            }
+            List<RadioDayNews> cached;
+            if (m_RadioNewsByDay.TryGetValue(day, out cached)) return cached;
             int midnight = day * WorldTime.TURNS_PER_DAY;
             var news = new List<RadioDayNews>();
             for (int x = 0; x < world.Size; x++) for (int y = 0; y < world.Size; y++)
@@ -68,10 +73,9 @@ namespace djack.RogueSurvivor.Engine
                         if (reportable) news.Add(new RadioDayNews { Source = source, Facts = available.ToArray() });
                     }
             }
-            m_RadioDaySession = m_Session;
-            m_RadioDayWorld = world;
-            m_RadioDay = day;
-            return m_RadioDayNews = news;
+            if (m_RadioNewsByDay.Count > 3) m_RadioNewsByDay.Clear();
+            m_RadioNewsByDay[day] = news;
+            return news;
         }
 
         static readonly string[] RadioStationNames = { "Survivor Network", "Military Dispatch", "Local Calls", "Gang Frequency" };
@@ -163,7 +167,7 @@ namespace djack.RogueSurvivor.Engine
                     { hasListener = true; break; }
                 if (!hasListener) { OnLoudNoise(map, position, "A radio"); return; }
             }
-            RadioProgram program = GetRadioProgram(station, m_Session.WorldTime.TurnCounter / WorldTime.TURNS_PER_HOUR);
+            RadioProgram program = GetRadioProgram(station, map.LocalTime.TurnCounter / WorldTime.TURNS_PER_HOUR);
             if (station == 0 && m_Session.RadioHostId != Guid.Empty &&
                 (program.HostId != m_Session.RadioHostId || program.Host == null || program.Host.IsDead))
             { if (owner == null) OnLoudNoise(map, position, "A radio"); return; }
@@ -208,9 +212,24 @@ namespace djack.RogueSurvivor.Engine
             lock (m_Session)
             {
                 RadioProgram[] programs = m_Session.RadioPrograms;
+                Dictionary<long, RadioProgram> history = m_Session.RadioProgramHistory;
+                long key = ((long)slot << 2) | (uint)station;
+                RadioProgram recorded;
+                if (history.TryGetValue(key, out recorded)) return recorded;
                 RadioProgram program = programs[station];
-                if (program == null || program.Slot != slot)
+                if (program != null && program.Slot > slot)
+                    program = BuildRadioProgram(station, slot);
+                else if (program == null || program.Slot != slot)
                     programs[station] = program = BuildRadioProgram(station, slot);
+                history[key] = program;
+                if (history.Count > 256)
+                {
+                    int cutoff = m_Session.WorldTime.TurnCounter / WorldTime.TURNS_PER_HOUR - 48;
+                    var stale = new List<long>();
+                    foreach (long stored in history.Keys)
+                        if ((stored >> 2) < cutoff) stale.Add(stored);
+                    foreach (long stored in stale) history.Remove(stored);
+                }
                 return program;
             }
         }
@@ -241,7 +260,7 @@ namespace djack.RogueSurvivor.Engine
             if (segment == 0) { program.Text = RadioLore(station, slot); return program; }
             if (segment == 1) { program.Text = RadioBark(station, slot); return program; }
 
-            int now = m_Session.WorldTime.TurnCounter;
+            int now = slot * WorldTime.TURNS_PER_HOUR;
             int remaining = m_Session.RadioDropTurn - now;
             if (station == 1 && m_Session.RadioDropTurn > 0 && remaining > 0 &&
                 remaining <= 2 * WorldTime.TURNS_PER_DAY)

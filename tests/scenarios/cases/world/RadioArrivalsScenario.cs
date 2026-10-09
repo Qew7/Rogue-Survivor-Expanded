@@ -39,6 +39,7 @@ static class RadioArrivalsScenario
             Actor player = NpcIntentSupport.Player(world, 6, 2);
             player.Personality.AddTrait(new TraitInstance("timid"));
             int sanity = player.Sanity;
+            world.Map.LocalTime.TurnCounter = Session.Get.WorldTime.TurnCounter;
             Check.Call(world.Game, "BroadcastRadio", new[] { typeof(int), typeof(Map), typeof(Point), typeof(Actor) },
                 0, world.Map, player.Location.Position, null);
             Check.Equal(sanity - 1, player.Sanity, "a timid player is unsettled by the psychopath warning");

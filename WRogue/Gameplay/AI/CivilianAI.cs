@@ -1009,6 +1009,8 @@ namespace djack.RogueSurvivor.Gameplay.AI
 #endif
             // END DEBUG BOT
 
+            ActorAction crossDistrict = BehaviorCrossDistrict(game);
+            if (crossDistrict != null) return crossDistrict;
             ActorAction exploreAction = BehaviorExplore(game, m_Exploration);
             if (exploreAction != null)
             {
@@ -1038,6 +1040,39 @@ namespace djack.RogueSurvivor.Gameplay.AI
             #endregion
 
             #endregion
+        }
+
+        ActorAction BehaviorCrossDistrict(RogueGame game)
+        {
+            Map map = m_Actor.Location.Map;
+            World world = Session.Get.World;
+            if (m_Actor.HasLeader || !m_Actor.Model.Abilities.AI_CanUseAIExits ||
+                map.District == null || map != map.District.EntryMap || map.CountExits == 0 ||
+                world == null || world.Size < 2)
+                return null;
+            uint routeSeed = (uint)(m_Actor.PersonalityIdentity.GetHashCode() ^ (map.LocalTime.Day * 1601));
+            if (routeSeed % 5u != 0) return null;
+            int destination = (int)((routeSeed / 5u) % (uint)(world.Size * world.Size));
+            Point goal = new Point(destination % world.Size, destination / world.Size);
+            Point here = map.District.WorldPosition;
+            int remaining = Math.Abs(goal.X - here.X) + Math.Abs(goal.Y - here.Y);
+            if (remaining == 0) return null;
+            Point? nearest = null;
+            int distance = Int32.MaxValue;
+            foreach (KeyValuePair<Point, Exit> entry in map.ExitEntries)
+            {
+                Exit exit = entry.Value;
+                if (!exit.IsAnAIExit || exit.ToMap == null || exit.ToMap.District == null ||
+                    exit.ToMap.District == map.District ||
+                    exit.ToMap.LocalTime.TurnCounter < map.LocalTime.TurnCounter ||
+                    exit.ToMap.LocalTime.TurnCounter > map.LocalTime.TurnCounter + 1 ||
+                    exit.ToMap.GetActorAt(exit.ToPosition) != null) continue;
+                Point next = exit.ToMap.District.WorldPosition;
+                if (Math.Abs(goal.X - next.X) + Math.Abs(goal.Y - next.Y) >= remaining) continue;
+                int d = game.Rules.GridDistance(m_Actor.Location.Position, entry.Key);
+                if (d < distance) { nearest = entry.Key; distance = d; }
+            }
+            return nearest.HasValue ? BehaviorIntelligentBumpToward(game, nearest.Value, false, false) : null;
         }
         #endregion
     }

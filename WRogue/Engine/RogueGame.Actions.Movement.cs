@@ -541,6 +541,8 @@ namespace djack.RogueSurvivor.Engine
             // 3. Enter map (+corpse)
             exit.ToMap.PlaceActorAt(actor, exit.ToPosition);
             exit.ToMap.MoveActorToFirstPosition(actor);
+            if (!isPlayer && exit.ToMap.District != fromMap.District)
+                actor.ActionPoints = 0;
             if (actor.Faction == GameFactions.ThePsychopaths && exit.ToMap.District != null &&
                 (fromMap.District != exit.ToMap.District ||
                  fromMap != exit.ToMap.District.EntryMap && exit.ToMap == exit.ToMap.District.EntryMap))
@@ -769,6 +771,7 @@ namespace djack.RogueSurvivor.Engine
         #region Waiting
         public void DoWait(Actor actor)
         {
+            if (actor == m_Player) m_PlayerWaitedThisTurn = true;
             // spend AP.
             SpendActorActionPoints(actor, Rules.BASE_ACTION_COST);
 

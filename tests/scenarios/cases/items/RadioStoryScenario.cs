@@ -9,7 +9,6 @@ using djack.RogueSurvivor.Engine.Items;
 using djack.RogueSurvivor.Engine.MapObjects;
 using djack.RogueSurvivor.Gameplay;
 using djack.RogueSurvivor.Gameplay.Personality;
-
 static class RadioStoryScenario
 {
     public static void Register()
@@ -36,7 +35,6 @@ static class RadioStoryScenario
             world.Place(witness, 6, 1);
             NpcConversation.ShareRumor(world.Game, witness, relay, first, true);
             Check.Equal(0, player.Personality.Knowledge.Facts.Count, "wall hides original chapter");
-
             // A legacy receiver in an older save still refers to the handheld item sprite.
             var receiver = new RadioReceiver(GameImages.ITEM_POLICE_RADIO);
             world.Map.PlaceMapObjectAt(receiver, new Point(8, 1));
@@ -57,7 +55,6 @@ static class RadioStoryScenario
             Check.Same(localProgram, Check.Call(world.Game, "GetRadioProgram", 2, 0),
                 "changing survivor host does not reset another channel midhour");
             Session.Get.RadioHostId = Guid.Empty;
-
             world.Map.LocalTime.TurnCounter = WorldTime.TURNS_PER_DAY + 4;
             Session.Get.WorldTime.TurnCounter = WorldTime.TURNS_PER_DAY + 4;
             PersonalitySystem.Report(world.Game, new SignificantEvent("shared_food", victim, attacker,
@@ -83,7 +80,6 @@ static class RadioStoryScenario
                 "radio eventually follows a familiar story");
             Check.Equal(true, player.Personality.Knowledge.Facts.Any(f => f.EventId == unrelated.EventId),
                 "radio also airs an unrelated story");
-
             for (int i = 0; i < 4; i++) world.Try(new ActionSwitchRadio(player, world.Game, receiver));
             Check.Equal(false, receiver.IsOn, "cycling all four stations switches off");
             Session.Get.RadioHostId = attacker.PersonalityIdentity;
@@ -100,7 +96,6 @@ static class RadioStoryScenario
             Check.Equal(true, world.Try(new ActionPush(player, world.Game, receiver, Direction.E)),
                 "radio can be pushed");
             Check.Equal(new Point(9, 1), receiver.Location.Position, "pushing moves the radio");
-
             ItemRadio portable = new ItemRadio((ItemTrackerModel)world.Game.GameItems[GameItems.IDs.RADIO_SURVIVORS]);
             player.Inventory.AddAll(portable);
             Check.Equal(true, world.Try(new ActionUseItem(player, world.Game, portable)), "portable receiver turns on");
@@ -114,14 +109,15 @@ static class RadioStoryScenario
             Check.Equal(false, new ActionUseItem(player, world.Game, portable).IsLegal(),
                 "empty portable receiver cannot switch on");
             Session.Get.WorldTime.TurnCounter = 100 * WorldTime.TURNS_PER_HOUR - 1;
+            world.Map.LocalTime.TurnCounter = Session.Get.WorldTime.TurnCounter;
             Check.Call(world.Game, "BroadcastRadio", new[] { typeof(int), typeof(Map), typeof(Point), typeof(Actor) },
                 1, world.Map, player.Location.Position, player);
             Check.Equal(99, Session.Get.RadioPrograms[1].Slot, "program stays fixed through the last turn of the hour");
             Session.Get.WorldTime.TurnCounter = 100 * WorldTime.TURNS_PER_HOUR;
+            world.Map.LocalTime.TurnCounter = Session.Get.WorldTime.TurnCounter;
             Check.Call(world.Game, "BroadcastRadio", new[] { typeof(int), typeof(Map), typeof(Point), typeof(Actor) },
                 1, world.Map, player.Location.Position, player);
             Check.Equal(100, Session.Get.RadioPrograms[1].Slot, "next game hour starts a new program");
-
             string path = Path.Combine(Path.GetTempPath(), "radio-story-" + Guid.NewGuid().ToString("N"));
             try
             {

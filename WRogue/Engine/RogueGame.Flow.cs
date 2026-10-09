@@ -487,6 +487,8 @@ namespace djack.RogueSurvivor.Engine
         {
             lock (district)  // alpha10 lock district
             {
+                bool playerWasSleeping = district == m_Session.CurrentMap.District &&
+                    m_Player != null && m_Player.IsSleeping;
 #if DEBUG_STATS
             Session.UpdateStats(district);
 #endif
@@ -632,14 +634,22 @@ namespace djack.RogueSurvivor.Engine
                     else m_Session.RadioDropTurn = 0;
                 }
 
-                // 3. Simulate nearby districts?
-                #region
-                // if player is sleeping in this map and option enabled.
-                if (s_Options.IsSimON && m_Player != null && m_Player.IsSleeping && s_Options.SimulateWhenSleeping && m_Player.Location.Map.District == district)
+                // Rest advances the whole city in chronological order before the next player action.
+                if (district == m_Session.CurrentMap.District)
                 {
-                    SimulateNearbyDistricts(district);
+                    bool resting = m_Player != null &&
+                        (playerWasSleeping || m_Player.IsSleeping || m_PlayerWaitedThisTurn);
+                    if (s_Options.IsSimON && m_Session.GamePreset != null &&
+                        !m_Session.GamePreset.DisableDistantSimulationDuringRest)
+                    {
+                        if (resting) SimulateDistantDistrictsThrough(m_Session.WorldTime.TurnCounter, RemainingRestTurns());
+                        else SimulateNearbyDistricts(district);
+                    }
+                    else if (s_Options.IsSimON && m_Player != null && m_Player.IsSleeping &&
+                        s_Options.SimulateWhenSleeping)
+                        SimulateNearbyDistricts(district);
+                    m_PlayerWaitedThisTurn = false;
                 }
-                #endregion
 
                 if (district == m_Session.CurrentMap.District && m_SimWorker != null)
                     m_SimWorker.NotifyWork();

@@ -66,6 +66,8 @@ namespace djack.RogueSurvivor.Engine
             }
             #endregion
 
+            FinishRestSimulationIfNeeded();
+
             if (ContinueMouseMove(player))
                 return;
 

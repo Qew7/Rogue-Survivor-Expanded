@@ -7,7 +7,11 @@ case ${PROFILE_KIND:-npc} in
     profile_title='NPC turn: managed call flamegraph'; profile_detail='8 turns · 1800 actions · width = attributed self time; hover a block for its call path' ;;
   radio) profile_kind=radio; profile_runner=--profile-radio; profile_root='RadioBenchmarks:RunBroadcasts (';
     profile_title='Radio: managed call flamegraph'; profile_detail='80 broadcasts · 40 hourly slots · 9 maps · 216 sources · 3456 facts · 20 listeners' ;;
-  *) echo 'PROFILE_KIND must be npc or radio' >&2; exit 2 ;;
+  rest) profile_kind=rest; profile_runner=--profile-rest-simulation; profile_root='RestSimulationBenchmarks:RunRest (';
+    profile_title='Rest simulation: managed call flamegraph'; profile_detail='4 waits · 9 generated districts · 150 living · 54 undead · 12 border links' ;;
+  rest_large) profile_kind=rest_large; profile_runner=--profile-rest-large; profile_root='RestSimulationBenchmarks:RunRest (';
+    profile_title='Large rest simulation: managed call flamegraph'; profile_detail='4 waits · 25 generated districts · 1780 living · 150 undead · 40 border links' ;;
+  *) echo 'PROFILE_KIND must be npc, radio, rest, or rest_large' >&2; exit 2 ;;
 esac
 profile_dir=${1:-$(mktemp -d "${TMPDIR:-/tmp}/rogue-$profile_kind-calls.XXXXXX")}
 mkdir -p "$profile_dir"

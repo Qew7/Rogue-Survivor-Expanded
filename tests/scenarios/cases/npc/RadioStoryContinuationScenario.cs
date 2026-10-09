@@ -38,6 +38,7 @@ static class RadioStoryContinuationScenario
             Check.Equal(true, update.Text.StartsWith("Follow-up from survivors: ", StringComparison.Ordinal) &&
                 update.Text.Contains("Earlier reports said that Ada") && update.Text.Contains("Ben"),
                 "familiar story gives one factual reminder before the new development");
+            world.Map.LocalTime.TurnCounter = Session.Get.WorldTime.TurnCounter;
             Check.Call(world.Game, "BroadcastRadio",
                 new[] { typeof(int), typeof(Map), typeof(System.Drawing.Point), typeof(Actor) },
                 0, world.Map, player.Location.Position, player);

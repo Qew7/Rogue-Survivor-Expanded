@@ -574,3 +574,158 @@ profile fell from 319 to 239 ms inclusive at `RadioBenchmarks.RunBroadcasts`;
 153 to 125 ms. The [updated flamegraph](../benchmarks/profiles/radio-recent.svg)
 shows the remaining call costs. These are fixture timings, and the
 instrumented profile is not a frame-time measurement.
+
+## Rest simulation profile
+
+`sh tests/scenario.sh --bench-rest-simulation` performs four real player waits
+with distant simulation enabled. The fixed seed creates nine 40×40 districts
+with surface and sewer maps, 150 living NPCs, 54 undead, and 12 border links.
+The median of five fresh Docker/Mono runs was **43.6 ms for four waits**, or
+**10.9 ms per wait** (samples: 41.3, 42.1, 43.6, 44.2, 45.4 ms). Fixture setup
+is outside the timer; this is a 3×3 workload, not a full 5×5 city estimate.
+
+`PROFILE_KIND=rest sh benchmarks/bench-npc-calls.sh` records the same wait path.
+The [rest simulation flamegraph](../benchmarks/profiles/rest-simulation.svg) shows
+1,252 AI actions. Under Mono call instrumentation, `LOSSensor.Sense` occupies
+2,289 of the 4,196 ms root window, including 1,734 ms in `LOS.ComputeFOVFor`.
+`NextMapTurn` occupies 86 ms; the district-selection loop has no measurable
+self time in this report. FOV computation is the first target; the existing
+map-revision and action-order concerns for an FOV cache still apply. Replacing
+the district scan would have little effect on this fixture.
+
+Map-object lookup occurs roughly 100,000 times in that wait path. Replacing its
+transient `Dictionary<Point, MapObject>` with a flat array indexed by tile
+coordinates avoids hashing on every FOV transparency check. In alternating
+Docker runs against the pre-change image, the four-wait medians were **45.1 and
+44.5 ms before**, versus **39.9 and 39.1 ms after** (about 12% faster). A
+separate eight-turn NPC benchmark changed from 104.7 to 92.1 ms. The
+[indexed-object flamegraph](../benchmarks/profiles/rest-simulation-indexed.svg)
+records the new path: `LOSSensor.Sense` occupies 1,998 of 3,751 ms, including
+1,457 ms in `LOS.ComputeFOVFor`. These profiled times are heavily inflated
+and should only guide which code to benchmark next. The array is rebuilt after
+load and uses one reference per map tile, including tiles without objects.
+
+## Rest optimization experiments, October 9, 2026
+
+The targeted 40×40 fixture contains 31 actors. Alternating Docker/Mono runs
+against the frozen pre-change image gave these median ranges (five samples per
+run):
+
+| Operation | Before | After |
+| --- | ---: | ---: |
+| Occupied actor lookup, 100,000 calls | 4.72–5.17 ms | 0.28–0.32 ms |
+| Empty actor lookup, 100,000 calls | 2.67–3.10 ms | 0.29–0.38 ms |
+| 10,000 pairs of actor moves, 31 actors | 2.99–3.44 ms | 1.99–4.63 ms |
+| Sense empty item/corpse map, 1,000 calls | 27.02–29.80 ms | 15.01–16.16 ms |
+| Sense one item stack and two stacked corpses, 1,000 calls | 28.38–29.13 ms | 21.99–23.15 ms |
+| Sense 65 item stacks and 66 corpses, 1,000 calls | 37.69–38.38 ms | 35.79–38.63 ms |
+
+Actor positions now use a transient flat array. It is updated on every move,
+spawn, removal, and cross-map transition and rebuilt after load. A 100×100 map
+uses about 78 KiB for the array on a 64-bit runtime. Movement timings have one
+high after-change outlier, so they do not establish a precise update-time
+speedup; the lookup improvement is consistent. The empty-map sensing path
+checks existing collection counts. The sparse path handles a single item stack
+or a single corpse directly, preserving percept order without temporary sort
+collections. Multiple resource positions retain the original FOV scan.
+
+Alternating full 3×3 rest runs gave **38.8 and 39.8 ms before** versus **35.7
+and 35.9 ms after** for four waits. The separate sleep probe measured ten real
+map turns with no worker at **137.02 ms** under the old `SimThread` option check
+and **0.22–0.29 ms** when checking for an actual worker. With a worker present,
+the optimized path still yielded (**122.28 ms**). The forced pause was meant
+to give the former nearby-district simulation thread CPU time; full-city rest
+simulation does not start that worker.
+
+The FOV cache experiment measured its optimistic hit ceiling in the same rest
+fixture: 299–311 of roughly 1,250 FOV calls repeated an actor's map, position,
+and range, but only 57 repeated within one map turn. A key check including
+`ActorFOV` took **3.60–3.77 ms per 100,000 calls**. The 40×40 static FOV probe
+took about **5.80 ms per 1,000 recomputations**. At that per-call cost, all 57
+same-turn candidates together would save roughly 0.3 ms per four waits before
+tracking doors and other visibility changes. Cross-turn reuse also needs reliable invalidation for
+map-object state, fire, lighting, weather, and nearby carried lights. No FOV
+cache was retained. The targeted benchmarks do not measure the rendering cost
+of sleep or a long district catch-up transition.
+
+## Large-city rest and progress, October 9, 2026
+
+The 3×3 benchmark starts the player in a corner, so five districts are outside
+the one-cell nearby radius. It is still too small to represent a crowded city.
+`sh tests/scenario.sh --bench-rest-large` generates 5×5 districts with 1,780
+living NPCs, 150 undead, and 40 border links; 21 districts are beyond that
+radius. Four real waits with full simulation took **588.1 ms** median across
+three fresh runs (559.9, 588.1, 592.5 ms). Fixture generation and rendering
+are outside the timer; actual hour-long waits can be interrupted and become
+slower as the world evolves. The benchmark retains full NPC action frequency.
+
+During sleep and long waits, the game displays district-turn progress and an
+elapsed-rate ETA once the city has simulated long enough to estimate one. Long
+waits count down their remaining game turns, and sleep shows approximate turns
+until rested. Both show a wall-clock ETA after at least one game turn. Sleep redrawing is limited
+to four times per real second instead of once per map turn. The ETA is an
+estimate because later turns can cost more. A save/load scenario checks that
+simulated district time, a remote NPC, and a rumor it learned survive the round
+trip.
+
+Long sleep and hour-long waits now spread an existing distant-district backlog
+over their remaining player turns. Each rest turn has a budget for the new
+district turns plus a proportional share of the older backlog, with oldest
+district turns simulated first. A single wait still catches up fully. Natural
+completion, waking, or an interrupted long wait drains any remainder before
+the next player command. Every district turn and NPC action still runs, but
+arrivals and rumors from a previously paused district can reach the player
+later during rest. Named scenarios cover sleep, long waits, interruption and
+rumor transfer; the existing save/load scenario checks the final world state.
+This spreads latency rather than reducing total simulation work.
+
+## Full-density 5×5 call profile and experiments, October 9, 2026
+
+`PROFILE_KIND=rest_large sh benchmarks/bench-npc-calls.sh` profiles the same
+full-detail 5×5 fixture. The [large-city flamegraph](../benchmarks/profiles/rest-large.svg)
+contains 8,938 NPC actions in four waits. Mono call instrumentation stretched
+the measured interval to 41.8 seconds, compared with roughly 0.54–0.59 seconds
+without instrumentation. Inclusive time in `LOS.ComputeFOVFor` was 13.8 seconds
+(8,938 calls, about 33% of the profile interval); `LOSSensor.Sense` was 17.1
+seconds including FOV. `PrepareNpcIntents` was 7.7 seconds and 249 rumor-sharing
+actions occupied 3.6 seconds inclusive. These inclusive figures overlap and
+cannot be added. They identify hot paths, not wall-clock speedup estimates.
+
+Two behavior-preserving ideas were benchmarked and reverted:
+
+- Reusing thread-local FOV cell and wall buffers preserved the equivalence
+  scenario, but the 5×5 median was 551.1 ms before and 554.6 ms after; an
+  isolated 1,000-call FOV check was 6.14 and 6.03 ms. There was no established
+  end-to-end gain.
+- For two ground item stacks and three corpses, scanning a small resource
+  array in FOV order improved the targeted 1,000-call medians from 27.8–28.1
+  to 26.3–26.6 ms, while the dense case slowed from about 35 to 38 ms.
+  Alternating 5×5 run medians overlapped (before 539.6–551.7, after
+  541.9–544.1 ms). The simpler original sensor was retained. A named
+  sparse-resource scenario verifies item and corpse percept order.
+
+All measurements retained full NPC action frequency and normal rumor
+generation. `benchmarks/RestOptimizationBenchmarks.cs` now includes a
+two-item, three-corpse probe for future experiments.
+
+## Lossless full-city simulation tuning, October 10, 2026
+
+The 5×5 call profile showed 36,467 goal offers in four waits. Each offer used
+to recalculate six actor-only trait biases. Goal evaluation now calculates
+those biases once per NPC evaluation pass; person-specific relationship and
+faction values are still calculated for every offer. The context lasts only
+for that pass, so the next NPC action sees any new trait or event. The
+`npc/goal-bias-reuse` scenario compares every generated goal's importance and
+utility with a fresh calculation across multiple people and after a trait
+change. No NPC action, event, or rumor is deferred or omitted.
+
+Four alternating 5×5 Docker runs, each the median of three fresh fixtures,
+measured 528.8, 532.7, 557.9, 559.7 ms before and 490.3, 498.3, 519.7,
+524.6 ms after for four waits with full simulation. The median of run medians
+was **545.3 → 509.0 ms (6.7% faster)**. Load variation remains visible in
+individual runs. The small change to FOV wall-neighbor coordinate arithmetic
+was already present in both versions of this comparison; its separate 5×5
+comparisons showed about a 2% gain, while the open-map FOV microbenchmark was
+effectively unchanged. Two further FOV experiments, a custom `Point` hash
+and different ray-cell arithmetic, were removed after failing to show a
+consistent gain. The full Docker test target passed 366 scenarios.

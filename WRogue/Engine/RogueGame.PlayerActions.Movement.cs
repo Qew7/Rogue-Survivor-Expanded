@@ -690,6 +690,8 @@ namespace djack.RogueSurvivor.Engine
             m_IsPlayerLongWait = true;
             m_IsPlayerLongWaitForcedStop = false;
             m_PlayerLongWaitEnd = new WorldTime(m_Session.WorldTime.TurnCounter + WorldTime.TURNS_PER_HOUR);
+            m_RestStartTurn = m_Session.WorldTime.TurnCounter;
+            m_RestStartTicks = System.Diagnostics.Stopwatch.GetTimestamp();
 
             // message.
             AddMessage(MakeMessage(player, String.Format("{0} waiting.", Conjugate(player, VERB_START))));

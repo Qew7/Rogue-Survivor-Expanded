@@ -86,8 +86,11 @@ static class StolenGoodsScenario
             player.Personality.Opinion(owner.PersonalityIdentity, owner.UnmodifiedName).Attachment = 30;
             player.Personality.AddTrait(new TraitInstance("timid"));
             int sanity = player.Sanity;
+            int beforeBroadcast = world.Map.LocalTime.TurnCounter;
+            world.Map.LocalTime.TurnCounter = Session.Get.WorldTime.TurnCounter;
             Check.Call(world.Game, "BroadcastRadio", new[] { typeof(int), typeof(Map), typeof(Point), typeof(Actor) },
                 3, world.Map, player.Location.Position, null);
+            world.Map.LocalTime.TurnCounter = beforeBroadcast;
             Check.Equal(true, player.Sanity < sanity,
                 "a timid friend of the victims is shaken by the stolen-goods broadcast");
             Actor trader = NpcIntentSupport.Actor(world, "trader", 5, 0);
@@ -112,7 +115,6 @@ static class StolenGoodsScenario
             world.Map.DropItemAt(allowed, new Point(2, 1));
             world.Game.DoTakeItem(permitted, new Point(2, 1), allowed);
             Check.Equal(false, allowed.IsStolen, "taking fully permitted food leaves it unmarked");
-
             ItemFood corpseLoot = new ItemFood(world.Game.GameItems.CANNED_FOOD);
             corpseLoot.IsUnique = true;
             world.Map.DropItemAt(corpseLoot, new Point(2, 1));
@@ -124,7 +126,6 @@ static class StolenGoodsScenario
             world.Game.DoTakeItem(owner, new Point(2, 1), corpseLoot);
             Check.Equal(2, owner.Personality.Knowledge.Facts.FindAll(f => f.Kind == "stolen_goods_found").Count,
                 "collecting stolen goods at a corpse creates a second discovery");
-
             Guid ownerId = owner.PersonalityIdentity;
             string path = Path.Combine(Path.GetTempPath(), "stolen-goods-" + Guid.NewGuid().ToString("N"));
             try
