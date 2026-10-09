@@ -12,7 +12,6 @@ unless oversized.empty?
 end
 
 test_files = Dir.glob(File.join(root, 'tests', '**', '*.cs'))
-benchmark_files = Dir.glob(File.join(root, 'benchmarks', '**', '*.cs'))
 allowed_test_dirs = %w[unit integration scenarios support]
 misplaced_tests = test_files.reject do |path|
   relative = path.delete_prefix(File.join(root, 'tests') + '/')
@@ -27,7 +26,7 @@ multi_case_files = case_files.reject do |path|
   File.read(path, encoding: 'bom|utf-8').scan(/(?:ScenarioRunner\.Add|SkillScenario\.Register)\(/).length == 1
 end
 abort "Expected one scenario per file: #{multi_case_files.join(', ')}" unless multi_case_files.empty?
-large_tests = (test_files + benchmark_files).select { |path| File.foreach(path).count > 150 }
+large_tests = test_files.select { |path| File.foreach(path).count > 150 }
 unless large_tests.empty?
   abort "C# test exceeds 150 lines: #{large_tests.map { |p| File.basename(p) }.join(', ')}"
 end

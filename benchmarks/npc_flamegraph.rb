@@ -1,7 +1,9 @@
 #!/usr/bin/env ruby
 # Render Mono's call report as a flamegraph of attributed self time.
 
-ROOT = 'NpcTurnBenchmarks:RunTurns ('
+ROOT = ARGV[3] || 'NpcTurnBenchmarks:RunTurns ('
+TITLE = (ARGV[4] || 'NPC turn: managed call flamegraph').dup.force_encoding('UTF-8')
+DETAIL = (ARGV[5] || '8 turns · 1800 actions · width = attributed self time; hover a block for its call path').dup.force_encoding('UTF-8')
 METHOD = /^\s*(\d+)\s+(\d+)\s+(\d+)\s+(.+)$/
 CALLS = /^\t(\d+) calls from:$/
 
@@ -90,7 +92,7 @@ def main(report_path, svg_path, folded_path)
   end
   finish_method.call
 
-  abort 'RunTurns was not found in Mono call report' if root_name.nil? || !tree[:children].key?(root_name)
+  abort "#{ROOT} was not found in Mono call report" if root_name.nil? || !tree[:children].key?(root_name)
 
   root = tree[:children][root_name]
   missing = root_total - root[:total]
@@ -154,8 +156,8 @@ def main(report_path, svg_path, folded_path)
     output.puts format('<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" viewBox="0 0 %d %d">',
                        width, height, width, height)
     output.puts '<rect width="100%" height="100%" fill="#fff"/>'
-    output.puts '<text x="24" y="35" font-size="23" font-family="sans-serif" font-weight="600" fill="#17202a">NPC turn: managed call flamegraph</text>'
-    output.puts '<text x="24" y="59" font-size="13" font-family="sans-serif" fill="#475569">8 turns · 1800 actions · width = attributed self time; hover a block for its call path</text>'
+    output.puts '<text x="24" y="35" font-size="23" font-family="sans-serif" font-weight="600" fill="#17202a">' + escape(TITLE) + '</text>'
+    output.puts '<text x="24" y="59" font-size="13" font-family="sans-serif" fill="#475569">' + escape(DETAIL) + '</text>'
     output.puts '<text x="24" y="79" font-size="12" font-family="sans-serif" fill="#475569">Mono method instrumentation greatly slows execution; time split across multiple callers is estimated from call counts.</text>'
     output.puts shapes.join("\n")
     output.puts format('<text x="24" y="%d" font-size="12" font-family="sans-serif" fill="#475569">Orange: FOV · green: zones · blue: AI · gray: other · Mono total: %d ms · attributed: %.1f ms</text>',
@@ -164,5 +166,5 @@ def main(report_path, svg_path, folded_path)
   end
 end
 
-abort 'usage: npc_flamegraph.rb calls.txt flamegraph.svg flamegraph.folded' unless ARGV.length == 3
-main(*ARGV)
+abort 'usage: npc_flamegraph.rb calls.txt flamegraph.svg flamegraph.folded [root title detail]' unless (3..6).include?(ARGV.length)
+main(*ARGV.take(3))

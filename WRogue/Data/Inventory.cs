@@ -282,7 +282,7 @@ namespace djack.RogueSurvivor.Data
             List<Item> stackList = null;
             foreach (Item other in m_Items)
             {
-                if (other.Model == it.Model &&  // other same model
+                if (other.Model == it.Model && it.SameTheftAs(other) && // other same model and provenance
                     other.CanStackMore &&       // other not full
                     !other.IsEquipped)          // other not equiped
                 {
@@ -316,7 +316,7 @@ namespace djack.RogueSurvivor.Data
 
             foreach (Item other in m_Items)
             {
-                if (other != it &&
+                if (other != it && it.SameTheftAs(other) &&
                     other.Model == it.Model &&
                     other.CanStackMore &&     
                     !other.IsEquipped)        
@@ -356,7 +356,7 @@ namespace djack.RogueSurvivor.Data
                     for (int j = i + 1; j < n && mergeWith.CanStackMore; j++)
                     {
                         Item stealFrom = m_Items[j];
-                        if (stealFrom.Model == mergeWith.Model && stealFrom.Quantity > 0)
+                        if (stealFrom.Model == mergeWith.Model && mergeWith.SameTheftAs(stealFrom) && stealFrom.Quantity > 0)
                         {
                             int steal = Math.Min(mergeWith.Model.StackingLimit - mergeWith.Quantity, stealFrom.Quantity);
                             mergeWith.Quantity += steal;

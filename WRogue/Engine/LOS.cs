@@ -386,29 +386,26 @@ namespace djack.RogueSurvivor.Engine
             }
 
             // 2nd pass : wall fix.
-            List<Point> fixedWalls = new List<Point>(wallsToFix.Count);
             foreach (Point wallP in wallsToFix)
             {
                 int count = 0;
                 foreach (Direction d in Direction.COMPASS)
                 {
-                    Point next = wallP + d;
-                    if (next.X >= xmin && next.X <= xmax &&
-                        next.Y >= ymin && next.Y <= ymax &&
-                        (cells[(next.X - xmin) * height + next.Y - ymin] & 4) != 0)
+                    Point offset = d.Vector;
+                    int nextX = wallP.X + offset.X;
+                    int nextY = wallP.Y + offset.Y;
+                    if (nextX >= xmin && nextX <= xmax &&
+                        nextY >= ymin && nextY <= ymax &&
+                        (cells[(nextX - xmin) * height + nextY - ymin] & 4) != 0)
                     {
-                        Tile tile = map.GetTileAt(next.X, next.Y);
+                        Tile tile = map.GetTileAt(nextX, nextY);
                         if (tile.Model.IsTransparent && tile.Model.IsWalkable)
                             ++count;
                     }
                     if (count >= 3) break;
                 }
                 if (count >= 3)
-                    fixedWalls.Add(wallP);
-            }
-            foreach (Point fixedWall in fixedWalls)
-            {
-                visibleSet.Add(fixedWall);
+                    visibleSet.Add(wallP);
             }
 
             return visibleSet;

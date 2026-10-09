@@ -15,6 +15,15 @@ namespace djack.RogueSurvivor.Engine
     partial class Rules
     {
         #region Switching Map Objects
+        public bool IsSwitchableFor(Actor actor, RadioReceiver radio, out string reason)
+        {
+            if (actor == null || radio == null || radio.Location.Map != actor.Location.Map ||
+                !actor.Model.Abilities.CanUseMapObjects || actor.IsSleeping ||
+                !IsAdjacent(actor.Location, radio.Location))
+            { reason = "cannot operate radio"; return false; }
+            reason = ""; return true;
+        }
+
         public bool IsSwitchableFor(Actor actor, PowerGenerator powGen, out string reason)
         {
             if (actor == null)
@@ -92,6 +101,21 @@ namespace djack.RogueSurvivor.Engine
             if (actor.Location.Map.GetExitAt(exitPoint) == null)
             {
                 reason = "no exit there";
+                return false;
+            }
+
+            if (!actor.IsPlayer && GridDistance(actor.Location.Position, exitPoint) > 1)
+            {
+                reason = "exit is not adjacent";
+                return false;
+            }
+
+            Exit exit = actor.Location.Map.GetExitAt(exitPoint);
+            if (!actor.IsPlayer && exit.ToMap.District != actor.Location.Map.District &&
+                (exit.ToMap.LocalTime.TurnCounter < actor.Location.Map.LocalTime.TurnCounter ||
+                 exit.ToMap.LocalTime.TurnCounter > actor.Location.Map.LocalTime.TurnCounter + 1))
+            {
+                reason = "destination district is at another time";
                 return false;
             }
 

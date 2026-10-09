@@ -85,10 +85,16 @@ namespace djack.RogueSurvivor.Data
 
         #region Auxiliary data : Don't serialize, Reconstruct at load time AFTER the Session has been deserialized.
         [NonSerialized]
-        Dictionary<Point, Actor> m_aux_ActorsByPosition;
+        Actor[] m_aux_ActorsByPosition;
 
         [NonSerialized]
-        Dictionary<Point, MapObject> m_aux_MapObjectsByPosition;
+        MapObject[] m_aux_MapObjectsByPosition;
+
+        // A recent audible radio signal. Renewed while a receiver remains on.
+        [NonSerialized] public Point? RadioNoisePosition;
+        [NonSerialized] public int RadioNoiseUntil;
+
+        [NonSerialized] int m_aux_UnnoticedBaseLossCount;
 
         [NonSerialized]
         List<Inventory> m_aux_GroundItemsList;
@@ -228,6 +234,23 @@ namespace djack.RogueSurvivor.Data
             return null;
         }
 
+        public bool HasUnnoticedBaseLosses { get { return m_aux_UnnoticedBaseLossCount > 0; } }
+
+        public void AddUnnoticedBaseLoss(XpdBase claim, Point position, string resource, int units, long causeId, string storyId)
+        {
+            if (claim.AddUnnoticedLoss(position, resource, units, causeId, storyId)) m_aux_UnnoticedBaseLossCount++;
+        }
+
+        public void AddUnnoticedBaseCasualty(XpdBase claim, Point position, Actor victim, long causeId, string storyId)
+        {
+            if (claim.AddUnnoticedCasualty(position, victim, causeId, storyId)) m_aux_UnnoticedBaseLossCount++;
+        }
+
+        public void RemoveUnnoticedBaseLoss(XpdBase claim, XpdBaseLoss loss)
+        {
+            if (claim.UnnoticedLosses.Remove(loss)) m_aux_UnnoticedBaseLossCount--;
+        }
+
         public void AddXpdBase(XpdBase baseClaim)
         {
             if (baseClaim == null) throw new ArgumentNullException("baseClaim");
@@ -236,16 +259,24 @@ namespace djack.RogueSurvivor.Data
                 if (!IsInBounds(cell) || XpdBaseAt(cell) != null)
                     throw new InvalidOperationException("Base overlaps another base or the map edge");
             m_XpdBases.Add(baseClaim);
+            if (baseClaim.UnnoticedLosses != null) m_aux_UnnoticedBaseLossCount += baseClaim.UnnoticedLosses.Count;
         }
 
         public bool RemoveXpdBase(XpdBase baseClaim)
         {
-            return m_XpdBases != null && m_XpdBases.Remove(baseClaim);
+            if (m_XpdBases == null || !m_XpdBases.Remove(baseClaim)) return false;
+            if (baseClaim.UnnoticedLosses != null) m_aux_UnnoticedBaseLossCount -= baseClaim.UnnoticedLosses.Count;
+            return true;
         }
 
         public IEnumerable<Inventory> GroundInventories
         {
             get { return m_aux_GroundItemsList; }
+        }
+
+        public int CountGroundInventories
+        {
+            get { return m_aux_GroundItemsList.Count; }
         }
 
         public IEnumerable<Corpse> Corpses
@@ -304,10 +335,10 @@ namespace djack.RogueSurvivor.Data
             m_Zones = new List<Zone>(5);
             m_XpdBases = new List<XpdBase>();
 
-            m_aux_ActorsByPosition = new Dictionary<Point, Actor>(5);
+            m_aux_ActorsByPosition = new Actor[width * height];
             m_ActorsList = new List<Actor>(5);
 
-            m_aux_MapObjectsByPosition = new Dictionary<Point, MapObject>(5);
+            m_aux_MapObjectsByPosition = new MapObject[width * height];
             m_MapObjectsList = new List<MapObject>(5);
 
             m_GroundItemsByPosition = new Dictionary<Point, Inventory>(5);
@@ -550,15 +581,13 @@ namespace djack.RogueSurvivor.Data
 
         public Actor GetActorAt(Point position)
         {
-            Actor a;
-            if (m_aux_ActorsByPosition.TryGetValue(position, out a))
-                return a;
-            return null;
+            return GetActorAt(position.X, position.Y);
         }
 
         public Actor GetActorAt(int x, int y)
         {
-            return GetActorAt(new Point(x, y));
+            return (uint)x < (uint)m_Width && (uint)y < (uint)m_Height ?
+                m_aux_ActorsByPosition[y * m_Width + x] : null;
         }
 
         /// <summary>
@@ -580,13 +609,14 @@ namespace djack.RogueSurvivor.Data
 
             if (HasActor(actor))
             {
-                m_aux_ActorsByPosition.Remove(actor.Location.Position);
+                Point old = actor.Location.Position;
+                m_aux_ActorsByPosition[old.Y * m_Width + old.X] = null;
             }
             else
             {
                 m_ActorsList.Add(actor);
             }
-            m_aux_ActorsByPosition.Add(position, actor);
+            m_aux_ActorsByPosition[position.Y * m_Width + position.X] = actor;
             actor.Location = new Location(this, position);
             if (actor.Personality != null && Engine.Session.Get.GamePreset.NpcPersonalitiesEnabled)
                 Engine.Session.Get.ResidentRecords.Register(actor);
@@ -616,7 +646,8 @@ namespace djack.RogueSurvivor.Data
                 return;
 
             m_ActorsList.Remove(actor);
-            m_aux_ActorsByPosition.Remove(actor.Location.Position);
+            Point position = actor.Location.Position;
+            m_aux_ActorsByPosition[position.Y * m_Width + position.X] = null;
 
             // reset check actor index, as it is now invalidated.
             m_iCheckNextActorIndex = 0;
@@ -631,15 +662,13 @@ namespace djack.RogueSurvivor.Data
 
         public MapObject GetMapObjectAt(Point position)
         {
-            MapObject o;
-            if (m_aux_MapObjectsByPosition.TryGetValue(position, out o))
-                return o;
-            return null;
+            return GetMapObjectAt(position.X, position.Y);
         }
 
         public MapObject GetMapObjectAt(int x, int y)
         {
-            return GetMapObjectAt(new Point(x, y));
+            return (uint)x < (uint)m_Width && (uint)y < (uint)m_Height ?
+                m_aux_MapObjectsByPosition[y * m_Width + x] : null;
         }
 
         public void PlaceMapObjectAt(MapObject mapObj, Point position)
@@ -660,13 +689,14 @@ namespace djack.RogueSurvivor.Data
 
             if (HasMapObject(mapObj))
             {
-                m_aux_MapObjectsByPosition.Remove(mapObj.Location.Position);
+                Point old = mapObj.Location.Position;
+                m_aux_MapObjectsByPosition[old.Y * m_Width + old.X] = null;
             }
             else
             {
                 m_MapObjectsList.Add(mapObj);
             }
-            m_aux_MapObjectsByPosition.Add(position, mapObj);
+            m_aux_MapObjectsByPosition[position.Y * m_Width + position.X] = mapObj;
             mapObj.Location = new Location(this, position);
         }
 
@@ -677,7 +707,7 @@ namespace djack.RogueSurvivor.Data
                 return;
 
             m_MapObjectsList.Remove(o);
-            m_aux_MapObjectsByPosition.Remove(new Point(x, y));
+            m_aux_MapObjectsByPosition[y * m_Width + x] = null;
         }
         #endregion
 
@@ -1335,12 +1365,21 @@ namespace djack.RogueSurvivor.Data
             // have an owner and must not block the territory permanently.
             if (m_XpdBases != null)
                 m_XpdBases.RemoveAll(baseClaim => baseClaim == null || baseClaim.GroupLeader == null);
+            m_aux_UnnoticedBaseLossCount = 0;
+            if (m_XpdBases != null)
+                foreach (XpdBase claim in m_XpdBases)
+                    if (claim.UnnoticedLosses != null) m_aux_UnnoticedBaseLossCount += claim.UnnoticedLosses.Count;
             ///////////////////////////////
             // Reconstruct auxiliary fields
             ///////////////////////////////
-            m_aux_ActorsByPosition = new Dictionary<Point, Actor>();
+            m_aux_ActorsByPosition = new Actor[m_Width * m_Height];
             foreach (Actor a in m_ActorsList)
-                m_aux_ActorsByPosition.Add(a.Location.Position, a);
+            {
+                Point position = a.Location.Position;
+                if (!IsInBounds(position) || m_aux_ActorsByPosition[position.Y * m_Width + position.X] != null)
+                    throw new InvalidOperationException("invalid or duplicate actor position " + position);
+                m_aux_ActorsByPosition[position.Y * m_Width + position.X] = a;
+            }
 
             m_aux_GroundItemsList = new List<Inventory>();
             m_aux_GroundItemsPosition = new Dictionary<Inventory, Point>();
@@ -1350,9 +1389,17 @@ namespace djack.RogueSurvivor.Data
                 m_aux_GroundItemsPosition.Add(pair.Value, pair.Key);
             }
 
-            m_aux_MapObjectsByPosition = new Dictionary<Point, MapObject>();
+            m_aux_MapObjectsByPosition = new MapObject[m_Width * m_Height];
             foreach (MapObject obj in m_MapObjectsList)
-                m_aux_MapObjectsByPosition.Add(obj.Location.Position, obj);
+            {
+                Engine.MapObjects.RadioReceiver radio = obj as Engine.MapObjects.RadioReceiver;
+                if (radio != null) radio.RestoreImage();
+                Point position = obj.Location.Position;
+                int index = position.Y * m_Width + position.X;
+                if (m_aux_MapObjectsByPosition[index] != null)
+                    throw new InvalidOperationException("duplicate map objects at " + position);
+                m_aux_MapObjectsByPosition[index] = obj;
+            }
 
             m_aux_ScentsByPosition = new Dictionary<Point, List<OdorScent>>();
             foreach (OdorScent scent in m_Scents)

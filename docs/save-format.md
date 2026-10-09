@@ -86,11 +86,43 @@ a Session root immediately.
 Numeric model/content IDs and string personality IDs remain stable. Tile,
 actor and item model definitions and personality callbacks are rebuilt from
 content; the save retains their IDs and instance state.
+The optional preset field `DisableDistantSimulationDuringRest` defaults to false
+for existing presets and saves, so distant districts advance during sleep and
+waiting unless the player disables it before a new game.
+Recent hourly radio programs are retained in the session, so a district catching
+up after loading hears the same broadcast already heard elsewhere. Older saves
+without this optional history rebuild a program when first requested.
 
 The graph retains map ownership and exits, local/world clocks and RNG state,
 actor/item positions, corpse references, trap and base ownership, item dropper
 attribution, NPC orders, selected presets/options, and connected base sections.
 Auxiliary map indexes are not serialized and are rebuilt for gameplay.
+`world/rest-simulates-distant-districts` saves after a distant rest turn and
+reloads the district clock, NPC, and rumor learned from another NPC.
+An XPD base optionally keeps up to 32 unseen theft losses or fatal raids with
+their position, source event and story IDs. Theft losses retain resource and
+quantity but no thief identity; a raid retains the killed member's actor link.
+An owner or group member discovers one only after returning to the base and
+seeing the affected cell or the member's corpse.
+Stolen item instances retain the original victim group's stable identity, the
+leader's identity and name snapshot, and the theft event and story IDs. Inventory
+stacking keeps stolen goods from different thefts and clean goods separate.
+The marker survives dropping, corpse loot, gifts, trades and save/load; a later
+find or transfer can add a fact to the original theft story without storing a
+long-lived actor reference on the item. Stolen-goods facts retain the claimant
+group and item IDs as well, so members can recognize a retold loss after the
+original leader is out of sight and a visible item does not create the same
+discovery every turn. `items/stolen-goods` checks this state.
+
+Radio receivers retain their tuning state, and portable receivers retain their
+station, power state and batteries. The Session retains the survivor station
+host's actor identity and the district and due turn of one scheduled military
+drop. Its four current hourly programs retain their text, source and facts so
+receivers remain synchronized after loading. Each listener retains the last
+forecast and the last hourly slot per station they heard, preventing repeated
+knowledge and sanity effects. The player's journal retains the broadcast text.
+Radio noise targets are transient and are restored by the next
+broadcast after loading.
 
 Personality state retains traits, pending memories, bounded observations,
 evidence turns, persistent actor identities, and person/group/faction
@@ -293,6 +325,10 @@ gain an entry; seeing the speaker is not required. Text, event ID and any known
 cause/story ID survive archive-only load, under the **Encounters** filter.
 Retained `NpcFact` entries optionally store `SubjectReportName` and
 `OtherReportName`, the observer's original spoken description of each participant.
+They also optionally store `CauseId`, copied from the significant event and
+preserved on retelling. A story uses it for causal wording only when the linked
+earlier event is the immediately preceding visible report. Older saves default
+to zero and retain neutral chronological transitions.
 An acquaintance is named; an unfamiliar visible person is described by faction
 membership. Retelling and save/load preserve these descriptions while stable
 participant IDs remain available for causal records. Faction-only hearsay does
@@ -339,6 +375,10 @@ counts another acquisition. This is not a count of distinct physical items.
 An explicitly missing archive can still be rebuilt from available actors,
 corpses and personality records and marked partial. This does not add support
 for old world envelopes or invent discarded events.
+
+On map reconstruction, radios saved with the old handheld-item image ID switch
+both their visible and remembered image IDs to the dedicated map-object tile.
+Their station, on/off state and location remain unchanged.
 
 ## Verification
 

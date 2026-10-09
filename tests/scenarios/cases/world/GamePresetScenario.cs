@@ -4,7 +4,6 @@ using System.Reflection;
 using djack.RogueSurvivor.Data;
 using djack.RogueSurvivor.Engine;
 using djack.RogueSurvivor.Gameplay.Generators;
-
 static class GamePresetScenario
 {
     public static void Register()
@@ -22,6 +21,8 @@ static class GamePresetScenario
             Check.Equal(true, expanded.Bases, "expanded enables bases");
             Check.Equal(true, standard.NpcPersonalitiesEnabled,
                 "standard enables NPC personalities by default");
+            Check.Equal(false, standard.DisableDistantSimulationDuringRest,
+                "distant simulation during rest is enabled by default");
             string[] presetLabels = (string[])typeof(RogueGame).GetField("GamePresetLabels",
                 BindingFlags.Static | BindingFlags.NonPublic).GetValue(null);
             int personalityRow = Array.IndexOf(presetLabels, "NPC traits and memories");
@@ -38,17 +39,22 @@ static class GamePresetScenario
             Check.Call(typeof(RogueGame), "ChangeGamePreset",
                 new[] { typeof(GamePreset), typeof(int), typeof(int) }, standard, personalityRow - 1, 1);
             Check.Equal(true, standard.NpcPersonalitiesEnabled, "menu action restores personalities");
+            int restRow = Array.IndexOf(presetLabels, "Simulate distant districts while resting");
+            Check.Equal(true, restRow >= 0, "rest simulation appears in new-game menu");
+            Check.Call(typeof(RogueGame), "ChangeGamePreset", new[] { typeof(GamePreset), typeof(int), typeof(int) }, standard, restRow - 1, 1);
+            Check.Equal(true, standard.DisableDistantSimulationDuringRest, "menu action disables distant rest simulation");
+            Check.Call(typeof(RogueGame), "ChangeGamePreset", new[] { typeof(GamePreset), typeof(int), typeof(int) }, standard, restRow - 1, 1);
             BaseTownGenerator generator = new BaseTownGenerator(world.Game, BaseTownGenerator.DEFAULT_PARAMS);
             Session.Get.GameMode = GameMode.GM_VINTAGE;
             Actor vintageSpawn = generator.CreateNewUndead(0);
             Check.Equal(true, vintageSpawn.Model == world.Game.GameActors.MaleZombified ||
                 vintageSpawn.Model == world.Game.GameActors.FemaleZombified,
                 "vintage generator creates only zombified humans");
-
             GamePreset custom = standard.Copy();
             custom.Name = "CUSTOM ONE";
             custom.Bases = true;
             custom.NpcPersonalitiesEnabled = false;
+            custom.DisableDistantSimulationDuringRest = true;
             custom.Infection = true;
             custom.HungerThreshold = 75;
             custom.SleepThreshold = 75;
@@ -91,7 +97,6 @@ static class GamePresetScenario
                 "infection symptom rate changes rule");
             Check.Equal(false, world.Game.Rules.IsActorHungry(actor), "standard hunger threshold restored");
             Check.Equal(false, world.Game.Rules.IsActorSleepy(actor), "standard sleep threshold restored");
-
             custom.HungerThreshold = 101;
             bool invalid = false;
             try { custom.Validate(); }
@@ -104,7 +109,6 @@ static class GamePresetScenario
             catch (ArgumentException) { invalid = true; }
             Check.Equal(true, invalid, "infection thresholds must remain ordered");
             custom.InfectionWeakThreshold = 15;
-
             string path = Path.Combine(Path.GetTempPath(), "game-presets-" + Guid.NewGuid().ToString("N"));
             try
             {
@@ -116,6 +120,8 @@ static class GamePresetScenario
                 Check.Equal(75, loaded.Presets[0].HungerThreshold, "custom values survive reload");
                 Check.Equal(false, loaded.Presets[0].NpcPersonalitiesEnabled,
                     "custom NPC personality setting survives reload");
+                Check.Equal(true, loaded.Presets[0].DisableDistantSimulationDuringRest,
+                    "custom rest simulation setting survives reload");
                 Session.Get.GamePreset = loaded.Presets[0];
                 BinarySaveStore.Save(path + ".session", Session.Get);
                 Session loadedSession = BinarySaveStore.Load<Session>(path + ".session");
@@ -123,6 +129,8 @@ static class GamePresetScenario
                 Check.Equal(true, loadedSession.GamePreset.Bases, "game save retains base rule");
                 Check.Equal(false, loadedSession.GamePreset.NpcPersonalitiesEnabled,
                     "game save retains NPC personality setting");
+                Check.Equal(true, loadedSession.GamePreset.DisableDistantSimulationDuringRest,
+                    "game save retains rest simulation setting");
                 Session.Get.GameMode = GameMode.GM_VINTAGE;
                 typeof(Session).GetField("m_GamePreset", BindingFlags.Instance | BindingFlags.NonPublic)
                     .SetValue(Session.Get, null);

@@ -27,6 +27,8 @@ The in-game V talk command and J heard journal share the `DoSay` hearing check. 
 
 Rumors use the fact's event location, not the speaker's current position. `Zone.BuildingAt` adds a typed building label where one exists, and otherwise leaves the district alone. Keep place colors and labels in `Zone`, faction record colors in `GameFactions`, and the archive/journal renderer in `RecordsTextColors`. Test heard wording, coloring, street fallback and saved zone kind.
 
+For rumor chapters, radio stories and new reportable events, follow [`rogue-story-narration`](../rogue-story-narration/SKILL.md) so speech, radio, retained facts and causal wording stay aligned.
+
 For a causal action, pass the real earlier event ID in `CauseId`; generated goals can carry multiple observed evidence IDs in `Causes`. Read Records resolves only antecedents present in the saved archive and labels goal starts `Prompted by` and other entries `Connected to`. Check the archive-only text and search with a real action, plus a missing-cause boundary. Do not infer psychological motives from traits or unrelated events; a reason must come from an actual decision rule and recorded link. If an event can be reported without custom `DescribeReport`, ensure its generic wording remains accurate.
 
 For a trait explanation in Read Records, compare the chosen goal's actual importance with the same value evaluated while excluding that one trait. Name the trait only when this calculation yields a positive contribution; do not claim it was the sole cause of the action. Event-earned traits should have a reachable `MemoryOutcome` before skill fallbacks, and a scenario should prove both the real trait grant and its saved record.

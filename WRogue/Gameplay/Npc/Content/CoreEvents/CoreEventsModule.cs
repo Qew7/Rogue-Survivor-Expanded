@@ -18,8 +18,17 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 if (accepted) NpcGoalLifecycle.KnownDeath(c.Listener, c.Fact.SubjectId, "learned of death through a report", c.Catalog);
             });
             catalog.Event(new NpcEventDefinition("attack", NpcRecordCategory.Combat, true, e => (e.Other ?? "someone") + " attacked " + (e.Subject ?? "Someone") + ".", null) { ReportActorRole = NpcReportActorRole.Other, SelfReportTone = NpcSelfReportTone.Harmful });
-            catalog.Event(new NpcEventDefinition("murder", NpcRecordCategory.Combat, true, e => (e.Other ?? "someone") + " murdered " + (e.Subject ?? "Someone") + ".", null) { ReportActorRole = NpcReportActorRole.Other, SelfReportTone = NpcSelfReportTone.Harmful });
-            catalog.Event(new NpcEventDefinition("death", NpcRecordCategory.Combat | NpcRecordCategory.Life, true, e => (e.Subject ?? "Someone") + " died" + (e.Other == null ? "." : "; killed by " + (e.Other ?? "someone") + "."), f => f.ReportSubject + " died" + (f.ReportOther == null ? "" : "; killed by " + f.ReportOther)) { ProvesDeath = true, ReportActorRole = NpcReportActorRole.Other, SelfReportTone = NpcSelfReportTone.Harmful });
+            catalog.Event(new NpcEventDefinition("murder", NpcRecordCategory.Combat, true,
+                e => (e.Other ?? "someone") + " murdered " + (e.Subject ?? "Someone") + ".",
+                f => (f.ReportOther ?? "someone") + " murdered " + (f.ReportSubject ?? "someone") +
+                    (f.Resource == "base" ? " at their group's base" : ""))
+                { ReportActorRole = NpcReportActorRole.Other, SelfReportTone = NpcSelfReportTone.Harmful });
+            catalog.Event(new NpcEventDefinition("death", NpcRecordCategory.Combat | NpcRecordCategory.Life, true,
+                e => (e.Subject ?? "Someone") + " died" + (e.Other == null ? "." : "; killed by " + (e.Other ?? "someone") + "."),
+                f => (f.ReportSubject ?? "someone") + " died" +
+                    (f.ReportOther == null ? "" : "; killed by " + f.ReportOther) +
+                    (f.Resource == "base" ? " at their group's base" : ""))
+                { ProvesDeath = true, ReportActorRole = NpcReportActorRole.Other, SelfReportTone = NpcSelfReportTone.Harmful });
             catalog.Event(new NpcEventDefinition("kill_human", NpcRecordCategory.Combat, false, e => (e.Other ?? "someone") + " killed " + (e.Subject ?? "Someone") + ".", null));
             catalog.Event(new NpcEventDefinition("starvation", NpcRecordCategory.Life, false, e => (e.Subject ?? "Someone") + " faced starvation.", null));
             catalog.Event(new NpcEventDefinition("zombified", NpcRecordCategory.Life, false, e => (e.Other ?? "someone") + " turned into " + (e.Subject ?? "Someone") + ".", null));
@@ -43,11 +52,13 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 if (source.Kind.EndsWith("_raid"))
                     report = f => "there was a " + source.Name.ToLowerInvariant() +
                         (f.ReportSubject == null ? "" : " involving " + f.ReportSubject);
+                else if (source.Kind == "psychopaths_arrival")
+                    report = f => (f.ReportSubject ?? "a psychopath") + " was seen entering the district";
                 else if (source.Kind == "army_supplies")
                     report = f => "there was an army relief drop" +
                         (f.ReportSubject == null ? "" : " involving " + f.ReportSubject);
                 catalog.Event(new NpcEventDefinition(source.Kind, WorldCategory(source.Kind),
-                    source.Kind == "army_supplies" || source.Kind.EndsWith("_raid"),
+                    source.Kind == "army_supplies" || source.Kind.EndsWith("_raid") || source.Kind == "psychopaths_arrival",
                     e => source.Name + (e.Subject == null ? "." : ": " + e.Subject + "."), report));
             }
         }

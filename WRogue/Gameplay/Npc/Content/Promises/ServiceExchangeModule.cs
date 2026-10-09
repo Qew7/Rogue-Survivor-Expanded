@@ -220,7 +220,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                     eventId: id, causeId: agreement.Id, storyId: agreement.StoryId);
                 NpcRecordDescriptions.Annotate(observed, catalog.Event("shelter_care_failed"), catalog);
                 owner.Personality.Remember(observed); Session.Get.ResidentRecords.Observe(owner, observed);
-                owner.Personality.Knowledge.Learn(new NpcFact { EventId = id, Kind = "shelter_care_failed",
+                owner.Personality.Knowledge.Learn(new NpcFact { EventId = id, CauseId = agreement.Id, Kind = "shelter_care_failed",
                     SubjectId = agreement.Provider, SubjectName = agreement.ProviderName, OtherId = owner.PersonalityIdentity,
                     OtherName = owner.UnmodifiedName, EventTurn = turn, LearnedTurn = turn, Confidence = 80,
                     Source = NpcKnowledgeSource.Inferred, SourceId = owner.PersonalityIdentity, Place = owner.Location,

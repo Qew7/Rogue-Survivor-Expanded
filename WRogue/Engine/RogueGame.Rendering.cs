@@ -174,6 +174,39 @@ namespace djack.RogueSurvivor.Engine
                 DrawMouseMovePreview();
                 DrawMouseContextMenu();
 
+                if (m_RestSimulationProgress != null || m_IsPlayerLongWait || m_Player.IsSleeping)
+                {
+                    string progress = m_RestSimulationProgress;
+                    if (progress == null)
+                    {
+                        int remaining;
+                        if (m_IsPlayerLongWait)
+                        {
+                            remaining = Math.Max(0, m_PlayerLongWaitEnd.TurnCounter - m_Session.WorldTime.TurnCounter);
+                            progress = String.Format("Waiting: {0} turns left", remaining);
+                        }
+                        else
+                        {
+                            int regen = m_Rules.ActorSleepRegen(m_Player, m_Rules.IsOnCouch(m_Player));
+                            remaining = regen > 0 ? Math.Max(0,
+                                (m_Rules.ActorMaxSleep(m_Player) - m_Player.SleepPoints + regen - 1) / regen) : 0;
+                            progress = String.Format("Sleeping: ~{0} turns to rest", remaining);
+                        }
+                        int elapsedTurns = m_Session.WorldTime.TurnCounter - m_RestStartTurn;
+                        if (m_RestStartTicks != 0 && elapsedTurns > 0 && remaining > 0)
+                        {
+                            double elapsedSeconds = (double)(System.Diagnostics.Stopwatch.GetTimestamp() - m_RestStartTicks) /
+                                System.Diagnostics.Stopwatch.Frequency;
+                            progress += String.Format(", ~{0:0}s", Math.Max(1, Math.Ceiling(elapsedSeconds * remaining / elapsedTurns)));
+                        }
+                    }
+                    if (m_RestSimulationProgress == null && s_Options.IsSimON &&
+                        m_Session.GamePreset != null && !m_Session.GamePreset.DisableDistantSimulationDuringRest)
+                        progress += " | simulating city";
+                    m_UI.UI_FillRect(Color.Black, new Rectangle(4, 4, 560, BOLD_LINE_SPACING + 8));
+                    m_UI.UI_DrawStringBold(Color.Yellow, progress, 8, 8);
+                }
+
                 // DEV STATS
 #if DEBUG
                 if (s_Options.DEV_ShowActorsStats)

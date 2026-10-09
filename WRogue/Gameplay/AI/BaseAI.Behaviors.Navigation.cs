@@ -683,11 +683,8 @@ namespace djack.RogueSurvivor.Gameplay.AI
                 {
                     Location next = m_Actor.Location + dir;
 
-                    // alpha10.1 bot mode fix
-#if DEBUG
                     if (!next.Map.IsInBounds(next.Position))
                         return false;
-#endif
 
                     if (exploration.HasExplored(next))
                         return false;

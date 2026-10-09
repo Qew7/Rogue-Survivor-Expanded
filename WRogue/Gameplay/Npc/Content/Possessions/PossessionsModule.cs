@@ -59,10 +59,21 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             catalog.Event(new NpcEventDefinition("home_reached", NpcRecordCategory.None, false, e => (e.Subject ?? "Someone") + " returned to their threatened home.", null));
             catalog.Event(new NpcEventDefinition("supplies_lost", NpcRecordCategory.None, true,
                 e => (e.Subject ?? "Someone") + " lost supplies.",
-                f => (f.ReportOther ?? "someone") + " took " + (f.Units > 0 ? f.Units + " units of " : "") +
-                    (f.Resource == "food" ? "food" : "stored supplies") + " from " + (f.ReportSubject ?? "someone") + "'s storage")
+                f => f.NamesOther ? f.ReportOther + " took " + (f.Units > 0 ? f.Units + " units of " : "") +
+                    (f.Resource == "food" ? "food" : "stored supplies") + " from " + (f.ReportSubject ?? "someone") + "'s storage" :
+                    (f.ReportSubject ?? "Someone") + "'s base lost " +
+                    (f.Units > 0 ? f.Units + " units of " : "") +
+                    (f.Resource == "food" ? "food" : "stored supplies") + " from storage")
                 { ReportActorRole = NpcReportActorRole.Other, SelfReportTone = NpcSelfReportTone.Harmful });
+            catalog.Event(new NpcEventDefinition("base_robbed", NpcRecordCategory.World, true,
+                e => (e.Subject ?? "Someone") + " discovered that their base was robbed.",
+                f => (f.ReportSubject ?? "someone") + " found their group's base robbed of " +
+                    f.Units + " " + (f.Resource == "food" || f.Resource == "medicine" ?
+                        (f.Units == 1 ? "unit of " : "units of ") + f.Resource :
+                        f.Units == 1 ? "item" : "items"))
+                { ReportActorRole = NpcReportActorRole.None, CanObserve = (a, e) => a == e.Subject });
             catalog.On("supplies_lost", NpcObservationPhase.Relationships, OnRelationships);
+            catalog.On("base_robbed", NpcObservationPhase.Relationships, OnRelationships);
         }
         static void OnRelationships(NpcObservation observation)
         {
@@ -70,7 +81,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             SignificantEvent source = observation.Source; bool direct = observation.Direct;
             PersonalityState state = owner.Personality; NpcKnowledge knowledge = state.Knowledge;
             NpcKnownPerson other = source.Other == null ? null : knowledge.Person(source.Other.PersonalityIdentity);
-            if (source.Kind == "supplies_lost" && source.Subject == owner)
+            if ((source.Kind == "supplies_lost" || source.Kind == "base_robbed") && source.Subject == owner)
             {
                 Guid culprit = other == null ? Guid.Empty : other.Id;
                 owner.Personality.Attach(new NpcAttachment { Kind = "place", Person = culprit, Resource = source.Resource, Place = new Location(source.Map, source.Position), Name = source.Map.Name, Weight = 40 });

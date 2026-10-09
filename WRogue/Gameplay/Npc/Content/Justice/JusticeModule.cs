@@ -64,7 +64,11 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         }
         void RegisterEvents(NpcCatalogBuilder catalog)
         {
-            catalog.OnReport("base_theft", c => NpcReputation.Reputation(c, false, false, true));
+            catalog.OnReport("base_theft", c => {
+                if (c.Fact.NamesSubject) NpcReputation.Reputation(c, false, false, true);
+            });
+            catalog.OnReport("stolen_goods_passed", c => NpcReputation.StolenGoods(c.Listener, c.Fact, c.Improvement));
+            catalog.OnReport("stolen_goods_found", c => NpcReputation.StolenGoods(c.Listener, c.Fact, c.Improvement));
             catalog.OnReport("claimed_permission", NpcReputation.PermissionClaim);
             catalog.OnReport("false_testimony_exposed", c => NpcReputation.Reputation(c, false, false, true));
             catalog.AfterEvent("base_theft", (game, e) => {
@@ -76,20 +80,45 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                     SubjectReportName = theft.SubjectReportName, OtherReportName = theft.OtherReportName,
                     SubjectFactionId = theft.SubjectFactionId, OtherFactionId = theft.OtherFactionId,
                     EventTurn = e.Turn, LearnedTurn = e.Turn, Source = NpcKnowledgeSource.Participant,
-                    SourceId = e.Subject.PersonalityIdentity, Confidence = 90, Place = theft.Place });
+                    SourceId = e.Subject.PersonalityIdentity, Confidence = 90, Place = theft.Place,
+                    StoryId = theft.StoryId });
             });
             catalog.OnReport("boundary_defied", c => NpcReputation.Reputation(c, false, false, true));
             catalog.Event(new NpcEventDefinition("confronted", NpcRecordCategory.None, false, e => (e.Subject ?? "Someone") + " warned " + (e.Other ?? "someone") + " about known misconduct.", null) { StoryStage = (g, s, e) => "completed" });
             catalog.Event(new NpcEventDefinition("boundary_accepted", NpcRecordCategory.None, false, e => (e.Subject ?? "Someone") + " accepted " + (e.Other ?? "someone") + "'s boundary.", null));
             catalog.Event(new NpcEventDefinition("boundary_defied", NpcRecordCategory.None, true, e => (e.Subject ?? "Someone") + " rejected " + (e.Other ?? "someone") + "'s boundary.", f => f.ReportSubject + " rejected " + (f.ReportOther == null ? "a" : f.ReportOther + "'s") + " warning") { SelfReportTone = NpcSelfReportTone.Harmful });
-            catalog.Event(new NpcEventDefinition("base_theft", NpcRecordCategory.None, true, e => (e.Subject ?? "Someone") + " stole from " + (e.Other ?? "someone") + "'s base.", f => f.ReportSubject + " stole supplies from " + (f.ReportOther ?? "someone") + "'s base") { SelfReportTone = NpcSelfReportTone.Harmful });
+            catalog.Event(new NpcEventDefinition("base_theft", NpcRecordCategory.None, true,
+                e => (e.Subject ?? "Someone") + " stole from " + (e.Other ?? "someone") + "'s base.",
+                f => f.NamesSubject ? f.ReportSubject + " stole from " + (f.ReportOther ?? "someone") + "'s base" :
+                    (f.ReportOther ?? "Someone") + "'s base was robbed")
+                { SelfReportTone = NpcSelfReportTone.Harmful });
+            catalog.Event(new NpcEventDefinition("stolen_goods_passed", NpcRecordCategory.Encounters, true,
+                e => (e.Subject ?? "Someone") + " passed on stolen supplies from " + (e.Other ?? "a shelter") + ".",
+                f => (f.ReportSubject ?? "Someone") + " passed on " + (f.Resource ?? "supplies") +
+                    " stolen from " + (f.ReportOther ?? "a survivor") + "'s shelter")
+                { ReportActorRole = NpcReportActorRole.Subject,
+                  CanObserve = (a, e) => KnowsStolenVictim(a, e),
+                  CanWitness = (a, e) => KnowsStolenVictim(a, e) });
+            catalog.Event(new NpcEventDefinition("stolen_goods_found", NpcRecordCategory.Encounters, true,
+                e => (e.Subject ?? "Someone") + " found stolen supplies.",
+                f => (f.ReportSubject ?? "Someone") + " found " + (f.Resource ?? "supplies") +
+                    " stolen from " + (f.ReportOther ?? "a survivor") + "'s shelter")
+                { ReportActorRole = NpcReportActorRole.None, ReportConclusion = true,
+                  CanObserve = (a, e) => KnowsStolenVictim(a, e),
+                  CanWitness = (a, e) => KnowsStolenVictim(a, e) });
+            catalog.Event(new NpcEventDefinition("base_raid", NpcRecordCategory.Combat | NpcRecordCategory.World, true,
+                e => (e.Other ?? "A group member") + " was killed at " + (e.Subject ?? "someone") + "'s base.",
+                f => (f.ReportSubject ?? "someone") + "'s base was raided; " +
+                    (f.ReportOther ?? "a member") + " was killed")
+                { ReportActorRole = NpcReportActorRole.None });
             catalog.Event(new NpcEventDefinition("claimed_permission", NpcRecordCategory.None, false,
                 e => (e.Subject ?? "Someone") + " claimed permission to take supplies.",
                 f => f.ReportSubject + " claimed permission from " + (f.ReportOther ?? "the owner") + " to take supplies")
                 { SelfReportTone = NpcSelfReportTone.Neutral });
             catalog.Event(new NpcEventDefinition("false_testimony_exposed", NpcRecordCategory.Encounters, false,
                 e => (e.Other ?? "Someone") + " rejected " + (e.Subject ?? "someone") + "'s permission claim after witnessing the theft.",
-                f => f.ReportSubject + " gave an account contradicted by an eyewitness", isPrivate: true));
+                f => f.ReportSubject + " gave an account contradicted by an eyewitness", isPrivate: true)
+                { ReportDisputesKinds = new[] { "base_theft", "claimed_permission" }, ReportPriority = 8 });
             catalog.Memory(new MemoryDefinition("false_testimony_exposed", "Caught a contradictory permission claim", 2, 5,
                 new[] { new MemoryTrigger("false_testimony_exposed", (a, e) => a == e.Other) },
                 new MemoryOutcome(null, "mistrustful", null), new MemoryOutcome(null, null, Skills.IDs.STRONG_PSYCHE))
@@ -107,6 +136,14 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             catalog.On("restitution_refused", NpcObservationPhase.Relationships, OnRelationships);
             catalog.On("restitution_requested", NpcObservationPhase.Relationships, OnRelationships);
             catalog.On("shared_food", NpcObservationPhase.Relationships, OnRelationships);
+        }
+        static bool KnowsStolenVictim(Actor observer, SignificantEvent source)
+        {
+            if (observer.Personality == null || source.ClaimantId == Guid.Empty) return false;
+            return observer.PersonalityIdentity == source.ClaimantId ||
+                observer.SocialGroup != null && observer.SocialGroup.Identity == source.ClaimantGroupId ||
+                observer.Personality.Person(source.ClaimantId) != null ||
+                observer.Personality.Knowledge.Person(source.ClaimantId) != null;
         }
         static void OnKnowledge(NpcObservation observation)
         {

@@ -216,9 +216,7 @@ namespace djack.RogueSurvivor.Engine
                     if (schema.Kind == 7) node.Value = ReadLiteral(input, schema.Type, legacySettings ? null : strings);
                     else if (schema.Kind == 8)
                     {
-                        node.Value = FormatterServices.GetUninitializedObject(schema.Type);
-                        FormatterServices.PopulateObjectMembers(node.Value, TileMembers, new object[] {
-                            input.ReadInt32(), Enum.ToObject(((FieldInfo)TileMembers[1]).FieldType, input.ReadInt32()), null });
+                        node.Value = new Tile(input.ReadInt32(), input.ReadInt32());
                         node.Decoration = input.ReadInt32();
                         if (node.Decoration < 0) throw new InvalidDataException("Invalid decoration reference.");
                     }

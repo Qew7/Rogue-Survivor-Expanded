@@ -12,11 +12,20 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public readonly NpcKnownPerson Self;
         public readonly IList<NpcKnownPerson> People;
         public readonly int Turn, MaxHP, FoodUnits;
+        public readonly int GroupBias, CompassionBias, TradeBias, CourageBias, LawBias, SuppliesBias;
         public readonly bool Hungry, HasFood;
         public readonly NpcContentCatalog Catalog;
         public NpcGoalContext(RogueGame game, Actor owner, NpcContentCatalog catalog)
         {
             Owner = owner; Catalog = catalog; Turn = owner.Location.Map.LocalTime.TurnCounter;
+            // Goal sources read owner state; actor-only trait biases are shared by this evaluation pass.
+            PersonalityRegistry registry = catalog.Personalities;
+            GroupBias = PersonalitySystem.Bias(owner, DecisionKind.Group, registry: registry);
+            CompassionBias = PersonalitySystem.Bias(owner, DecisionKind.Compassion, registry: registry);
+            TradeBias = PersonalitySystem.Bias(owner, DecisionKind.Trade, registry: registry);
+            CourageBias = PersonalitySystem.Bias(owner, DecisionKind.Courage, registry: registry);
+            LawBias = PersonalitySystem.Bias(owner, DecisionKind.Law, registry: registry);
+            SuppliesBias = PersonalitySystem.Bias(owner, DecisionKind.Supplies, registry: registry);
             MaxHP = game.Rules.ActorMaxHPs(owner); Hungry = game.Rules.IsActorHungry(owner); HasFood = NpcFoodSupply.HasFood(game, owner);
             foreach (Item item in owner.Inventory.Items) if (item is djack.RogueSurvivor.Engine.Items.ItemFood && !game.Rules.IsFoodSpoiled((djack.RogueSurvivor.Engine.Items.ItemFood)item, Turn)) FoodUnits += item.Quantity;
             Self = new NpcKnownPerson { Id = owner.PersonalityIdentity, Name = owner.UnmodifiedName, Place = owner.Location, SeenTurn = Turn };
@@ -41,17 +50,23 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public readonly Actor Owner;
         public readonly int CommunityCare, CommunitySecurity;
         public readonly int Group, Compassion, Trade, Courage, Law, Supplies, Feeling, Attachment, Fear, Grievance;
-        public NpcMotivation(NpcContentCatalog catalog, Actor owner, Guid subject, string excludeTrait = null)
+        public NpcMotivation(NpcContentCatalog catalog, Actor owner, Guid subject, string excludeTrait = null,
+            NpcGoalContext context = null)
         {
+            if (excludeTrait != null) context = null;
             PersonalityRegistry registry = catalog.Personalities;
             NpcKnownPerson known = owner.Personality.Knowledge.Person(subject);
             if (known != null && owner.Faction != null && known.FactionId == owner.Faction.ID) {
                 NpcFactionPolicy policy = catalog.FactionPolicy(owner.Faction.ID);
                 CommunityCare = policy.Care; CommunitySecurity = policy.Security;
             }
-            Owner = owner; Group = PersonalitySystem.Bias(owner, DecisionKind.Group, registry: registry, excludeTrait: excludeTrait); Compassion = PersonalitySystem.Bias(owner, DecisionKind.Compassion, registry: registry, excludeTrait: excludeTrait);
-            Trade = PersonalitySystem.Bias(owner, DecisionKind.Trade, registry: registry, excludeTrait: excludeTrait); Courage = PersonalitySystem.Bias(owner, DecisionKind.Courage, registry: registry, excludeTrait: excludeTrait);
-            Law = PersonalitySystem.Bias(owner, DecisionKind.Law, registry: registry, excludeTrait: excludeTrait); Supplies = PersonalitySystem.Bias(owner, DecisionKind.Supplies, registry: registry, excludeTrait: excludeTrait);
+            Owner = owner;
+            Group = context == null ? PersonalitySystem.Bias(owner, DecisionKind.Group, registry: registry, excludeTrait: excludeTrait) : context.GroupBias;
+            Compassion = context == null ? PersonalitySystem.Bias(owner, DecisionKind.Compassion, registry: registry, excludeTrait: excludeTrait) : context.CompassionBias;
+            Trade = context == null ? PersonalitySystem.Bias(owner, DecisionKind.Trade, registry: registry, excludeTrait: excludeTrait) : context.TradeBias;
+            Courage = context == null ? PersonalitySystem.Bias(owner, DecisionKind.Courage, registry: registry, excludeTrait: excludeTrait) : context.CourageBias;
+            Law = context == null ? PersonalitySystem.Bias(owner, DecisionKind.Law, registry: registry, excludeTrait: excludeTrait) : context.LawBias;
+            Supplies = context == null ? PersonalitySystem.Bias(owner, DecisionKind.Supplies, registry: registry, excludeTrait: excludeTrait) : context.SuppliesBias;
             Feeling = NpcValues.KnownAttitude(owner, subject, registry, excludeTrait); RelationshipRecord opinion = owner.Personality.Person(subject);
             if (opinion != null) { Attachment = opinion.Attachment; Fear = opinion.Fear; Grievance = opinion.Grievance; }
         }

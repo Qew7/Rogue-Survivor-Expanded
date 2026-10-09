@@ -450,6 +450,21 @@ actors. The director's pacing and reservation state survives saves. Terminal
 stories, plans and intentions clear their map references, and starting a new
 Session clears its old director.
 
+When several recent tellable facts share a story ID, NPCs tell up to ten as
+one chronological report. Household radios and four station-specific portable
+receivers carry the same hourly program for their station throughout the city.
+Survivor Network covers all stories, Military Dispatch covers military events
+and announces the district of an actual supply flight one or two days ahead,
+Local Calls covers requests and aid, and Gang Frequency covers violence and
+raids. A listener's known earlier episode raises the chance of hearing its
+continuation, while unknown stories remain eligible. Every station also airs
+short themed interludes and reports from other cities; the city's seed chooses
+one disputed account of the virus's origin. Radio reports teach individual
+facts as hearsay; relationship and traits determine any sanity change.
+Receivers on the map can be pushed and tuned by bumping them, and their sound
+draws nearby zombies. The survivor station broadcasts from a single underground
+studio in a business district and falls silent when its host dies.
+
 ## Generating plans from desired states
 
 `NpcGoalPlanner` performs bounded uniform-cost search over reusable action

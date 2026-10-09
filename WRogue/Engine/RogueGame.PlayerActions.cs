@@ -66,6 +66,8 @@ namespace djack.RogueSurvivor.Engine
             }
             #endregion
 
+            FinishRestSimulationIfNeeded();
+
             if (ContinueMouseMove(player))
                 return;
 
@@ -157,6 +159,7 @@ namespace djack.RogueSurvivor.Engine
                 KeyEventArgs inKey = input.Key;
                 Point mousePos = input.MousePosition;
                 MouseButtons? mouseButtons = input.MouseButtons;
+                int mouseWheelDelta = input.MouseWheelDelta;
 
 
                 // 3. Handle input
@@ -633,6 +636,8 @@ namespace djack.RogueSurvivor.Engine
                     // Handle mouse
                     ////////////////
                     #region
+                    if (HandleMessagePanelInput(mousePos, mouseButtons, mouseWheelDelta))
+                        continue;
                     if (HandleMouseContextMenu(player, mousePos, mouseButtons, out loop))
                         continue;
                     if (m_IsMouseMoveMode && HandleMouseMove(player, mousePos, mouseButtons, out loop))
@@ -935,29 +940,33 @@ namespace djack.RogueSurvivor.Engine
 
         void HandleMessageLog()
         {
-            // draw header.
-            m_UI.UI_Clear(Color.Black);
-            int gy = 0;
-            DrawHeader();
-            gy += BOLD_LINE_SPACING;
-            m_UI.UI_DrawStringBold(Color.Yellow, "Message Log", 0, gy);
-            gy += BOLD_LINE_SPACING;
-            m_UI.UI_DrawStringBold(Color.White, "---------+---------+---------+---------+---------+---------+---------+---------+---------+---------+---------+---------+", 0, gy);
-            gy += BOLD_LINE_SPACING;
-
-            // log.
-            foreach (Message msg in m_MessageManager.History)
+            List<Message> lines = m_MessageManager.WrappedHistory(m_UI, CANVAS_WIDTH - 8);
+            int pageSize = (CANVAS_HEIGHT - 4 * BOLD_LINE_SPACING) / LINE_SPACING;
+            int first = Math.Max(0, lines.Count - pageSize);
+            while (true)
             {
-                m_UI.UI_DrawString(msg.Color, msg.Text, 0, gy);
-                gy += LINE_SPACING;
+                m_UI.UI_Clear(Color.Black);
+                DrawHeader();
+                m_UI.UI_DrawStringBold(Color.Yellow, "Message Log", 0, BOLD_LINE_SPACING);
+                m_UI.UI_DrawStringBold(Color.White, "---------+---------+---------+---------+---------+---------+---------+---------+---------+---------+---------+---------+", 0, 2 * BOLD_LINE_SPACING);
+                int gy = 3 * BOLD_LINE_SPACING;
+                for (int i = first; i < lines.Count && i < first + pageSize; i++)
+                {
+                    m_UI.UI_DrawString(lines[i].Color, lines[i].Text, 0, gy);
+                    gy += LINE_SPACING;
+                }
+                DrawFootnote(Color.White, "Up/Down, PgUp/PgDn, Home/End to scroll, ESC to leave");
+                m_UI.UI_Repaint();
+                Keys key = m_UI.UI_WaitMenuKey().KeyCode;
+                if (key == Keys.Escape) return;
+                int last = Math.Max(0, lines.Count - pageSize);
+                if (key == Keys.Up) first = Math.Max(0, first - 1);
+                if (key == Keys.Down) first = Math.Min(last, first + 1);
+                if (key == Keys.PageUp) first = Math.Max(0, first - pageSize);
+                if (key == Keys.PageDown) first = Math.Min(last, first + pageSize);
+                if (key == Keys.Home) first = 0;
+                if (key == Keys.End) first = last;
             }
-
-            // foot.
-            DrawFootnote(Color.White, "press ESC to leave");
-
-            // wait.
-            m_UI.UI_Repaint();
-            WaitEscape();
         }
 
         void HandleCityInfo()

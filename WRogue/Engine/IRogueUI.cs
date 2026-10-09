@@ -21,6 +21,8 @@ namespace djack.RogueSurvivor.Engine
         Point UI_GetMousePosition();
         MouseButtons? UI_PeekMouseButtons();
         void UI_PostMouseButtons(MouseButtons buttons);
+        int UI_PeekMouseWheelDelta();
+        void UI_PostMouseWheelDelta(int delta);
 
         void UI_SetCursor(Cursor cursor);
         #endregion

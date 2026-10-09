@@ -9,6 +9,16 @@ live here; `Dockerfile` compiles the C# files into the scenario runner image.
 | AI, FOV, and generation | `sh tests/scenario.sh --bench-ai` | `rogue-bench-ai` |
 | Full NPC map turns | `sh tests/scenario.sh --bench-npc-turn` | `rogue-bench-npc-turn` |
 | NPC method calls and flamegraph | `sh benchmarks/bench-npc-calls.sh` | `rogue-bench-npc-calls` |
+| Radio broadcasts | `sh tests/scenario.sh --bench-radio` | 4 stations, 9 maps, 80 broadcasts across 40 hourly slots |
+| Rolling radio broadcasts | `sh tests/scenario.sh --bench-radio-rolling` | 12 new rumors per hour for 96 hours; includes listeners and story rendering |
+| Radio news candidate strategies | `sh tests/scenario.sh --bench-radio-news` | Isolated candidate scans for full scan, incremental index, and previous-day snapshot; use rolling broadcasts for total cost |
+| Radio method calls and flamegraph | `PROFILE_KIND=radio sh benchmarks/bench-npc-calls.sh` | Mono call profile |
+| Distant district simulation during waiting | `sh tests/scenario.sh --bench-rest-simulation` | 9 generated districts, 4 waits, median of 5 fresh runs |
+| Large-city rest simulation | `sh tests/scenario.sh --bench-rest-large` | 5×5 generated districts, high NPC density, 4 waits, median of 3 fresh runs |
+| Rest optimization costs | `sh tests/scenario.sh --bench-rest-optimizations` | Actor lookup/movement, empty/sparse/dense sensing, and FOV cache-key checks |
+| Sleep yield with and without a worker | `sh tests/scenario.sh --bench-sleep-yield` | Ten real sleeping map turns per sample |
+| Rest simulation flamegraph | `PROFILE_KIND=rest sh benchmarks/bench-npc-calls.sh` | Mono call profile of the same waiting path |
+| Large-city rest flamegraph | `PROFILE_KIND=rest_large sh benchmarks/bench-npc-calls.sh` | Mono call profile of the full 5×5 waiting path |
 | Comparison with `0d243e6` | `bash benchmarks/bench-post-0d243e.sh` | `rogue-bench-post-baseline` |
 | NPC route, hunger, and sleep | `sh tests/scenario.sh --bench-npc-safety` | `rogue-bench-npc-safety` |
 | XPD base and supply routing | `sh tests/scenario.sh --bench-xpd` | `rogue-bench-xpd` |

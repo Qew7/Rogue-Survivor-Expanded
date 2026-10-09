@@ -74,11 +74,30 @@ namespace djack.RogueSurvivor.Engine
 #endif
 
             bool wasMurder = (killer != null && m_Rules.IsMurder(killer, deadGuy));
+            XpdBase homeBase = deadGuy.Location.Map.XpdBaseAt(deadGuy.Location.Position);
+            if (homeBase != null && !homeBase.Owns(deadGuy)) homeBase = null;
+            XpdBase attackedBase = killer != null && homeBase != null && !homeBase.Owns(killer) ? homeBase : null;
+            string baseStoryId = attackedBase == null ? null : "base-raid:" +
+                deadGuy.PersonalityIdentity.ToString("N") + ":" + deadGuy.Location.Map.LocalTime.TurnCounter;
             m_Session.ResidentRecords.RecordDeath(deadGuy, m_Rules,
                 m_Session.WorldTime.TurnCounter, killer, reason);
-            ReportPersonalityEvent("death", deadGuy, killer, deadGuy.Location.Map, deadGuy.Location.Position);
+            ReportPersonalityEvent("death", deadGuy, killer, deadGuy.Location.Map, deadGuy.Location.Position,
+                storyId: baseStoryId, resource: homeBase == null ? null : "base");
             if (wasMurder)
-                ReportPersonalityEvent("murder", deadGuy, killer, deadGuy.Location.Map, deadGuy.Location.Position);
+                ReportPersonalityEvent("murder", deadGuy, killer, deadGuy.Location.Map, deadGuy.Location.Position,
+                    storyId: baseStoryId, resource: homeBase == null ? null : "base");
+            long baseRaidId = 0;
+            bool groupSawRaid = false;
+            if (attackedBase != null)
+            {
+                baseRaidId = ReportPersonalityEvent("base_raid", attackedBase.GroupLeader, deadGuy,
+                    deadGuy.Location.Map, deadGuy.Location.Position, false, false, storyId: baseStoryId);
+                if (baseRaidId != 0 && canDropCorpse && m_Session.GamePreset.Corpses)
+                    foreach (Actor member in deadGuy.Location.Map.Actors)
+                        if (member != deadGuy && attackedBase.Owns(member) && member.Personality != null &&
+                            member.Personality.Knowledge.Facts.Exists(f => f.EventId == baseRaidId && f.Kind == "base_raid"))
+                        { groupSawRaid = true; break; }
+            }
             if (killer != null && deadGuy.Model.Abilities.IsIntelligent &&
                 !deadGuy.Model.Abilities.IsUndead && !killer.Model.Abilities.IsUndead)
                 ReportPersonalityEvent("kill_human", deadGuy, killer, deadGuy.Location.Map, deadGuy.Location.Position);
@@ -212,6 +231,14 @@ namespace djack.RogueSurvivor.Engine
                 {
                     DropCorpse(deadGuy);
                 }
+            }
+            if (baseRaidId != 0 && !groupSawRaid && attackedBase.GroupLeader != deadGuy &&
+                !attackedBase.GroupLeader.IsDead && deadGuy.Location.Map.XpdBaseAt(deadGuy.Location.Position) == attackedBase)
+            {
+                List<Corpse> corpses = deadGuy.Location.Map.GetCorpsesAt(deadGuy.Location.Position);
+                if (corpses != null && corpses.Exists(c => c.DeadGuy == deadGuy))
+                    deadGuy.Location.Map.AddUnnoticedBaseCasualty(attackedBase, deadGuy.Location.Position,
+                        deadGuy, baseRaidId, baseStoryId);
             }
 
             // One more kill

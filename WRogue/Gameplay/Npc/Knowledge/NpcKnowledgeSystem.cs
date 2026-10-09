@@ -45,17 +45,22 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             if (!definition.RetainFact) return;
             Actor owner = observation.Owner; SignificantEvent source = observation.Source;
             bool seesSubject = observation.SeesSubject, seesOther = observation.SeesOther;
-            owner.Personality.Knowledge.Learn(new NpcFact { EventId = source.Id, Kind = source.Kind, EventTurn = source.Turn, LearnedTurn = source.Turn,
+            bool knowsClaimant = source.ClaimantId != Guid.Empty &&
+                (owner.PersonalityIdentity == source.ClaimantId ||
+                 owner.SocialGroup != null && owner.SocialGroup.Identity == source.ClaimantGroupId ||
+                 owner.Personality.Person(source.ClaimantId) != null || owner.Personality.Knowledge.Person(source.ClaimantId) != null);
+            owner.Personality.Knowledge.Learn(new NpcFact { EventId = source.Id, CauseId = source.CauseId, Kind = source.Kind, EventTurn = source.Turn, LearnedTurn = source.Turn,
                 Source = observation.Direct ? NpcKnowledgeSource.Participant : NpcKnowledgeSource.Witness, Confidence = observation.Direct ? 100 : 90,
                 SourceId = owner.PersonalityIdentity, SubjectId = !seesSubject ? Guid.Empty : source.Subject.PersonalityIdentity,
-                OtherId = !seesOther ? Guid.Empty : source.Other.PersonalityIdentity, SubjectName = !seesSubject ? null : source.Subject.UnmodifiedName,
-                OtherName = !seesOther ? null : source.Other.UnmodifiedName,
+                OtherId = knowsClaimant ? source.ClaimantId : !seesOther ? Guid.Empty : source.Other.PersonalityIdentity, SubjectName = !seesSubject ? null : source.Subject.UnmodifiedName,
+                OtherName = knowsClaimant ? source.ClaimantName : !seesOther ? null : source.Other.UnmodifiedName,
                 SubjectReportName = ReportName(owner, source.Subject, seesSubject),
-                OtherReportName = ReportName(owner, source.Other, seesOther),
+                OtherReportName = knowsClaimant ? source.ClaimantName : ReportName(owner, source.Other, seesOther),
                 SubjectFactionId = !seesSubject || source.Subject.Faction == null ? (int?)null : source.Subject.Faction.ID,
                 OtherFactionId = !seesOther || source.Other.Faction == null ? (int?)null : source.Other.Faction.ID,
                 Place = new Location(source.Map, source.Position), StoryId = source.StoryId,
-                Resource = source.Resource, Units = source.Units });
+                Resource = source.Resource, ClaimantGroupId = source.ClaimantGroupId,
+                ItemId = source.ItemId, Units = source.Units });
         }
         public static void Perceive(RogueGame game, Actor actor, IList<Percept> percepts,
             HashSet<Point> currentFov = null)
@@ -93,16 +98,22 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public static bool Hear(RogueGame game, Actor listener, Actor speaker, NpcFact source)
         {
             int confidence = ReportConfidence(listener, speaker, source);
+            NpcKnowledge knowledge = listener.Personality.Knowledge;
+            NpcFact previous = null;
+            List<NpcFact> facts = knowledge.Facts;
+            for (int i = facts.Count - 1; i >= 0; i--)
+                if (facts[i].EventId == source.EventId && facts[i].Kind == source.Kind)
+                { previous = facts[i]; break; }
+            if (previous != null && previous.Confidence >= confidence) return false;
             NpcFact fact = source.Retell(speaker.PersonalityIdentity, listener.Location.Map.LocalTime.TurnCounter, confidence);
             bool refuted = false;
             if (fact.Kind == "claimed_permission")
             {
-                NpcFact contrary = listener.Personality.Knowledge.Facts.Find(f => f.EventId == fact.EventId && f.Kind == "base_theft");
+                NpcFact contrary = knowledge.Facts.Find(f => f.EventId == fact.EventId && f.Kind == "base_theft");
                 refuted = contrary != null && contrary.Source != NpcKnowledgeSource.Told && contrary.Confidence >= 80;
             }
-            NpcFact previous = listener.Personality.Knowledge.Facts.Find(f => f.EventId == fact.EventId && f.Kind == fact.Kind);
             int improvement = Math.Max(0, confidence - (previous == null ? 0 : previous.Confidence));
-            bool learned = listener.Personality.Knowledge.Learn(fact);
+            bool learned = knowledge.Learn(fact);
             if (learned && refuted) NpcTestimony.Refute(game.NpcContent, listener, speaker, fact);
             if (learned && fact.NamesSubject && !fact.NoSubjectLocation)
                 listener.Personality.Knowledge.LearnPerson(new NpcKnownPerson { Id = fact.SubjectId, Name = fact.ReportSubject, Place = fact.Place,

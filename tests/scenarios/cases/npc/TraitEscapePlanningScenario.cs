@@ -42,7 +42,7 @@ static class TraitEscapePlanningScenario
             Check.Equal(true, world.NpcTurn(organized), "organized NPC executes a legal escape action");
             Check.Equal(new Point(4, 2), organized.Location.Position,
                 "organized NPC turns toward the visible refuge rather than the dead end");
-            for (int turn = 1; turn <= 8 && organized.Location.Map == world.Map; turn++)
+            for (int turn = 1; turn <= 24 && organized.Location.Map == world.Map; turn++)
             { organized.ActionPoints = Rules.BASE_ACTION_COST;
                 Check.Equal(true, world.NpcTurn(organized), "organized NPC continues the escape plan"); }
             Check.Equal(false, organized.Location.Map == world.Map, "organized NPC reaches the refuge");

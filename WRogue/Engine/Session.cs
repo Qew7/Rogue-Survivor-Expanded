@@ -399,6 +399,16 @@ namespace djack.RogueSurvivor.Engine
         Map m_CurrentMap;
         [OptionalField]
         ResidentRecords m_ResidentRecords;
+        [OptionalField]
+        Guid m_RadioHostId;
+        [OptionalField]
+        int m_RadioDropTurn;
+        [OptionalField]
+        int m_RadioDropX, m_RadioDropY;
+        [OptionalField]
+        RadioProgram[] m_RadioPrograms;
+        [OptionalField]
+        Dictionary<long, RadioProgram> m_RadioProgramHistory;
         #endregion
 
         #region Scoring
@@ -457,6 +467,14 @@ namespace djack.RogueSurvivor.Engine
             get { return m_GamePreset ?? (m_GamePreset = GamePreset.BuiltIn(m_GameMode)); }
             set { if (value == null) throw new ArgumentNullException("value"); value.Validate(); m_GamePreset = value.Copy(); }
         }
+
+        public Guid RadioHostId { get { return m_RadioHostId; } set { m_RadioHostId = value; } }
+        public int RadioDropTurn { get { return m_RadioDropTurn; } set { m_RadioDropTurn = value; } }
+        public Point RadioDropDistrict { get { return new Point(m_RadioDropX, m_RadioDropY); }
+            set { m_RadioDropX = value.X; m_RadioDropY = value.Y; } }
+        internal RadioProgram[] RadioPrograms { get { return m_RadioPrograms ?? (m_RadioPrograms = new RadioProgram[4]); } }
+        internal Dictionary<long, RadioProgram> RadioProgramHistory { get { return m_RadioProgramHistory ??
+            (m_RadioProgramHistory = new Dictionary<long, RadioProgram>()); } }
 
         public ModStamp[] Mods
         {
@@ -570,6 +588,10 @@ namespace djack.RogueSurvivor.Engine
             m_World = null;
             m_ResidentRecords = new ResidentRecords();
             m_NpcDirector = null;
+            m_RadioHostId = Guid.Empty;
+            m_RadioDropTurn = 0;
+            m_RadioPrograms = null;
+            m_RadioProgramHistory = null;
             m_PersonalityEventSequence = 0;
             m_WorldTime = new WorldTime();
             this.LastTurnPlayerActed = 0;

@@ -597,7 +597,9 @@ namespace djack.RogueSurvivor.Gameplay.AI
                     bool useful = false;
                     if (stack != null)
                         foreach (Item item in stack.Items)
-                            if (IsInterestingItemToOwn(game, item, ItemSource.GROUND_STACK) &&
+                            if ((!m_Actor.Inventory.IsFull || m_Actor.Inventory.CanAddAtLeastOne(item) ||
+                                 item is ItemFood && !HasItemOfType(typeof(ItemFood))) &&
+                                IsInterestingItemToOwn(game, item, ItemSource.GROUND_STACK) &&
                                 !ShouldKeepStoredItem(game, p.Location.Position, item))
                             {
                                 useful = true;

@@ -118,6 +118,9 @@ namespace djack.RogueSurvivor.Gameplay.Generators
             ////////////
             // Decorate
             ////////////
+            // One hidden broadcaster in the first business district generated for this world.
+            if (m_Params.District.Kind == DistrictKind.BUSINESS && m_Game.Session.RadioHostId == Guid.Empty)
+                MakeSurvivorRadioStation(map);
             AddWreckedCarsOutside(map, cityRectangle);
             DecorateOutsideWallsWithPosters(map, cityRectangle, m_Params.PostersChance);
             DecorateOutsideWallsWithTags(map, cityRectangle, m_Params.TagsChance);
@@ -132,6 +135,39 @@ namespace djack.RogueSurvivor.Gameplay.Generators
             // Done
             ////////
             return map;
+        }
+
+        void MakeSurvivorRadioStation(Map surface)
+        {
+            List<Point> entrances = new List<Point>();
+            for (int x = 1; x < surface.Width - 1; x++) for (int y = 1; y < surface.Height - 1; y++)
+            {
+                Point pt = new Point(x, y);
+                if (surface.GetTileAt(pt).IsInside && surface.IsWalkable(x, y) &&
+                    surface.GetMapObjectAt(pt) == null && surface.GetExitAt(pt) == null)
+                    entrances.Add(pt);
+            }
+            if (entrances.Count == 0) return;
+            Point entrance = entrances[m_DiceRoller.Roll(0, entrances.Count)];
+            Map basement = new Map(surface.Seed ^ 0x52414449, "Survivor Network studio", 9, 9)
+            { Lighting = Lighting.DARKNESS };
+            TileFill(basement, m_Game.GameTiles.FLOOR_CONCRETE, (tile, model, x, y) => tile.IsInside = true);
+            TileRectangle(basement, m_Game.GameTiles.WALL_BRICK, basement.Rect);
+            basement.AddZone(MakeUniqueZone("Survivor Network studio", basement.Rect));
+            Point stairs = new Point(1, 1);
+            AddExit(surface, entrance, basement, stairs, GameImages.DECO_STAIRS_DOWN, true);
+            AddExit(basement, stairs, surface, entrance, GameImages.DECO_STAIRS_UP, true);
+            Actor host = CreateNewCivilian(0, 1, 1);
+            host.Name = "Mara the Broadcaster";
+            host.IsProperName = true;
+            host.IsUnique = true;
+            basement.PlaceActorAt(host, new Point(4, 4));
+            RadioReceiver transmitter = new RadioReceiver(GameImages.OBJ_RADIO);
+            transmitter.IsMovable = false;
+            transmitter.SetState(1);
+            basement.PlaceMapObjectAt(transmitter, new Point(5, 4));
+            m_Params.District.AddUniqueMap(basement);
+            m_Game.Session.RadioHostId = host.PersonalityIdentity;
         }
         #endregion
         #region Sewers Map

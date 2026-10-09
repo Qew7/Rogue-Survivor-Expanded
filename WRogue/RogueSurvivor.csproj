@@ -311,6 +311,10 @@
     <Compile Include="Engine\MapObjects\Board.cs" />
     <Compile Include="Engine\MapObjects\Fortification.cs" />
     <Compile Include="Engine\MapObjects\PowerGenerator.cs" />
+    <Compile Include="Engine\MapObjects\RadioReceiver.cs" />
+    <Compile Include="Engine\Items\ItemRadio.cs" />
+    <Compile Include="Engine\Actions\ActionSwitchRadio.cs" />
+    <Compile Include="Engine\RogueGame.Radio.cs" />
     <Compile Include="Engine\NullSoundManager.cs" />
     <Compile Include="Engine\Scoring.cs" />
     <Compile Include="Engine\Session.cs" />
@@ -362,6 +366,7 @@
     <Compile Include="Engine\LOS.cs" />
     <Compile Include="Engine\MapGenerator.cs" />
     <Compile Include="Engine\MessageManager.cs" />
+    <Compile Include="Engine\TextLayout.cs" />
     <Compile Include="Engine\RogueGame.cs" />
     <Compile Include="Engine\ModCatalog.cs" />
     <Compile Include="Engine\ModSaveValidator.cs" />
@@ -1546,6 +1551,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Resources\Images\MapObjects\power_generator_on.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Images\MapObjects\radio.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Resources\Images\MapObjects\shop_shelf.png">

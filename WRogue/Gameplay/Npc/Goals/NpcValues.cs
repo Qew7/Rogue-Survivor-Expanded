@@ -38,9 +38,9 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         }
         public static NpcGeneratedGoal Evaluate(NpcContentCatalog catalog, Actor owner,
             NpcValueDefinition definition, Guid subject, int current, int desired, int deficit,
-            int confidence, ulong result)
+            int confidence, ulong result, NpcGoalContext context = null)
         {
-            int importance = Math.Max(0, Math.Min(200, definition.Importance(new NpcMotivation(catalog, owner, subject))));
+            int importance = Math.Max(0, Math.Min(200, definition.Importance(new NpcMotivation(catalog, owner, subject, context: context))));
             deficit = Math.Max(0, Math.Min(100, deficit)); confidence = Math.Max(0, Math.Min(100, confidence));
             return new NpcGeneratedGoal { Value = definition.LegacyValue ?? default(NpcGoalValue),
                 DefinitionId = definition.LegacyValue.HasValue ? null : definition.Id,
