@@ -730,6 +730,122 @@ effectively unchanged. Two further FOV experiments, a custom `Point` hash
 and different ray-cell arithmetic, were removed after failing to show a
 consistent gain. The full Docker test target passed 366 scenarios.
 
+## Full-density simulation follow-up, October 11, 2026
+
+The 5×5 fixture still runs every NPC action and rumor exchange. A fresh Mono
+call profile recorded 9,041 AI actions over four waits. Instrumentation stretched
+the measured interval to 39.2 seconds, so its times are **not** wall-clock
+performance: `LOS.ComputeFOVFor` used 10.5 seconds inclusive, `Rules.ActorFOV`
+4.7 seconds inclusive, `PersonalitySystem.Report` 5.1 seconds inclusive, and
+`ActionNpcTell.Perform` 3.8 seconds inclusive. These paths overlap. The
+district-selection loop used 7 ms self time, and `GetNextActorToAct` 163 ms
+inclusive. Replacing the scheduler or actor selection cannot remove most of
+this workload. The profile is in the temporary directory reported by the
+profiling script; rerun with `PROFILE_KIND=rest_large sh benchmarks/bench-npc-calls.sh`.
+
+`ActorFOV` now checks the eight neighboring cells directly when looking for a
+carried light. This avoids constructing a predicate and calling the generic
+adjacency helper on a very frequent path. The named corner/diagonal scenario
+checks the same light and battery behavior. Two unprofiled 5×5 run medians
+before the change were **523.2 and 511.2 ms**, and two after were **497.4 and
+502.5 ms**, each for four waits with three fresh fixtures per run. The midpoint
+of those medians is about 3% lower, but the runs were not tightly paired and
+the individual samples overlap. The full Docker test target passed 373 scenarios.
+The focused 40×40 lit-map FOV case stayed at 5.97–5.98 ms per 1,000 calls;
+it does not exercise the neighboring-light branch changed here.
+
+A transient flat array for ground-inventory lookup was also tried because the
+profile recorded 438,187 lookups in four waits. Its repeated full-city median
+was **490.0 ms**, versus **491.1 ms** for the previous image in an adjacent run.
+The negligible difference did not justify another per-map array and update
+path, so this experiment was removed. The remaining high-cost paths are NPC
+field of view, goals, and event observation; they need a behavior-equivalent
+design and a full-city before/after measurement before replacing a library or
+runtime component.
+
+### Measured waiting phases and goal evaluation
+
+The earlier Mono call profile identifies call paths, but its inclusive times
+overlap and its 36-second run was slowed by profiler instrumentation. A new
+`--bench-rest-phases` benchmark alternates three plain and three timed runs of
+30 player waits in a fresh 5×5 city with full NPC simulation. Around 61,000
+AI actions, 71,000 goal evaluations, 3,700 reported events, and 415 rumor
+shares occur per run. In the first lightly instrumented pass, the plain median
+was 4.55 seconds and the timed median 4.61 seconds. Of that timed interval,
+action choice took 3.59 seconds, including 1.89 seconds of intent preparation
+and 0.56 seconds of field of view. Action execution took 0.89 seconds; event
+reporting across the sampled phases took 0.74 seconds. District scheduling and
+actor dispatch outside those phases accounted for about 0.04 seconds. Nested
+phase times must not be added together. The 0.2 ms radio-hour check in this fixture does not measure
+an active receiver; use the radio benchmark for broadcasts.
+
+More detailed timers found about 1.19 million checks for an already pending
+goal. `NpcGoalContext.Pending` obtained an `AsReadOnly` wrapper for the same
+intent list on every check. Reading the existing internal list directly
+reduced the timed check from about 142 to 76 ms. Adjacent three-sample plain
+medians were 4.40/4.42 seconds before and 4.29 seconds after; a repeat of the
+old image measured 4.42 seconds. The change creates no index and does not
+alter goal order or state. The same direct-list access in goal application and
+trait-bias evaluation gave smaller gains: the final plain median was 4.22
+seconds, versus 4.25/4.28 seconds for the preceding image. These small
+differences are close to run-to-run variation. First-generation GC collections
+in the timed runs fell from roughly 440 to 401. The detailed timers themselves
+add around 0.6–0.7 seconds, so their times rank work but are not direct
+wall-clock costs; the plain runs provide the before/after comparison.
+
+The goal-source breakdown points to food aid as the largest source in this
+fixture (about 0.5 seconds with detailed timers), followed by medical care
+and interests. This is repeated real goal evaluation for known people, not a
+district scheduler stall. Any further change to the number or timing of those
+evaluations needs to preserve goal creation, NPC actions, and rumor delivery.
+`PROFILE_KIND=rest_large sh benchmarks/bench-npc-calls.sh` regenerates the Mono
+call flamegraph; the final snapshot is `benchmarks/profiles/rest-large.svg`.
+The named `world/adjacent-light-fov` scenario and the full
+Docker test target passed all 373 scenarios after these changes.
+
+### Decision-path follow-up
+
+The 30-wait phase fixture puts roughly 61,000 NPC decisions through a 5×5
+city. Within decision making, preparing intentions dominates: its timed
+samples used about 1.6–2.1 seconds, with goal evaluation accounting for most
+of that work. Knowledge perception used about 0.3 seconds and exploration
+about 0.16 seconds. These nested timings rank code paths; they are not
+independent shares of the uninstrumented run.
+
+Goal application formerly sorted every candidate by utility and then by its
+constructed string key, even when all candidates were below the admission
+threshold. A full-detail run saw roughly 54,000 such evaluations out of
+72,000. Application still refreshes and finishes existing goals, but skips the
+sort if no candidate is viable. If exactly one is viable, it sorts by utility
+only; multiple viable candidates retain the original key tie-break. The
+timed sort fell from about 763 to 34–49 ms in adjacent runs. Three-sample
+plain medians moved from about 4.42 to 3.53 seconds for 30 waits. The
+`npc/goal-sort-skip` scenario checks low-utility refresh, viable admission,
+and tied viable order.
+
+Food aid was the largest goal source, with roughly 0.48 million care offers
+per 30 waits. A candidate now passes its already-known person to motivation
+calculation and the enum-based offer keeps its resolved value and capability
+definitions, avoiding repeated bounded-list and catalog lookups. The
+`npc/goal-bias-reuse` scenario compares generated utility against a fresh
+calculation, including multiple known people and a trait change. In an
+alternating repeat with comparable offer counts, the timed care-offer path
+used 405 ms before the catalog-lookup change and 347 ms after; the plain
+run medians were 3.42 and 3.38 seconds. Another adjacent pair before and
+after passing the known person measured 3.54 and 3.43 seconds. Whole-run
+figures vary with fixture action counts and Docker load, so the path timing
+is stronger evidence than either small total difference.
+
+Perception probes split its approximately 0.34-second timed path into
+observed people (~0.15 seconds for 166,000 observations), items (~0.04
+seconds), expiry (~0.03 seconds), and surroundings (~0.06 seconds). Replacing
+the two short list scans in `NpcKnowledge.See` with one scan showed no
+end-to-end improvement and was reverted. Removing the read-only wrapper
+around the sorted known-person list likewise showed no improvement and was
+reverted. These are not the next high-yield targets. No new cache or index was
+added. The complete Docker test target passed all 374 scenarios after the
+retained changes.
+
 ## Current Docker save and tile loading, October 10, 2026
 
 The running game's `save.dat` was 64,480,804 bytes (61.5 MiB) at turn 5,877;

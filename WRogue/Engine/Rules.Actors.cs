@@ -545,15 +545,20 @@ namespace djack.RogueSurvivor.Engine
                 if (lightBonus == 0)
                 {
                     Map map = actor.Location.Map;
-                    if (map.HasAnyAdjacentInMap(actor.Location.Position,
-                        (pt) =>
+                    Point position = actor.Location.Position;
+                    if (map.IsInBounds(position))
+                        foreach (Direction direction in Direction.COMPASS)
                         {
-                            Actor other = map.GetActorAt(pt);
-                            if (other == null)
-                                return false;
-                            return HasLightOnEquipped(other);
-                        }))
-                        lightBonus = 1;
+                            Point offset = direction.Vector;
+                            int x = position.X + offset.X, y = position.Y + offset.Y;
+                            if (!map.IsInBounds(x, y)) continue;
+                            Actor other = map.GetActorAt(x, y);
+                            if (other != null && HasLightOnEquipped(other))
+                            {
+                                lightBonus = 1;
+                                break;
+                            }
+                        }
                 }
                 FOV += lightBonus;
             }

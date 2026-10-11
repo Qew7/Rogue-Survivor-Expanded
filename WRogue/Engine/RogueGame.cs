@@ -23,6 +23,8 @@ namespace djack.RogueSurvivor.Engine
 {
     partial class RogueGame
     {
+        internal static Action<string, long> ProfileSimulationPhase;
+
         #region Constants
         public const int MAP_MAX_HEIGHT = 100;
         public const int MAP_MAX_WIDTH = 100;

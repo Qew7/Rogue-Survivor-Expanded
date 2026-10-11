@@ -1187,6 +1187,8 @@ namespace djack.RogueSurvivor.Engine
                 if (TryClaimXpdBase(aiActor, out claimReason)) return;
             }
             // Get and perform action from AI controler.
+            Action<string, long> profile = ProfileSimulationPhase;
+            long started = profile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
             ActorAction desiredAction = aiActor.Controller.GetAction(this);
 
             // Insane effect?
@@ -1196,12 +1198,20 @@ namespace djack.RogueSurvivor.Engine
                 if (insaneAction != null && insaneAction.IsLegal())
                     desiredAction = insaneAction;
             }
+            if (profile != null) profile("choose", System.Diagnostics.Stopwatch.GetTimestamp() - started);
 
             // Do action.
             if (desiredAction != null)
             {
-                if (desiredAction.IsLegal())
+                started = profile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
+                bool legal = desiredAction.IsLegal();
+                if (profile != null) profile("legal", System.Diagnostics.Stopwatch.GetTimestamp() - started);
+                if (legal)
+                {
+                    started = profile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
                     desiredAction.Perform();
+                    if (profile != null) profile("perform", System.Diagnostics.Stopwatch.GetTimestamp() - started);
+                }
                 else
                 {
                     // AI attempted illegal action.

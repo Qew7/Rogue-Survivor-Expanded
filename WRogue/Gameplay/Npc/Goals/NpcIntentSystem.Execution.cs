@@ -33,8 +33,13 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public static void Maintain(RogueGame game, Actor owner, IList<Actor> visible, bool danger, bool followingOrder)
         {
             if (!Enabled(owner)) return;
+            Action<string, long> profile = RogueGame.ProfileSimulationPhase;
+            long start = profile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
             game.NpcContent.Advance(NpcClockPhase.BeforeDecision, new NpcClockContext(game, owner));
+            if (profile != null) profile("decision content", System.Diagnostics.Stopwatch.GetTimestamp() - start);
+            start = profile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
             NpcGoalGenerator.Refresh(game, owner, true);
+            if (profile != null) profile("goal refresh", System.Diagnostics.Stopwatch.GetTimestamp() - start);
             if (!owner.Personality.HasPendingSocialState) return;
             int turn = owner.Location.Map.LocalTime.TurnCounter;
             owner.Personality.Reactions.RemoveAll(r => turn > r.Deadline);

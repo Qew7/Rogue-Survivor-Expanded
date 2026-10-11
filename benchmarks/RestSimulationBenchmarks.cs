@@ -6,6 +6,8 @@ using System.Runtime.CompilerServices;
 using djack.RogueSurvivor.Data;
 using djack.RogueSurvivor.Engine;
 using djack.RogueSurvivor.Engine.AI;
+using djack.RogueSurvivor.Gameplay.AI;
+using djack.RogueSurvivor.Gameplay.AI.Sensors;
 using djack.RogueSurvivor.Gameplay.Generators;
 
 static partial class RestSimulationBenchmarks
@@ -66,7 +68,8 @@ static partial class RestSimulationBenchmarks
         return RunOne(profile, CitySize, 15, GameOptions.SimRatio.FULL);
     }
 
-    static double RunOne(bool profile, int citySize, int civiliansPerDistrict, GameOptions.SimRatio ratio)
+    static double RunOne(bool profile, int citySize, int civiliansPerDistrict, GameOptions.SimRatio ratio,
+        PhaseSample phases = null, int turns = Turns)
     {
         ScenarioWorld fixture = TownScenarioFactory.Create(7971, false);
         Session.Get.GamePreset = GamePreset.BuiltIn(GameMode.GM_STANDARD);
@@ -113,13 +116,16 @@ static partial class RestSimulationBenchmarks
         world.SetPlayer(player);
         GC.Collect();
         GC.WaitForPendingFinalizers();
+        if (phases != null) phases.Start();
         double startAge = profile ? ProcessAgeSeconds() : 0;
         Stopwatch timer = Stopwatch.StartNew();
-        RunRest(world.Game, city[0, 0], player);
+        try { RunRest(world.Game, city[0, 0], player, turns); }
+        finally { if (phases != null) phases.Stop(); }
         timer.Stop();
+        if (phases != null) phases.Total = timer.Elapsed.TotalMilliseconds;
         if (profile) Console.WriteLine("PROFILE_WINDOW {0:F3} {1:F3}", startAge, ProcessAgeSeconds());
         for (int x = 0; x < citySize; x++) for (int y = 0; y < citySize; y++)
-            if (city[x, y].EntryMap.LocalTime.TurnCounter != Turns)
+            if (city[x, y].EntryMap.LocalTime.TurnCounter != turns)
                 throw new InvalidOperationException("Rest did not advance district " + x + "," + y);
         return timer.Elapsed.TotalMilliseconds;
     }
@@ -159,9 +165,9 @@ static partial class RestSimulationBenchmarks
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static void RunRest(RogueGame game, District district, Actor player)
+    static void RunRest(RogueGame game, District district, Actor player, int turns)
     {
-        for (int turn = 0; turn < Turns; turn++)
+        for (int turn = 0; turn < turns; turn++)
         {
             player.ActionPoints = Rules.BASE_ACTION_COST;
             game.DoWait(player);

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using djack.RogueSurvivor.Data;
@@ -13,7 +14,10 @@ namespace djack.RogueSurvivor.Gameplay.AI
         protected List<Actor> PrepareNpcIntents(RogueGame game, List<Percept> percepts, HashSet<Point> currentFov)
         {
             if (!NpcIntentSystem.Enabled(m_Actor)) return null;
+            Action<string, long> profile = RogueGame.ProfileSimulationPhase;
+            long start = profile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
             NpcKnowledgeSystem.Perceive(game, m_Actor, percepts, currentFov);
+            if (profile != null) profile("knowledge", System.Diagnostics.Stopwatch.GetTimestamp() - start);
             List<Actor> visible = new List<Actor>();
             if (percepts != null) foreach (Percept percept in percepts)
             {
@@ -24,7 +28,9 @@ namespace djack.RogueSurvivor.Gameplay.AI
             }
             bool danger = false;
             foreach (Actor actor in visible) if (game.Rules.AreEnemies(m_Actor, actor)) { danger = true; break; }
+            start = profile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
             NpcIntentSystem.Maintain(game, m_Actor, visible, danger, Order != null);
+            if (profile != null) profile("maintain", System.Diagnostics.Stopwatch.GetTimestamp() - start);
             return visible;
         }
         protected ActorAction BehaviorNpcEmergency(RogueGame game, List<Actor> visible)

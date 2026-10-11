@@ -132,6 +132,8 @@ namespace djack.RogueSurvivor.Engine
         void AdvanceRadios(Map map)
         {
             if (map.LocalTime.TurnCounter % WorldTime.TURNS_PER_HOUR != 0) return;
+            Action<string, long> profile = ProfileSimulationPhase;
+            long started = profile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
             foreach (MapObject obj in map.MapObjects)
             {
                 RadioReceiver radio = obj as RadioReceiver;
@@ -151,6 +153,7 @@ namespace djack.RogueSurvivor.Engine
                     if (radio.Batteries == 0) radio.IsOn = false;
                 }
             }
+            if (profile != null) profile("radio hour", System.Diagnostics.Stopwatch.GetTimestamp() - started);
         }
 
         void BroadcastRadio(int station, Map map, Point position, Actor owner)

@@ -41,21 +41,28 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         {
             Actor owner = context.Owner; NpcKnownPerson self = context.Self;
             IList<NpcKnownPerson> people = context.People; int turn = context.Turn;
+            Action<string, long> profile = RogueGame.ProfileSimulationPhase;
             foreach (NpcKnownPerson person in people)
             {
                 if (person.Id == self.Id || person.Dead) continue;
                 RelationshipRecord opinion = owner.Personality.Person(person.Id);
                 if (!person.Hostile && (turn - person.FoodNeedTurn <= 60 || context.Pending(NpcGoalValue.Care, person.Id)))
+                {
+                    long started = profile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
                     offers.Add(person, NpcGoalValue.Care, context.Catalog.Capability(AnswerFoodRequestId), 100 - person.FoodNeed, 100,
                         turn - person.FoodNeedTurn <= 60 ? person.FoodNeed : 0, person.FoodConfidence, person.NeedCause, person.NeedStory);
+                    if (profile != null) profile("food care offer", System.Diagnostics.Stopwatch.GetTimestamp() - started);
+                }
                 if (!person.Hostile && opinion != null && (turn >= person.ReciprocityTurn || context.Pending(NpcGoalValue.Reciprocity, person.Id)) &&
                     (opinion.Debt > 0 || context.Pending(NpcGoalValue.Reciprocity, person.Id)))
                 {
                     NpcIntent existing = owner.Personality.IntentList.Find(i => !i.Finished && i.Generated != null &&
                         i.Generated.Value == NpcGoalValue.Reciprocity && i.Generated.SubjectId == person.Id);
                     int desired = existing == null ? Math.Max(0, opinion.Debt - 10) : existing.Generated.Desired;
+                    long started = profile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
                     offers.Add(person, NpcGoalValue.Reciprocity, context.Catalog.Capability("repay_aid"), opinion.Debt, desired,
                         Math.Min(100, Math.Max(0, opinion.Debt - desired) * 10), 100, person.SocialCause);
+                    if (profile != null) profile("food repay offer", System.Diagnostics.Stopwatch.GetTimestamp() - started);
                 }
             }
         }

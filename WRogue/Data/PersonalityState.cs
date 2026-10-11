@@ -162,6 +162,7 @@ namespace djack.RogueSurvivor.Data
         }
 
         public IList<TraitInstance> Traits { get { return m_Traits.AsReadOnly(); } }
+        internal List<TraitInstance> TraitList { get { return m_Traits; } }
         public IList<MemoryInstance> Memories { get { return m_Memories.AsReadOnly(); } }
         public IList<ObservedEvent> Events { get { return m_Events.AsReadOnly(); } }
         public IList<HeardJournalEntry> HeardJournal

@@ -65,8 +65,12 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public static void Perceive(RogueGame game, Actor actor, IList<Percept> percepts,
             HashSet<Point> currentFov = null)
         {
+            Action<string, long> profile = RogueGame.ProfileSimulationPhase;
+            long started = profile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
             NpcKnowledge knowledge = actor.Personality.Knowledge;
             int turn = actor.Location.Map.LocalTime.TurnCounter; knowledge.Expire(turn);
+            if (profile != null) profile("knowledge expire", System.Diagnostics.Stopwatch.GetTimestamp() - started);
+            started = profile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
             if (percepts != null) foreach (Percept percept in percepts)
             {
                 if (percept.Turn != turn || percept.Location.Map != actor.Location.Map ||
@@ -76,13 +80,16 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 if (person != null)
                 {
                     if (person.IsDead || person.Location != percept.Location) continue;
+                    long personStarted = profile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
                     NpcKnownPerson known = knowledge.See(person, turn);
                     known.Hostile = game.Rules.AreEnemies(actor, person);
                     game.NpcContent.Perceive(NpcPerceptionKind.Person, new NpcPerceptionContext(game, actor, percept.Location, person));
+                    if (profile != null) profile("knowledge person", System.Diagnostics.Stopwatch.GetTimestamp() - personStarted);
                 }
                 Inventory items = percept.Percepted as Inventory;
                 if (items != null)
                 {
+                    long itemsStarted = profile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
                     XpdBase claim = percept.Location.Map.XpdBaseAt(percept.Location.Position);
                     int risk = claim != null && !claim.Owns(actor) ? 1 : 0;
                     game.NpcContent.Perceive(NpcPerceptionKind.Items, new NpcPerceptionContext(game, actor, percept.Location, items: items, risk: risk));
@@ -91,9 +98,13 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                         TraitDefinition definition = game.NpcContent.Personalities.Trait(trait.Id);
                         if (definition != null && definition.Interest != null) definition.Interest.Observe(actor, trait, items, percept.Location, risk);
                     }
+                    if (profile != null) profile("knowledge items", System.Diagnostics.Stopwatch.GetTimestamp() - itemsStarted);
                 }
             }
+            if (profile != null) profile("knowledge percepts", System.Diagnostics.Stopwatch.GetTimestamp() - started);
+            started = profile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
             game.NpcContent.Perceive(NpcPerceptionKind.Surroundings, new NpcPerceptionContext(game, actor, actor.Location));
+            if (profile != null) profile("knowledge surroundings", System.Diagnostics.Stopwatch.GetTimestamp() - started);
         }
         public static bool Hear(RogueGame game, Actor listener, Actor speaker, NpcFact source)
         {

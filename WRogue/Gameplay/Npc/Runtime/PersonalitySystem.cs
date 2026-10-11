@@ -102,7 +102,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             if (actor == null || actor.Personality == null || !Session.Get.GamePreset.NpcPersonalitiesEnabled)
                 return 0;
             int total = 0;
-            foreach (TraitInstance instance in actor.Personality.Traits)
+            foreach (TraitInstance instance in actor.Personality.TraitList)
             {
                 if (instance.Id == excludeTrait) continue;
                 TraitDefinition definition = (registry ?? s_Registry).Trait(instance.Id);
@@ -126,12 +126,18 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         {
             if (game == null || lifeEvent == null || lifeEvent.Map == null ||
                 !Session.Get.GamePreset.NpcPersonalitiesEnabled) return;
+            Action<string, long> profile = RogueGame.ProfileSimulationPhase;
+            long started = profile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
             NpcEventDefinition eventDefinition = game.NpcContent.Event(lifeEvent.Kind);
             if (eventDefinition != null) eventDefinition.Validate(lifeEvent);
             if (lifeEvent.Id == 0) lifeEvent.Id = Session.Get.NextPersonalityEventId();
             // Make a snapshot: resolving a death may remove actors from this map.
             Actor privateOwner = eventDefinition == null || !eventDefinition.Private ? null : eventDefinition.PrivateAudience == null ? lifeEvent.Subject : eventDefinition.PrivateAudience(lifeEvent);
-            if (eventDefinition != null && eventDefinition.Private && privateOwner == null) return;
+            if (eventDefinition != null && eventDefinition.Private && privateOwner == null)
+            {
+                if (profile != null) profile("event report", System.Diagnostics.Stopwatch.GetTimestamp() - started);
+                return;
+            }
             IEnumerable<MemoryDefinition> memoryDefinitions = game.NpcContent.Personalities.ForEvent(lifeEvent.Kind);
             List<Actor> actors = privateOwner == null ? new List<Actor>(lifeEvent.Map.Actors) : new List<Actor> { privateOwner };
             Guid subjectId = lifeEvent.Subject == null ? Guid.Empty : lifeEvent.Subject.PersonalityIdentity;
@@ -208,6 +214,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             if (eventDefinition != null) eventDefinition.Completed(game, lifeEvent);
             NpcConversation.BroadcastReport(game, lifeEvent, eventDefinition);
             NpcConversation.OfferPlayerReply(game, lifeEvent, eventDefinition);
+            if (profile != null) profile("event report", System.Diagnostics.Stopwatch.GetTimestamp() - started);
         }
 
         public static void ResolveDue(RogueGame game, Map map)

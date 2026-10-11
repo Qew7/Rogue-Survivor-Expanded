@@ -162,7 +162,10 @@ namespace djack.RogueSurvivor.Gameplay.AI
 
         protected override ActorAction SelectAction(RogueGame game, List<Percept> percepts)
         {
+            Action<string, long> decisionProfile = RogueGame.ProfileSimulationPhase;
+            long decisionStart = decisionProfile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
             List<Percept> mapPercepts = FilterSameMap(game, percepts);
+            if (decisionProfile != null) decisionProfile("decision map filter", System.Diagnostics.Stopwatch.GetTimestamp() - decisionStart);
             Action<long> profileIntentPrep = ProfileIntentPrep;
             long intentStart = profileIntentPrep == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
             List<Actor> intentVisible = PrepareNpcIntents(game, mapPercepts, m_LOSSensor.FOV);
@@ -191,18 +194,24 @@ namespace djack.RogueSurvivor.Gameplay.AI
             m_Actor.IsRunning = false;
 
             // 0. Equip best item
+            decisionStart = decisionProfile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
             ActorAction bestEquip = IsReturningXpdLoot ? null : BehaviorEquipBestItems(game, true, true);
+            if (decisionProfile != null) decisionProfile("decision equip", System.Diagnostics.Stopwatch.GetTimestamp() - decisionStart);
             if (bestEquip != null)
             {
                 return bestEquip;
             }
             // end alpha10
 
+            decisionStart = decisionProfile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
             ActorAction personalIntervention = BehaviorNpcEmergency(game, intentVisible);
+            if (decisionProfile != null) decisionProfile("decision emergency", System.Diagnostics.Stopwatch.GetTimestamp() - decisionStart);
             if (personalIntervention != null) return BehaviorFleeFromExplosives(game, FilterStacks(game, mapPercepts)) ?? personalIntervention;
 
             // 1. Follow order
+            decisionStart = decisionProfile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
             ActorAction departure = BehaviorNpcDeparture(game, intentVisible);
+            if (decisionProfile != null) decisionProfile("decision departure", System.Diagnostics.Stopwatch.GetTimestamp() - decisionStart);
             if (departure != null)
                 return BehaviorFleeFromExplosives(game, FilterStacks(game, mapPercepts)) ?? departure;
             #region
@@ -511,7 +520,9 @@ namespace djack.RogueSurvivor.Gameplay.AI
             // 10 drop useless light/tracker/spray
             if (!hasEnemies)
             {
+                decisionStart = decisionProfile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
                 ActorAction intentAction = BehaviorNpcIntents(game, intentVisible);
+                if (decisionProfile != null) decisionProfile("decision intent action", System.Diagnostics.Stopwatch.GetTimestamp() - decisionStart);
                 if (intentAction != null) return intentAction;
             }
             #region
@@ -582,15 +593,19 @@ namespace djack.RogueSurvivor.Gameplay.AI
             #region
             if (!hasEnemies && this.Directives.CanTakeItems)
             {
+                decisionStart = decisionProfile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
                 ActorAction expedition = TryStartAutonomousScavenge(game, mapPercepts, m_Exploration);
+                if (decisionProfile != null) decisionProfile("decision scavenge", System.Diagnostics.Stopwatch.GetTimestamp() - decisionStart);
                 if (expedition != null) return expedition;
 
                 Map map = m_Actor.Location.Map;
 
                 #region Get items
                 // alpha10 new common behaviour code, also used by GangAI
+                decisionStart = decisionProfile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
                 ActorAction getItemAction = BehaviorGoGetInterestingItems(game, mapPercepts,
                     false, false, CANT_GET_ITEM_EMOTE, true, ref m_LastItemsSaw);
+                if (decisionProfile != null) decisionProfile("decision items", System.Diagnostics.Stopwatch.GetTimestamp() - decisionStart);
 
                 if (getItemAction != null)
                     return getItemAction;
@@ -1009,9 +1024,13 @@ namespace djack.RogueSurvivor.Gameplay.AI
 #endif
             // END DEBUG BOT
 
+            decisionStart = decisionProfile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
             ActorAction crossDistrict = BehaviorCrossDistrict(game);
+            if (decisionProfile != null) decisionProfile("decision crossing", System.Diagnostics.Stopwatch.GetTimestamp() - decisionStart);
             if (crossDistrict != null) return crossDistrict;
+            decisionStart = decisionProfile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
             ActorAction exploreAction = BehaviorExplore(game, m_Exploration);
+            if (decisionProfile != null) decisionProfile("decision explore", System.Diagnostics.Stopwatch.GetTimestamp() - decisionStart);
             if (exploreAction != null)
             {
                 // VERBOSE BOT
@@ -1036,7 +1055,10 @@ namespace djack.RogueSurvivor.Gameplay.AI
             // END VERBOSE BOT
 
             m_Actor.Activity = Activity.IDLE;
-            return BehaviorWander(game, m_Exploration);
+            decisionStart = decisionProfile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
+            ActorAction wander = BehaviorWander(game, m_Exploration);
+            if (decisionProfile != null) decisionProfile("decision wander", System.Diagnostics.Stopwatch.GetTimestamp() - decisionStart);
+            return wander;
             #endregion
 
             #endregion

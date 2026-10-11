@@ -36,9 +36,13 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public bool Pending(NpcGoalValue value, Guid subject) { return Pending(Catalog.Value(value).Id, subject); }
         public bool Pending(string id, Guid subject)
         {
-            foreach (NpcIntent intent in Owner.Personality.Intents)
+            Action<string, long> profile = RogueGame.ProfileSimulationPhase;
+            long start = profile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
+            foreach (NpcIntent intent in Owner.Personality.IntentList)
                 if (!intent.Finished && intent.Generated != null && intent.Generated.SubjectId == subject)
-                { NpcValueDefinition definition = Catalog.Value(intent.Generated); if (definition != null && definition.Id == id) return true; }
+                { NpcValueDefinition definition = Catalog.Value(intent.Generated); if (definition != null && definition.Id == id)
+                    { if (profile != null) profile("goal pending", System.Diagnostics.Stopwatch.GetTimestamp() - start); return true; } }
+            if (profile != null) profile("goal pending", System.Diagnostics.Stopwatch.GetTimestamp() - start);
             return false;
         }
         public static int Distance(Location a, Location b)
@@ -51,11 +55,11 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public readonly int CommunityCare, CommunitySecurity;
         public readonly int Group, Compassion, Trade, Courage, Law, Supplies, Feeling, Attachment, Fear, Grievance;
         public NpcMotivation(NpcContentCatalog catalog, Actor owner, Guid subject, string excludeTrait = null,
-            NpcGoalContext context = null)
+            NpcGoalContext context = null, NpcKnownPerson knownPerson = null)
         {
             if (excludeTrait != null) context = null;
             PersonalityRegistry registry = catalog.Personalities;
-            NpcKnownPerson known = owner.Personality.Knowledge.Person(subject);
+            NpcKnownPerson known = knownPerson ?? owner.Personality.Knowledge.Person(subject);
             if (known != null && owner.Faction != null && known.FactionId == owner.Faction.ID) {
                 NpcFactionPolicy policy = catalog.FactionPolicy(owner.Faction.ID);
                 CommunityCare = policy.Care; CommunitySecurity = policy.Security;
@@ -67,7 +71,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             Courage = context == null ? PersonalitySystem.Bias(owner, DecisionKind.Courage, registry: registry, excludeTrait: excludeTrait) : context.CourageBias;
             Law = context == null ? PersonalitySystem.Bias(owner, DecisionKind.Law, registry: registry, excludeTrait: excludeTrait) : context.LawBias;
             Supplies = context == null ? PersonalitySystem.Bias(owner, DecisionKind.Supplies, registry: registry, excludeTrait: excludeTrait) : context.SuppliesBias;
-            Feeling = NpcValues.KnownAttitude(owner, subject, registry, excludeTrait); RelationshipRecord opinion = owner.Personality.Person(subject);
+            Feeling = NpcValues.KnownAttitude(owner, subject, registry, excludeTrait, known); RelationshipRecord opinion = owner.Personality.Person(subject);
             if (opinion != null) { Attachment = opinion.Attachment; Fear = opinion.Fear; Grievance = opinion.Grievance; }
         }
     }

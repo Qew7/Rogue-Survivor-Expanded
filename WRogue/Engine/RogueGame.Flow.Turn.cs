@@ -25,6 +25,8 @@ namespace djack.RogueSurvivor.Engine
     {
         void NextMapTurn(Map map, SimFlags sim)
         {
+            Action<string, long> profile = ProfileSimulationPhase;
+            long started = profile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
             bool isLoDetail = (sim & SimFlags.LODETAIL_TURN) != 0;
 
             ////////////////////////////////////////
@@ -593,6 +595,7 @@ namespace djack.RogueSurvivor.Engine
                 HandleUndeadNPCsUpgrade(map);
             }
             #endregion
+            if (profile != null) profile("map turn", System.Diagnostics.Stopwatch.GetTimestamp() - started);
         }
 
     }

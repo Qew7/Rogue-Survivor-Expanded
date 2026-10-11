@@ -127,6 +127,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public static void ShareRumor(RogueGame game, Actor speaker, Actor listener, NpcFact fact, bool free)
         {
             if (!CanTell(game, speaker, fact)) return;
+            Action<string, long> profile = RogueGame.ProfileSimulationPhase;
+            long started = profile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
             int turn = speaker.Location.Map.LocalTime.TurnCounter;
             List<NpcFact> chapter = Chapter(game, speaker, listener, fact);
             List<string> lines = new List<string>();
@@ -159,6 +161,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             }
             speaker.Personality.Knowledge.NextTalkTurn = turn + 30;
             NpcEvents.Publish(game, "rumor_shared", speaker, listener, fact.EventId, fact.StoryId);
+            if (profile != null) profile("rumor share", System.Diagnostics.Stopwatch.GetTimestamp() - started);
         }
 
         public static List<NpcFact> Chapter(RogueGame game, Actor speaker, Actor listener, NpcFact fact, int turn = -1,
