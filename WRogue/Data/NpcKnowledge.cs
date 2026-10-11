@@ -109,11 +109,16 @@ namespace djack.RogueSurvivor.Data
         }
         public NpcKnownPerson See(Actor actor, int turn)
         {
-            NpcKnownPerson person = Person(actor.PersonalityIdentity);
+            NpcKnownPerson person = null;
+            int knownIndex = -1;
+            Guid identity = actor.PersonalityIdentity;
+            for (int i = 0; i < People.Count; i++)
+                if (People[i].Id == identity)
+                { person = People[i]; knownIndex = i; break; }
             if (person == null || person.Place != actor.Location || person.Dead != actor.IsDead) Revision++;
             // Refresh recency before another participant can fill the bounded list.
-            if (person == null) person = new NpcKnownPerson { Id = actor.PersonalityIdentity };
-            else People.Remove(person);
+            if (person == null) person = new NpcKnownPerson { Id = identity };
+            else People.RemoveAt(knownIndex);
             People.Add(person); Trim(People, 32);
             person.Name = actor.UnmodifiedName; person.Place = actor.Location; person.SeenTurn = turn; person.Dead = actor.IsDead;
             person.FactionId = actor.Faction == null ? -1 : actor.Faction.ID;

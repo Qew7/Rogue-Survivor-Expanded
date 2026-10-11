@@ -748,15 +748,8 @@ namespace djack.RogueSurvivor.Gameplay.AI
                         score += zoneAge;
                     //if (!exploration.HasExplored(map.GetZonesAt(pos.X, pos.Y)))
                     //    score += EXPLORE_ZONES;
-                    // 2nd Prefer unexplored locs.
-                    // alpha10.1 use age to prefer older locs
-                    int locAge = exploration.GetExploredAge(next);
-                    if (locAge == 0)  // unexplored (or expired)
-                        score += EXPLORE_LOCS;
-                    else
-                        score += 2 * locAge;
-                    //if (!exploration.HasExplored(next))
-                    //    score += EXPLORE_LOCS;
+                    // The validity check already excluded explored locations.
+                    score += EXPLORE_LOCS;
                     // 3rd Prefer doors and barricades (doors/windows, pushables)
                     MapObject mapObj = map.GetMapObjectAt(pos);
                     if (mapObj != null && (mapObj.IsMovable || mapObj is DoorWindow))

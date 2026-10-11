@@ -846,6 +846,71 @@ reverted. These are not the next high-yield targets. No new cache or index was
 added. The complete Docker test target passed all 374 scenarios after the
 retained changes.
 
+### Decision-path recheck, October 11, 2026
+
+A fresh 5×5, 30-wait run on `6fc1f04` measured **3.378 seconds** without
+probes. In the timed run, intention preparation used 1.648 seconds, including
+1.446 seconds in goal evaluation. Knowledge perception used 0.366 seconds
+and exploration decisions 0.168 seconds. Within goal evaluation, food aid
+was the largest source at 0.451 seconds, followed by medical care at 0.150
+seconds and lasting interests at 0.132 seconds. These are nested, probed
+times; they cannot be added or treated as uninstrumented wall time. The
+corresponding Mono call profile and flamegraph are in
+`/private/tmp/rogue-decision-calls/`; call instrumentation stretched four
+waits to about 36 seconds and served to identify call paths and counts.
+
+The goal context originally spent about 115 ms per 30 waits computing six
+trait influences through six passes. `PersonalitySystem.GoalBiases` now visits
+each trait once with the same effect predicates and per-axis clamping. The
+timed trait portion fell to about 29 ms; adjacent plain medians changed from
+3.388 to 3.268 seconds. The `npc/goal-bias-single-pass` scenario compares
+all six values with the original `Bias` calculation after every registered
+trait is added and with personalities disabled. `NpcMotivation` also became a
+temporary value type: a paired repeat recorded 3.440 versus 3.349 seconds
+and 332 versus 317 Gen0 collections, while the first adjacent pair had
+almost identical elapsed time. Its whole-run gain is therefore uncertain,
+but the allocation reduction is repeatable.
+
+Exploration previously rejected visited neighbors and then searched the same
+visited list to score the remaining neighbors. Their age must be zero, so the
+second scan was removed. A paired run measured 168 versus 136 ms for
+exploration and 3.266 versus 3.235 seconds for the plain full-city run.
+`npc/explore-unvisited-age` preserves the seeded direction and checks the
+all-neighbors-visited boundary.
+
+Knowledge observation previously searched the bounded people list once by
+identity and again to remove the same record before appending it. `See` now
+keeps the first index, removes by index, and reads the actor identity once.
+An adjacent pair measured 160 versus 157 ms for person perception and 3.312
+versus 3.274 seconds for the plain full-city run. With identity hoisted, a
+later timed run measured 148 ms for person perception. Whole-run differences
+remain within run-to-run variation.
+`npc/knowledge-see-order` checks record identity, recency, revision, and
+capacity eviction.
+
+Motivation evaluation for a known person previously looked up the same
+relationship twice: once for attitude and once for attachment, fear, and
+grievance. It now reuses the record returned by the attitude calculation.
+A nearby repeat measured about 351 ms for 473 thousand food-care offers with
+the duplicate lookup and 341 ms for 486 thousand offers without it. Plain
+full-city medians were effectively unchanged (3.387 versus 3.385 seconds),
+so no whole-run gain is claimed.
+
+Reusing the context's supply influence in food-reserve interests reduced the
+timed interest source, but failed `npc/content-module`: custom catalogs can
+use a different personality registry, and the original global-registry
+lookup is intentional there. It was reverted. Direct enum comparison in
+pending-goal checks, storing candidates or perception contexts as value
+types, passing the known-person record into medical perception, and computing
+observed max HP once were also tried. None showed a reliable full-run
+benefit; they were reverted. The retained changes add no cache or index and
+do not skip actions, observations, or rumors.
+
+The final plain 30-wait median was 3.322 seconds versus 3.378 seconds at
+`6fc1f04`; the difference is small compared with variation between runs.
+The complete Docker test target passed all 377 scenarios, layout checks, and
+the flamegraph parser check on the final code.
+
 ## Current Docker save and tile loading, October 10, 2026
 
 The running game's `save.dat` was 64,480,804 bytes (61.5 MiB) at turn 5,877;

@@ -116,6 +116,36 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             return Math.Max(-100, Math.Min(100, total));
         }
 
+        internal static void GoalBiases(Actor actor, PersonalityRegistry registry,
+            out int group, out int compassion, out int trade, out int courage, out int law, out int supplies)
+        {
+            group = compassion = trade = courage = law = supplies = 0;
+            if (actor == null || actor.Personality == null || !Session.Get.GamePreset.NpcPersonalitiesEnabled) return;
+            foreach (TraitInstance instance in actor.Personality.TraitList)
+            {
+                TraitDefinition definition = registry.Trait(instance.Id);
+                if (definition == null || definition.ItemParameter) continue;
+                foreach (TraitEffect effect in definition.Effects)
+                {
+                    switch (effect.Decision)
+                    {
+                        case DecisionKind.Group: if (effect.Applies == null || effect.Applies(actor, null)) group += effect.Amount; break;
+                        case DecisionKind.Compassion: if (effect.Applies == null || effect.Applies(actor, null)) compassion += effect.Amount; break;
+                        case DecisionKind.Trade: if (effect.Applies == null || effect.Applies(actor, null)) trade += effect.Amount; break;
+                        case DecisionKind.Courage: if (effect.Applies == null || effect.Applies(actor, null)) courage += effect.Amount; break;
+                        case DecisionKind.Law: if (effect.Applies == null || effect.Applies(actor, null)) law += effect.Amount; break;
+                        case DecisionKind.Supplies: if (effect.Applies == null || effect.Applies(actor, null)) supplies += effect.Amount; break;
+                    }
+                }
+            }
+            group = Math.Max(-100, Math.Min(100, group));
+            compassion = Math.Max(-100, Math.Min(100, compassion));
+            trade = Math.Max(-100, Math.Min(100, trade));
+            courage = Math.Max(-100, Math.Min(100, courage));
+            law = Math.Max(-100, Math.Min(100, law));
+            supplies = Math.Max(-100, Math.Min(100, supplies));
+        }
+
         public static bool HasTrait(Actor actor, string id)
         {
             return actor != null && actor.Personality != null &&

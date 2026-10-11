@@ -49,7 +49,7 @@ static partial class RestSimulationBenchmarks
         {
             string[] names = { "map turn", "choose", "sense", "fov", "decide", "intent", "knowledge",
                 "knowledge expire", "knowledge percepts", "knowledge person", "knowledge items", "knowledge surroundings",
-                "maintain", "decision content", "goal refresh", "goal evaluate", "goal context", "goal pending", "goal apply",
+                "maintain", "decision content", "goal refresh", "goal evaluate", "goal context", "context traits", "context inventory", "context people", "goal pending", "goal apply",
                 "apply refresh", "apply stale", "apply no viable", "apply sort", "apply admit",
                 "food care offer", "food repay offer", "route",
                 "legal", "perform", "rumor share", "event report", "radio hour", "zone" };
