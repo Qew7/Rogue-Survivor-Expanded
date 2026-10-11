@@ -612,34 +612,35 @@ namespace djack.RogueSurvivor.Gameplay.AI
                 #endregion
 
                 #region Trade
+                decisionStart = decisionProfile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
                 int tradeBias = PersonalitySystem.Bias(m_Actor, DecisionKind.Trade);
                 if (Directives.CanTrade && (tradeBias == 0 ||
                     game.Rules.RollChance(Math.Max(0, Math.Min(100, 70 + tradeBias)))))
                 {
                     // get actors we want to trade with.
-                    List<Percept> tradingActors = FilterOut(game, FilterNonEnemies(game, mapPercepts),
+                    List<Percept> tradingActors = Filter(game, mapPercepts,
                         (p) =>
                         {
-                            if (p.Turn != map.LocalTime.TurnCounter) return true;
                             Actor other = p.Percepted as Actor;
+                            if (other == null || other == m_Actor || game.Rules.AreEnemies(m_Actor, other)) return false;
+                            if (p.Turn != map.LocalTime.TurnCounter) return false;
                             // dont bother player or someone we can't trade with or already did trade.
-                            if (other.IsPlayer) return true;
+                            if (other.IsPlayer) return false;
                             if (PersonalitySystem.Attitude(m_Actor, other) <= -30 &&
                                 !(other == m_Actor.Leader && game.Rules.IsActorTrustingLeader(m_Actor)))
-                                return true;
-                            if (!game.Rules.CanActorInitiateTradeWith(m_Actor, other)) return true;
-                            if (IsActorTabooTrade(other)) return true;
+                                return false;
+                            if (!game.Rules.CanActorInitiateTradeWith(m_Actor, other)) return false;
+                            if (IsActorTabooTrade(other)) return false;
                             // alpha10 dont bother someone who is fighting or fleeing
                             if (other.Activity == Activity.CHASING || other.Activity == Activity.FIGHTING || other.Activity == Activity.FLEEING || other.Activity == Activity.FLEEING_FROM_EXPLOSIVE)
-                                return true;
+                                return false;
                             // dont bother if no interesting items.
-                            if (!HasAnyInterestingItem(game, other.Inventory, ItemSource.ANOTHER_ACTOR)) return true;
-                            if (!((other.Controller as BaseAI).HasAnyInterestingItem(game, m_Actor.Inventory, ItemSource.ANOTHER_ACTOR))) return true;
+                            if (!HasAnyInterestingItem(game, other.Inventory, ItemSource.ANOTHER_ACTOR)) return false;
+                            if (!((other.Controller as BaseAI).HasAnyInterestingItem(game, m_Actor.Inventory, ItemSource.ANOTHER_ACTOR))) return false;
                             // alpha10 reject if unreachable by baseai simple behaviours
                             if (!CanReachSimple(game, other.Location.Position, Tools.RouteFinder.SpecialActions.DOORS | Tools.RouteFinder.SpecialActions.JUMP))
-                                return true;
-                            // don't reject.
-                            return false;
+                                return false;
+                            return true;
                         });
                     // trade with nearest.
                     if (tradingActors != null)
@@ -654,6 +655,7 @@ namespace djack.RogueSurvivor.Gameplay.AI
                                 MarkActorAsRecentTrade(tradeTarget);
                                 // say, so we make sure we spend a turn and won't loop.
                                 game.DoSay(m_Actor, tradeTarget, String.Format("Hey {0}, let's make a deal!", tradeTarget.Name), RogueGame.Sayflags.NONE);
+                                if (decisionProfile != null) decisionProfile("decision trade", System.Diagnostics.Stopwatch.GetTimestamp() - decisionStart);
                                 return tradeAction;
                             }
                         }
@@ -668,11 +670,13 @@ namespace djack.RogueSurvivor.Gameplay.AI
 
                                 m_Actor.Activity = Activity.FOLLOWING;
                                 m_Actor.TargetActor = tradeTarget;
+                                if (decisionProfile != null) decisionProfile("decision trade", System.Diagnostics.Stopwatch.GetTimestamp() - decisionStart);
                                 return bump;
                             }
                         }
                     }
                 }
+                if (decisionProfile != null) decisionProfile("decision trade", System.Diagnostics.Stopwatch.GetTimestamp() - decisionStart);
                 #endregion
             }
             #endregion

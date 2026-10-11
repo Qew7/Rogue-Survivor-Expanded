@@ -14,12 +14,17 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public readonly int Turn, MaxHP, FoodUnits;
         public readonly int GroupBias, CompassionBias, TradeBias, CourageBias, LawBias, SuppliesBias;
         public readonly bool Hungry, HasFood;
+        public readonly bool HasActiveGeneratedGoal;
         public readonly NpcContentCatalog Catalog;
         public NpcGoalContext(RogueGame game, Actor owner, NpcContentCatalog catalog)
         {
             Action<string, long> profile = RogueGame.ProfileSimulationPhase;
             long started = profile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
             Owner = owner; Catalog = catalog; Turn = owner.Location.Map.LocalTime.TurnCounter;
+            // Sources only propose candidates; the lifecycle changes intents after evaluation.
+            foreach (NpcIntent intent in owner.Personality.IntentList)
+                if (!intent.Finished && intent.Generated != null)
+                { HasActiveGeneratedGoal = true; break; }
             // Goal sources read owner state; actor-only trait biases are shared by this evaluation pass.
             PersonalitySystem.GoalBiases(owner, catalog.Personalities, out GroupBias, out CompassionBias,
                 out TradeBias, out CourageBias, out LawBias, out SuppliesBias);
@@ -35,9 +40,10 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         }
         public NpcKnownPerson FindPerson(Predicate<NpcKnownPerson> match) { foreach (NpcKnownPerson person in People) if (match(person)) return person; return null; }
         public bool AnyPerson(Predicate<NpcKnownPerson> match) { return FindPerson(match) != null; }
-        public bool Pending(NpcGoalValue value, Guid subject) { return Pending(Catalog.Value(value).Id, subject); }
+        public bool Pending(NpcGoalValue value, Guid subject) { return HasActiveGeneratedGoal && Pending(Catalog.Value(value).Id, subject); }
         public bool Pending(string id, Guid subject)
         {
+            if (!HasActiveGeneratedGoal) return false;
             Action<string, long> profile = RogueGame.ProfileSimulationPhase;
             long start = profile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
             foreach (NpcIntent intent in Owner.Personality.IntentList)

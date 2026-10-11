@@ -6,7 +6,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
 {
     static partial class NpcGoalGenerator
     {
-        public static List<NpcGoalCandidate> Evaluate(RogueGame game, Actor owner, NpcContentCatalog catalog = null)
+        public static List<NpcGoalCandidate> Evaluate(RogueGame game, Actor owner, NpcContentCatalog catalog = null,
+            bool forRefresh = false)
         {
             if (!NpcIntentSystem.Enabled(owner)) return new List<NpcGoalCandidate>();
             catalog = catalog ?? game.NpcContent;
@@ -17,7 +18,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 TraitDefinition definition = catalog.Personalities.Trait(trait.Id);
                 if (definition != null && definition.Interest != null) definition.Interest.Prepare(owner, trait);
             }
-            var context = new NpcGoalContext(game, owner, catalog); var offers = new NpcGoalOffers(context);
+            var context = new NpcGoalContext(game, owner, catalog); var offers = new NpcGoalOffers(context, forRefresh);
             if (profile != null) profile("goal context", System.Diagnostics.Stopwatch.GetTimestamp() - start);
             foreach (INpcGoalSource source in catalog.GoalSources)
             {

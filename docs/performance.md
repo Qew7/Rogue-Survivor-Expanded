@@ -911,6 +911,100 @@ The final plain 30-wait median was 3.322 seconds versus 3.378 seconds at
 The complete Docker test target passed all 377 scenarios, layout checks, and
 the flamegraph parser check on the final code.
 
+### SelectAction follow-up, October 11, 2026
+
+A new Mono call profile in `/private/tmp/rogue-select-calls/` attributed
+13.7 seconds to `CivilianAI.SelectAction` over four profiled waits, but only
+0.12 seconds was self time. Its largest children were intention preparation
+(5.8 seconds), item collection (2.1 seconds), exploration (0.94 seconds),
+and ranged attacks (0.87 seconds). These are instrumentation-inflated call
+times, not expected player wait times. A plain 5×5, 30-wait baseline was
+3.370 seconds; phase probes put intention preparation at about 1.6 seconds.
+
+The item and trade branches now filter percepts once instead of building an
+intermediate stack or non-enemy list and then filtering that list again. They
+keep the same order, predicates, and action choice. In paired 30-wait runs,
+the timed item branch fell from 50.8 to 47.1 ms and the trade branch from
+182.9 to 166.6 ms. Exploration now tests and scores each candidate using
+one adjacent location rather than computing it twice. Its paired timed
+branch fell from 150.2 to 144.9 ms over almost identical call counts.
+
+Plain whole-run medians varied by tens of milliseconds between adjacent
+runs; these changes have no established end-to-end speedup beyond that
+variation. No persistent cache, index, action pruning, or rumor pruning was
+introduced. The existing `npc/explore-unvisited-age`,
+`npc/stolen-stack-capacity`, and personality trade scenarios passed. The
+complete Docker test target passed all 377 scenarios, layout checks, and
+the flamegraph parser check.
+
+### Goal offer construction, October 11, 2026
+
+The 5×5 district, 30-wait profile put goal evaluation at 1,429 ms for about
+71,000 evaluations. The food aid source alone took 454 ms. A temporary count
+found 461,707 zero-deficit offers against 33,937 positive offers. Most of the
+time in that source was spent constructing candidates that could not start a
+goal. This was game-side C# work, independent of Docker or headless rendering.
+
+During `NpcGoalGenerator.Refresh`, `NpcGoalOffers` now omits zero-deficit
+candidates when the owner has no active generated goal to update. It still
+counts omitted offers toward the 192-offer limit. Full `Evaluate` calls keep
+their complete candidate list, and active goals still receive zero-deficit
+offers so they can complete normally. This adds no persistent cache or index.
+
+In a paired run of the same benchmark, food-care offer construction fell from
+331 to 61 ms over about 475,000 calls; the food aid source fell from 454 to
+186 ms and goal evaluation from 1,429 to 1,283 ms. Gen0 collections fell from
+305 to 264. An initial pair of plain whole-run medians was 3,297 ms before
+and 3,411 ms after. A subsequent alternating old/new/new/old check yielded
+3,366 and 3,516 ms for the old code, versus 3,020 and 2,940 ms for the new
+code. The latter check shows an approximately 13% reduction in whole-run
+time, but the first pair shows that regenerated worlds and machine load make
+the exact gain uncertain. `npc/goal-inert-offer` covers the offer limit, goal
+completion, and positive needs. The full Docker test target passed all 378
+scenarios, layout checks, and the flamegraph parser check.
+
+### Follow-up candidates, October 12, 2026
+
+Two more event-sight changes were measured on alternating 5×5, 30-wait
+runs and reverted. Sharing one FOV calculation between an event's two
+participants produced no stable gain (plain medians 3,132 and 3,169 ms before,
+3,278 and 3,201 ms after). A strict per-actor FOV upper bound reduced timed
+event reporting by roughly 5–7% per event but did not improve the full run
+(plain medians 2,924 and 3,012 ms before, 3,046 and 3,030 ms after). Event
+reporting includes goal refresh and so is not additive with goal evaluation.
+
+Refreshing existing lasting interests in place instead of allocating a
+temporary interest also failed to improve the source or Gen0 count. The
+interest source took 128–133 ms before and 134 ms after; plain-run medians
+overlapped. That change was reverted too. The remaining measured areas worth
+investigating are goal sources (medical care, food aid and interests at roughly
+130–190 ms each), knowledge perception (about 239 ms), and event reporting
+(about 500–580 ms including nested goal work). These are instrumented phase
+times, not directly additive parts of the plain 3-second wait benchmark.
+
+### Pending goal checks, October 12, 2026
+
+The updated large-rest Mono call profile in `/private/tmp/rogue-after-goals-calls/`
+attributed 284 ms to `MedicalCareModule.Evaluate` over four waits, including
+173 ms in repeated `NpcGoalContext.Pending` checks. `NpcInterestSystem` took
+311 ms and knowledge perception 2,964 ms inclusive under this instrumented
+profile. The latter includes 1,683 ms in registered perception handlers;
+overall FOV construction was a larger 10,123 ms. These call-profiler numbers
+are heavily inflated and should only rank call chains.
+
+`NpcGoalContext` now records whether the owner has any active generated goal
+once per evaluation. `Pending` returns immediately when there is none, and
+`NpcGoalOffers` uses the same local fact for its zero-deficit shortcut. No
+persistent cache or person index is added. In alternating 5×5, 30-wait runs,
+full pending scans dropped from 1.17–1.21 million (74–76 ms timed) to about
+11,000 (1 ms timed). The medical goal source fell from 156–158 to 55–61 ms;
+goal evaluation fell from 1,166–1,185 to 918–984 ms. Plain medians were
+3,067 and 3,209 ms before versus 3,050 and 2,867 ms after. The full-run
+difference is smaller than the instrumented subphase gain and varies between
+world generations. `npc/goal-inert-offer` now checks inactive, active, and
+finished generated goals. The full Docker test target passed all 378 scenarios,
+layout checks, and the flamegraph parser check.
+
 ## Current Docker save and tile loading, October 10, 2026
 
 The running game's `save.dat` was 64,480,804 bytes (61.5 MiB) at turn 5,877;

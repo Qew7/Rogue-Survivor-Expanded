@@ -684,21 +684,19 @@ namespace djack.RogueSurvivor.Gameplay.AI
                     Location next = m_Actor.Location + dir;
 
                     if (!next.Map.IsInBounds(next.Position))
-                        return false;
+                        return float.NaN;
 
                     if (exploration.HasExplored(next))
-                        return false;
+                        return float.NaN;
 
                     // alpha10.1 dont break stuff to explore
                     ActorAction bumpAction = game.Rules.IsBumpableFor(m_Actor, game, next);
                     if (bumpAction != null && (bumpAction is ActionBreak || bumpAction is ActionBashDoor))
-                        return false;
+                        return float.NaN;
 
-                    return IsValidMoveTowardGoalAction(bumpAction);
-                },
-                (dir) =>
-                {
-                    Location next = m_Actor.Location + dir;
+                    if (!IsValidMoveTowardGoalAction(bumpAction))
+                        return float.NaN;
+
                     Map map = next.Map;
                     Point pos = next.Position;
                     int trapsDamage = isIntelligent ? ComputeTrapsMaxDamageForMe(game, map, pos) : 0;

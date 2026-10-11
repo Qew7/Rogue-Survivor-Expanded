@@ -8,8 +8,13 @@ namespace djack.RogueSurvivor.Gameplay.Personality
     {
         static readonly long[] EmptyCauses = new long[0];
         readonly NpcGoalContext context;
+        readonly bool forRefresh;
+        int offerCount;
         public readonly List<NpcGoalCandidate> Candidates = new List<NpcGoalCandidate>();
-        public NpcGoalOffers(NpcGoalContext context) { this.context = context; }
+        public NpcGoalOffers(NpcGoalContext context, bool forRefresh = false)
+        {
+            this.context = context; this.forRefresh = forRefresh;
+        }
         public void Add(NpcKnownPerson target, NpcGoalValue value, NpcIntentDefinition capability,
             int current, int desired, int deficit, int confidence, long cause = 0, string story = null,
             string resource = null, long obligation = 0, int model = -1, Location objectPlace = default(Location), Guid itemId = default(Guid), bool self = false)
@@ -17,7 +22,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             NpcValueDefinition definition = context.Catalog.Value(value);
             if (definition == null) throw new ArgumentException("Unknown goal value: " + value);
             if (capability == null) throw new ArgumentException("Missing capability for goal value: " + value);
-            if (Candidates.Count >= 192 || target == null || target.Dead || target.Place.Map == null) return;
+            if (offerCount >= 192 || target == null || target.Dead || target.Place.Map == null) return;
             AddResolved(target, definition, capability, current, desired, deficit, confidence,
                 cause, story, resource, obligation, model, objectPlace, itemId, self);
         }
@@ -25,7 +30,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             int current, int desired, int deficit, int confidence, long cause = 0, string story = null,
             string resource = null, long obligation = 0, int model = -1, Location objectPlace = default(Location), Guid itemId = default(Guid), bool self = false)
         {
-            if (Candidates.Count >= 192 || target == null || target.Dead || target.Place.Map == null) return;
+            if (offerCount >= 192 || target == null || target.Dead || target.Place.Map == null) return;
             NpcValueDefinition definition = context.Catalog.Value(valueId); NpcIntentDefinition capability = context.Catalog.Capability(capabilityId);
             if (definition == null || capability == null) throw new ArgumentException("Unknown goal value or capability.");
             AddResolved(target, definition, capability, current, desired, deficit, confidence,
@@ -35,6 +40,10 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             int current, int desired, int deficit, int confidence, long cause, string story,
             string resource, long obligation, int model, Location objectPlace, Guid itemId, bool self)
         {
+            // Keep the original offer limit even when an inert offer needs no candidate.
+            offerCount++;
+            if (forRefresh && !context.HasActiveGeneratedGoal && deficit <= 0)
+                return;
             Guid subject = self ? context.Self.Id : target.Id;
             NpcGeneratedGoal state = NpcValues.Evaluate(context.Catalog, context.Owner, definition,
                 subject, current, desired, deficit, confidence, 0, context,

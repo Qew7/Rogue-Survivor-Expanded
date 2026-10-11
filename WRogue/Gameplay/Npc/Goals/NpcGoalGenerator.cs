@@ -21,7 +21,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             if (!NpcIntentSystem.Enabled(owner) || owner.IsSleeping) return;
             Action<string, long> profile = RogueGame.ProfileSimulationPhase;
             long start = profile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
-            List<NpcGoalCandidate> candidates = Evaluate(game, owner);
+            List<NpcGoalCandidate> candidates = Evaluate(game, owner, null, true);
             if (profile != null) profile("goal evaluate", System.Diagnostics.Stopwatch.GetTimestamp() - start);
             start = profile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
             NpcGoalLifecycle.Apply(owner, candidates, game.NpcContent, maintain);
