@@ -264,8 +264,10 @@ namespace djack.RogueSurvivor.Engine
                 return;
             }
             // Budget the new district turns plus a share of older debt; simulate oldest turns first.
+            bool finishAfterRest = m_Session.GamePreset.FinishDistantSimulationAfterRest;
             int budget = remainingRestTurns > 0 ? Math.Min(total, districtsDue +
-                (total - districtsDue + remainingRestTurns) / (remainingRestTurns + 1)) : total;
+                (total - districtsDue + remainingRestTurns) / (remainingRestTurns + 1)) :
+                finishAfterRest ? total : districtsDue;
             int done = 0;
             Stopwatch elapsed = Stopwatch.StartNew();
             bool showedProgress = false;
@@ -296,8 +298,12 @@ namespace djack.RogueSurvivor.Engine
                 SimulateDistrict(next);
                 done++;
                 if (!m_IsGameRunning || m_HasLoadedGame || m_Player == null || m_Player.IsDead) break;
-                if (m_IsPlayerLongWaitForcedStop || !m_Player.IsSleeping && !m_IsPlayerLongWait)
+                if (m_IsPlayerLongWaitForcedStop ||
+                    !m_Player.IsSleeping && !m_IsPlayerLongWait && !m_PlayerWaitedThisTurn)
+                {
+                    if (!finishAfterRest) break;
                     budget = total;
+                }
             }
             m_RestHasDeferredSimulation = done < total;
             m_RestSimulationProgress = null;
@@ -307,8 +313,13 @@ namespace djack.RogueSurvivor.Engine
 
         void FinishRestSimulationIfNeeded()
         {
+            if (m_Session.GamePreset == null || !m_Session.GamePreset.FinishDistantSimulationAfterRest)
+            {
+                m_RestHasDeferredSimulation = false;
+                return;
+            }
             if (m_RestHasDeferredSimulation && s_Options.IsSimON &&
-                m_Session.GamePreset != null && !m_Session.GamePreset.DisableDistantSimulationDuringRest)
+                !m_Session.GamePreset.DisableDistantSimulationDuringRest)
                 SimulateDistantDistrictsThrough(m_Session.WorldTime.TurnCounter);
         }
 

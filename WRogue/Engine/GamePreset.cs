@@ -12,6 +12,8 @@ namespace djack.RogueSurvivor.Engine
         public bool NpcPersonalitiesEnabled;
         [System.Runtime.Serialization.OptionalField]
         public bool DisableDistantSimulationDuringRest;
+        [System.Runtime.Serialization.OptionalField]
+        public bool FinishDistantSimulationAfterRest;
         public bool ImmediateZombification;
         public bool Infection;
         public bool Corpses;

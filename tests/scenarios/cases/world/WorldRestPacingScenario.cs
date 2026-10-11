@@ -12,7 +12,9 @@ static class WorldRestPacingScenario
         ScenarioRunner.Add("world/rest-paces-distant-districts", () => TownScenarioFactory.Arena(4991,
             ".....", ".....", "....."), world =>
         {
-            Session.Get.GamePreset = GamePreset.BuiltIn(GameMode.GM_STANDARD);
+            GamePreset preset = GamePreset.BuiltIn(GameMode.GM_STANDARD);
+            preset.FinishDistantSimulationAfterRest = true;
+            Session.Get.GamePreset = preset;
             Actor player = NpcIntentSupport.Player(world, 2, 1);
             World city = new World(2);
             city[0, 0] = world.Map.District;

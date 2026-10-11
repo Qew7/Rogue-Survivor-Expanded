@@ -89,6 +89,9 @@ content; the save retains their IDs and instance state.
 The optional preset field `DisableDistantSimulationDuringRest` defaults to false
 for existing presets and saves, so distant districts advance during sleep and
 waiting unless the player disables it before a new game.
+`FinishDistantSimulationAfterRest` is also optional and defaults to false. When
+disabled, unfinished district turns remain in their saved local clocks after
+rest ends; they continue during later rests or catch up on district entry.
 Recent hourly radio programs are retained in the session, so a district catching
 up after loading hears the same broadcast already heard elsewhere. Older saves
 without this optional history rebuild a program when first requested.

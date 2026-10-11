@@ -70,9 +70,44 @@ namespace djack.RogueSurvivor.Engine
         }
 
         // alpha10 removed mention of mode and mentioned which options are always off in certain modes (vintage)
-        void HandleOptions(bool ingame, bool save = true)
+        static string GameOptionsRequirement(GameOptions options, GameOptions.IDs option, GamePreset preset)
+        {
+            switch (option)
+            {
+                case GameOptions.IDs.UI_MUSIC_VOLUME: return options.PlayMusic ? null : "music";
+                case GameOptions.IDs.UI_SHOW_PLAYER_TAG_ON_MINIMAP:
+                    return options.IsMinimapOn ? null : "the minimap";
+                case GameOptions.IDs.GAME_SIM_THREAD:
+                case GameOptions.IDs.GAME_SIMULATE_SLEEP:
+                    if (!options.IsSimON) return "district simulation";
+                    if (preset != null && !preset.DisableDistantSimulationDuringRest)
+                        return "distant rest simulation disabled in the preset";
+                    return option == GameOptions.IDs.GAME_SIMULATE_SLEEP && options.SimThread ?
+                        "simulation thread disabled" : null;
+                case GameOptions.IDs.GAME_STARVED_ZOMBIFICATION_CHANCE:
+                    if (!options.NPCCanStarveToDeath) return "NPC starvation deaths";
+                    return preset != null && !preset.ImmediateZombification ? "instant zombification" : null;
+                case GameOptions.IDs.GAME_RATS_UPGRADE:
+                case GameOptions.IDs.GAME_SKELETONS_UPGRADE:
+                case GameOptions.IDs.GAME_SHAMBLERS_UPGRADE:
+                    if (options.ZombifiedsUpgradeDays == GameOptions.ZupDays.OFF) return "undead upgrade days";
+                    if (preset == null) return null;
+                    if (option == GameOptions.IDs.GAME_RATS_UPGRADE && !preset.RatZombies) return "zombie rats";
+                    if (option == GameOptions.IDs.GAME_SKELETONS_UPGRADE && !preset.Skeletons) return "skeletons";
+                    if (option == GameOptions.IDs.GAME_SHAMBLERS_UPGRADE && !preset.Shamblers) return "shamblers";
+                    return null;
+                case GameOptions.IDs.GAME_REINC_LIVING_RESTRICTED:
+                case GameOptions.IDs.GAME_REINCARNATE_AS_RAT:
+                case GameOptions.IDs.GAME_REINCARNATE_TO_SEWERS:
+                    return options.MaxReincarnations > 0 ? null : "reincarnations";
+                default: return null;
+            }
+        }
+
+        void HandleOptions(bool ingame, bool save = true, GamePreset editingPreset = null)
         {
             GameOptions prevOptions = s_Options;
+            GamePreset preset = ingame ? m_Session.GamePreset : editingPreset;
 
             #region
             GameOptions.IDs[] list = new GameOptions.IDs[]
@@ -130,6 +165,7 @@ namespace djack.RogueSurvivor.Engine
 
             string[] menuEntries = new string[list.Length];
             string[] values = new string[list.Length];
+            bool[] available = new bool[list.Length];
             for (int i = 0; i < list.Length; i++)
             {
                 menuEntries[i] = GameOptions.Name(list[i]);
@@ -142,7 +178,10 @@ namespace djack.RogueSurvivor.Engine
             do
             {
                 for (int i = 0; i < list.Length; i++)
-                    values[i] = s_Options.DescribeValue(list[i]);
+                {
+                    available[i] = GameOptionsRequirement(s_Options, list[i], preset) == null;
+                    values[i] = available[i] ? s_Options.DescribeValue(list[i]) : "N/A";
+                }
 
                 int gx, gy;
                 gx = gy = 0;
@@ -151,7 +190,7 @@ namespace djack.RogueSurvivor.Engine
                 gy += BOLD_LINE_SPACING;
                 m_UI.UI_DrawStringBold(Color.Yellow, "Options", 0, gy);  // alpha10 dont mention current mode
                 gy += 2 * BOLD_LINE_SPACING;
-                DrawMenuOrOptions(selected, Color.White, menuEntries, Color.LightGreen, values, gx, ref gy, false, 400);
+                DrawMenuOrOptions(selected, Color.White, menuEntries, Color.LightGreen, values, gx, ref gy, false, 400, available);
 
                 // alpha10
                 // describe current option.
@@ -163,6 +202,12 @@ namespace djack.RogueSurvivor.Engine
                 foreach (string d in descLines)
                 {
                     m_UI.UI_DrawString(Color.White, "  " + d, gx, gy);
+                    gy += BOLD_LINE_SPACING;
+                }
+                string requirement = GameOptionsRequirement(s_Options, list[selected], preset);
+                if (requirement != null)
+                {
+                    m_UI.UI_DrawString(Color.Gray, "  Requires " + requirement + ".", gx, gy);
                     gy += BOLD_LINE_SPACING;
                 }
 
@@ -206,6 +251,7 @@ namespace djack.RogueSurvivor.Engine
                         break;
 
                     case Keys.Left:
+                        if (!available[selected]) break;
                         switch ((GameOptions.IDs)list[selected])
                         {
                             case GameOptions.IDs.GAME_DISTRICT_SIZE: s_Options.DistrictSize -= 5; break;
@@ -263,6 +309,7 @@ namespace djack.RogueSurvivor.Engine
                         }
                         break;
                     case Keys.Right:
+                        if (!available[selected]) break;
                         switch ((GameOptions.IDs)list[selected])
                         {
                             case GameOptions.IDs.GAME_DISTRICT_SIZE: s_Options.DistrictSize += 5; break;

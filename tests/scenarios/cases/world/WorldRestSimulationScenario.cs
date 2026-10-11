@@ -57,6 +57,7 @@ static class WorldRestSimulationScenario
             Check.Equal(1, distant.LocalTime.TurnCounter, "preset switch keeps distant district paused");
 
             preset.DisableDistantSimulationDuringRest = false;
+            preset.FinishDistantSimulationAfterRest = true;
             Session.Get.GamePreset = preset;
             player.SleepPoints = 0;
             player.ActionPoints = Rules.BASE_ACTION_COST;
