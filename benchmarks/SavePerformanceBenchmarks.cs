@@ -26,39 +26,46 @@ static class SavePerformanceBenchmarks
         public override void SetLength(long value) { throw new NotSupportedException(); }
     }
 
-    public static void Run(string path)
+    public static void Run(string path, bool coreOnly = false, bool statsOnly = false)
     {
         Console.WriteLine("SAVE PROFILE input bytes={0}; samples=3; input is never modified", new FileInfo(path).Length);
         Stopwatch load = Stopwatch.StartNew();
         Session session = BinarySaveStore.LoadExact<Session>(path);
         Console.WriteLine("SAVE PROFILE load={0:F2} ms; day={1}; managed memory={2} bytes",
             load.Elapsed.TotalMilliseconds, session.WorldTime.Day, GC.GetTotalMemory(false));
+        GC.Collect(); GC.WaitForPendingFinalizers();
+        Console.WriteLine("SAVE PROFILE retained managed memory={0} bytes", GC.GetTotalMemory(true));
         FieldInfo archiveField = typeof(Session).GetField("m_ResidentRecords", BindingFlags.Instance | BindingFlags.NonPublic);
         ResidentRecords archive = (ResidentRecords)archiveField.GetValue(session);
-        long entries = 0, textChars = 0, keys = 0, keyChars = 0;
+        long entries = 0, textChars = 0, eventIds = 0;
         Dictionary<string, int> categories = new Dictionary<string, int>();
         if (archive != null)
             foreach (ResidentRecord resident in archive.Residents)
             {
-                foreach (ResidentEntry entry in resident.Entries) { entries++; textChars += entry.Text.Length; }
-                Dictionary<string, bool> dedup = (Dictionary<string, bool>)typeof(ResidentRecord)
-                    .GetField("m_Keys", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(resident);
-                foreach (string key in dedup.Keys)
+                foreach (ResidentEntry entry in resident.Entries)
                 {
-                    keys++; keyChars += key.Length;
-                    string category = key.StartsWith("event:") ? key.Split(':')[1] : key.Split(':')[0];
-                    int count; categories.TryGetValue(category, out count); categories[category] = count + 1;
+                    entries++; textChars += entry.Text.Length;
+                    if (entry.EventId != 0) eventIds++;
+                    int count; categories.TryGetValue(entry.Kind, out count); categories[entry.Kind] = count + 1;
                 }
             }
         long maps = 0, tiles = 0, actors = 0, traits = 0, pending = 0, observed = 0, relations = 0, links = 0;
+        long corpses = 0, groundItems = 0, carriedItems = 0, mapObjects = 0, scents = 0, districtLag = 0;
         foreach (District district in Districts(session))
+        {
+            districtLag += session.WorldTime.TurnCounter - district.EntryMap.LocalTime.TurnCounter;
             foreach (Map map in district.Maps)
             {
                 maps++; tiles += (long)map.Width * map.Height;
                 map.ReconstructAuxiliaryFields();
+                corpses += map.CountCorpses;
+                foreach (Inventory inventory in map.GroundInventories) groundItems += inventory.CountItems;
+                foreach (MapObject ignored in map.MapObjects) mapObjects++;
+                foreach (OdorScent ignored in map.Scents) scents++;
                 foreach (Actor actor in map.Actors)
                 {
                     actors++;
+                    if (actor.Inventory != null) carriedItems += actor.Inventory.CountItems;
                     if (actor.Personality == null) continue;
                     PersonalityState state = actor.Personality;
                     traits += state.Traits.Count; pending += state.Memories.Count; observed += state.Events.Count;
@@ -72,22 +79,31 @@ static class SavePerformanceBenchmarks
                     }
                 }
             }
+        }
         Console.WriteLine("SAVE PROFILE maps={0}; tiles={1}; live-map actors={2}; traits={3}; pending={4}; observations={5}; relationships={6}; memory links={7}",
             maps, tiles, actors, traits, pending, observed, relations, links);
-        Console.WriteLine("SAVE PROFILE residents={0}; entries={1}; text chars={2}; dedup keys={3}; dedup chars={4}",
-            archive == null ? 0 : archive.Residents.Count, entries, textChars, keys, keyChars);
+        Console.WriteLine("SAVE PROFILE corpses={0}; ground items={1}; carried items={2}; map objects={3}; scents={4}; total district lag={5}",
+            corpses, groundItems, carriedItems, mapObjects, scents, districtLag);
+        Console.WriteLine("SAVE PROFILE residents={0}; entries={1}; text chars={2}; event IDs={3}",
+            archive == null ? 0 : archive.Residents.Count, entries, textChars, eventIds);
         foreach (KeyValuePair<string, int> category in categories)
             Console.WriteLine("SAVE PROFILE archive category {0}={1}", category.Key, category.Value);
+        if (statsOnly) return;
         string directory = Path.Combine(Path.GetTempPath(), "rogue-save-bench-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(directory);
         try
         {
-            Measure("presave world traversal", () => { session.World.OptimizeBeforeSaving(); return ""; });
+            if (!coreOnly) Measure("presave world traversal", () => { session.World.OptimizeBeforeSaving(); return ""; });
             Measure("current atomic file save", () => {
                 string output = Path.Combine(directory, "output.dat");
                 BinarySaveStore.SaveSnapshot(output, session, session.Mods);
                 return "file bytes=" + new FileInfo(output).Length;
             });
+            if (coreOnly)
+            {
+                if (archive != null) Measure("archive alone, buffered gzip", () => Compressed(archive, true, CompressionLevel.Optimal));
+                return;
+            }
             Measure("graph only, counting sink", () => {
                 CountingStream sink = new CountingStream();
                 ObjectGraphStore.Write(sink, session);

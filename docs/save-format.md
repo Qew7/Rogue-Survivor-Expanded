@@ -43,6 +43,11 @@ Normal saves refresh living NPC snapshots before serialization; the diagnostic
 `SaveSnapshot` entry point preserves existing snapshots without accessing
 model catalogs.
 
+Resident entry IDs used to deduplicate observed events are reconstructed from
+the entries after loading. New archives store string keys only for other entry
+types. Loading an older archive migrates its string event keys on the next
+write; the entries and their deduplication behavior remain intact.
+
 Read Records reads only the archive section and checks its own GZip integrity.
 It requires personalities enabled and does not load maps, activate a Session,
 apply mods, change options, or start simulation. It can therefore read records

@@ -38,6 +38,7 @@ namespace djack.RogueSurvivor.Engine
             {
                 session.ResidentRecords.Refresh(session);
             }
+            session.ResidentRecords.CompactKeys();
             // Keep history even if personalities are disabled; the viewer still rejects that preset.
             WriteCompressed(stream, session.ResidentRecords, false);
             long end = stream.Position;

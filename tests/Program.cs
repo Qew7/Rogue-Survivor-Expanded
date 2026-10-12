@@ -12,9 +12,9 @@ class Program
             SaveStructureAudit.Run(args[1]);
             return 0;
         }
-        if (args.Length == 2 && args[0] == "--bench-save")
+        if (args.Length == 2 && (args[0] == "--bench-save" || args[0] == "--bench-save-core" || args[0] == "--bench-save-stats"))
         {
-            SavePerformanceBenchmarks.Run(args[1]);
+            SavePerformanceBenchmarks.Run(args[1], args[0] == "--bench-save-core", args[0] == "--bench-save-stats");
             return 0;
         }
         if (args.Length == 1 && args[0] == "--bench")
@@ -116,7 +116,7 @@ class Program
         }
         if (args.Length != 0)
         {
-            Console.Error.WriteLine("Usage: UnitTests.exe [--list|--all|--bench|--bench-ai|--bench-npc-turn|--profile-npc-turn|--bench-radio|--bench-radio-news|--bench-radio-rolling|--profile-radio|--bench-rest-simulation|--bench-rest-large|--bench-rest-phases|--bench-rest-parallel|--bench-rest-parallel-snapshot|--bench-rest-optimizations|--bench-sleep-yield|--profile-rest-simulation|--profile-rest-large|--bench-post-0d243e6|--bench-npc-safety|--bench-xpd|--bench-save copied-save-path|--check-save-budget copied-save-path|--audit-save copied-save-path|scenario-name]");
+            Console.Error.WriteLine("Usage: UnitTests.exe [--list|--all|--bench|--bench-ai|--bench-npc-turn|--profile-npc-turn|--bench-radio|--bench-radio-news|--bench-radio-rolling|--profile-radio|--bench-rest-simulation|--bench-rest-large|--bench-rest-phases|--bench-rest-parallel|--bench-rest-parallel-snapshot|--bench-rest-optimizations|--bench-sleep-yield|--profile-rest-simulation|--profile-rest-large|--bench-post-0d243e6|--bench-npc-safety|--bench-xpd|--bench-save copied-save-path|--bench-save-core copied-save-path|--bench-save-stats copied-save-path|--check-save-budget copied-save-path|--audit-save copied-save-path|scenario-name]");
             return 2;
         }
         GameTests.Run();

@@ -26,6 +26,8 @@ live here; `Dockerfile` compiles the C# files into the scenario runner image.
 | NPC route, hunger, and sleep | `sh tests/scenario.sh --bench-npc-safety` | `rogue-bench-npc-safety` |
 | XPD base and supply routing | `sh tests/scenario.sh --bench-xpd` | `rogue-bench-xpd` |
 | Copied save diagnostics | `--bench-save /profile/save.dat` in a mounted scenario image | `rogue-bench-save` |
+| Copied save core timings | `--bench-save-core /profile/save.dat` in a mounted scenario image | Cold load, three complete saves and archive-only writes |
+| Copied save contents | `--bench-save-stats /profile/save.dat` in a mounted scenario image | Cold load, maps, actors, archived entries and event categories |
 | Copied save/load budget | `--check-save-budget /profile/save.dat` in a mounted scenario image | `rogue-bench-save-budget` |
 
 The project skills in `.agents/skills/` give the complete commands and how to

@@ -19,6 +19,7 @@ namespace djack.RogueSurvivor.Data
         public readonly string StoryId;
         public readonly long[] SupportingCauses;
         [System.Runtime.Serialization.OptionalField] public int RecordCategories;
+        [System.Runtime.Serialization.OptionalField] public bool EventDedupKey;
         public ResidentEntry(int turn, string text, int sequence, string kind = "note", bool direct = false,
             Guid subjectId = default(Guid), Guid otherId = default(Guid), bool gainedTrait = false,
             long eventId = 0, long causeId = 0, string storyId = null, long[] supportingCauses = null)
@@ -34,7 +35,10 @@ namespace djack.RogueSurvivor.Data
         public readonly int SpawnTurn;
         public int DeathTurn = -1;
         readonly List<ResidentEntry> m_Entries = new List<ResidentEntry>();
-        readonly Dictionary<string, bool> m_Keys = new Dictionary<string, bool>();
+        // Older saves used this dictionary for every entry, including event IDs.
+        [System.Runtime.Serialization.OptionalField] Dictionary<string, bool> m_Keys;
+        [System.Runtime.Serialization.OptionalField] HashSet<string> m_KeySet;
+        [NonSerialized] HashSet<long> m_EventKeys;
         public IList<ResidentEntry> Entries { get { return m_Entries.AsReadOnly(); } }
         public int EntryCount { get { return m_Entries.Count; } }
         public ResidentRecord(Actor actor)
@@ -43,16 +47,47 @@ namespace djack.RogueSurvivor.Data
             Name = actor.UnmodifiedName;
             SpawnTurn = actor.SpawnTime;
         }
+        public void CompactKeys()
+        {
+            if (m_KeySet == null) m_KeySet = new HashSet<string>();
+            if (m_EventKeys == null)
+            {
+                m_EventKeys = new HashSet<long>();
+                foreach (ResidentEntry entry in m_Entries)
+                    if (entry.EventDedupKey) m_EventKeys.Add(entry.EventId);
+            }
+            if (m_Keys == null) return;
+            var observations = new Dictionary<long, ResidentEntry>();
+            foreach (ResidentEntry entry in m_Entries)
+                if (entry.EventId != 0 && (entry.Text.StartsWith("Experienced: ", StringComparison.Ordinal) ||
+                    entry.Text.StartsWith("Witnessed: ", StringComparison.Ordinal)))
+                    observations[entry.EventId] = entry;
+            foreach (string key in m_Keys.Keys)
+            {
+                long eventId;
+                ResidentEntry observation;
+                if (key.StartsWith("event:", StringComparison.Ordinal) &&
+                    Int64.TryParse(key.Substring(6), out eventId) &&
+                    observations.TryGetValue(eventId, out observation))
+                { observation.EventDedupKey = true; m_EventKeys.Add(eventId); continue; }
+                m_KeySet.Add(key);
+            }
+            m_Keys = null;
+        }
         public void Add(string key, int turn, string text, ObservedEvent observed = null, bool gainedTrait = false, long[] supportingCauses = null)
         {
-            if (m_Keys.ContainsKey(key)) return;
-            m_Keys.Add(key, true);
+            CompactKeys();
+            bool eventKey = observed != null && observed.EventId != 0 && key.StartsWith("event:", StringComparison.Ordinal);
+            if (eventKey)
+            { if (!m_EventKeys.Add(observed.EventId)) return; }
+            else if (!m_KeySet.Add(key)) return;
             string kind = key.Split(':')[0];
             var entry = new ResidentEntry(turn, text, m_Entries.Count, observed == null ? kind : observed.Kind,
                 observed != null && observed.Direct, observed == null ? Guid.Empty : observed.SubjectId,
                 observed == null ? Guid.Empty : observed.OtherId, gainedTrait,
                 observed == null ? 0 : observed.EventId, observed == null ? 0 : observed.CauseId, observed == null ? null : observed.StoryId, supportingCauses);
             if (observed != null && observed.RecordCategories != 0) entry.RecordCategories = observed.RecordCategories;
+            entry.EventDedupKey = eventKey;
             m_Entries.Add(entry);
         }
     }
@@ -66,6 +101,8 @@ namespace djack.RogueSurvivor.Data
         public bool IsPartial;
         public int RecoveryTurn;
         public ICollection<ResidentRecord> Residents { get { return m_Residents.Values; } }
+        public void CompactKeys()
+        { foreach (ResidentRecord record in m_Residents.Values) record.CompactKeys(); }
         public IDictionary<string, DistrictKind> DistrictKinds
         { get { return m_DistrictKinds ?? (IDictionary<string, DistrictKind>)new Dictionary<string, DistrictKind>(); } }
 

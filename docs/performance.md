@@ -1059,3 +1059,45 @@ was unchanged at 10,054,061 bytes; first-generation GC counts fell from 404
 to 376. `storage/compact-save` verifies tile flags, decoration sharing, and
 reference identity. The 64 MB live save has not been reloaded with this change,
 so its exact post-change load time is not yet measured.
+
+## Copied save and archive keys, October 12, 2026
+
+The current game save at turn 6,903 was 71,053,256 bytes. Its compressed
+resident archive occupied 21,784,373 bytes and the world graph 49,268,833
+bytes; uncompressed sizes were 142,050,959 and 336,262,334 bytes. The archive
+contained 9,522 residents and 749,940 entries. The old archive stored a
+separate string deduplication key for every entry, including observed events
+whose numeric ID is already part of the entry. New saves reconstruct those
+event keys and keep only other string keys. Loading older saves still works.
+The graph writer also reads tile fields directly, and the reader stores
+deferred values in structs instead of allocating one object per value.
+
+The same copied save was loaded and written before and after the change in
+separate Docker/Mono containers, each limited to one CPU and 6 GiB RAM. Cold
+load is one sample; complete save and archive-only write are medians of three.
+The live game and its save were not modified.
+
+| Operation | Before | After |
+| --- | ---: | ---: |
+| Cold load | 64.14 s | 60.39 s |
+| Managed memory immediately after load, before collection | 3.57 GB | 2.78 GB |
+| Complete save | 38.09 s | 36.77 s |
+| Archive-only write | 9.22 s | 8.76 s |
+| New save size | 71,053,235 bytes | 68,757,329 bytes |
+| Archive section size | 21,784,373 bytes | 19,488,467 bytes |
+
+The world section's compressed size did not change; all 2,295,906 saved bytes
+came from the archive. The fixed synthetic save-budget fixture still passes:
+three saves took 5.31–5.35 seconds, two fresh-process loads 6.46 seconds,
+and its file measured 9,755,419 bytes. The copied production save remains
+above the fixture's 50 MB file and 10-second operation budgets.
+
+The preceding backup was saved at world turn 6,895 and measured 66,052,054
+bytes. Its 25 surface districts lagged behind world time by 30,936 turns in
+total. At turn 6,903 the lag was zero: waiting had caught up those districts.
+Over the eight player turns, the archive gained 50,721 entries and 659
+residents; the largest entry increases were 16,985 chats, 5,862 witnessed or
+experienced deaths, 5,321 heard rumors, and 4,996 shared rumors. The 5.0 MB
+file jump therefore reflects substantial simulated activity and retained
+history. Compact keys reduce its storage cost, but future catch-up simulation
+will still generate records.

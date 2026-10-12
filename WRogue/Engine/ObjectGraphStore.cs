@@ -23,7 +23,7 @@ namespace djack.RogueSurvivor.Engine
             public int Id; public Type Type; public byte Kind;
             public MemberInfo[] Members; public MethodInfo Add; public PropertyInfo Count;
         }
-        sealed class StoredValue
+        struct StoredValue
         {
             public byte Kind; public int Reference; public object Literal;
             public Schema Schema; public StoredValue[] Fields;
@@ -42,10 +42,8 @@ namespace djack.RogueSurvivor.Engine
             public StoredValue[] Fields, Values, Keys; public int Decoration;
         }
         static readonly Assembly GameAssembly = typeof(Session).Assembly;
-        static readonly MemberInfo[] TileMembers = {
-            typeof(Tile).GetField("m_ModelID", BindingFlags.Instance | BindingFlags.NonPublic),
-            typeof(Tile).GetField("m_Flags", BindingFlags.Instance | BindingFlags.NonPublic),
-            typeof(Tile).GetField("m_Decorations", BindingFlags.Instance | BindingFlags.NonPublic) };
+        static readonly FieldInfo TileDecorations =
+            typeof(Tile).GetField("m_Decorations", BindingFlags.Instance | BindingFlags.NonPublic);
 
         sealed class Writer
         {
@@ -101,8 +99,9 @@ namespace djack.RogueSurvivor.Engine
                     if (schema.Kind == 7) WriteLiteral(output, value, schema.Type, strings);
                     else if (schema.Kind == 8)
                     {
-                        object[] fields = FormatterServices.GetObjectData(value, TileMembers);
-                        output.Write((int)fields[0]); output.Write(Convert.ToInt32(fields[1])); output.Write(Add(fields[2]));
+                        Tile tile = (Tile)value;
+                        output.Write(tile.SavedModelID); output.Write(tile.SavedFlags);
+                        output.Write(Add(tile.SavedDecorations));
                     }
                     else if (schema.Kind == 6)
                     { byte[] bytes = (byte[])value; CheckCount(bytes.Length); output.Write(bytes.Length); output.Write(bytes); }
@@ -256,7 +255,7 @@ namespace djack.RogueSurvivor.Engine
                     {
                         object decorations = ReferenceAt(objects, node.Decoration);
                         if (!(decorations is List<string>)) throw new InvalidDataException("Invalid tile decorations.");
-                        ((FieldInfo)TileMembers[2]).SetValue(node.Value, decorations);
+                        TileDecorations.SetValue(node.Value, decorations);
                     }
                 }
                 foreach (Node node in deferred) if (node.Schema.Kind == 1) FillArray((Array)node.Value, node.Values, objects);
