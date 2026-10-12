@@ -1005,6 +1005,39 @@ world generations. `npc/goal-inert-offer` now checks inactive, active, and
 finished generated goals. The full Docker test target passed all 378 scenarios,
 layout checks, and the flamegraph parser check.
 
+### Experimental parallel district turns, October 12, 2026
+
+`sh tests/scenario.sh --bench-rest-parallel` runs the real 5×5, 30-wait
+fixture with one turn per district at each player turn. Its experimental
+scheduler processes four nonadjacent district groups in sequence and runs
+each group on 1, 2, or 4 workers. All 25 district clocks reached turn 30.
+The latest three-sample uninstrumented medians were 2,874 ms for the existing
+serial scheduler, 2,904 ms for the grouped scheduler on one worker, 2,094 ms
+on two workers, and 1,732 ms on four workers. Thus four workers have about
+40% lower elapsed time than the serial baseline in this fixture, including
+group scheduling overhead. A first run gave 2,872, 2,073, and 1,816 ms for
+one, two, and four workers, respectively.
+
+This is only a throughput probe, not a production-safe mode. District turns
+still share the game's RNG, resident records, story director, radio program
+builder, and other mutable `RogueGame` state. NPCs can cross district borders
+during a turn. The fresh fixed-seed fixture also produces random GUIDs, and
+even its serial runs varied in NPC and rumor counts, so the coarse outcome
+counters cannot establish equivalence. No parallel scheduling was enabled
+in the game. A production version needs explicit ownership or synchronization
+of global writes, a defined cross-district event order, and stress tests
+around border crossings, radio hours, and story updates.
+
+`sh tests/scenario.sh --bench-rest-parallel-snapshot` now replays the same
+saved 5×5 start for two serial runs and grouped 1-, 2-, and 4-worker runs.
+It compares sorted actor state, NPC facts, intents, observed events, and
+stories, excluding random IDs and save serialization order. The two serial
+runs matched the logical digests after 30 waits. Grouped scheduling diverged
+even with one worker: 1,887 actors and 20,877 facts versus 1,894 actors and
+21,194 facts in both serial runs. This isolates a turn-order change before
+any concurrent writes. Two and four workers also diverged. The command
+reports `PARALLEL EQUIVALENCE: FAIL` and exits nonzero when state differs.
+
 ## Current Docker save and tile loading, October 10, 2026
 
 The running game's `save.dat` was 64,480,804 bytes (61.5 MiB) at turn 5,877;

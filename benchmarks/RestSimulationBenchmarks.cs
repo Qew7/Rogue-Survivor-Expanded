@@ -69,10 +69,13 @@ static partial class RestSimulationBenchmarks
     }
 
     static double RunOne(bool profile, int citySize, int civiliansPerDistrict, GameOptions.SimRatio ratio,
-        PhaseSample phases = null, int turns = Turns)
+        PhaseSample phases = null, int turns = Turns, int workers = 0, bool report = false,
+        string snapshotPath = null, bool restoreSnapshot = false, Action<Session> afterRun = null)
     {
         ScenarioWorld fixture = TownScenarioFactory.Create(7971, false);
-        Session.Get.GamePreset = GamePreset.BuiltIn(GameMode.GM_STANDARD);
+        GamePreset preset = GamePreset.BuiltIn(GameMode.GM_STANDARD);
+        if (workers != 0) preset.DisableDistantSimulationDuringRest = true;
+        Session.Get.GamePreset = preset;
         GameOptions options = RogueGame.Options;
         options.MaxCivilians = civiliansPerDistrict;
         options.MaxUndeads = 20;
@@ -114,12 +117,32 @@ static partial class RestSimulationBenchmarks
                 if (map.IsWalkable(x, y) && map.GetActorAt(x, y) == null)
                     world.Place(player, x, y);
         world.SetPlayer(player);
+        if (snapshotPath != null)
+        {
+            if (restoreSnapshot)
+            {
+                Session loaded = BinarySaveStore.LoadExact<Session>(snapshotPath);
+                world = NpcIntentSupport.Restore(world, loaded);
+                city = loaded.World;
+                player = world.Game.Player;
+                for (int x = 0; x < city.Size; x++) for (int y = 0; y < city.Size; y++)
+                    foreach (Map restoredMap in city[x, y].Maps) restoredMap.ReconstructAuxiliaryFields();
+                GamePreset restoredPreset = loaded.GamePreset;
+                restoredPreset.DisableDistantSimulationDuringRest = workers != 0;
+                loaded.GamePreset = restoredPreset;
+            }
+            else BinarySaveStore.Save(snapshotPath, Session.Get);
+        }
         GC.Collect();
         GC.WaitForPendingFinalizers();
         if (phases != null) phases.Start();
         double startAge = profile ? ProcessAgeSeconds() : 0;
         Stopwatch timer = Stopwatch.StartNew();
-        try { RunRest(world.Game, city[0, 0], player, turns); }
+        try
+        {
+            if (workers == 0) RunRest(world.Game, city[0, 0], player, turns);
+            else RunRestParallel(world.Game, city, player, turns, workers);
+        }
         finally { if (phases != null) phases.Stop(); }
         timer.Stop();
         if (phases != null) phases.Total = timer.Elapsed.TotalMilliseconds;
@@ -127,6 +150,8 @@ static partial class RestSimulationBenchmarks
         for (int x = 0; x < citySize; x++) for (int y = 0; y < citySize; y++)
             if (city[x, y].EntryMap.LocalTime.TurnCounter != turns)
                 throw new InvalidOperationException("Rest did not advance district " + x + "," + y);
+        if (report) ReportParallelOutcome(city);
+        if (afterRun != null) afterRun(Session.Get);
         return timer.Elapsed.TotalMilliseconds;
     }
 
