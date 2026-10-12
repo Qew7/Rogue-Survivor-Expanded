@@ -49,6 +49,69 @@ static partial class RestSimulationBenchmarks
             samples[1], samples[1] / Turns, samples[0], samples[1], samples[2]);
     }
 
+    public static void RunMemory(int turns, bool collect)
+    {
+        Stopwatch interval = Stopwatch.StartNew();
+        int previousGen2 = GC.CollectionCount(2);
+        RunOne(false, 5, 70, GameOptions.SimRatio.FULL, turns: turns, botPlayer: true,
+            afterTurn: (session, turn) =>
+            {
+                if (turn % 100 != 0 && turn != turns) return;
+                double intervalMs = interval.Elapsed.TotalMilliseconds;
+                int facts = 0, events = 0;
+                int entries = 0;
+                foreach (var record in session.ResidentRecords.Residents) entries += record.EntryCount;
+                for (int x = 0; x < session.World.Size; x++)
+                    for (int y = 0; y < session.World.Size; y++)
+                        foreach (Map map in session.World[x, y].Maps)
+                            foreach (Actor actor in map.Actors)
+                                if (actor.Personality != null)
+                                {
+                                    facts += actor.Personality.Knowledge.Facts.Count;
+                                    events += actor.Personality.Events.Count;
+                                }
+                double beforeCollect = GC.GetTotalMemory(false) / 1048576.0;
+                double gcMs = 0;
+                if (collect)
+                {
+                    Stopwatch gc = Stopwatch.StartNew();
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
+                    GC.Collect();
+                    gcMs = gc.Elapsed.TotalMilliseconds;
+                }
+                Process process = Process.GetCurrentProcess();
+                process.Refresh();
+                Console.WriteLine("REST MEMORY wait {0}/{1}: {2:F0} ms/interval, managed {3:F1}->{4:F1} MiB, RSS {5:F1} MiB, gen2 +{6}, GC {7:F0} ms, facts {8}, events {9}, records {10}, entries {11}",
+                    turn, turns, intervalMs, beforeCollect,
+                    GC.GetTotalMemory(false) / 1048576.0, process.WorkingSet64 / 1048576.0,
+                    GC.CollectionCount(2) - previousGen2, gcMs, facts, events,
+                    session.ResidentRecords.Residents.Count, entries);
+                if (turn == turns)
+                {
+                    var kinds = new System.Collections.Generic.Dictionary<string, int>();
+                    var uniqueTexts = new System.Collections.Generic.HashSet<string>(StringComparer.Ordinal);
+                    int duplicateTexts = 0;
+                    foreach (var record in session.ResidentRecords.Residents)
+                        foreach (var entry in record.Entries)
+                        {
+                            int count;
+                            kinds.TryGetValue(entry.Kind, out count);
+                            kinds[entry.Kind] = count + 1;
+                            if (!uniqueTexts.Add(entry.Text)) duplicateTexts++;
+                        }
+                    var ranked = new System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<string, int>>(kinds);
+                    ranked.Sort((a, b) => b.Value.CompareTo(a.Value));
+                    Console.WriteLine("REST ARCHIVE duplicate texts {0}/{1}, unique {2}",
+                        duplicateTexts, entries, uniqueTexts.Count);
+                    for (int i = 0; i < Math.Min(12, ranked.Count); i++)
+                        Console.WriteLine("  {0}: {1}", ranked[i].Key, ranked[i].Value);
+                }
+                interval.Restart();
+                previousGen2 = GC.CollectionCount(2);
+            });
+    }
+
     public static void Profile()
     {
         double elapsed = RunOne(true);
@@ -71,7 +134,7 @@ static partial class RestSimulationBenchmarks
     static double RunOne(bool profile, int citySize, int civiliansPerDistrict, GameOptions.SimRatio ratio,
         PhaseSample phases = null, int turns = Turns, int workers = 0, bool report = false,
         string snapshotPath = null, bool restoreSnapshot = false, Action<Session> afterRun = null,
-        Action<Session, int> afterTurn = null)
+        Action<Session, int> afterTurn = null, bool botPlayer = false)
     {
         ScenarioWorld fixture = TownScenarioFactory.Create(7971, false);
         GamePreset preset = GamePreset.BuiltIn(GameMode.GM_STANDARD);
@@ -112,6 +175,18 @@ static partial class RestSimulationBenchmarks
         Actor player = new Actor(world.Game.GameActors.MaleCivilian,
             world.Game.GameFactions.TheCivilians, "observer", false, false, 0);
         player.Controller = new PlayerController();
+        player.IsBotPlayer = botPlayer;
+        if (botPlayer)
+        {
+            // The long-running fixture reaches refugee checks; regular world generation fills these slots.
+            object uniques = Session.Get.UniqueActors;
+            foreach (PropertyInfo slot in uniques.GetType().GetProperties())
+            {
+                object unique = Activator.CreateInstance(slot.PropertyType, true);
+                slot.PropertyType.GetProperty("IsSpawned").SetValue(unique, true, null);
+                slot.SetValue(uniques, unique, null);
+            }
+        }
         player.IsInvincible = true;
         for (int y = 0; y < map.Height && player.Location.Map == null; y++)
             for (int x = 0; x < map.Width && player.Location.Map == null; x++)

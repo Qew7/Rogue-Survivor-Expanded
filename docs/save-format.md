@@ -384,6 +384,10 @@ An explicitly missing archive can still be rebuilt from available actors,
 corpses and personality records and marked partial. This does not add support
 for old world envelopes or invent discarded events.
 
+Equal resident-entry text is shared in memory within one archive. The archive
+owns a transient string pool that is rebuilt while reading the records section;
+it is not serialized. Old and new saves keep every entry and its original text.
+
 On map reconstruction, radios saved with the old handheld-item image ID switch
 both their visible and remembered image IDs to the dedicated map-object tile.
 Their station, on/off state and location remain unchanged.

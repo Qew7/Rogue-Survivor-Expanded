@@ -11,7 +11,7 @@ namespace djack.RogueSurvivor.Data
     {
         public readonly int Turn;
         public readonly int Sequence;
-        public readonly string Text;
+        public string Text;
         public readonly string Kind;
         public readonly bool Direct, GainedTrait;
         public readonly Guid SubjectId, OtherId;
@@ -39,13 +39,21 @@ namespace djack.RogueSurvivor.Data
         [System.Runtime.Serialization.OptionalField] Dictionary<string, bool> m_Keys;
         [System.Runtime.Serialization.OptionalField] HashSet<string> m_KeySet;
         [NonSerialized] HashSet<long> m_EventKeys;
+        [NonSerialized] ResidentRecords m_Owner;
         public IList<ResidentEntry> Entries { get { return m_Entries.AsReadOnly(); } }
         public int EntryCount { get { return m_Entries.Count; } }
-        public ResidentRecord(Actor actor)
+        public ResidentRecord(Actor actor, ResidentRecords owner)
         {
+            m_Owner = owner;
             Identity = actor.PersonalityIdentity;
             Name = actor.UnmodifiedName;
             SpawnTurn = actor.SpawnTime;
+        }
+        public void ShareText(ResidentRecords owner)
+        {
+            m_Owner = owner;
+            foreach (ResidentEntry entry in m_Entries)
+                entry.Text = owner.ShareText(entry.Text);
         }
         public void CompactKeys()
         {
@@ -81,6 +89,7 @@ namespace djack.RogueSurvivor.Data
             if (eventKey)
             { if (!m_EventKeys.Add(observed.EventId)) return; }
             else if (!m_KeySet.Add(key)) return;
+            if (m_Owner != null) text = m_Owner.ShareText(text);
             string kind = key.Split(':')[0];
             var entry = new ResidentEntry(turn, text, m_Entries.Count, observed == null ? kind : observed.Kind,
                 observed != null && observed.Direct, observed == null ? Guid.Empty : observed.SubjectId,
@@ -97,12 +106,27 @@ namespace djack.RogueSurvivor.Data
     sealed partial class ResidentRecords
     {
         readonly Dictionary<Guid, ResidentRecord> m_Residents = new Dictionary<Guid, ResidentRecord>();
+        [NonSerialized] Dictionary<string, string> m_TextPool;
         [System.Runtime.Serialization.OptionalField] Dictionary<string, DistrictKind> m_DistrictKinds;
         public bool IsPartial;
         public int RecoveryTurn;
         public ICollection<ResidentRecord> Residents { get { return m_Residents.Values; } }
         public void CompactKeys()
         { foreach (ResidentRecord record in m_Residents.Values) record.CompactKeys(); }
+        public void CompactText()
+        { foreach (ResidentRecord record in m_Residents.Values) record.ShareText(this); }
+        internal string ShareText(string value)
+        {
+            if (value == null) return null;
+            lock (this)
+            {
+                if (m_TextPool == null) m_TextPool = new Dictionary<string, string>(StringComparer.Ordinal);
+                string shared;
+                if (m_TextPool.TryGetValue(value, out shared)) return shared;
+                m_TextPool.Add(value, value);
+                return value;
+            }
+        }
         public IDictionary<string, DistrictKind> DistrictKinds
         { get { return m_DistrictKinds ?? (IDictionary<string, DistrictKind>)new Dictionary<string, DistrictKind>(); } }
 
@@ -127,7 +151,7 @@ namespace djack.RogueSurvivor.Data
             ResidentRecord record;
             if (!m_Residents.TryGetValue(actor.PersonalityIdentity, out record))
             {
-                record = new ResidentRecord(actor);
+                record = new ResidentRecord(actor, this);
                 if (actor.IsDead) record.DeathTurn = -2;
                 m_Residents.Add(record.Identity, record);
                 record.Add("spawn", actor.SpawnTime, "Entered the world" +

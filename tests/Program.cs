@@ -62,11 +62,11 @@ class Program
             RestSimulationBenchmarks.Run();
             return 0;
         }
-        if (args.Length == 1 && args[0] == "--bench-rest-large")
-        {
-            RestSimulationBenchmarks.RunLarge();
-            return 0;
-        }
+        if (args.Length == 1 && args[0] == "--bench-rest-large") { RestSimulationBenchmarks.RunLarge(); return 0; }
+        int memoryTurns;
+        if (args.Length == 2 && (args[0] == "--bench-rest-memory" || args[0] == "--bench-rest-memory-gc") &&
+            Int32.TryParse(args[1], out memoryTurns) && memoryTurns > 0)
+            { RestSimulationBenchmarks.RunMemory(memoryTurns, args[0] == "--bench-rest-memory-gc"); return 0; }
         if (args.Length == 1 && args[0] == "--bench-rest-phases")
         {
             RestSimulationBenchmarks.RunPhases();

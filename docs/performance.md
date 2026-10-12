@@ -1050,6 +1050,42 @@ random stream and mutable state, queuing cross-district moves and globally
 visible events for a deterministic turn-boundary commit, then passing the
 per-wait actor, rumor, and story comparison before measuring any speedup.
 
+## Archive memory during long rests, October 12, 2026
+
+`--bench-rest-memory[-gc] 400` advances a real 5×5, 70-civilian-per-district
+world through 400 player waits (about 10,000 district turns). The bot-controlled
+test player crosses day boundaries without waiting for keyboard input. The
+archive grows rapidly: the pre-change run reached 660,906 resident entries,
+80,106 NPC facts, and 54,004 recent NPC events. A separate 200-wait run found
+199,033 repeated text values among 226,898 archive entries. The most frequent
+archive kinds were chats, heard rumors, trades, and rumor sharing.
+
+Forcing full GC every 100 waits did not prevent growth. Before text sharing,
+managed memory retained after GC rose from 115.7 MiB at wait 100 to 325.6 MiB
+at wait 400; RSS reached 513.2 MiB. The final 100 waits took 23.6 seconds.
+Resident facts and recent events are bounded, but the permanent chronicle keeps
+growing; discarding it would remove stories from records and saves.
+
+Resident-entry text now shares equal immutable strings within each archive.
+The pool is transient and rebuilt after loading; no event or entry is removed.
+In a repeat 400-wait run, retained managed memory was 97.0 MiB at wait 100
+and 231.6 MiB at wait 400, with 368.0 MiB RSS. This is about 29% less retained
+memory and 28% less RSS at wait 400. The final 100 waits still took 23.5
+seconds, so this fixes substantial memory duplication, not the underlying
+late-run slowdown. `storage/archive-text-sharing`, `storage/compact-archive-keys`,
+and `storage/save-budget` pass. The save-budget fixture produced a 9.76 MB file
+and loaded in 6.49 seconds in a fresh process.
+
+An 800-wait continuation without forced GC completed about 20,000 district
+turns. It ended with 963,718 archive entries, 360.1 MiB managed memory and
+567.4 MiB RSS. The slowest 100-wait interval was waits 401–500 at 23.4
+seconds; the last interval took 12.9 seconds despite a larger archive. NPC
+facts and recent events fell from roughly 80,000/54,000 at wait 400 to
+53,000/35,000 at wait 800. Current NPC activity therefore matters more to
+interval time than archive size alone. The long run also exposed a preexisting
+crash when an NPC traded two trackers; same-type tracker and portable-radio
+offers now compare battery charge and have a named regression scenario.
+
 ## Current Docker save and tile loading, October 10, 2026
 
 The running game's `save.dat` was 64,480,804 bytes (61.5 MiB) at turn 5,877;

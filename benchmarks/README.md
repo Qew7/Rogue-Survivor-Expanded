@@ -16,6 +16,7 @@ live here; `Dockerfile` compiles the C# files into the scenario runner image.
 | Distant district simulation during waiting | `sh tests/scenario.sh --bench-rest-simulation` | 9 generated districts, 4 waits, median of 5 fresh runs |
 | Large-city rest simulation | `sh tests/scenario.sh --bench-rest-large` | 5×5 generated districts, high NPC density, 4 waits, median of 3 fresh runs |
 | Large-city rest phases | `sh tests/scenario.sh --bench-rest-phases` | 5×5 districts, 30 waits, three alternating uninstrumented and phase-timed runs |
+| Long-rest memory | `sh tests/scenario.sh --bench-rest-memory 400` and `--bench-rest-memory-gc 400` | Reports each 100 waits: interval time, managed memory, RSS, GC, NPC facts/events, and archive entries; the GC variant measures retained memory |
 | Parallel rest experiment | `sh tests/scenario.sh --bench-rest-parallel` | 5×5 districts, 30 waits, serial and grouped 1/2/4-worker timings; benchmark only |
 | Parallel rest equivalence | `sh tests/scenario.sh --bench-rest-parallel-snapshot` | Replays one saved 5×5 start and compares actor, rumor, intent, event, and story state; exits nonzero on divergence |
 | Rest optimization costs | `sh tests/scenario.sh --bench-rest-optimizations` | Actor lookup/movement, empty/sparse/dense sensing, and FOV cache-key checks |

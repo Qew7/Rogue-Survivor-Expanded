@@ -440,6 +440,13 @@ namespace djack.RogueSurvivor.Gameplay.AI
         /// <see cref="RateTradeOffer(RogueGame, Actor, Item, Item)"/>
         protected TradeRating RateItemExhange(RogueGame game, Item oIt, Item nIt)
         {
+            if (oIt is ItemTracker)
+            {
+                int oldBatteries = ((ItemTracker)oIt).Batteries;
+                int newBatteries = ((ItemTracker)nIt).Batteries;
+                return newBatteries > oldBatteries ? TradeRating.ACCEPT :
+                    newBatteries < oldBatteries ? TradeRating.REFUSE : TradeRating.MAYBE;
+            }
             // first reject/accept if one is junk and not the other
             ItemRating oRating = RateItem(game, oIt, true);
             ItemRating nRating = RateItem(game, nIt, false);

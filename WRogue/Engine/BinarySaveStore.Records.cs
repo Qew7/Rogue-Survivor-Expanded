@@ -59,6 +59,7 @@ namespace djack.RogueSurvivor.Engine
             {
                 ResidentRecords records = ObjectGraphStore.Read(compressed) as ResidentRecords;
                 if (records == null || section.Remaining != 0) throw new InvalidDataException("Invalid resident archive.");
+                records.CompactText();
                 return records;
             }
         }
