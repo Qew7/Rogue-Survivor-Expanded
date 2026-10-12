@@ -17,19 +17,43 @@ static partial class RestSimulationBenchmarks
             RunOne(false, 5, 70, GameOptions.SimRatio.FULL, turns: 0, snapshotPath: start);
             Console.WriteLine("SAME START: one saved 5x5 city, {0} waits per run", turns);
             string firstActors = null, firstRumors = null, firstStories = null;
+            var baselineTurns = new List<string>();
             bool equivalent = true;
             foreach (int workers in new[] { 0, 0, 1, 2, 4 })
             {
                 string actors = null, rumors = null, stories = null;
-                double elapsed = RunOne(false, 5, 70, GameOptions.SimRatio.FULL,
-                    turns: turns, workers: workers, report: true,
-                    snapshotPath: start, restoreSnapshot: true,
-                    afterRun: session => DigestWorld(session, out actors, out rumors, out stories));
+                int firstDifferentTurn = 0;
+                double elapsed;
+                try
+                {
+                    elapsed = RunOne(false, 5, 70, GameOptions.SimRatio.FULL,
+                        turns: turns, workers: workers, report: true,
+                        snapshotPath: start, restoreSnapshot: true,
+                        afterRun: session => DigestWorld(session, out actors, out rumors, out stories),
+                        afterTurn: (session, turn) =>
+                        {
+                            string turnActors, turnRumors, turnStories;
+                            DigestWorld(session, out turnActors, out turnRumors, out turnStories);
+                            string digest = turnActors + turnRumors + turnStories;
+                            if (workers == 0 && baselineTurns.Count < turns) baselineTurns.Add(digest);
+                            else if (firstDifferentTurn == 0 && digest != baselineTurns[turn - 1])
+                                firstDifferentTurn = turn;
+                        });
+                }
+                catch (Exception error)
+                {
+                    equivalent = false;
+                    Console.WriteLine("  {0} worker(s): simulation failed after wait {1}: {2}",
+                        workers, firstDifferentTurn, error.GetBaseException().Message);
+                    continue;
+                }
                 if (firstActors == null) { firstActors = actors; firstRumors = rumors; firstStories = stories; }
                 bool matches = actors == firstActors && rumors == firstRumors && stories == firstStories;
                 if (!matches) equivalent = false;
                 Console.WriteLine("  {0} worker(s): {1:F1} ms; actors {2}; rumors {3}; stories {4}; logical match: {5}",
                     workers, elapsed, actors, rumors, stories, matches);
+                if (firstDifferentTurn != 0)
+                    Console.WriteLine("    first state divergence after wait {0}", firstDifferentTurn);
             }
             Console.WriteLine("PARALLEL EQUIVALENCE: {0}", equivalent ? "PASS" : "FAIL");
             return equivalent;

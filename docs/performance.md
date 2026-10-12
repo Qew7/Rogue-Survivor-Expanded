@@ -1038,6 +1038,18 @@ even with one worker: 1,887 actors and 20,877 facts versus 1,894 actors and
 any concurrent writes. Two and four workers also diverged. The command
 reports `PARALLEL EQUIVALENCE: FAIL` and exits nonzero when state differs.
 
+The snapshot comparison now checks the logical state after every wait. Its
+one-worker control follows the actual x/y district order and matches both
+ordinary serial replays through all 30 waits. Two- and four-worker grouped
+runs diverge after the first wait. In one attempt, the two-worker run also
+reached an exception in NPC trading. On the latest saved-start run, serial and
+one-worker controls each had 1,876 actors and 21,324 facts; two workers had
+20,748 facts and four workers 21,149. The parallel mode stays benchmark-only.
+Parallelizing production district turns requires separating each district's
+random stream and mutable state, queuing cross-district moves and globally
+visible events for a deterministic turn-boundary commit, then passing the
+per-wait actor, rumor, and story comparison before measuring any speedup.
+
 ## Current Docker save and tile loading, October 10, 2026
 
 The running game's `save.dat` was 64,480,804 bytes (61.5 MiB) at turn 5,877;

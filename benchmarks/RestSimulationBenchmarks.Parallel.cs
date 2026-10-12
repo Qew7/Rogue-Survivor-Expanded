@@ -27,7 +27,8 @@ static partial class RestSimulationBenchmarks
         }
     }
 
-    static void RunRestParallel(RogueGame game, World city, Actor player, int turns, int workers)
+    static void RunRestParallel(RogueGame game, World city, Actor player, int turns, int workers,
+        Action<Session, int> afterTurn = null)
     {
         // A color group has no adjacent districts, but global story, radio,
         // record, and RNG state can still be touched by concurrent turns.
@@ -41,9 +42,18 @@ static partial class RestSimulationBenchmarks
             player.ActionPoints = Rules.BASE_ACTION_COST;
             game.DoWait(player);
             Advance.Invoke(game, new[] { (object)city[0, 0], Active });
-            foreach (List<District> group in colors)
-                Parallel.ForEach(group, options,
-                    district => Advance.Invoke(game, new[] { (object)district, Active }));
+            if (workers == 1)
+            {
+                for (int x = 0; x < city.Size; x++)
+                    for (int y = 0; y < city.Size; y++)
+                        if (x != 0 || y != 0)
+                            Advance.Invoke(game, new[] { (object)city[x, y], Active });
+            }
+            else
+                foreach (List<District> group in colors)
+                    Parallel.ForEach(group, options,
+                        district => Advance.Invoke(game, new[] { (object)district, Active }));
+            if (afterTurn != null) afterTurn(Session.Get, turn + 1);
         }
     }
 

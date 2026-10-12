@@ -70,7 +70,8 @@ static partial class RestSimulationBenchmarks
 
     static double RunOne(bool profile, int citySize, int civiliansPerDistrict, GameOptions.SimRatio ratio,
         PhaseSample phases = null, int turns = Turns, int workers = 0, bool report = false,
-        string snapshotPath = null, bool restoreSnapshot = false, Action<Session> afterRun = null)
+        string snapshotPath = null, bool restoreSnapshot = false, Action<Session> afterRun = null,
+        Action<Session, int> afterTurn = null)
     {
         ScenarioWorld fixture = TownScenarioFactory.Create(7971, false);
         GamePreset preset = GamePreset.BuiltIn(GameMode.GM_STANDARD);
@@ -140,8 +141,8 @@ static partial class RestSimulationBenchmarks
         Stopwatch timer = Stopwatch.StartNew();
         try
         {
-            if (workers == 0) RunRest(world.Game, city[0, 0], player, turns);
-            else RunRestParallel(world.Game, city, player, turns, workers);
+            if (workers == 0) RunRest(world.Game, city[0, 0], player, turns, afterTurn);
+            else RunRestParallel(world.Game, city, player, turns, workers, afterTurn);
         }
         finally { if (phases != null) phases.Stop(); }
         timer.Stop();
@@ -190,13 +191,15 @@ static partial class RestSimulationBenchmarks
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static void RunRest(RogueGame game, District district, Actor player, int turns)
+    static void RunRest(RogueGame game, District district, Actor player, int turns,
+        Action<Session, int> afterTurn = null)
     {
         for (int turn = 0; turn < turns; turn++)
         {
             player.ActionPoints = Rules.BASE_ACTION_COST;
             game.DoWait(player);
             Advance.Invoke(game, new[] { (object)district, Active });
+            if (afterTurn != null) afterTurn(Session.Get, turn + 1);
         }
     }
 }
