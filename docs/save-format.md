@@ -97,6 +97,18 @@ waiting unless the player disables it before a new game.
 `FinishDistantSimulationAfterRest` is also optional and defaults to false. When
 disabled, unfinished district turns remain in their saved local clocks after
 rest ends; they continue during later rests or catch up on district entry.
+`ParallelDistantSimulationDuringRest` is optional: older saves without it keep
+the serialized default of false, while new built-in presets enable it. When
+enabled, districts sharing the same destination entry are ordered while other
+districts can run together. Followers choose landing cells outside every
+interdistrict entry point. Each distant district retains its own random stream,
+so an interrupted rest or a save/load continues that district's sequence. The
+session identity stream keeps generated IDs
+reproducible without consuming the gameplay random stream and is saved
+independently.
+`world/parallel-rest-crossings` and `world/parallel-rest-exact-arrivals`
+check the option, random streams, district turns, border arrivals, rumor
+delivery, and save/load.
 Recent hourly radio programs are retained in the session, so a district catching
 up after loading hears the same broadcast already heard elsewhere. Older saves
 without this optional history rebuild a program when first requested.

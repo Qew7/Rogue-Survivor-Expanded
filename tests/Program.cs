@@ -7,11 +7,7 @@ class Program
         if (args.Length == 2 && args[0] == "--check-save-budget") { SaveBudgetRunner.Run(args[1]); return 0; }
         ScenarioRunner.RegisterAll();
         SkillScenario.AssertCoverage();
-        if (args.Length == 2 && args[0] == "--audit-save")
-        {
-            SaveStructureAudit.Run(args[1]);
-            return 0;
-        }
+        if (args.Length == 2 && args[0] == "--audit-save") { SaveStructureAudit.Run(args[1]); return 0; }
         if (args.Length == 2 && (args[0] == "--bench-save" || args[0] == "--bench-save-core" || args[0] == "--bench-save-stats"))
         {
             SavePerformanceBenchmarks.Run(args[1], args[0] == "--bench-save-core", args[0] == "--bench-save-stats");
@@ -72,8 +68,8 @@ class Program
             RestSimulationBenchmarks.RunPhases();
             return 0;
         }
-        if (args.Length == 1 && args[0] == "--bench-rest-parallel") { RestSimulationBenchmarks.RunParallel(); return 0; }
-        if (args.Length == 1 && args[0] == "--bench-rest-parallel-snapshot") return RestSimulationBenchmarks.CompareSnapshot() ? 0 : 1;
+        if (args.Length == 1 && args[0] == "--bench-rest-parallel-production") return RestSimulationBenchmarks.CompareProductionSnapshot() ? 0 : 1;
+        if (args.Length == 1 && args[0] == "--bench-rest-parallel-timing") { RestSimulationBenchmarks.TimeProductionSchedule(); return 0; }
         if (args.Length == 1 && args[0] == "--bench-rest-optimizations")
         {
             RestOptimizationBenchmarks.Run();
@@ -116,7 +112,7 @@ class Program
         }
         if (args.Length != 0)
         {
-            Console.Error.WriteLine("Usage: UnitTests.exe [--list|--all|--bench|--bench-ai|--bench-npc-turn|--profile-npc-turn|--bench-radio|--bench-radio-news|--bench-radio-rolling|--profile-radio|--bench-rest-simulation|--bench-rest-large|--bench-rest-phases|--bench-rest-parallel|--bench-rest-parallel-snapshot|--bench-rest-optimizations|--bench-sleep-yield|--profile-rest-simulation|--profile-rest-large|--bench-post-0d243e6|--bench-npc-safety|--bench-xpd|--bench-save copied-save-path|--bench-save-core copied-save-path|--bench-save-stats copied-save-path|--check-save-budget copied-save-path|--audit-save copied-save-path|scenario-name]");
+            Console.Error.WriteLine("Usage: UnitTests.exe [--list|--all|--bench|--bench-ai|--bench-npc-turn|--profile-npc-turn|--bench-radio|--bench-radio-news|--bench-radio-rolling|--profile-radio|--bench-rest-simulation|--bench-rest-large|--bench-rest-phases|--bench-rest-parallel-production|--bench-rest-parallel-timing|--bench-rest-optimizations|--bench-sleep-yield|--profile-rest-simulation|--profile-rest-large|--bench-post-0d243e6|--bench-npc-safety|--bench-xpd|--bench-save copied-save-path|--bench-save-core copied-save-path|--bench-save-stats copied-save-path|--check-save-budget copied-save-path|--audit-save copied-save-path|scenario-name]");
             return 2;
         }
         GameTests.Run();

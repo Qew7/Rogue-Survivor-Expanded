@@ -1005,50 +1005,45 @@ world generations. `npc/goal-inert-offer` now checks inactive, active, and
 finished generated goals. The full Docker test target passed all 378 scenarios,
 layout checks, and the flamegraph parser check.
 
-### Experimental parallel district turns, October 12, 2026
+### Parallel district simulation during rest, October 13, 2026
 
-`sh tests/scenario.sh --bench-rest-parallel` runs the real 5×5, 30-wait
-fixture with one turn per district at each player turn. Its experimental
-scheduler processes four nonadjacent district groups in sequence and runs
-each group on 1, 2, or 4 workers. All 25 district clocks reached turn 30.
-The latest three-sample uninstrumented medians were 2,874 ms for the existing
-serial scheduler, 2,904 ms for the grouped scheduler on one worker, 2,094 ms
-on two workers, and 1,732 ms on four workers. Thus four workers have about
-40% lower elapsed time than the serial baseline in this fixture, including
-group scheduling overhead. A first run gave 2,872, 2,073, and 1,816 ms for
-one, two, and four workers, respectively.
+The existing `Parallel distant simulation while resting` preset option now
+schedules same-color districts by their actual destination map and entry tile.
+Sources competing for one entry run in order; sources with distinct entries may
+run together. A crossing places the leader on the destination map immediately
+during its source district turn. Followers choose adjacent cells that are not
+entry points from another district, so they cannot block a neighboring arrival.
+Stories, spoken rumors, and radio still advance during rest.
+The option uses up to four worker threads by default. New built-in presets
+enable it; older saves retain their saved choice (false when the optional
+field is absent).
 
-This is only a throughput probe, not a production-safe mode. District turns
-still share the game's RNG, resident records, story director, radio program
-builder, and other mutable `RogueGame` state. NPCs can cross district borders
-during a turn. The fresh fixed-seed fixture also produces random GUIDs, and
-even its serial runs varied in NPC and rumor counts, so the coarse outcome
-counters cannot establish equivalence. No parallel scheduling was enabled
-in the game. A production version needs explicit ownership or synchronization
-of global writes, a defined cross-district event order, and stress tests
-around border crossings, radio hours, and story updates.
+On one saved 5×5 city with 70 civilians per district and 30 waits, three
+simulation-only samples gave a 2.84-second median for the previous broad-wave
+scheduler and 2.35 seconds for exact entries with four workers. The production
+version also orders neighboring entries when a follower could take either one.
+Two later four-worker runs of that version gave medians of 2.81 and 2.65
+seconds; the first included a 3.61-second outlier. The runs used separate
+saved starts and were not a paired comparison. The benchmark excludes
+complete-state hashing and world setup. Different district ordering can
+change outcomes relative to the old scheduler.
 
-`sh tests/scenario.sh --bench-rest-parallel-snapshot` now replays the same
-saved 5×5 start for two serial runs and grouped 1-, 2-, and 4-worker runs.
-It compares sorted actor state, NPC facts, intents, observed events, and
-stories, excluding random IDs and save serialization order. The two serial
-runs matched the logical digests after 30 waits. Grouped scheduling diverged
-even with one worker: 1,887 actors and 20,877 facts versus 1,894 actors and
-21,194 facts in both serial runs. This isolates a turn-order change before
-any concurrent writes. Two and four workers also diverged. The command
-reports `PARALLEL EQUIVALENCE: FAIL` and exits nonzero when state differs.
+After reserving all interdistrict entry cells from follower placement, the
+neighboring-entry restriction was removed. On the fixed-seed 5×5 timing fixture,
+the four-worker median fell from 2.69 to 2.37 seconds across three samples per
+version (about 12%). The two-worker medians were 2.95 and 2.72 seconds; the
+eight-worker medians were 2.66 and 2.38 seconds. Each version rebuilt the same
+fixture and restored its snapshot for every sample; normal run-to-run variation
+still applies.
 
-The snapshot comparison now checks the logical state after every wait. Its
-one-worker control follows the actual x/y district order and matches both
-ordinary serial replays through all 30 waits. Two- and four-worker grouped
-runs diverge after the first wait. In one attempt, the two-worker run also
-reached an exception in NPC trading. On the latest saved-start run, serial and
-one-worker controls each had 1,876 actors and 21,324 facts; two workers had
-20,748 facts and four workers 21,149. The parallel mode stays benchmark-only.
-Parallelizing production district turns requires separating each district's
-random stream and mutable state, queuing cross-district moves and globally
-visible events for a deterministic turn-boundary commit, then passing the
-per-wait actor, rumor, and story comparison before measuring any speedup.
+`--bench-rest-parallel-production` checks the same saved start after each of
+30 waits with 1, 2, 4, and 8 workers. It compares actors, ordered rumors,
+stories, radio programs, archives, and district random streams. The named
+`world/parallel-rest-crossings` and `world/parallel-rest-exact-arrivals`
+scenarios cover contested and distinct entries, followers, rumor delivery,
+radio synchronization, and save/load. Run `--bench-rest-parallel-timing` for
+fresh timing of the selected scheduler without per-wait digests. After this
+landing change, the per-wait comparison passed with 1, 2, 4, and 8 workers.
 
 ## Archive memory during long rests, October 12, 2026
 

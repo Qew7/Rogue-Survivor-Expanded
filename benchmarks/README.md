@@ -17,8 +17,8 @@ live here; `Dockerfile` compiles the C# files into the scenario runner image.
 | Large-city rest simulation | `sh tests/scenario.sh --bench-rest-large` | 5×5 generated districts, high NPC density, 4 waits, median of 3 fresh runs |
 | Large-city rest phases | `sh tests/scenario.sh --bench-rest-phases` | 5×5 districts, 30 waits, three alternating uninstrumented and phase-timed runs |
 | Long-rest memory | `sh tests/scenario.sh --bench-rest-memory 400` and `--bench-rest-memory-gc 400` | Reports each 100 waits: interval time, managed memory, RSS, GC, NPC facts/events, and archive entries; the GC variant measures retained memory |
-| Parallel rest experiment | `sh tests/scenario.sh --bench-rest-parallel` | 5×5 districts, 30 waits, serial and grouped 1/2/4-worker timings; benchmark only |
-| Parallel rest equivalence | `sh tests/scenario.sh --bench-rest-parallel-snapshot` | Replays one saved 5×5 start and compares actor, rumor, intent, event, and story state; exits nonzero on divergence |
+| Parallel rest equivalence | `sh tests/scenario.sh --bench-rest-parallel-production` | Replays one saved 5×5 start for 30 waits with 1/2/4/8 workers; checks identities, ordered rumors and goals, district RNG, stories, radio programs and archive state after every wait |
+| Parallel rest timing | `sh tests/scenario.sh --bench-rest-parallel-timing` | Three 30-wait samples per worker count using the preset's exact-arrival scheduler; excludes state digests from timing |
 | Rest optimization costs | `sh tests/scenario.sh --bench-rest-optimizations` | Actor lookup/movement, empty/sparse/dense sensing, and FOV cache-key checks |
 | Sleep yield with and without a worker | `sh tests/scenario.sh --bench-sleep-yield` | Ten real sleeping map turns per sample |
 | Rest simulation flamegraph | `PROFILE_KIND=rest sh benchmarks/bench-npc-calls.sh` | Mono call profile of the same waiting path |

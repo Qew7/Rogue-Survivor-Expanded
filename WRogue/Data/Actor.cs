@@ -5,6 +5,7 @@ using System.Text;
 
 using djack.RogueSurvivor.Gameplay;
 using djack.RogueSurvivor.Engine.Items;
+using djack.RogueSurvivor.Engine;
 
 namespace djack.RogueSurvivor.Data
 {
@@ -208,10 +209,13 @@ namespace djack.RogueSurvivor.Data
             get
             {
                 if (m_PersonalityIdentity == Guid.Empty)
-                    m_PersonalityIdentity = Guid.NewGuid();
+                    m_PersonalityIdentity = DiceRoller.NewGuid();
                 return m_PersonalityIdentity;
             }
         }
+        internal Guid ExistingPersonalityIdentity { get { return m_PersonalityIdentity; } }
+        internal Guid ExistingGroupIdentity
+        { get { return m_SocialGroup == null ? Guid.Empty : m_SocialGroup.Identity; } }
 
         public int GangID
         {

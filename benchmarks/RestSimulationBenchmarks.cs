@@ -134,11 +134,11 @@ static partial class RestSimulationBenchmarks
     static double RunOne(bool profile, int citySize, int civiliansPerDistrict, GameOptions.SimRatio ratio,
         PhaseSample phases = null, int turns = Turns, int workers = 0, bool report = false,
         string snapshotPath = null, bool restoreSnapshot = false, Action<Session> afterRun = null,
-        Action<Session, int> afterTurn = null, bool botPlayer = false)
+        Action<Session, int> afterTurn = null, bool botPlayer = false, bool parallelRest = false)
     {
         ScenarioWorld fixture = TownScenarioFactory.Create(7971, false);
         GamePreset preset = GamePreset.BuiltIn(GameMode.GM_STANDARD);
-        if (workers != 0) preset.DisableDistantSimulationDuringRest = true;
+        preset.ParallelDistantSimulationDuringRest = parallelRest;
         Session.Get.GamePreset = preset;
         GameOptions options = RogueGame.Options;
         options.MaxCivilians = civiliansPerDistrict;
@@ -204,7 +204,7 @@ static partial class RestSimulationBenchmarks
                 for (int x = 0; x < city.Size; x++) for (int y = 0; y < city.Size; y++)
                     foreach (Map restoredMap in city[x, y].Maps) restoredMap.ReconstructAuxiliaryFields();
                 GamePreset restoredPreset = loaded.GamePreset;
-                restoredPreset.DisableDistantSimulationDuringRest = workers != 0;
+                restoredPreset.ParallelDistantSimulationDuringRest = parallelRest;
                 loaded.GamePreset = restoredPreset;
             }
             else BinarySaveStore.Save(snapshotPath, Session.Get);
@@ -214,10 +214,14 @@ static partial class RestSimulationBenchmarks
         if (phases != null) phases.Start();
         double startAge = profile ? ProcessAgeSeconds() : 0;
         Stopwatch timer = Stopwatch.StartNew();
+        if (parallelRest)
+        {
+            typeof(RogueGame).GetField("ParallelRestWorkers", BindingFlags.Instance | BindingFlags.NonPublic)
+                .SetValue(world.Game, Math.Max(1, workers));
+        }
         try
         {
-            if (workers == 0) RunRest(world.Game, city[0, 0], player, turns, afterTurn);
-            else RunRestParallel(world.Game, city, player, turns, workers, afterTurn);
+            RunRest(world.Game, city[0, 0], player, turns, afterTurn);
         }
         finally { if (phases != null) phases.Stop(); }
         timer.Stop();

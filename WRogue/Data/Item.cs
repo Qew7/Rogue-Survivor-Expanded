@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using djack.RogueSurvivor.Engine;
 
 namespace djack.RogueSurvivor.Data
 {
@@ -15,7 +16,7 @@ namespace djack.RogueSurvivor.Data
         // Lets an actor reclaim an item it just left on somebody else's base.
         Actor m_LastDroppedBy;
         Guid m_StoryIdentity;
-        public Guid StoryIdentity { get { if (m_StoryIdentity == Guid.Empty) m_StoryIdentity = Guid.NewGuid(); return m_StoryIdentity; } }
+        public Guid StoryIdentity { get { if (m_StoryIdentity == Guid.Empty) m_StoryIdentity = DiceRoller.NewGuid(); return m_StoryIdentity; } }
         [System.Runtime.Serialization.OptionalField] Guid m_StolenFromGroupId;
         [System.Runtime.Serialization.OptionalField] Guid m_StolenFromLeaderId;
         [System.Runtime.Serialization.OptionalField] string m_StolenFromName;

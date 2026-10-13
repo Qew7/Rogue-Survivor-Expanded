@@ -437,6 +437,20 @@ namespace djack.RogueSurvivor.Engine
         #region Leaving maps & Using exits.
         public bool DoLeaveMap(Actor actor, Point exitPoint, bool askForConfirmation)
         {
+            District destination;
+            if (IsParallelRestCrossing(actor, exitPoint, out destination))
+            {
+                // The player district lock is held by the turn that waits for
+                // these workers; no player-district turn runs during this phase.
+                if (destination == m_Session.CurrentMap.District)
+                    return DoLeaveMapCore(actor, exitPoint, askForConfirmation);
+                lock (destination) return DoLeaveMapCore(actor, exitPoint, askForConfirmation);
+            }
+            return DoLeaveMapCore(actor, exitPoint, askForConfirmation);
+        }
+
+        bool DoLeaveMapCore(Actor actor, Point exitPoint, bool askForConfirmation)
+        {
             bool isPlayer = actor.IsPlayer;
 
             Map fromMap = actor.Location.Map;
@@ -589,6 +603,22 @@ namespace djack.RogueSurvivor.Engine
             bool leavePeopleBehind = toMap.District != fromMap.District;
             bool isPlayer = m_Player == leader;
             List<Actor> leftBehind = null;
+            HashSet<Point> entryPoints = null;
+            if (leavePeopleBehind)
+            {
+                // Reserve even one-way or interior district entries before followers pick a spot.
+                entryPoints = new HashSet<Point>();
+                World world = m_Session.World;
+                for (int x = 0; x < world.Size; x++)
+                    for (int y = 0; y < world.Size; y++)
+                    {
+                        District district = world[x, y];
+                        if (district == null || district == toMap.District) continue;
+                        foreach (Map map in district.Maps)
+                            foreach (Exit exit in map.Exits)
+                                if (exit.ToMap == toMap) entryPoints.Add(exit.ToPosition);
+                    }
+            }
 
             foreach (Actor fo in leader.Followers)
             {
@@ -598,7 +628,9 @@ namespace djack.RogueSurvivor.Engine
 
                 if (m_Rules.IsAdjacent(fromPos, fo.Location.Position))
                 {
-                    adjList = toMap.FilterAdjacentInMap(toPos, (pt) => m_Rules.IsWalkableFor(fo, toMap, pt.X, pt.Y));
+                    adjList = toMap.FilterAdjacentInMap(toPos, (pt) =>
+                        (entryPoints == null || !entryPoints.Contains(pt)) &&
+                        m_Rules.IsWalkableFor(fo, toMap, pt.X, pt.Y));
                     if (adjList == null || adjList.Count == 0)
                         canFollow = false;
                     else

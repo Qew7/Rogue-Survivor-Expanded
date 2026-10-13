@@ -6,6 +6,7 @@ using System.Threading;
 using System.Windows.Forms;
 using System.IO;
 using System.Diagnostics;
+using System.Threading.Tasks;
 
 using djack.RogueSurvivor.Data;
 using djack.RogueSurvivor.Engine.Actions;
@@ -192,6 +193,20 @@ namespace djack.RogueSurvivor.Engine
 
         #endregion
         #region Simulation
+        [ThreadStatic] static bool s_ParallelRestWorker;
+        internal static bool IsParallelRestWorker { get { return s_ParallelRestWorker; } }
+        internal int ParallelRestWorkers;
+
+        bool IsParallelRestCrossing(Actor actor, Point exitPoint, out District destination)
+        {
+            destination = null;
+            if (!s_ParallelRestWorker || actor.IsPlayer || actor.IsDead || actor.Location.Map == null) return false;
+            Exit exit = actor.Location.Map.GetExitAt(exitPoint);
+            if (exit == null || exit.ToMap.District == actor.Location.Map.District) return false;
+            destination = exit.ToMap.District;
+            return destination != null;
+        }
+
         SimFlags ComputeSimFlagsForTurn(int turn)
         {
             bool loDetail = false;
@@ -268,6 +283,11 @@ namespace djack.RogueSurvivor.Engine
             int budget = remainingRestTurns > 0 ? Math.Min(total, districtsDue +
                 (total - districtsDue + remainingRestTurns) / (remainingRestTurns + 1)) :
                 finishAfterRest ? total : districtsDue;
+            if (m_Session.GamePreset.ParallelDistantSimulationDuringRest)
+            {
+                SimulateDistantDistrictsByColor(world, turn, total, budget, finishAfterRest);
+                return;
+            }
             int done = 0;
             Stopwatch elapsed = Stopwatch.StartNew();
             bool showedProgress = false;
@@ -309,6 +329,174 @@ namespace djack.RogueSurvivor.Engine
             m_RestSimulationProgress = null;
             if (showedProgress && m_IsGameRunning && !m_HasLoadedGame && m_Player != null && !m_Player.IsDead)
                 RedrawPlayScreen();
+        }
+
+        void SimulateDistantDistrictsByColor(World world, int turn, int total, int budget, bool finishAfterRest)
+        {
+            int done = 0;
+            Stopwatch elapsed = Stopwatch.StartNew();
+            bool showedProgress = false;
+            int workers = ParallelRestWorkers > 0 ? ParallelRestWorkers : Math.Min(4, Environment.ProcessorCount);
+            var options = new ParallelOptions { MaxDegreeOfParallelism = Math.Max(1, workers) };
+            if (m_RestProgressLastDraw == 0) m_RestProgressLastDraw = Stopwatch.GetTimestamp();
+            bool stopped = false;
+            while (done < budget && !stopped)
+            {
+                int oldest = Int32.MaxValue;
+                for (int x = 0; x < world.Size; x++) for (int y = 0; y < world.Size; y++)
+                {
+                    District district = world[x, y];
+                    if (district != null && district != m_Session.CurrentMap.District &&
+                        district.EntryMap.LocalTime.TurnCounter < turn)
+                        oldest = Math.Min(oldest, district.EntryMap.LocalTime.TurnCounter);
+                }
+                if (oldest == Int32.MaxValue) break;
+                for (int color = 0; color < 2; color++)
+                {
+                    if (done >= budget) break;
+                    var batch = new List<District>();
+                    for (int x = 0; x < world.Size; x++) for (int y = 0; y < world.Size; y++)
+                    {
+                        District district = world[x, y];
+                        if (district != null && district != m_Session.CurrentMap.District &&
+                            district.EntryMap.LocalTime.TurnCounter == oldest && ((x + y) & 1) == color)
+                            batch.Add(district);
+                    }
+                    if (batch.Count == 0) continue;
+                    if (batch.Count > budget - done)
+                        batch.RemoveRange(budget - done, batch.Count - (budget - done));
+                    // Programs for this batch are fixed before its maps and NPCs change.
+                    var slots = new HashSet<int>();
+                    foreach (District district in batch)
+                        foreach (Map map in district.Maps)
+                        {
+                            slots.Add(map.LocalTime.TurnCounter / WorldTime.TURNS_PER_HOUR);
+                            slots.Add((map.LocalTime.TurnCounter + 1) / WorldTime.TURNS_PER_HOUR);
+                        }
+                    foreach (int slot in slots)
+                        for (int station = 0; station < 4; station++) GetRadioProgram(station, slot);
+
+                    const int eventIdsPerDistrictTurn = 65536;
+                    long[] eventIds = new long[batch.Count];
+                    for (int i = 0; i < batch.Count; i++)
+                        eventIds[i] = m_Session.ReservePersonalityEventIds(eventIdsPerDistrictTurn);
+                    // Initialize lazy global stores before any worker can write to them.
+                    ResidentRecords records = m_Session.ResidentRecords;
+                    NpcStoryDirector director = m_Session.NpcDirector;
+                    List<List<int>> waves = RestSimulationWaves(batch, director,
+                        m_Session.CurrentMap.District);
+                    foreach (List<int> wave in waves)
+                    {
+                        Parallel.ForEach(wave, options, i =>
+                    {
+                        bool previous = s_ParallelRestWorker;
+                        s_ParallelRestWorker = true;
+                        try
+                        {
+                            m_Session.WithPersonalityEventIds(eventIds[i], eventIdsPerDistrictTurn,
+                                () => SimulateDistrict(batch[i]));
+                        }
+                        finally
+                        {
+                            s_ParallelRestWorker = previous;
+                        }
+                    });
+                    }
+                    done += batch.Count;
+                    long now = Stopwatch.GetTimestamp();
+                    if (now - m_RestProgressLastDraw >= Stopwatch.Frequency / 4)
+                    {
+                        string eta = done == 0 ? "estimating" :
+                            String.Format("~{0}s left", Math.Ceiling(elapsed.Elapsed.TotalSeconds * Math.Max(0, budget - done) / done));
+                        m_RestSimulationProgress = String.Format("Simulating city: {0}/{1} district turns, {2}", done, budget, eta);
+                        RedrawPlayScreen();
+                        m_RestProgressLastDraw = now;
+                        showedProgress = true;
+                    }
+                    if (!m_IsGameRunning || m_HasLoadedGame || m_Player == null || m_Player.IsDead)
+                    { stopped = true; break; }
+                    if (m_IsPlayerLongWaitForcedStop ||
+                        !m_Player.IsSleeping && !m_IsPlayerLongWait && !m_PlayerWaitedThisTurn)
+                    {
+                        if (!finishAfterRest) { budget = done; break; }
+                        budget = total;
+                    }
+                }
+                m_Session.NpcDirector.CompactFinished();
+            }
+            m_RestHasDeferredSimulation = done < total;
+            m_RestSimulationProgress = null;
+            if (showedProgress && m_IsGameRunning && !m_HasLoadedGame && m_Player != null && !m_Player.IsDead)
+                RedrawPlayScreen();
+        }
+
+        static List<List<int>> RestSimulationWaves(List<District> batch, NpcStoryDirector director,
+            District playerDistrict)
+        {
+            var keys = new HashSet<string>[batch.Count];
+            var playerNeighbor = new bool[batch.Count];
+            var districtIndex = new Dictionary<District, int>();
+            var actorIndex = new Dictionary<Guid, int>();
+            var activeStories = new HashSet<string>(StringComparer.Ordinal);
+            lock (director)
+                foreach (NpcStory story in director.Stories)
+                    if (!story.Finished) activeStories.Add(story.Id);
+            for (int i = 0; i < batch.Count; i++)
+            {
+                districtIndex.Add(batch[i], i);
+                keys[i] = new HashSet<string>(StringComparer.Ordinal);
+                Point playerPosition = playerDistrict.WorldPosition;
+                Point position = batch[i].WorldPosition;
+                playerNeighbor[i] = Math.Abs(position.X - playerPosition.X) +
+                    Math.Abs(position.Y - playerPosition.Y) == 1;
+                foreach (Map map in batch[i].Maps)
+                {
+                    foreach (Actor actor in map.Actors)
+                    {
+                        Guid id = actor.ExistingPersonalityIdentity;
+                        if (id != Guid.Empty) actorIndex[id] = i;
+                        Guid group = actor.ExistingGroupIdentity;
+                        if (group != Guid.Empty) keys[i].Add("group:" + group);
+                        if (actor.Personality != null)
+                        {
+                            foreach (NpcIntent intent in actor.Personality.Intents)
+                                if (!intent.Finished && intent.StoryId != null && activeStories.Contains(intent.StoryId))
+                                    keys[i].Add("story:" + intent.StoryId);
+                            foreach (NpcFact fact in actor.Personality.Knowledge.Facts)
+                                if (fact.StoryId != null && activeStories.Contains(fact.StoryId))
+                                    keys[i].Add("story:" + fact.StoryId);
+                        }
+                    }
+                    foreach (Exit exit in map.Exits)
+                        if (exit.ToMap.District != batch[i])
+                            keys[i].Add("arrival:" + exit.ToMap.Seed + ":" +
+                                exit.ToPosition.X + "," + exit.ToPosition.Y);
+                }
+            }
+            lock (director)
+                foreach (NpcStory story in director.Stories)
+                {
+                    if (story.Finished) continue;
+                    string key = "story:" + story.Id;
+                    int i;
+                    if (story.Place.Map != null && story.Place.Map.District != null &&
+                        districtIndex.TryGetValue(story.Place.Map.District, out i)) keys[i].Add(key);
+                    if (story.Resource.Map != null && story.Resource.Map.District != null &&
+                        districtIndex.TryGetValue(story.Resource.Map.District, out i)) keys[i].Add(key);
+                    foreach (NpcStoryRole role in story.Roles)
+                        if (actorIndex.TryGetValue(role.ActorId, out i)) keys[i].Add(key);
+                }
+            var levels = new int[batch.Count];
+            var waves = new List<List<int>>();
+            for (int i = 0; i < batch.Count; i++)
+            {
+                for (int j = 0; j < i; j++)
+                    if (playerNeighbor[i] || playerNeighbor[j] || keys[i].Overlaps(keys[j]))
+                        levels[i] = Math.Max(levels[i], levels[j] + 1);
+                while (waves.Count <= levels[i]) waves.Add(new List<int>());
+                waves[levels[i]].Add(i);
+            }
+            return waves;
         }
 
         void FinishRestSimulationIfNeeded()

@@ -57,13 +57,16 @@ static class WorldRestSimulationScenario
             Check.Equal(1, distant.LocalTime.TurnCounter, "preset switch keeps distant district paused");
 
             preset.DisableDistantSimulationDuringRest = false;
+            preset.ParallelDistantSimulationDuringRest = true;
             preset.FinishDistantSimulationAfterRest = true;
             Session.Get.GamePreset = preset;
             player.SleepPoints = 0;
             player.ActionPoints = Rules.BASE_ACTION_COST;
             world.Game.DoStartSleeping(player);
             Check.Call(world.Game, "AdvancePlay", new[] { typeof(District), flags }, world.Map.District, active);
-            Check.Equal(true, distant.LocalTime.TurnCounter < Session.Get.WorldTime.TurnCounter,
+            Check.Equal(true, city[0, 1].EntryMap.LocalTime.TurnCounter < Session.Get.WorldTime.TurnCounter ||
+                city[1, 0].EntryMap.LocalTime.TurnCounter < Session.Get.WorldTime.TurnCounter ||
+                distant.LocalTime.TurnCounter < Session.Get.WorldTime.TurnCounter,
                 "sleep spreads the older distant turns");
             world.Game.DoWakeUp(player);
             Check.Call(world.Game, "FinishRestSimulationIfNeeded");

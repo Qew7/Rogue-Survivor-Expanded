@@ -84,6 +84,11 @@ namespace djack.RogueSurvivor.Data
         }
         public void Add(string key, int turn, string text, ObservedEvent observed = null, bool gainedTrait = false, long[] supportingCauses = null)
         {
+            lock (m_Owner ?? (object)this)
+                AddCore(key, turn, text, observed, gainedTrait, supportingCauses);
+        }
+        void AddCore(string key, int turn, string text, ObservedEvent observed, bool gainedTrait, long[] supportingCauses)
+        {
             CompactKeys();
             bool eventKey = observed != null && observed.EventId != 0 && key.StartsWith("event:", StringComparison.Ordinal);
             if (eventKey)
@@ -145,6 +150,10 @@ namespace djack.RogueSurvivor.Data
         }
 
         public ResidentRecord Register(Actor actor)
+        {
+            lock (this) return RegisterCore(actor);
+        }
+        ResidentRecord RegisterCore(Actor actor)
         {
             if (actor == null || actor.IsPlayer || actor.Model == null ||
                 actor.Model.Abilities.IsUndead || !actor.Model.Abilities.IsIntelligent) return null;

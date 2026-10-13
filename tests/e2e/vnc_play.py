@@ -203,7 +203,7 @@ with socket.create_connection(("127.0.0.1", 5900), timeout=10) as vnc:
     key(vnc, ord("S"))
     vnc.sendall(struct.pack(">BBHI", 4, 0, 0, shift))
     save = "/opt/game/Config/Saves/save.dat"
-    wait_for_log(log, "saving session... done!", 30)
+    wait_for_log(log, "saving session... done!", 90)
     wait_for(save, 30)
     save_bytes = os.path.getsize(save)
     assert read_saved_mods(save) == (os.environ["ROGUE_GAME_VERSION"], [

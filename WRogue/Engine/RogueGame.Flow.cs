@@ -485,6 +485,16 @@ namespace djack.RogueSurvivor.Engine
         /// <param name="sim"></param>
         void AdvancePlay(District district, SimFlags sim)
         {
+            if (m_Session.GamePreset != null && m_Session.GamePreset.ParallelDistantSimulationDuringRest &&
+                district != m_Session.CurrentMap.District)
+                DiceRoller.WithOverride(district.SimulationDiceRoller(m_Session.Seed),
+                    () => AdvanceDistrictTurn(district, sim));
+            else
+                AdvanceDistrictTurn(district, sim);
+        }
+
+        void AdvanceDistrictTurn(District district, SimFlags sim)
+        {
             lock (district)  // alpha10 lock district
             {
                 bool playerWasSleeping = district == m_Session.CurrentMap.District &&
@@ -630,7 +640,8 @@ namespace djack.RogueSurvivor.Engine
                 {
                     Point target = m_Session.RadioDropDistrict;
                     District destination = m_Session.World[target.X, target.Y];
-                    if (destination != null) FireEvent_ArmySupplies(destination.EntryMap);
+                    if (destination != null)
+                        lock (destination) FireEvent_ArmySupplies(destination.EntryMap);
                     else m_Session.RadioDropTurn = 0;
                 }
 
