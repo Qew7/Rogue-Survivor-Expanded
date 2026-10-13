@@ -301,11 +301,8 @@ namespace djack.RogueSurvivor.Engine
                         {
                             if (attacker.Model.Abilities.CanZombifyKilled && !defender.Model.Abilities.IsUndead && m_Rules.RollChance(s_Options.ZombificationChance))
                             {
-                                if (defender.IsPlayer)
-                                {
-                                    // remove player corpse.
-                                    defender.Location.Map.TryRemoveCorpseOf(defender);
-                                }
+                                // The risen actor replaces the victim's corpse, including for NPCs.
+                                defender.Location.Map.TryRemoveCorpseOf(defender);
                                 // add new zombie.
                                 Zombify(attacker, defender, false);
 

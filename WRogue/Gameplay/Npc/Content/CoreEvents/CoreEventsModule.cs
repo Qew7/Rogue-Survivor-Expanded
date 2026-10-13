@@ -28,7 +28,9 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 f => (f.ReportSubject ?? "someone") + " died" +
                     (f.ReportOther == null ? "" : "; killed by " + f.ReportOther) +
                     (f.Resource == "base" ? " at their group's base" : ""))
-                { ProvesDeath = true, ReportActorRole = NpcReportActorRole.Other, SelfReportTone = NpcSelfReportTone.Harmful });
+                { ProvesDeath = true, ReportActorRole = NpcReportActorRole.Other, SelfReportTone = NpcSelfReportTone.Harmful,
+                  DescribeSelfReport = (f, speaker) => f.OtherId == speaker.PersonalityIdentity && f.ReportSubject != null ?
+                      "I killed " + f.ReportSubject + (f.Resource == "base" ? " at their group's base" : "") : null });
             catalog.Event(new NpcEventDefinition("kill_human", NpcRecordCategory.Combat, false, e => (e.Other ?? "someone") + " killed " + (e.Subject ?? "Someone") + ".", null));
             catalog.Event(new NpcEventDefinition("starvation", NpcRecordCategory.Life, false, e => (e.Subject ?? "Someone") + " faced starvation.", null));
             catalog.Event(new NpcEventDefinition("zombified", NpcRecordCategory.Life, false, e => (e.Other ?? "someone") + " turned into " + (e.Subject ?? "Someone") + ".", null));
@@ -40,7 +42,10 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             catalog.Event(new NpcEventDefinition("chat", NpcRecordCategory.Encounters, false,
                 e => (e.Subject ?? "Someone") + " talked with " + (e.Other ?? "someone") + "."));
             catalog.Event(new NpcEventDefinition("traded", NpcRecordCategory.Encounters, true,
-                e => (e.Subject ?? "Someone") + " traded with " + (e.Other ?? "someone") + ".") { ReportActorRole = NpcReportActorRole.Both });
+                e => (e.Subject ?? "Someone") + " traded with " + (e.Other ?? "someone") + ".")
+                { ReportActorRole = NpcReportActorRole.Both,
+                  DescribeSelfReport = (f, speaker) => f.OtherId == speaker.PersonalityIdentity ?
+                      "I traded with " + (f.ReportSubject ?? "someone") : null });
             catalog.On("chat", NpcObservationPhase.Relationships, RememberContact);
             catalog.On("traded", NpcObservationPhase.Relationships, RememberContact);
             catalog.On("death", NpcObservationPhase.Goals, OnGoals);

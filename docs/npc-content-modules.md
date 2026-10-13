@@ -44,6 +44,11 @@ directory. Keep registration together; split larger action/perception helpers
 by responsibility. Add the module once in `Content/NpcContentDefaults.cs`.
 New definitions do not require adding branches to the generator, planner,
 event dispatcher or records reader.
+For a reportable action, set `ReportActorRole` to its actual actor and
+`SelfReportTone` to helpful or harmful when traits should affect willingness
+to tell it. Spoken reports use first person for direct participants; provide
+`DescribeSelfReport` only when the actor is not the grammatical subject of the
+ordinary report. Radio continues to use the ordinary attributed report.
 Keep a stable capability ID beside its owning module's registration and reuse
 that constant when another module must inspect the ID. Goal admission,
 selection, motivation and terminal records require the game's active

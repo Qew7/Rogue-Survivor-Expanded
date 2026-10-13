@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using djack.RogueSurvivor.Data;
 using djack.RogueSurvivor.Engine;
 
@@ -81,9 +82,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             if (fact.SubjectId != id && fact.OtherId != id) return true;
             NpcEventDefinition definition = game.NpcContent.Event(fact.Kind);
             if (definition == null) return true;
-            NpcReportActorRole role = definition.ReportActorRole;
-            bool ownAction = ((role & NpcReportActorRole.Subject) != 0 && fact.SubjectId == id) ||
-                ((role & NpcReportActorRole.Other) != 0 && fact.OtherId == id);
+            bool ownAction = OwnAction(speaker, fact, definition);
             if (!ownAction) return true;
             switch (definition.SelfReportTone)
             {
@@ -106,11 +105,30 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         {
             if (speaker.Personality == null || !Session.Get.GamePreset.NpcPersonalitiesEnabled) return null;
             int turn = speaker.Location.Map.LocalTime.TurnCounter;
-            NpcFact chosen = null;
+            NpcFact chosen = null; int best = Int32.MinValue;
             foreach (NpcFact fact in speaker.Personality.Knowledge.Facts)
-                if (EligibleFact(game, speaker, fact, turn) && EligibleListener(speaker, listener, fact) &&
-                    (chosen == null || fact.EventTurn > chosen.EventTurn)) chosen = fact;
+                if (EligibleFact(game, speaker, fact, turn) && EligibleListener(speaker, listener, fact))
+                {
+                    int score = fact.EventTurn + SelfReportPreference(game, speaker, fact);
+                    if (score > best) { chosen = fact; best = score; }
+                }
             return chosen;
+        }
+
+        static bool OwnAction(Actor speaker, NpcFact fact, NpcEventDefinition definition)
+        {
+            NpcReportActorRole role = definition.ReportActorRole;
+            Guid id = speaker.PersonalityIdentity;
+            return ((role & NpcReportActorRole.Subject) != 0 && fact.SubjectId == id) ||
+                ((role & NpcReportActorRole.Other) != 0 && fact.OtherId == id);
+        }
+
+        public static int SelfReportPreference(RogueGame game, Actor speaker, NpcFact fact)
+        {
+            if (fact.Source != NpcKnowledgeSource.Participant) return 0;
+            NpcEventDefinition definition = game.NpcContent.Event(fact.Kind);
+            return definition != null && definition.SelfReportTone != NpcSelfReportTone.Neutral &&
+                OwnAction(speaker, fact, definition) ? WorldTime.TURNS_PER_HOUR : 0;
         }
 
         public static bool EligibleFact(RogueGame game, Actor speaker, NpcFact fact, int turn)
@@ -182,7 +200,39 @@ namespace djack.RogueSurvivor.Gameplay.Personality
 
         public static string ReportSentence(RogueGame game, Actor speaker, NpcFact fact, bool radio = false)
         {
-            return ReportLead(speaker, fact, radio) + NpcRecordDescriptions.Report(game.NpcContent, fact) + " " + ReportPlace(fact) + ".";
+            if (!radio && fact.Source == NpcKnowledgeSource.Participant && speaker != null &&
+                (fact.SubjectId == speaker.PersonalityIdentity || fact.OtherId == speaker.PersonalityIdentity))
+            {
+                NpcEventDefinition definition = game.NpcContent.Event(fact.Kind);
+                string own = definition == null || definition.DescribeSelfReport == null ? null :
+                    definition.DescribeSelfReport(fact, speaker);
+                if (!String.IsNullOrEmpty(own)) return own + " " + ReportPlace(fact) + ".";
+            }
+            return SpokenReport(speaker, fact, NpcRecordDescriptions.Report(game.NpcContent, fact), radio);
+        }
+
+        static string SpokenReport(Actor speaker, NpcFact fact, string clause, bool radio)
+        {
+            if (!radio && fact.Source == NpcKnowledgeSource.Participant && speaker != null)
+            {
+                Guid id = speaker.PersonalityIdentity;
+                string name = fact.SubjectId == id ? fact.ReportSubject : fact.OtherId == id ? fact.ReportOther : null;
+                // When two different people share a display name, the prose alone
+                // cannot identify which occurrence refers to the speaker.
+                bool namesake = fact.SubjectId != fact.OtherId && fact.SubjectId != Guid.Empty && fact.OtherId != Guid.Empty &&
+                    fact.ReportSubject == fact.ReportOther;
+                if (!namesake && !String.IsNullOrEmpty(name))
+                {
+                    if (clause.StartsWith(name + " ", StringComparison.Ordinal))
+                        return "I" + clause.Substring(name.Length) + " " + ReportPlace(fact) + ".";
+                    if (clause.StartsWith(name + "'s ", StringComparison.Ordinal))
+                        return "My" + clause.Substring(name.Length + 2) + " " + ReportPlace(fact) + ".";
+                    string escaped = Regex.Escape(name);
+                    clause = Regex.Replace(clause, @"(?<!\w)" + escaped + @"'s(?!\w)", "my");
+                    clause = Regex.Replace(clause, @"(?<!\w)" + escaped + @"(?!\w)", "me");
+                }
+            }
+            return ReportLead(speaker, fact, radio) + clause + " " + ReportPlace(fact) + ".";
         }
 
         struct StoryPart
@@ -224,7 +274,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                     if (!String.IsNullOrEmpty(summary))
                     {
                         parts.Add(new StoryPart(run[0], run[run.Count - 1],
-                            ReportLead(speaker, run[0], radio) + summary + " " + ReportPlace(run[0]) + "."));
+                            SpokenReport(speaker, run[0], summary, radio)));
                         i += run.Count;
                         continue;
                     }

@@ -615,7 +615,8 @@ namespace djack.RogueSurvivor.Gameplay.AI
                 decisionStart = decisionProfile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
                 int tradeBias = PersonalitySystem.Bias(m_Actor, DecisionKind.Trade);
                 if (Directives.CanTrade && (tradeBias == 0 ||
-                    game.Rules.RollChance(Math.Max(0, Math.Min(100, 70 + tradeBias)))))
+                    game.Rules.RollChance(Math.Max(0, Math.Min(100, 70 + tradeBias)))) &&
+                    m_Actor.Inventory != null && !m_Actor.Inventory.IsEmpty)
                 {
                     // get actors we want to trade with.
                     List<Percept> tradingActors = Filter(game, mapPercepts,
