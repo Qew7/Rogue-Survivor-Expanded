@@ -38,7 +38,7 @@ static class PersonalityEvidenceOverflowScenario
                 "all retained journal entries are later events");
 
             world.Map.LocalTime.TurnCounter = follower.Personality.Memories[0].ResolveTurn;
-            PersonalitySystem.ResolveDue(world.Game, world.Map);
+            PersonalityScenarioResolution.PreferFirstOutcome(world.Game, world.Map);
             Check.Equal(true, follower.Personality.HasTrait("vengeful"),
                 "the pending memory retains evidence needed for its outcome");
         });

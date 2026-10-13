@@ -224,7 +224,16 @@ namespace djack.RogueSurvivor.Data
                 catch (ArgumentException) { }
                 outcome = "improved skill " + skill;
             }
-            else outcome = "no new trait or skill";
+            else if (outcome.StartsWith("removed_trait:"))
+            { TraitDefinition trait = registry == null ? null : registry.Trait(outcome.Substring(14)); outcome = "lost trait " + (trait == null ? TraitName(outcome.Substring(14)) : trait.Name); }
+            else if (outcome.StartsWith("disposition:"))
+            {
+                string[] parts = outcome.Split(':');
+                int change;
+                outcome = parts.Length == 3 && Int32.TryParse(parts[2], out change) ?
+                    (change > 0 ? "raised " : "lowered ") + parts[1] + " by " + Math.Abs(change) : "changed a disposition";
+            }
+            else outcome = "no new development";
             record.Add("resolved:" + MemoryKey(memory), memory.ResolvedTurn,
                 "Resolved memory: " + (registry == null || registry.Memory(memory.Id) == null ? MemoryName(memory.Id) : registry.Memory(memory.Id).Name) + "; " + outcome + ".", null,
                 memory.OutcomeId != null && memory.OutcomeId.StartsWith("trait:", StringComparison.Ordinal));

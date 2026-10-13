@@ -119,10 +119,10 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 e => (e.Other ?? "Someone") + " rejected " + (e.Subject ?? "someone") + "'s permission claim after witnessing the theft.",
                 f => f.ReportSubject + " gave an account contradicted by an eyewitness", isPrivate: true)
                 { ReportDisputesKinds = new[] { "base_theft", "claimed_permission" }, ReportPriority = 8 });
-            catalog.Memory(new MemoryDefinition("false_testimony_exposed", "Caught a contradictory permission claim", 2, 5,
+            catalog.Memory(new MemoryDefinition("false_testimony_exposed", "Caught a contradictory permission claim", 2, 2,
                 new[] { new MemoryTrigger("false_testimony_exposed", (a, e) => a == e.Other) },
                 new MemoryOutcome(null, "mistrustful", null), new MemoryOutcome(null, null, Skills.IDs.STRONG_PSYCHE))
-                .Relate(MemoryRelationRole.Subject, -8), false);
+                .Relate(MemoryRelationRole.Subject, -8).ChangeDisposition(NpcDispositionAxis.MessageTrust, -15), false);
             catalog.Event(new NpcEventDefinition("restitution_given", NpcRecordCategory.Help, false, e => (e.Subject ?? "Someone") + " replaced supplies lost by " + (e.Other ?? "someone") + ".", null));
             catalog.Event(new NpcEventDefinition("restitution_requested", NpcRecordCategory.Help, true, e => (e.Subject ?? "Someone") + " asked " + (e.Other ?? "someone") + " to compensate lost supplies.", null) { AudibleReport = true, PlayerReply = new NpcPlayerReply("replacement supplies", "food_promised", "restitution_refused", "Yes, I'll replace your supplies.", "No, I won't replace them.") });
             catalog.Event(new NpcEventDefinition("restitution_refused", NpcRecordCategory.Help, true, e => (e.Subject ?? "Someone") + " refused " + (e.Other ?? "someone") + "'s demand for compensation.", null) { SelfReportTone = NpcSelfReportTone.Harmful });

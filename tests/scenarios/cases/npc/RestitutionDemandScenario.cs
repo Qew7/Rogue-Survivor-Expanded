@@ -16,10 +16,11 @@ static class RestitutionDemandScenario
             var food = new ItemFood(world.Game.GameItems.CANNED_FOOD) { Quantity = 3 }; world.Map.DropItemAt(food, new Point(3, 1));
             world.Game.DoTakeItem(taker, new Point(3, 1), food);
             taker.RemoveAggressorOf(owner); owner.RemoveSelfDefenceFrom(taker);
+            owner.Inventory.AddAll(new ItemFood(world.Game.GameItems.CANNED_FOOD) { Quantity = 5 });
             world.Map.RemoveActor(owner); world.Place(owner, 3, 0);
             NpcIntentSupport.Turn(world, owner);
             Check.Equal(true, NpcIntentSupport.HasEvent(taker, "restitution_requested"), "resource-conscious claimant selects and speaks a compensation demand");
-            Check.Equal(0, NpcIntentSupport.FoodUnits(owner), "spoken demand invents no returned resources");
+            Check.Equal(5, NpcIntentSupport.FoodUnits(owner), "spoken demand invents no returned resources");
             NpcIntentSupport.Turn(world, taker);
             Check.Equal(true, NpcIntentSupport.HasEvent(owner, "restitution_refused"), "recipient's own values decide the real response");
             Check.Equal(3, NpcIntentSupport.FoodUnits(taker), "refusal transfers no item");

@@ -45,7 +45,7 @@ static class PersonalityLeaderDeathScenario
             int due = System.Math.Max(follower.Personality.Memories[0].ResolveTurn,
                 follower.Personality.Memories[1].ResolveTurn);
             world.Map.LocalTime.TurnCounter = due;
-            PersonalitySystem.ResolveDue(world.Game, world.Map);
+            PersonalityScenarioResolution.PreferFirstOutcome(world.Game, world.Map);
             Check.Equal(0, follower.Personality.Memories.Count,
                 "dead leader's memories resolve normally");
             Check.Equal(2, personal.Memories.Count,

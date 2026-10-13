@@ -9,10 +9,10 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public string Id { get { return "knowledge"; } }
         public void Register(NpcCatalogBuilder catalog)
         {
-            catalog.Memory(new MemoryDefinition("heard_a_report", "Was told a report about events", 2, 5,
+            catalog.Memory(new MemoryDefinition("heard_a_report", "Was told a report about events", 2, 2,
                 new[] { new MemoryTrigger("rumor_shared", (a, e) => a == e.Other) },
                 new MemoryOutcome(null, "mistrustful", null), new MemoryOutcome(null, null, Skills.IDs.CHARISMATIC))
-                .Relate(MemoryRelationRole.Subject, 0), false);
+                .Relate(MemoryRelationRole.Subject, 0).ChangeDisposition(NpcDispositionAxis.MessageTrust, 6), false);
             RegisterEvents(catalog);
         }
         void RegisterEvents(NpcCatalogBuilder catalog)

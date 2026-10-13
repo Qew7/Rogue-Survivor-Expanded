@@ -3,6 +3,7 @@ using System.Collections.Generic;
 
 namespace djack.RogueSurvivor.Data
 {
+    enum NpcDispositionAxis { HumanLife, CareCircle, MessageTrust, Scarcity }
     [Serializable]
     sealed class TraitInstance
     {
@@ -139,6 +140,19 @@ namespace djack.RogueSurvivor.Data
     [Serializable]
     sealed partial class PersonalityState
     {
+        [System.Runtime.Serialization.OptionalField] int[] m_ExperienceValues;
+        public int ExperienceValue(NpcDispositionAxis axis)
+        { return m_ExperienceValues == null ? 0 : m_ExperienceValues[(int)axis]; }
+        public bool ChangeExperience(NpcDispositionAxis axis, int change)
+        {
+            if (change == 0) return false;
+            if (m_ExperienceValues == null) m_ExperienceValues = new int[4];
+            int index = (int)axis;
+            int next = Math.Max(-100, Math.Min(100, m_ExperienceValues[index] + change));
+            if (next == m_ExperienceValues[index]) return false;
+            m_ExperienceValues[index] = next;
+            return true;
+        }
         readonly List<TraitInstance> m_Traits = new List<TraitInstance>(4);
         readonly List<MemoryInstance> m_Memories = new List<MemoryInstance>(2);
         readonly List<ObservedEvent> m_Events = new List<ObservedEvent>(8);
@@ -240,6 +254,13 @@ namespace djack.RogueSurvivor.Data
             if (trait == null || HasTrait(trait.Id)) return false;
             m_Traits.Add(trait);
             return true;
+        }
+
+        public bool RemoveTrait(string id)
+        {
+            for (int i = 0; i < m_Traits.Count; i++)
+                if (m_Traits[i].Id == id) { m_Traits.RemoveAt(i); return true; }
+            return false;
         }
 
         public bool AddMemory(MemoryInstance memory)

@@ -22,7 +22,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             catalog.Resource(new NpcResourceDefinition("medicine", (g, a) => a.HitPoints < g.Rules.ActorMaxHPs(a)));
             catalog.GoalSource(this);
             catalog.Value(new NpcValueDefinition("Recovery", "Recover health", NpcGoalValue.Recovery, m => 160 + m.Supplies - m.Courage / 2, true));
-            catalog.Value(new NpcValueDefinition("MedicalCare", "Meet a person's medical need", NpcGoalValue.MedicalCare, m => 15 + m.Compassion + m.Attachment / 3 + m.Feeling / 3 + m.CommunityCare, true));
+            catalog.Value(new NpcValueDefinition("MedicalCare", "Meet a person's medical need", NpcGoalValue.MedicalCare,
+                m => 15 + m.Compassion + m.Attachment / 3 + m.Feeling / 3 + m.CommunityCare + m.HumanLife / 2 + (m.Close ? 0 : m.CareCircle / 2), true));
             var recover = new NpcIntentDefinition(RestoreHealthId, "Recover health",
             NpcIntentMethod.RestoreHealth, 40, 20, 180, 180, 0);
 

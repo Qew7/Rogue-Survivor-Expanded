@@ -13,6 +13,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public readonly IList<NpcKnownPerson> People;
         public readonly int Turn, MaxHP, FoodUnits;
         public readonly int GroupBias, CompassionBias, TradeBias, CourageBias, LawBias, SuppliesBias;
+        public readonly int HumanLife, CareCircle, MessageTrust, Scarcity;
         public readonly bool Hungry, HasFood;
         public readonly bool HasActiveGeneratedGoal;
         public readonly NpcContentCatalog Catalog;
@@ -28,6 +29,10 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             // Goal sources read owner state; actor-only trait biases are shared by this evaluation pass.
             PersonalitySystem.GoalBiases(owner, catalog.Personalities, out GroupBias, out CompassionBias,
                 out TradeBias, out CourageBias, out LawBias, out SuppliesBias);
+            HumanLife = PersonalitySystem.Disposition(owner, NpcDispositionAxis.HumanLife, catalog);
+            CareCircle = PersonalitySystem.Disposition(owner, NpcDispositionAxis.CareCircle, catalog);
+            MessageTrust = PersonalitySystem.Disposition(owner, NpcDispositionAxis.MessageTrust, catalog);
+            Scarcity = PersonalitySystem.Disposition(owner, NpcDispositionAxis.Scarcity, catalog);
             if (profile != null) profile("context traits", System.Diagnostics.Stopwatch.GetTimestamp() - started);
             started = profile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
             MaxHP = game.Rules.ActorMaxHPs(owner); Hungry = game.Rules.IsActorHungry(owner); HasFood = NpcFoodSupply.HasFood(game, owner);
@@ -62,6 +67,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public readonly Actor Owner;
         public readonly int CommunityCare, CommunitySecurity;
         public readonly int Group, Compassion, Trade, Courage, Law, Supplies, Feeling, Attachment, Fear, Grievance;
+        public readonly int HumanLife, CareCircle, MessageTrust, Scarcity;
+        public readonly bool Close;
         public NpcMotivation(NpcContentCatalog catalog, Actor owner, Guid subject, string excludeTrait = null,
             NpcGoalContext context = null, NpcKnownPerson knownPerson = null)
         {
@@ -80,9 +87,15 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             Courage = context == null ? PersonalitySystem.Bias(owner, DecisionKind.Courage, registry: registry, excludeTrait: excludeTrait) : context.CourageBias;
             Law = context == null ? PersonalitySystem.Bias(owner, DecisionKind.Law, registry: registry, excludeTrait: excludeTrait) : context.LawBias;
             Supplies = context == null ? PersonalitySystem.Bias(owner, DecisionKind.Supplies, registry: registry, excludeTrait: excludeTrait) : context.SuppliesBias;
+            HumanLife = context == null ? PersonalitySystem.Disposition(owner, NpcDispositionAxis.HumanLife, catalog, excludeTrait) : context.HumanLife;
+            CareCircle = context == null ? PersonalitySystem.Disposition(owner, NpcDispositionAxis.CareCircle, catalog, excludeTrait) : context.CareCircle;
+            MessageTrust = context == null ? PersonalitySystem.Disposition(owner, NpcDispositionAxis.MessageTrust, catalog, excludeTrait) : context.MessageTrust;
+            Scarcity = context == null ? PersonalitySystem.Disposition(owner, NpcDispositionAxis.Scarcity, catalog, excludeTrait) : context.Scarcity;
             RelationshipRecord opinion;
             Feeling = NpcRelationshipValue.Calculate(owner, subject, known == null ? Guid.Empty : known.GroupId,
                 known == null ? -1 : known.FactionId, out opinion, true, registry, excludeTrait);
+            Close = owner.SocialGroup != null && known != null && known.GroupId == owner.SocialGroup.Identity ||
+                opinion != null && opinion.Attachment >= 20;
             if (opinion != null) { Attachment = opinion.Attachment; Fear = opinion.Fear; Grievance = opinion.Grievance; }
         }
     }

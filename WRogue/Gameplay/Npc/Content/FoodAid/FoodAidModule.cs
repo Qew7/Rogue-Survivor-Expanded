@@ -13,7 +13,9 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             catalog.OperatorSource(new NpcOperatorSource("food.deliver", c => (ulong)NpcPlanFact.Delivered, FoodPlanOperators.Delivery,
                 c => (ulong)NpcPlanFact.SpareFood, d => d.Resource == null || d.Resource == "food"));
             catalog.GoalSource(this);
-            catalog.Value(new NpcValueDefinition("Care", "Provide needed food", NpcGoalValue.Care, m => 10 + m.Compassion + Math.Min(0, m.Trade) + m.Feeling / 4 + m.Attachment / 4 + Math.Max(0, m.Group) / 10, true));
+            catalog.Value(new NpcValueDefinition("Care", "Provide needed food", NpcGoalValue.Care,
+                m => 10 + m.Compassion + Math.Min(0, m.Trade) + m.Feeling / 4 + m.Attachment / 4 + Math.Max(0, m.Group) / 10 +
+                    (m.Close ? 0 : m.CareCircle / 2) - m.Scarcity / 2, true));
             catalog.Value(new NpcValueDefinition("Reciprocity", "Reduce a personal debt", NpcGoalValue.Reciprocity, m => 25 + m.Compassion + m.Trade + m.Feeling / 2, true)
                 { AfterDelivery = c => c.Owner.Personality.Person(c.Target.PersonalityIdentity) != null && c.Owner.Personality.Person(c.Target.PersonalityIdentity).Debt > c.Goal.Generated.Desired });
             var repay = new NpcIntentDefinition("repay_aid", "Repay remembered aid",

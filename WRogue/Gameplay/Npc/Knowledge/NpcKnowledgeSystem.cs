@@ -140,7 +140,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             RelationshipRecord trust = listener.Personality.Person(speaker.PersonalityIdentity);
             int confidence = Math.Max(0, Math.Min(95, source.Confidence - 20 + (trust == null ? 0 : trust.Trust / 10) +
                 (trust == null ? 0 : -trust.Grievance / 5) +
-                Math.Min(0, PersonalitySystem.Bias(listener, DecisionKind.Group)) / 2));
+                Math.Min(0, PersonalitySystem.Bias(listener, DecisionKind.Group)) / 2 +
+                PersonalitySystem.Disposition(listener, NpcDispositionAxis.MessageTrust) / 3));
             if (source.Kind == "claimed_permission")
             {
                 NpcFact contrary = listener.Personality.Knowledge.Facts.Find(f => f.EventId == source.EventId && f.Kind == "base_theft");

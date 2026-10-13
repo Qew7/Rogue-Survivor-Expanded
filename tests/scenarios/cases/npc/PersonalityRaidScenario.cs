@@ -44,7 +44,7 @@ static class PersonalityRaidScenario
             Check.Equal(null, heard.GetValue(sleeping.Controller), "sleeping NPC receives no heard raid signal");
             Check.Equal(0, sleeping.Personality.Memories.Count, "sleeping NPC acquires no raid memory");
             world.Map.LocalTime.TurnCounter = witness.Personality.Memories[0].ResolveTurn;
-            PersonalitySystem.ResolveDue(world.Game, world.Map);
+            PersonalityScenarioResolution.PreferFirstOutcome(world.Game, world.Map);
             Check.Equal(true, witness.Personality.HasTrait("roadside_vigilance"),
                 "vigilant survivor develops a distinct biker raid trait");
         });

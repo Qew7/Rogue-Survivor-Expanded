@@ -59,7 +59,7 @@ static class PersonalityRelationshipsPersonScenario
 
             world.Map.LocalTime.TurnCounter = Math.Max(recipient.Personality.Memories[0].ResolveTurn,
                 recipient.Personality.Memories[1].ResolveTurn);
-            PersonalitySystem.ResolveDue(world.Game, world.Map);
+            PersonalityScenarioResolution.PreferFirstOutcome(world.Game, world.Map);
             Check.Equal(0, recipient.Personality.Memories.Count, "resolved memory leaves pending queue");
             Check.Equal(1, relationship.Memories.Count, "resolved episode stays with the helper");
             Check.Equal(world.Map.LocalTime.TurnCounter, relationship.Memories[0].ResolvedTurn,

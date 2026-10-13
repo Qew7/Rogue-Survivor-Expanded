@@ -8,17 +8,17 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public void Register(NpcCatalogBuilder c)
         {
             c.GoalSource(new NpcInterestSystem());
-            c.Value(new NpcValueDefinition("FoodReserve", "Keep a reserve of usable food", null, m => 20 + m.Supplies / 4, true));
+            c.Value(new NpcValueDefinition("FoodReserve", "Keep a reserve of usable food", null, m => 20 + m.Supplies / 4 + m.Scarcity / 2, true));
             c.Fact("FoodReserve"); for (int i = 0; i <= 6; i++) c.Fact("FoodStock" + i);
             c.Capability(new NpcIntentDefinition("stockpile_food", "Build a food reserve", 180, 180) {
                 Resource = "food", ResultFacts = (catalog, g) => catalog.Facts.Mask("FoodReserve") });
             c.PlanSeed(StockpilePlanOperators.Seed);
             c.OperatorSource(new NpcOperatorSource("food.reserve", catalog => catalog.Facts.Mask("FoodReserve"), StockpilePlanOperators.Build));
             c.Interest(new NpcInterestDefinition("food_reserve", context => {
-                int supplies = PersonalitySystem.Bias(context.Owner, DecisionKind.Supplies);
+                int supplies = PersonalitySystem.Bias(context.Owner, DecisionKind.Supplies) + context.Scarcity;
                 if (supplies >= 15) Remember(context, "food_reserve", context.Self, 3, supplies);
             }, (context, interest, offers) => {
-                if (PersonalitySystem.Bias(context.Owner, DecisionKind.Supplies) < 15) return;
+                if (PersonalitySystem.Bias(context.Owner, DecisionKind.Supplies) + context.Scarcity < 15) return;
                 int units = context.FoodUnits;
                 offers.Add(context.Self, "FoodReserve", "stockpile_food", units, interest.Need,
                     units < interest.Need ? 100 : 0, 100, interest.CauseId, resource: "food", self: true);

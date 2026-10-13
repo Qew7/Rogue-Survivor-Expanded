@@ -49,12 +49,12 @@ static class PersonalityObservationScenario
             Check.Equal(1, awake.Personality.Memories.Count,
                 "disabled system adds no memories");
             world.Map.LocalTime.TurnCounter = awake.Personality.Memories[0].ResolveTurn;
-            PersonalitySystem.ResolveDue(world.Game, world.Map);
+            PersonalityScenarioResolution.PreferFirstOutcome(world.Game, world.Map);
             Check.Equal(1, awake.Personality.Memories.Count,
                 "disabled system pauses pending resolution");
 
             Session.Get.GamePreset = GamePreset.BuiltIn(GameMode.GM_STANDARD);
-            PersonalitySystem.ResolveDue(world.Game, world.Map);
+            PersonalityScenarioResolution.PreferFirstOutcome(world.Game, world.Map);
             Check.Equal(0, awake.Personality.Memories.Count,
                 "pending memory resumes resolution when option is enabled again");
             for (int turn = 1; turn <= 40; turn++)

@@ -106,6 +106,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             Guid claimant = claim.SubjectId;
             string claimantName = claim.SubjectName;
             listener.Personality.Opinion(claimant, claimantName).AdjustSocial(trust: -15, grievance: 10);
+            if (!listener.IsPlayer) listener.Personality.ChangeExperience(NpcDispositionAxis.MessageTrust, -8);
             long id = Session.Get.NextPersonalityEventId();
             var observed = new ObservedEvent("false_testimony_exposed", turn, claimantName, listener.UnmodifiedName,
                 true, subjectId: claimant, otherId: listener.PersonalityIdentity, eventId: id, causeId: claim.EventId);

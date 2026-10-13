@@ -9,11 +9,11 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         {
             c.GoalSource(this);
             RegisterMechanic(c, "Protection", "Defend someone I value", "defend_person", "Defended",
-                m => 25 + m.Compassion + m.Courage + m.Group / 2 + m.CommunitySecurity, NpcConflictActions.Defend, true);
+                m => 25 + m.Compassion + m.Courage + m.Group / 2 + m.CommunitySecurity + m.HumanLife / 2, NpcConflictActions.Defend, true);
             RegisterMechanic(c, "Retaliation", "Retaliate for remembered harm", "retaliate", "Retaliated",
-                m => m.Courage - m.Compassion - m.Law + m.Grievance / 2, NpcConflictActions.Retaliate, true);
+                m => m.Courage - m.Compassion - m.Law + m.Grievance / 2 - m.HumanLife, NpcConflictActions.Retaliate, true);
             RegisterMechanic(c, "Intimidation", "Deter remembered misconduct", "intimidate", "ThreatCommunicated",
-                m => m.Courage - m.Law - m.Compassion + m.Grievance / 3, NpcConflictActions.Threaten);
+                m => m.Courage - m.Law - m.Compassion + m.Grievance / 3 - m.HumanLife / 3, NpcConflictActions.Threaten);
             RegisterMechanic(c, "RepairTrust", "Attempt to repair a relationship", "apologize", "ApologyCommunicated",
                 m => 20 + m.Compassion + m.Law + m.Attachment / 2, NpcConflictActions.Apologize);
             RegisterMechanic(c, "GroupSecurity", "Exclude a dangerous companion", "expel_member", "MemberExpelled",

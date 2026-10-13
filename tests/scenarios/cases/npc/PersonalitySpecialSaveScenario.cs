@@ -57,7 +57,7 @@ static class PersonalitySpecialSaveScenario
                         foreach (MemoryInstance memory in actor.Personality.Memories)
                             map.LocalTime.TurnCounter = Math.Max(map.LocalTime.TurnCounter, memory.ResolveTurn);
                 loaded.WorldTime.TurnCounter = map.LocalTime.TurnCounter;
-                PersonalitySystem.ResolveDue(world.Game, map);
+                PersonalityScenarioResolution.PreferFirstOutcome(world.Game, map);
                 Check.Equal(true, saved.Personality.HasTrait("holiday_spirit"), "loaded unique memory gains special trait");
                 Check.Equal(true, saved.Personality.HasTrait("friend_army"), "loaded faction memory gains special trait");
                 Check.Equal(false, fallback.Personality.HasTrait("holiday_spirit"), "missing prerequisite blocks special trait");

@@ -55,7 +55,7 @@ static class PersonalityRelationshipsSaveScenario
                 Session.Restore(loaded);
                 foreach (MemoryInstance pending in savedObserver.Personality.Memories)
                     map.LocalTime.TurnCounter = Math.Max(map.LocalTime.TurnCounter, pending.ResolveTurn);
-                PersonalitySystem.ResolveDue(world.Game, map);
+                PersonalityScenarioResolution.PreferFirstOutcome(world.Game, map);
                 Check.Equal(0, savedObserver.Personality.Memories.Count,
                     "saved pending memory resolves after load");
                 Check.Equal(true, person.Memories[0].ResolvedTurn > 0,

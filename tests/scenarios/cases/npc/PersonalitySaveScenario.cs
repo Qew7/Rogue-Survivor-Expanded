@@ -74,7 +74,7 @@ static class PersonalitySaveScenario
 
                 Session.Restore(loaded);
                 restoredMap.LocalTime.TurnCounter = 4321;
-                PersonalitySystem.ResolveDue(world.Game, restoredMap);
+                PersonalityScenarioResolution.PreferFirstOutcome(world.Game, restoredMap);
                 Check.Equal(0, restored.Personality.Memories.Count,
                     "pending memory resolves after the saved game is restored");
                 Check.Equal(1, restored.Sheet.SkillTable.GetSkillLevel(

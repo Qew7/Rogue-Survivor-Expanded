@@ -18,16 +18,17 @@ static class GoalBeliefsScenario
             var report = new NpcFact { EventId = 600, Kind = "attack", SubjectId = victim.PersonalityIdentity, OtherId = target.PersonalityIdentity,
                 SubjectName = victim.UnmodifiedName, OtherName = target.UnmodifiedName, Place = victim.Location, Confidence = 60 };
             speaker.Personality.Knowledge.Learn(report);
+            int reportedConfidence = NpcKnowledgeSystem.ReportConfidence(owner, speaker, report);
             Check.Equal(true, world.Try(new ActionNpcTell(speaker, world.Game, owner, report)), "real conversation delivers uncertain evidence");
             NpcKnownPerson known = owner.Personality.Knowledge.Person(target.PersonalityIdentity);
-            Check.Equal(40, known.ViolationConfidence, "uncertainty belongs to the wrongdoing claim");
+            Check.Equal(reportedConfidence, known.ViolationConfidence, "uncertainty belongs to the wrongdoing claim");
             Check.Equal(null, NpcIntentSupport.Intent(owner, "confront_reported_aggressor"), "weak confidence lowers expected benefit below admission");
             target.MarkAsAgressorOf(owner);
             owner.MarkAsSelfDefenceFrom(target);
             var sight = new LOSSensor(LOSSensor.SensingFilter.ACTORS);
             NpcKnowledgeSystem.Perceive(world.Game, owner, sight.Sense(world.Game, owner));
             Check.Equal(100, known.ThreatConfidence, "current hostile presence establishes credible danger");
-            Check.Equal(40, known.ViolationConfidence, "seeing the person does not confirm their reported crime");
+            Check.Equal(reportedConfidence, known.ViolationConfidence, "seeing the person does not confirm their reported crime");
             target.RemoveAggressorOf(owner);
             owner.RemoveSelfDefenceFrom(target);
             NpcKnowledgeSystem.Perceive(world.Game, owner, sight.Sense(world.Game, owner));

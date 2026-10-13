@@ -29,8 +29,11 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             public readonly GameFactions.IDs Id;
             public readonly string Key, Name;
             public readonly int Supply, Shelter, Care, Security, Courage;
-            public FactionSource(GameFactions.IDs id, string key, string name, int supply = 0, int shelter = 0, int care = 0, int security = 0, int courage = 0)
-            { Id = id; Key = key; Name = name; Supply = supply; Shelter = shelter; Care = care; Security = security; Courage = courage; }
+            public readonly int HumanLife, CareCircle, MessageTrust, Scarcity;
+            public FactionSource(GameFactions.IDs id, string key, string name, int supply = 0, int shelter = 0, int care = 0, int security = 0, int courage = 0,
+                int humanLife = 0, int careCircle = 0, int messageTrust = 0, int scarcity = 0)
+            { Id = id; Key = key; Name = name; Supply = supply; Shelter = shelter; Care = care; Security = security; Courage = courage;
+                HumanLife = humanLife; CareCircle = careCircle; MessageTrust = messageTrust; Scarcity = scarcity; }
         }
         static Experience U(string id, string name, string trait, string label, string requires,
             DecisionKind axis, int amount, DecisionKind second, int secondAmount, Skills.IDs skill,
@@ -59,16 +62,16 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             U("sewers_thing", "The Sewers Thing", "sewer_dread", "Sewer dread", "fearful", DecisionKind.Explore, -25, DecisionKind.Courage, -20, Skills.IDs.STRONG_PSYCHE, -25, u => u.TheSewersThing)
         };
         public static readonly FactionSource[] Factions = {
-            new FactionSource(GameFactions.IDs.TheCHARCorporation, "char", "CHAR Corp.", 5, 15, courage: 12),
+            new FactionSource(GameFactions.IDs.TheCHARCorporation, "char", "CHAR Corp.", 5, 15, courage: 12, humanLife: -8, messageTrust: -8),
             new FactionSource(GameFactions.IDs.TheCivilians, "civilians", "Civilians"),
             new FactionSource(GameFactions.IDs.TheUndeads, "undead", "Undeads"),
-            new FactionSource(GameFactions.IDs.TheArmy, "army", "Army", 15, 5, 10, 25, courage: 25),
-            new FactionSource(GameFactions.IDs.TheBikers, "bikers", "Bikers", 10, -5, courage: 10),
-            new FactionSource(GameFactions.IDs.TheGangstas, "gangstas", "Gangstas", 10, -5, courage: 10),
-            new FactionSource(GameFactions.IDs.ThePolice, "police", "Police", 15, 5, 15, 25, courage: 18),
-            new FactionSource(GameFactions.IDs.TheBlackOps, "blackops", "BlackOps", 5, 15, courage: 22),
-            new FactionSource(GameFactions.IDs.ThePsychopaths, "psychopaths", "Psychopaths", courage: 15),
-            new FactionSource(GameFactions.IDs.TheSurvivors, "survivors", "Survivors", care: 15, security: 10, courage: 5),
+            new FactionSource(GameFactions.IDs.TheArmy, "army", "Army", 15, 5, 10, 25, courage: 25, humanLife: 8, careCircle: -5, messageTrust: 5, scarcity: 8),
+            new FactionSource(GameFactions.IDs.TheBikers, "bikers", "Bikers", 10, -5, courage: 10, humanLife: -18, careCircle: -15, messageTrust: -12, scarcity: 12),
+            new FactionSource(GameFactions.IDs.TheGangstas, "gangstas", "Gangstas", 10, -5, courage: 10, humanLife: -18, careCircle: -15, messageTrust: -12, scarcity: 12),
+            new FactionSource(GameFactions.IDs.ThePolice, "police", "Police", 15, 5, 15, 25, courage: 18, humanLife: 18, careCircle: 5, messageTrust: 8),
+            new FactionSource(GameFactions.IDs.TheBlackOps, "blackops", "BlackOps", 5, 15, courage: 22, humanLife: -12, careCircle: -20, messageTrust: -15),
+            new FactionSource(GameFactions.IDs.ThePsychopaths, "psychopaths", "Psychopaths", courage: 15, humanLife: -35, careCircle: -30, messageTrust: -25),
+            new FactionSource(GameFactions.IDs.TheSurvivors, "survivors", "Survivors", care: 15, security: 10, courage: 5, humanLife: 12, careCircle: 10, messageTrust: 5, scarcity: 12),
             new FactionSource(GameFactions.IDs.TheFerals, "ferals", "Ferals")
         };
         public static readonly Experience[] WorldEvents = {
