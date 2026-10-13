@@ -119,6 +119,13 @@ static partial class RestSimulationBenchmarks
             Turns, CitySize * CitySize, elapsed);
     }
 
+    public static void ProfileOneDistrict()
+    {
+        double elapsed = RunOne(true, 1, 15, GameOptions.SimRatio.FULL);
+        Console.WriteLine("PROFILE_REST_ONE {0} waits, 1 district, unadjusted stopwatch {1:F1} ms",
+            Turns, elapsed);
+    }
+
     public static void ProfileLarge()
     {
         double elapsed = RunOne(true, 5, 70, GameOptions.SimRatio.FULL);

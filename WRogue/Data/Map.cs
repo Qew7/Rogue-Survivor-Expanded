@@ -1361,6 +1361,9 @@ namespace djack.RogueSurvivor.Data
 
         public void ReconstructAuxiliaryFields()
         {
+            // Older saves can list a follower on both maps after a cross-map transition.
+            m_ActorsList.RemoveAll(a => a.Location.Map != this && a.Location.Map != null &&
+                a.Location.Map.HasActor(a));
             // Earlier saves could contain leaderless faction claims. They no longer
             // have an owner and must not block the territory permanently.
             if (m_XpdBases != null)

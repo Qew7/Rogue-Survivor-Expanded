@@ -38,7 +38,11 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             game.NpcContent.Advance(NpcClockPhase.BeforeDecision, new NpcClockContext(game, owner));
             if (profile != null) profile("decision content", System.Diagnostics.Stopwatch.GetTimestamp() - start);
             start = profile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
-            NpcGoalGenerator.Refresh(game, owner, true);
+            // Spread routine goal reevaluation across ten map turns. Observed events
+            // refresh goals through the event pipeline immediately.
+            if (owner.Location.Map.LocalTime.TurnCounter % 10 ==
+                (int)((uint)owner.PersonalityIdentity.GetHashCode() % 10u))
+                NpcGoalGenerator.Refresh(game, owner, true);
             if (profile != null) profile("goal refresh", System.Diagnostics.Stopwatch.GetTimestamp() - start);
             if (!owner.Personality.HasPendingSocialState) return;
             int turn = owner.Location.Map.LocalTime.TurnCounter;

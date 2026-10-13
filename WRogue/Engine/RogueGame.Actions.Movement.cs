@@ -626,7 +626,7 @@ namespace djack.RogueSurvivor.Engine
                 bool canFollow = false;
                 List<Point> adjList = null;
 
-                if (m_Rules.IsAdjacent(fromPos, fo.Location.Position))
+                if (fo.Location.Map == fromMap && m_Rules.IsAdjacent(fromPos, fo.Location.Position))
                 {
                     adjList = toMap.FilterAdjacentInMap(toPos, (pt) =>
                         (entryPoints == null || !entryPoints.Contains(pt)) &&

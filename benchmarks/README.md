@@ -21,8 +21,9 @@ live here; `Dockerfile` compiles the C# files into the scenario runner image.
 | Parallel rest timing | `sh tests/scenario.sh --bench-rest-parallel-timing` | Three 30-wait samples per worker count using the preset's exact-arrival scheduler; excludes state digests from timing |
 | Rest optimization costs | `sh tests/scenario.sh --bench-rest-optimizations` | Actor lookup/movement, empty/sparse/dense sensing, and FOV cache-key checks |
 | Sleep yield with and without a worker | `sh tests/scenario.sh --bench-sleep-yield` | Ten real sleeping map turns per sample |
-| Rest simulation flamegraph | `PROFILE_KIND=rest sh benchmarks/bench-npc-calls.sh` | Mono call profile of the same waiting path |
-| Large-city rest flamegraph | `PROFILE_KIND=rest_large sh benchmarks/bench-npc-calls.sh` | Mono call profile of the full 5×5 waiting path |
+| Rest simulation flamegraph | `PROFILE_KIND=rest sh benchmarks/bench-npc-calls.sh` | Mono call profile of serial waiting across 9 districts |
+| One-district rest flamegraph | `PROFILE_KIND=rest_one sh benchmarks/bench-npc-calls.sh` | Four waits in one district, without distant simulation |
+| Large-city rest flamegraph | `PROFILE_KIND=rest_large sh benchmarks/bench-npc-calls.sh` | Mono call profile of serial waiting across 5×5 districts |
 | Comparison with `0d243e6` | `bash benchmarks/bench-post-0d243e.sh` | `rogue-bench-post-baseline` |
 | NPC route, hunger, and sleep | `sh tests/scenario.sh --bench-npc-safety` | `rogue-bench-npc-safety` |
 | XPD base and supply routing | `sh tests/scenario.sh --bench-xpd` | `rogue-bench-xpd` |
@@ -32,5 +33,6 @@ live here; `Dockerfile` compiles the C# files into the scenario runner image.
 | Copied save/load budget | `--check-save-budget /profile/save.dat` in a mounted scenario image | `rogue-bench-save-budget` |
 
 The project skills in `.agents/skills/` give the complete commands and how to
-interpret each result. Historical measurements and caveats are in
+interpret each result. Current implementation notes, reference measurements,
+and rejected experiments are in
 [`docs/performance.md`](../docs/performance.md).

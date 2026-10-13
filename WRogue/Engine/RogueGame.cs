@@ -884,11 +884,16 @@ namespace djack.RogueSurvivor.Engine
         /// <returns></returns>
         Actor Zombify(Actor zombifier, Actor deadVictim, bool isStartingGame)
         {
-            Actor newZombie = m_TownGenerator.MakeZombified(zombifier, deadVictim, isStartingGame ? 0 : deadVictim.Location.Map.LocalTime.TurnCounter);
+            return Zombify(zombifier, deadVictim, isStartingGame, deadVictim.Location);
+        }
+
+        Actor Zombify(Actor zombifier, Actor deadVictim, bool isStartingGame, Location spawn)
+        {
+            Actor newZombie = m_TownGenerator.MakeZombified(zombifier, deadVictim, isStartingGame ? 0 : spawn.Map.LocalTime.TurnCounter);
 
             // add to map.
             if (!isStartingGame)
-                deadVictim.Location.Map.PlaceActorAt(newZombie, deadVictim.Location.Position);
+                spawn.Map.PlaceActorAt(newZombie, spawn.Position);
             if (!isStartingGame)
                 ReportPersonalityEvent("zombified", newZombie, deadVictim,
                     newZombie.Location.Map, newZombie.Location.Position);

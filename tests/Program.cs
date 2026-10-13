@@ -85,6 +85,7 @@ class Program
             RestSimulationBenchmarks.Profile();
             return 0;
         }
+        if (args.Length == 1 && args[0] == "--profile-rest-one") { RestSimulationBenchmarks.ProfileOneDistrict(); return 0; }
         if (args.Length == 1 && args[0] == "--profile-rest-large")
         {
             RestSimulationBenchmarks.ProfileLarge();
@@ -112,7 +113,7 @@ class Program
         }
         if (args.Length != 0)
         {
-            Console.Error.WriteLine("Usage: UnitTests.exe [--list|--all|--bench|--bench-ai|--bench-npc-turn|--profile-npc-turn|--bench-radio|--bench-radio-news|--bench-radio-rolling|--profile-radio|--bench-rest-simulation|--bench-rest-large|--bench-rest-phases|--bench-rest-parallel-production|--bench-rest-parallel-timing|--bench-rest-optimizations|--bench-sleep-yield|--profile-rest-simulation|--profile-rest-large|--bench-post-0d243e6|--bench-npc-safety|--bench-xpd|--bench-save copied-save-path|--bench-save-core copied-save-path|--bench-save-stats copied-save-path|--check-save-budget copied-save-path|--audit-save copied-save-path|scenario-name]");
+            Console.Error.WriteLine("Usage: UnitTests.exe [--list|--all|--bench|--bench-ai|--bench-npc-turn|--profile-npc-turn|--bench-radio|--bench-radio-news|--bench-radio-rolling|--profile-radio|--bench-rest-simulation|--bench-rest-large|--bench-rest-phases|--bench-rest-parallel-production|--bench-rest-parallel-timing|--bench-rest-optimizations|--bench-sleep-yield|--profile-rest-simulation|--profile-rest-one|--profile-rest-large|--bench-post-0d243e6|--bench-npc-safety|--bench-xpd|--bench-save copied-save-path|--bench-save-core copied-save-path|--bench-save-stats copied-save-path|--check-save-budget copied-save-path|--audit-save copied-save-path|scenario-name]");
             return 2;
         }
         GameTests.Run();

@@ -8,10 +8,12 @@ case ${PROFILE_KIND:-npc} in
   radio) profile_kind=radio; profile_runner=--profile-radio; profile_root='RadioBenchmarks:RunBroadcasts (';
     profile_title='Radio: managed call flamegraph'; profile_detail='80 broadcasts · 40 hourly slots · 9 maps · 216 sources · 3456 facts · 20 listeners' ;;
   rest) profile_kind=rest; profile_runner=--profile-rest-simulation; profile_root='RestSimulationBenchmarks:RunRest (';
-    profile_title='Rest simulation: managed call flamegraph'; profile_detail='4 waits · 9 generated districts · 150 living · 54 undead · 12 border links' ;;
+    profile_title='Serial rest simulation: managed call flamegraph'; profile_detail='4 waits · 9 generated districts · 150 living · 54 undead · 12 border links' ;;
+  rest_one) profile_kind=rest_one; profile_runner=--profile-rest-one; profile_root='RestSimulationBenchmarks:RunRest (';
+    profile_title='One-district rest: managed call flamegraph'; profile_detail='4 waits · 1 generated district · no distant simulation' ;;
   rest_large) profile_kind=rest_large; profile_runner=--profile-rest-large; profile_root='RestSimulationBenchmarks:RunRest (';
-    profile_title='Large rest simulation: managed call flamegraph'; profile_detail='4 waits · 25 generated districts · 1780 living · 150 undead · 40 border links' ;;
-  *) echo 'PROFILE_KIND must be npc, radio, rest, or rest_large' >&2; exit 2 ;;
+    profile_title='Large serial rest simulation: managed call flamegraph'; profile_detail='4 waits · 25 generated districts · 1780 living · 150 undead · 40 border links' ;;
+  *) echo 'PROFILE_KIND must be npc, radio, rest, rest_one, or rest_large' >&2; exit 2 ;;
 esac
 profile_dir=${1:-$(mktemp -d "${TMPDIR:-/tmp}/rogue-$profile_kind-calls.XXXXXX")}
 mkdir -p "$profile_dir"

@@ -12,7 +12,12 @@ def escape(value)
 end
 
 def name_short(name)
-  name.split(' (', 2).first.gsub('djack.RogueSurvivor.', '')
+  short = name.split(' (', 2).first.gsub('djack.RogueSurvivor.', '')
+  if short == 'Engine.RogueGame:AdvancePlay'
+    target = name[/\A.*:AdvancePlay \(djack\.RogueSurvivor\.Data\.(District|Map),/, 1]
+    short += "(#{target})" if target
+  end
+  short
 end
 
 def color(name)

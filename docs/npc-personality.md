@@ -88,6 +88,10 @@ beliefs, and changed state then motivates a goal. Existing debt or injury can
 produce a goal without a new significant event. New urgent needs can replace a
 weaker generated goal at the decision boundary. Private starts record the
 the goal and its relevant motive in Read Records; numeric scores remain internal.
+Routine generated-goal reevaluation is spread across ten map-turn groups based
+on each NPC's stable identity. Existing goals still execute and receive their
+normal per-decision checks on every action. A newly observed significant event
+refreshes goals immediately, regardless of the NPC's scheduled group.
 
 An actual food exchange creates the acquired `traded_for_food` memory, attributed
 to the trading partner. Its resolution can grant CHARISMATIC skill. An offer or

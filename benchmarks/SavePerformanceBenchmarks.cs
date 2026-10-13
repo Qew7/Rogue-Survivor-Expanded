@@ -35,6 +35,94 @@ static class SavePerformanceBenchmarks
             load.Elapsed.TotalMilliseconds, session.WorldTime.Day, GC.GetTotalMemory(false));
         GC.Collect(); GC.WaitForPendingFinalizers();
         Console.WriteLine("SAVE PROFILE retained managed memory={0} bytes", GC.GetTotalMemory(true));
+        if (statsOnly)
+        {
+            long wrongMap = 0, invalidPosition = 0, duplicatePosition = 0, misplaced = 0;
+            foreach (District district in Districts(session))
+                foreach (Map map in district.Maps)
+                {
+                    var positions = new HashSet<System.Drawing.Point>();
+                    foreach (Actor actor in map.Actors)
+                    {
+                        bool wrong = actor.Location.Map != map;
+                        bool invalid = !map.IsInBounds(actor.Location.Position);
+                        bool duplicate = !positions.Add(actor.Location.Position);
+                        if (wrong) wrongMap++;
+                        if (invalid) invalidPosition++;
+                        if (duplicate) duplicatePosition++;
+                        if ((wrong || invalid || duplicate) && wrongMap + invalidPosition + duplicatePosition <= 10)
+                            Console.WriteLine("SAVE PROFILE actor mismatch: map={0} district={1} size={2}x{3} actor={4} position={5} actual map={6} wrong={7} invalid={8} duplicate={9} dead={10} listed in actual map={11}",
+                                map.Name, district.WorldPosition, map.Width, map.Height, actor.Name,
+                                actor.Location.Position, actor.Location.Map == null ? "null" : actor.Location.Map.Name,
+                                wrong, invalid, duplicate, actor.IsDead,
+                                actor.Location.Map != null && actor.Location.Map.HasActor(actor));
+                    }
+                    foreach (Corpse corpse in map.Corpses)
+                        if (corpse.DeadGuy.Location.Map != map || corpse.DeadGuy.Location.Position != corpse.Position)
+                        {
+                            misplaced++;
+                            if (misplaced <= 5)
+                                Console.WriteLine("SAVE PROFILE corpse mismatch: map={0} corpse={1} corpse position={2} dead actor position={3}",
+                                    map.Name, corpse.DeadGuy.Name, corpse.Position, corpse.DeadGuy.Location.Position);
+                        }
+                }
+            Console.WriteLine("SAVE PROFILE actor wrong map={0}; invalid position={1}; duplicate position={2}; corpse mismatch={3}",
+                wrongMap, invalidPosition, duplicatePosition, misplaced);
+            Console.WriteLine("SAVE PROFILE rest simulation enabled={0}; parallel rest={1}; finish after rest={2}",
+                !session.GamePreset.DisableDistantSimulationDuringRest,
+                session.GamePreset.ParallelDistantSimulationDuringRest,
+                session.GamePreset.FinishDistantSimulationAfterRest);
+            Console.WriteLine("SAVE PROFILE saved options={0}; district simulation={1}; processors={2}",
+                session.GamePreset.HasOptions, GameOptions.Name(session.GamePreset.Options.SimulateDistricts),
+                Environment.ProcessorCount);
+            foreach (District district in Districts(session))
+                foreach (Map map in district.Maps) map.ReconstructAuxiliaryFields();
+            Console.WriteLine("SAVE PROFILE map reconstruction succeeded");
+            var dueByTurn = new SortedDictionary<int, int[]>();
+            for (int x = 0; x < session.World.Size; x++) for (int y = 0; y < session.World.Size; y++)
+            {
+                District district = session.World[x, y];
+                if (district == null || district == session.CurrentMap.District ||
+                    district.EntryMap.LocalTime.TurnCounter >= session.WorldTime.TurnCounter) continue;
+                int localTurn = district.EntryMap.LocalTime.TurnCounter;
+                int[] colors;
+                if (!dueByTurn.TryGetValue(localTurn, out colors))
+                    dueByTurn[localTurn] = colors = new int[2];
+                colors[(x + y) & 1]++;
+            }
+            int largestColorBatch = 0;
+            foreach (int[] colors in dueByTurn.Values)
+                largestColorBatch = Math.Max(largestColorBatch, Math.Max(colors[0], colors[1]));
+            Console.WriteLine("SAVE PROFILE world turn={0}; city size={1}; due local turns={2}; largest same-time color batch={3}",
+                session.WorldTime.TurnCounter, session.World.Size, dueByTurn.Count, largestColorBatch);
+            int shownTurns = 0;
+            foreach (KeyValuePair<int, int[]> due in dueByTurn)
+            {
+                if (shownTurns++ == 6) break;
+                Console.WriteLine("SAVE PROFILE due turn={0}; color 0={1}; color 1={2}",
+                    due.Key, due.Value[0], due.Value[1]);
+                for (int color = 0; color < 2; color++)
+                {
+                    if (due.Value[color] == 0) continue;
+                    var batch = new List<District>();
+                    for (int x = 0; x < session.World.Size; x++) for (int y = 0; y < session.World.Size; y++)
+                    {
+                        District district = session.World[x, y];
+                        if (district != null && district != session.CurrentMap.District &&
+                            district.EntryMap.LocalTime.TurnCounter == due.Key && ((x + y) & 1) == color)
+                            batch.Add(district);
+                    }
+                    var waves = (List<List<int>>)typeof(RogueGame).GetMethod("RestSimulationWaves",
+                        BindingFlags.Static | BindingFlags.NonPublic).Invoke(null,
+                        new object[] { batch, session.NpcDirector, session.CurrentMap.District });
+                    int largestWave = 0;
+                    foreach (List<int> wave in waves) largestWave = Math.Max(largestWave, wave.Count);
+                    Console.WriteLine("SAVE PROFILE due turn={0}; color={1}; waves={2}; largest parallel wave={3}",
+                        due.Key, color, waves.Count, largestWave);
+                }
+            }
+            if (wrongMap + invalidPosition + duplicatePosition > 0) return;
+        }
         FieldInfo archiveField = typeof(Session).GetField("m_ResidentRecords", BindingFlags.Instance | BindingFlags.NonPublic);
         ResidentRecords archive = (ResidentRecords)archiveField.GetValue(session);
         long entries = 0, textChars = 0, eventIds = 0;
@@ -50,7 +138,7 @@ static class SavePerformanceBenchmarks
                 }
             }
         long maps = 0, tiles = 0, actors = 0, traits = 0, pending = 0, observed = 0, relations = 0, links = 0;
-        long corpses = 0, groundItems = 0, carriedItems = 0, mapObjects = 0, scents = 0, districtLag = 0;
+        long corpses = 0, misplacedCorpses = 0, groundItems = 0, carriedItems = 0, mapObjects = 0, scents = 0, districtLag = 0;
         foreach (District district in Districts(session))
         {
             districtLag += session.WorldTime.TurnCounter - district.EntryMap.LocalTime.TurnCounter;
@@ -59,6 +147,14 @@ static class SavePerformanceBenchmarks
                 maps++; tiles += (long)map.Width * map.Height;
                 map.ReconstructAuxiliaryFields();
                 corpses += map.CountCorpses;
+                foreach (Corpse corpse in map.Corpses)
+                    if (corpse.DeadGuy.Location.Map != map || corpse.DeadGuy.Location.Position != corpse.Position)
+                    {
+                        misplacedCorpses++;
+                        if (misplacedCorpses <= 5)
+                            Console.WriteLine("SAVE PROFILE misplaced corpse: {0} at {1} in {2}; dead actor at {3}",
+                                corpse.DeadGuy.Name, corpse.Position, map.Name, corpse.DeadGuy.Location);
+                    }
                 foreach (Inventory inventory in map.GroundInventories) groundItems += inventory.CountItems;
                 foreach (MapObject ignored in map.MapObjects) mapObjects++;
                 foreach (OdorScent ignored in map.Scents) scents++;
@@ -84,6 +180,9 @@ static class SavePerformanceBenchmarks
             maps, tiles, actors, traits, pending, observed, relations, links);
         Console.WriteLine("SAVE PROFILE corpses={0}; ground items={1}; carried items={2}; map objects={3}; scents={4}; total district lag={5}",
             corpses, groundItems, carriedItems, mapObjects, scents, districtLag);
+        Console.WriteLine("SAVE PROFILE misplaced corpses={0}; rest simulation enabled={1}; parallel rest={2}; finish after rest={3}",
+            misplacedCorpses, !session.GamePreset.DisableDistantSimulationDuringRest,
+            session.GamePreset.ParallelDistantSimulationDuringRest, session.GamePreset.FinishDistantSimulationAfterRest);
         Console.WriteLine("SAVE PROFILE residents={0}; entries={1}; text chars={2}; event IDs={3}",
             archive == null ? 0 : archive.Residents.Count, entries, textChars, eventIds);
         foreach (KeyValuePair<string, int> category in categories)

@@ -21,7 +21,7 @@ static class BoundaryResponseScenario
             Check.Equal(100, belief.Violation, "refusal supplies a new unresolved circumstance");
             Check.Equal(true, belief.ViolationCause > 0, "continuation has the actual reply as its cause");
             target.Personality.AddTrait(new TraitInstance("lawful")); target.Personality.AddTrait(new TraitInstance("kind"));
-            world.Map.LocalTime.TurnCounter = 181;
+            world.Map.LocalTime.TurnCounter = 190;
             NpcIntentSupport.Turn(world, owner); NpcIntentSupport.Turn(world, target);
             Check.Equal(true, NpcIntentSupport.HasEvent(owner, "boundary_accepted"), "changed values lead to a different actual answer");
             Check.Equal(0, belief.Violation, "acceptance addresses the renewed boundary");

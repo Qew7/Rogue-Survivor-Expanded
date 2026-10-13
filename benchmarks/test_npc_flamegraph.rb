@@ -15,6 +15,12 @@ Dir.mktmpdir('npc-flamegraph-test') do |dir|
 		NpcTurnBenchmarks:RunTurns (Fixture)
 	1 calls from:
 		Outside:Call ()
+         5        5       1 djack.RogueSurvivor.Engine.RogueGame:AdvancePlay (djack.RogueSurvivor.Data.District,djack.RogueSurvivor.Engine.RogueGame/SimFlags)
+	1 calls from:
+		NpcTurnBenchmarks:RunTurns (Fixture)
+         6        6       1 djack.RogueSurvivor.Engine.RogueGame:AdvancePlay (djack.RogueSurvivor.Data.Map,djack.RogueSurvivor.Engine.RogueGame/SimFlags)
+	1 calls from:
+		NpcTurnBenchmarks:RunTurns (Fixture)
   REPORT
 
   script = File.join(__dir__, 'npc_flamegraph.rb')
@@ -22,7 +28,9 @@ Dir.mktmpdir('npc-flamegraph-test') do |dir|
 
   expected = [
     'NpcTurnBenchmarks:RunTurns 10000',
-    'NpcTurnBenchmarks:RunTurns;Other / native / rounded 75000',
+    'NpcTurnBenchmarks:RunTurns;Other / native / rounded 64000',
+    'NpcTurnBenchmarks:RunTurns;Engine.RogueGame:AdvancePlay(District) 5000',
+    'NpcTurnBenchmarks:RunTurns;Engine.RogueGame:AdvancePlay(Map) 6000',
     'NpcTurnBenchmarks:RunTurns;Gameplay.AI.Widget<Thing>:Do 15000'
   ]
   actual = File.readlines(folded, chomp: true)
@@ -30,6 +38,7 @@ Dir.mktmpdir('npc-flamegraph-test') do |dir|
 
   image = File.read(svg, encoding: 'UTF-8')
   raise 'SVG labels are not escaped' unless image.include?('Widget&lt;Thing&gt;:Do')
+  raise 'SVG overload labels are missing' unless image.include?('AdvancePlay(District)') && image.include?('AdvancePlay(Map)')
   raise 'SVG total changed' unless image.include?('Mono total: 100 ms · attributed: 100.0 ms')
 end
 
