@@ -21,7 +21,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 TravelDestination = SafetyPlanOperators.ShelterDestination, DirectAction = NpcSafetyActions.Shelter };
             catalog.Capability(escort); catalog.Capability(patient);
             catalog.Clock(NpcClockPhase.BeforeDecision, c => NpcServices.Advance(c.Game, c.Owner));
-            catalog.Clock(NpcClockPhase.MapTurn, c => NpcServices.Expire(c.Game.NpcContent, c.Owner));
+            catalog.Clock(NpcClockPhase.MapTurn, c => NpcServices.Expire(c.Game, c.Owner));
             catalog.Event(new NpcEventDefinition("shelter_care_offered", NpcRecordCategory.Help, true,
                 e => (e.Subject ?? "Someone") + " offered medicine in exchange for help reaching shelter from " + (e.Other ?? "someone") + ".",
                 f => f.ReportSubject + " offered " + (f.ReportOther ?? "someone") + " medicine for help reaching shelter")
@@ -42,7 +42,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 f => f.ReportSubject + " provided medicine to " + (f.ReportOther ?? "someone") + " after a shared shelter trip") { SelfReportTone = NpcSelfReportTone.Helpful });
             catalog.Event(new NpcEventDefinition("shelter_care_failed", NpcRecordCategory.Help, false,
                 e => (e.Other ?? "Someone") + " concluded that " + (e.Subject ?? "someone") + " did not complete their shelter and medicine agreement.",
-                f => f.ReportSubject + " did not complete a shelter and medicine agreement", isPrivate: true));
+                f => f.ReportSubject + " did not complete a shelter and medicine agreement", isPrivate: true)
+                { PrivateAudience = e => e.Other });
             catalog.OnReport("shelter_care_completed", c => NpcReputation.Help(c));
             catalog.OnReport("shelter_care_failed", c => NpcReputation.Reputation(c, false, true, false));
             catalog.On("shelter_care_offered", NpcObservationPhase.Relationships, NpcServices.Observe);
@@ -54,11 +55,11 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             catalog.AfterEvent("shared_medicine", NpcServices.Delivery);
             catalog.AfterEvent("treated_person", NpcServices.Delivery);
             NpcMemoryContent.Received(catalog, "shelter_care_received", "Received medicine after a shared shelter trip", "shelter_care_completed", 12, "protector");
-            catalog.Memory(new MemoryDefinition("shelter_care_provided", "Kept a shelter and care agreement", 2, 5,
+            catalog.Memory(new MemoryDefinition("shelter_care_provided", "Kept a shelter and care agreement", 2, 2,
                 new[] { new MemoryTrigger("shelter_care_completed", (a, e) => a == e.Subject) },
                 new MemoryOutcome(null, "reliable", null), new MemoryOutcome(null, null, Skills.IDs.CHARISMATIC))
                 .Relate(MemoryRelationRole.Other, 4), false);
-            catalog.Memory(new MemoryDefinition("shelter_care_failed", "A shelter and care agreement was not completed", 2, 5,
+            catalog.Memory(new MemoryDefinition("shelter_care_failed", "A shelter and care agreement was not completed", 2, 2,
                 new[] { new MemoryTrigger("shelter_care_failed", (a, e) => a == e.Other) },
                 new MemoryOutcome(null, "disillusioned", null), new MemoryOutcome(null, null, Skills.IDs.STRONG_PSYCHE))
                 .Relate(MemoryRelationRole.Subject, -10), false);
@@ -72,8 +73,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             if (request.Kind != "requested_medicine" || request.Other != provider || request.Subject == null ||
                 request.Subject.IsDead || request.Subject.Personality == null || provider.Personality.Reactions.Count >= 4 ||
                 !provider.Personality.CanRememberService || !request.Subject.Personality.CanRememberService ||
-                PersonalitySystem.Bias(provider, DecisionKind.Trade) < 15 ||
-                PersonalitySystem.Bias(provider, DecisionKind.Compassion) > 0 ||
+                PersonalitySystem.Bias(provider, NpcPersonalityAxis.Trade) < 15 ||
+                PersonalitySystem.Bias(provider, NpcPersonalityAxis.Compassion) > 0 ||
                 provider.Personality.ServiceAgreements.Exists(a => a.Patient == request.Subject.PersonalityIdentity &&
                     (a.Status == NpcServiceStatus.Offered || a.Status == NpcServiceStatus.Accepted)) ||
                 NpcPlanExecution.Medicine(game, provider, provider.Location, true) == null) return false;
@@ -124,7 +125,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         {
             SignificantEvent offer = observation.Source; Actor patient = observation.Owner;
             if (patient != offer.Other || !NpcIntentSystem.Enabled(patient) || offer.Subject == null) return;
-            int willingness = PersonalitySystem.Bias(patient, DecisionKind.Trade) + PersonalitySystem.Bias(patient, DecisionKind.Group) +
+            int willingness = PersonalitySystem.Bias(patient, NpcPersonalityAxis.Trade) + PersonalitySystem.Bias(patient, NpcPersonalityAxis.Group) +
                 PersonalitySystem.Attitude(patient, offer.Subject) / 4 +
                 (patient.HitPoints < observation.Game.Rules.ActorMaxHPs(patient) ? 20 : -40);
             NpcReplies.Reply(patient, offer.Subject, offer, willingness >= 0 ? "shelter_care_accepted" : "shelter_care_refused",
@@ -202,9 +203,10 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             PersonalitySystem.Report(game, new SignificantEvent("shelter_care_completed", source.Subject, source.Other,
                 source.Map, source.Position, source.Turn, causeId: agreement.Id, storyId: agreement.StoryId));
         }
-        public static void Expire(NpcContentCatalog catalog, Actor owner)
+        public static void Expire(RogueGame game, Actor owner)
         {
             if (owner.Personality == null || !owner.Personality.HasOpenServiceAgreements || owner.IsSleeping || owner.IsDead) return;
+            NpcContentCatalog catalog = game.NpcContent;
             int turn = owner.Location.Map.LocalTime.TurnCounter;
             foreach (NpcServiceAgreement agreement in owner.Personality.ServiceAgreements)
             {
@@ -229,6 +231,11 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 if (definition != null) NpcMemoryProcessor.Add(owner, definition, turn, agreement.ProviderName, null,
                     subjectId: agreement.Provider, relations: new NpcMemoryRelations { Person = agreement.Provider,
                         PersonName = agreement.ProviderName }, impact: -10);
+                Actor provider = null;
+                foreach (Actor actor in owner.Location.Map.Actors)
+                    if (actor.PersonalityIdentity == agreement.Provider) { provider = actor; break; }
+                NpcReplies.Setback(game, owner, provider, id, turn, agreement.StoryId, 30,
+                    "You broke our agreement!");
             }
         }
     }

@@ -44,7 +44,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             if (holder == null) return new NpcActionAccess(false);
             NpcResourceDispute dispute = context.Owner.Personality.Dispute(context.Step.Place, id);
             if (dispute != null && dispute.Response == "resource_refused" &&
-                PersonalitySystem.Bias(context.Owner, DecisionKind.Law) + PersonalitySystem.Bias(context.Owner, DecisionKind.Courage) / 2 < 0)
+                PersonalitySystem.Bias(context.Owner, NpcPersonalityAxis.Law) + PersonalitySystem.Bias(context.Owner, NpcPersonalityAxis.Courage) / 2 < 0)
             return new NpcActionAccess(true);
             var action = new ActionNpcResourceConflict(context.Owner, context.Game, context.Goal, context.Step, holder, definition.Resource);
             return new NpcActionAccess(false, action.IsLegal() ? action : null);
@@ -56,7 +56,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             NpcMemoryContent.Received(catalog, "resource_concession", "Someone yielded scarce supplies", "resource_yielded", 6, "protector");
             NpcMemoryContent.Received(catalog, "resource_taken", "Someone took disputed supplies", "contested_taken", -12, "mistrustful");
             NpcMemoryContent.Received(catalog, "permission_respected", "Someone used permission to take supplies", "permission_used", 5, null);
-            catalog.Memory(new MemoryDefinition("group_supply_rule", "The group changed its supply rule", 2, 5,
+            catalog.Memory(new MemoryDefinition("group_supply_rule", "The group changed its supply rule", 2, 2,
                 new[] { new MemoryTrigger("group_supply_rule_strict", (a, e) => e.Subject != null && a != e.Subject &&
                     a.SocialGroup != null && a.SocialGroup == e.Subject.SocialGroup),
                     new MemoryTrigger("group_supply_rule_open", (a, e) => e.Subject != null && a != e.Subject &&
@@ -92,7 +92,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 o.Owner.Personality.LearnSupplyRule(o.Owner.SocialGroup.Identity,
                     o.Source.Kind == "group_supply_rule_strict" ? 40 : 0, o.Source.Id);
                 if (o.Owner == o.Source.Subject) return;
-                int approval = PersonalitySystem.Bias(o.Owner, DecisionKind.Law) + PersonalitySystem.Bias(o.Owner, DecisionKind.Supplies) - PersonalitySystem.Bias(o.Owner, DecisionKind.Group) / 2;
+                int approval = PersonalitySystem.Bias(o.Owner, NpcPersonalityAxis.Law) + PersonalitySystem.Bias(o.Owner, NpcPersonalityAxis.Supplies) - PersonalitySystem.Bias(o.Owner, NpcPersonalityAxis.Group) / 2;
                 if (o.Source.Kind == "group_supply_rule_open") approval = -approval;
                 o.Owner.Personality.Opinion(o.Source.Subject.PersonalityIdentity, o.Source.Subject.UnmodifiedName).AdjustSocial(
                     trust: approval >= 0 ? 5 : -8, grievance: approval >= 0 ? 0 : 5);

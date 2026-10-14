@@ -71,7 +71,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public static bool OfferTrade(RogueGame game, Actor owner, SignificantEvent source)
         {
             if (source.Kind != "requested_food" || source.Other != owner || source.Subject == null ||
-                PersonalitySystem.Bias(owner, DecisionKind.Trade) < 15 || PersonalitySystem.Bias(owner, DecisionKind.Compassion) > 0 ||
+                PersonalitySystem.Bias(owner, NpcPersonalityAxis.Trade) < 15 || PersonalitySystem.Bias(owner, NpcPersonalityAxis.Compassion) > 0 ||
                 owner.Personality.Reactions.Count >= 4 || game.Rules.AreEnemies(owner, source.Subject) || game.Rules.IsActorHungry(owner)) return false;
             bool available = false;
             foreach (Item item in owner.Inventory.Items)

@@ -9,12 +9,12 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         internal sealed class Experience
         {
             public readonly string Kind, Id, Name, Trait, TraitName, Requires;
-            public readonly DecisionKind Axis, Second;
+            public readonly NpcPersonalityAxis Axis, Second;
             public readonly int Amount, SecondAmount, Faction, Feeling;
             public readonly Skills.IDs Skill;
             public readonly Func<UniqueActors, UniqueActor> Unique;
             public Experience(string kind, string id, string name, string trait, string traitName,
-                string requires, DecisionKind axis, int amount, DecisionKind second, int secondAmount,
+                string requires, NpcPersonalityAxis axis, int amount, NpcPersonalityAxis second, int secondAmount,
                 Skills.IDs skill, int faction = -1, int feeling = 0,
                 Func<UniqueActors, UniqueActor> unique = null)
             {
@@ -29,14 +29,14 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             public readonly GameFactions.IDs Id;
             public readonly string Key, Name;
             public readonly int Supply, Shelter, Care, Security, Courage;
-            public readonly int HumanLife, CareCircle, MessageTrust, Scarcity;
+            public readonly int HumanLife, CareCircle, MessageTrust, Scarcity, Patience;
             public FactionSource(GameFactions.IDs id, string key, string name, int supply = 0, int shelter = 0, int care = 0, int security = 0, int courage = 0,
-                int humanLife = 0, int careCircle = 0, int messageTrust = 0, int scarcity = 0)
+                int humanLife = 0, int careCircle = 0, int messageTrust = 0, int scarcity = 0, int patience = 0)
             { Id = id; Key = key; Name = name; Supply = supply; Shelter = shelter; Care = care; Security = security; Courage = courage;
-                HumanLife = humanLife; CareCircle = careCircle; MessageTrust = messageTrust; Scarcity = scarcity; }
+                HumanLife = humanLife; CareCircle = careCircle; MessageTrust = messageTrust; Scarcity = scarcity; Patience = patience; }
         }
         static Experience U(string id, string name, string trait, string label, string requires,
-            DecisionKind axis, int amount, DecisionKind second, int secondAmount, Skills.IDs skill,
+            NpcPersonalityAxis axis, int amount, NpcPersonalityAxis second, int secondAmount, Skills.IDs skill,
             int feeling, Func<UniqueActors, UniqueActor> unique)
         {
             return new Experience("met_unique:" + id, "met_" + id, "Encountered " + name,
@@ -44,53 +44,53 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 feeling: feeling, unique: unique);
         }
         static Experience W(string kind, string name, string trait, string label, string requires,
-            DecisionKind axis, int amount, DecisionKind second, int secondAmount, Skills.IDs skill,
+            NpcPersonalityAxis axis, int amount, NpcPersonalityAxis second, int secondAmount, Skills.IDs skill,
             GameFactions.IDs faction, int feeling)
         {
             return new Experience(kind, kind, name, trait, label, requires, axis, amount,
                 second, secondAmount, skill, (int)faction, feeling);
         }
         public static readonly Experience[] Uniques = {
-            U("big_bear", "Big Bear", "bear_resolve", "Bear's resolve", "brave", DecisionKind.Courage, 22, DecisionKind.Supplies, 8, Skills.IDs.TOUGH, 5, u => u.BigBear),
-            U("famu_fataru", "Famu Fataru", "blade_discipline", "Blade discipline", "disciplined", DecisionKind.Courage, 15, DecisionKind.Supplies, 15, Skills.IDs.MARTIAL_ARTS, 5, u => u.FamuFataru),
-            U("santaman", "Santaman", "holiday_spirit", "Holiday spirit", "generous", DecisionKind.Compassion, 25, DecisionKind.Trade, 15, Skills.IDs.CHARISMATIC, 10, u => u.Santaman),
-            U("roguedjack", "Roguedjack", "rogue_ingenuity", "Rogue ingenuity", "curious", DecisionKind.Explore, 20, DecisionKind.Item, 15, Skills.IDs.HAULER, 5, u => u.Roguedjack),
-            U("duckman", "Duckman", "duck_camaraderie", "Duck camaraderie", "sociable", DecisionKind.Group, 25, DecisionKind.Courage, 10, Skills.IDs.LEADERSHIP, 5, u => u.Duckman),
-            U("hans_von_hanz", "Hans von Hanz", "hans_drill", "Hans's drill", "disciplined", DecisionKind.Courage, 20, DecisionKind.Group, 20, Skills.IDs.FIREARMS, 5, u => u.HansVonHanz),
-            U("prisoner", "The Prisoner Who Should Not Be", "prisoner_secrets", "Prisoner's secrets", "suspicious", DecisionKind.Explore, 15, DecisionKind.Law, -20, Skills.IDs.UNSUSPICIOUS, -5, u => u.PoliceStationPrisoner),
-            U("jason_myers", "Jason Myers", "masked_survivor", "Masked killer's survivor", "cautious", DecisionKind.Courage, -10, DecisionKind.Supplies, 20, Skills.IDs.TOUGH, -25, u => u.JasonMyers),
-            U("sewers_thing", "The Sewers Thing", "sewer_dread", "Sewer dread", "fearful", DecisionKind.Explore, -25, DecisionKind.Courage, -20, Skills.IDs.STRONG_PSYCHE, -25, u => u.TheSewersThing)
+            U("big_bear", "Big Bear", "bear_resolve", "Bear's resolve", "brave", NpcPersonalityAxis.Courage, 22, NpcPersonalityAxis.Supplies, 8, Skills.IDs.TOUGH, 5, u => u.BigBear),
+            U("famu_fataru", "Famu Fataru", "blade_discipline", "Blade discipline", "disciplined", NpcPersonalityAxis.Courage, 15, NpcPersonalityAxis.Supplies, 15, Skills.IDs.MARTIAL_ARTS, 5, u => u.FamuFataru),
+            U("santaman", "Santaman", "holiday_spirit", "Holiday spirit", "generous", NpcPersonalityAxis.Compassion, 25, NpcPersonalityAxis.Trade, 15, Skills.IDs.CHARISMATIC, 10, u => u.Santaman),
+            U("roguedjack", "Roguedjack", "rogue_ingenuity", "Rogue ingenuity", "curious", NpcPersonalityAxis.Explore, 20, NpcPersonalityAxis.Item, 15, Skills.IDs.HAULER, 5, u => u.Roguedjack),
+            U("duckman", "Duckman", "duck_camaraderie", "Duck camaraderie", "sociable", NpcPersonalityAxis.Group, 25, NpcPersonalityAxis.Courage, 10, Skills.IDs.LEADERSHIP, 5, u => u.Duckman),
+            U("hans_von_hanz", "Hans von Hanz", "hans_drill", "Hans's drill", "disciplined", NpcPersonalityAxis.Courage, 20, NpcPersonalityAxis.Group, 20, Skills.IDs.FIREARMS, 5, u => u.HansVonHanz),
+            U("prisoner", "The Prisoner Who Should Not Be", "prisoner_secrets", "Prisoner's secrets", "suspicious", NpcPersonalityAxis.Explore, 15, NpcPersonalityAxis.Law, -20, Skills.IDs.UNSUSPICIOUS, -5, u => u.PoliceStationPrisoner),
+            U("jason_myers", "Jason Myers", "masked_survivor", "Masked killer's survivor", "cautious", NpcPersonalityAxis.Courage, -10, NpcPersonalityAxis.Supplies, 20, Skills.IDs.TOUGH, -25, u => u.JasonMyers),
+            U("sewers_thing", "The Sewers Thing", "sewer_dread", "Sewer dread", "fearful", NpcPersonalityAxis.Explore, -25, NpcPersonalityAxis.Courage, -20, Skills.IDs.STRONG_PSYCHE, -25, u => u.TheSewersThing)
         };
         public static readonly FactionSource[] Factions = {
             new FactionSource(GameFactions.IDs.TheCHARCorporation, "char", "CHAR Corp.", 5, 15, courage: 12, humanLife: -8, messageTrust: -8),
             new FactionSource(GameFactions.IDs.TheCivilians, "civilians", "Civilians"),
             new FactionSource(GameFactions.IDs.TheUndeads, "undead", "Undeads"),
-            new FactionSource(GameFactions.IDs.TheArmy, "army", "Army", 15, 5, 10, 25, courage: 25, humanLife: 8, careCircle: -5, messageTrust: 5, scarcity: 8),
-            new FactionSource(GameFactions.IDs.TheBikers, "bikers", "Bikers", 10, -5, courage: 10, humanLife: -18, careCircle: -15, messageTrust: -12, scarcity: 12),
-            new FactionSource(GameFactions.IDs.TheGangstas, "gangstas", "Gangstas", 10, -5, courage: 10, humanLife: -18, careCircle: -15, messageTrust: -12, scarcity: 12),
-            new FactionSource(GameFactions.IDs.ThePolice, "police", "Police", 15, 5, 15, 25, courage: 18, humanLife: 18, careCircle: 5, messageTrust: 8),
+            new FactionSource(GameFactions.IDs.TheArmy, "army", "Army", 15, 5, 10, 25, courage: 25, humanLife: 8, careCircle: -5, messageTrust: 5, scarcity: 8, patience: 10),
+            new FactionSource(GameFactions.IDs.TheBikers, "bikers", "Bikers", 10, -5, courage: 10, humanLife: -18, careCircle: -15, messageTrust: -12, scarcity: 12, patience: -15),
+            new FactionSource(GameFactions.IDs.TheGangstas, "gangstas", "Gangstas", 10, -5, courage: 10, humanLife: -18, careCircle: -15, messageTrust: -12, scarcity: 12, patience: -15),
+            new FactionSource(GameFactions.IDs.ThePolice, "police", "Police", 15, 5, 15, 25, courage: 18, humanLife: 18, careCircle: 5, messageTrust: 8, patience: 12),
             new FactionSource(GameFactions.IDs.TheBlackOps, "blackops", "BlackOps", 5, 15, courage: 22, humanLife: -12, careCircle: -20, messageTrust: -15),
-            new FactionSource(GameFactions.IDs.ThePsychopaths, "psychopaths", "Psychopaths", courage: 15, humanLife: -35, careCircle: -30, messageTrust: -25),
+            new FactionSource(GameFactions.IDs.ThePsychopaths, "psychopaths", "Psychopaths", courage: 15, humanLife: -35, careCircle: -30, messageTrust: -25, patience: -30),
             new FactionSource(GameFactions.IDs.TheSurvivors, "survivors", "Survivors", care: 15, security: 10, courage: 5, humanLife: 12, careCircle: 10, messageTrust: 5, scarcity: 12),
             new FactionSource(GameFactions.IDs.TheFerals, "ferals", "Ferals")
         };
         public static readonly Experience[] WorldEvents = {
-            W("zombie_invasion", "Midnight invasion", "night_watch", "Night watch", "vigilant", DecisionKind.Courage, 10, DecisionKind.Supplies, 25, Skills.IDs.FIREARMS, GameFactions.IDs.TheUndeads, -15),
-            W("sewers_invasion", "Sewers overrun", "underground_caution", "Underground caution", "cautious", DecisionKind.Explore, -20, DecisionKind.Courage, -10, Skills.IDs.STRONG_PSYCHE, GameFactions.IDs.TheUndeads, -15),
-            W("refugees_arrival", "Refugees arrived", "refugee_solidarity", "Refugee solidarity", "kind", DecisionKind.Compassion, 25, DecisionKind.Group, 10, Skills.IDs.MEDIC, GameFactions.IDs.TheCivilians, 10),
-            W("national_guard_arrival", "National Guard arrived", "army_confidence", "Army confidence", "trusting", DecisionKind.Courage, 15, DecisionKind.Group, 15, Skills.IDs.FIREARMS, GameFactions.IDs.TheArmy, 10),
-            W("army_supplies", "Army relief drop", "relief_organizer", "Relief organizer", "organized", DecisionKind.Supplies, 25, DecisionKind.Compassion, 10, Skills.IDs.HAULER, GameFactions.IDs.TheArmy, 15),
-            W("bikers_raid", "Biker raid", "roadside_vigilance", "Roadside vigilance", "vigilant", DecisionKind.Supplies, 20, DecisionKind.Courage, 10, Skills.IDs.TOUGH, GameFactions.IDs.TheBikers, -20),
-            W("hells_souls_raid", "Hell's Souls raid", "hells_souls_defiance", "Hell's Souls defiance", "brave", DecisionKind.Courage, 20, DecisionKind.Law, 10, Skills.IDs.TOUGH, GameFactions.IDs.TheBikers, -20),
-            W("free_angels_raid", "Free Angels raid", "free_angels_watchfulness", "Free Angels watchfulness", "vigilant", DecisionKind.Supplies, 20, DecisionKind.Explore, -10, Skills.IDs.TOUGH, GameFactions.IDs.TheBikers, -20),
-            W("gangstas_raid", "Street gang raid", "streetwise", "Streetwise", "pragmatic", DecisionKind.Explore, 15, DecisionKind.Supplies, 15, Skills.IDs.UNSUSPICIOUS, GameFactions.IDs.TheGangstas, -20),
-            W("craps_raid", "Craps raid", "craps_grudge", "Craps grudge", "vindictive", DecisionKind.Courage, 20, DecisionKind.Law, -10, Skills.IDs.FIREARMS, GameFactions.IDs.TheGangstas, -20),
-            W("floods_raid", "Floods raid", "floods_caution", "Floods caution", "cautious", DecisionKind.Courage, -15, DecisionKind.Supplies, 20, Skills.IDs.UNSUSPICIOUS, GameFactions.IDs.TheGangstas, -20),
-            W("blackops_raid", "BlackOps operation", "blackops_distrust", "BlackOps distrust", "suspicious", DecisionKind.Group, -15, DecisionKind.Explore, -15, Skills.IDs.STRONG_PSYCHE, GameFactions.IDs.TheBlackOps, -20),
-            W("survivors_arrival", "Survivor convoy", "convoy_hope", "Convoy hope", "sociable", DecisionKind.Group, 25, DecisionKind.Trade, 10, Skills.IDs.CHARISMATIC, GameFactions.IDs.TheSurvivors, 10),
-            W("psychopaths_arrival", "Psychopaths sighted", "psychopath_watch", "Psychopath watch", "vigilant", DecisionKind.Courage, 10, DecisionKind.Supplies, 10, Skills.IDs.STRONG_PSYCHE, GameFactions.IDs.ThePsychopaths, -20),
-            W("char_discovered", "CHAR facility uncovered", "char_whistleblower", "CHAR whistleblower", "skeptic", DecisionKind.Explore, 20, DecisionKind.Law, 10, Skills.IDs.UNSUSPICIOUS, GameFactions.IDs.TheCHARCorporation, -15),
-            W("prisoner_transformed", "Prisoner's transformation", "betrayal_scar", "Betrayal scar", "suspicious", DecisionKind.Group, -25, DecisionKind.Courage, -10, Skills.IDs.STRONG_PSYCHE, GameFactions.IDs.TheCHARCorporation, -15)
+            W("zombie_invasion", "Midnight invasion", "night_watch", "Night watch", "vigilant", NpcPersonalityAxis.Courage, 10, NpcPersonalityAxis.Supplies, 25, Skills.IDs.FIREARMS, GameFactions.IDs.TheUndeads, -15),
+            W("sewers_invasion", "Sewers overrun", "underground_caution", "Underground caution", "cautious", NpcPersonalityAxis.Explore, -20, NpcPersonalityAxis.Courage, -10, Skills.IDs.STRONG_PSYCHE, GameFactions.IDs.TheUndeads, -15),
+            W("refugees_arrival", "Refugees arrived", "refugee_solidarity", "Refugee solidarity", "kind", NpcPersonalityAxis.Compassion, 25, NpcPersonalityAxis.Group, 10, Skills.IDs.MEDIC, GameFactions.IDs.TheCivilians, 10),
+            W("national_guard_arrival", "National Guard arrived", "army_confidence", "Army confidence", "trusting", NpcPersonalityAxis.Courage, 15, NpcPersonalityAxis.Group, 15, Skills.IDs.FIREARMS, GameFactions.IDs.TheArmy, 10),
+            W("army_supplies", "Army relief drop", "relief_organizer", "Relief organizer", "organized", NpcPersonalityAxis.Supplies, 25, NpcPersonalityAxis.Compassion, 10, Skills.IDs.HAULER, GameFactions.IDs.TheArmy, 15),
+            W("bikers_raid", "Biker raid", "roadside_vigilance", "Roadside vigilance", "vigilant", NpcPersonalityAxis.Supplies, 20, NpcPersonalityAxis.Courage, 10, Skills.IDs.TOUGH, GameFactions.IDs.TheBikers, -20),
+            W("hells_souls_raid", "Hell's Souls raid", "hells_souls_defiance", "Hell's Souls defiance", "brave", NpcPersonalityAxis.Courage, 20, NpcPersonalityAxis.Law, 10, Skills.IDs.TOUGH, GameFactions.IDs.TheBikers, -20),
+            W("free_angels_raid", "Free Angels raid", "free_angels_watchfulness", "Free Angels watchfulness", "vigilant", NpcPersonalityAxis.Supplies, 20, NpcPersonalityAxis.Explore, -10, Skills.IDs.TOUGH, GameFactions.IDs.TheBikers, -20),
+            W("gangstas_raid", "Street gang raid", "streetwise", "Streetwise", "pragmatic", NpcPersonalityAxis.Explore, 15, NpcPersonalityAxis.Supplies, 15, Skills.IDs.UNSUSPICIOUS, GameFactions.IDs.TheGangstas, -20),
+            W("craps_raid", "Craps raid", "craps_grudge", "Craps grudge", "vindictive", NpcPersonalityAxis.Courage, 20, NpcPersonalityAxis.Law, -10, Skills.IDs.FIREARMS, GameFactions.IDs.TheGangstas, -20),
+            W("floods_raid", "Floods raid", "floods_caution", "Floods caution", "cautious", NpcPersonalityAxis.Courage, -15, NpcPersonalityAxis.Supplies, 20, Skills.IDs.UNSUSPICIOUS, GameFactions.IDs.TheGangstas, -20),
+            W("blackops_raid", "BlackOps operation", "blackops_distrust", "BlackOps distrust", "suspicious", NpcPersonalityAxis.Group, -15, NpcPersonalityAxis.Explore, -15, Skills.IDs.STRONG_PSYCHE, GameFactions.IDs.TheBlackOps, -20),
+            W("survivors_arrival", "Survivor convoy", "convoy_hope", "Convoy hope", "sociable", NpcPersonalityAxis.Group, 25, NpcPersonalityAxis.Trade, 10, Skills.IDs.CHARISMATIC, GameFactions.IDs.TheSurvivors, 10),
+            W("psychopaths_arrival", "Psychopaths sighted", "psychopath_watch", "Psychopath watch", "vigilant", NpcPersonalityAxis.Courage, 10, NpcPersonalityAxis.Supplies, 10, Skills.IDs.STRONG_PSYCHE, GameFactions.IDs.ThePsychopaths, -20),
+            W("char_discovered", "CHAR facility uncovered", "char_whistleblower", "CHAR whistleblower", "skeptic", NpcPersonalityAxis.Explore, 20, NpcPersonalityAxis.Law, 10, Skills.IDs.UNSUSPICIOUS, GameFactions.IDs.TheCHARCorporation, -15),
+            W("prisoner_transformed", "Prisoner's transformation", "betrayal_scar", "Betrayal scar", "suspicious", NpcPersonalityAxis.Group, -25, NpcPersonalityAxis.Courage, -10, Skills.IDs.STRONG_PSYCHE, GameFactions.IDs.TheCHARCorporation, -15)
         };
 
         public static void Register(PersonalityRegistry registry)
@@ -116,7 +116,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 source.Requires, new TraitEffect(source.Axis, source.Amount),
                 new TraitEffect(source.Second, source.SecondAmount)).TowardFaction(source.Faction,
                 Math.Sign(source.Feeling) * 10));
-            MemoryDefinition memory = new MemoryDefinition(source.Id, source.Name, 2, 6,
+            MemoryDefinition memory = new MemoryDefinition(source.Id, source.Name, 2, 2,
                 new[] { new MemoryTrigger(source.Kind, (a, e) => a != e.Subject &&
                     (!source.Kind.EndsWith("_raid") || a.Faction == null || a.Faction.ID != source.Faction)) },
                 new MemoryOutcome(null, source.Trait, null), new MemoryOutcome(null, null, source.Skill),
@@ -134,12 +134,12 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             string trait = (help ? "friend_" : "wary_") + source.Key;
             registry.Register(new TraitDefinition(trait, (help ? "Friend of " : "Wary of ") + source.Name,
                 true, false, help ? "trusting" : "suspicious",
-                new TraitEffect(help ? DecisionKind.Trade : DecisionKind.Supplies, help ? 10 : 15),
-                new TraitEffect(DecisionKind.Group, help ? 10 : -10)).TowardFaction(faction, help ? 15 : -20));
+                new TraitEffect(help ? NpcPersonalityAxis.Trade : NpcPersonalityAxis.Supplies, help ? 10 : 15),
+                new TraitEffect(NpcPersonalityAxis.Group, help ? 10 : -10)).TowardFaction(faction, help ? 15 : -20));
             Func<Actor, SignificantEvent, bool> matches = (a, e) => e.Other != null &&
                 e.Other != a && e.Other.Faction != null && e.Other.Faction.ID == faction;
             registry.Register(new MemoryDefinition((help ? "aid_" : "violence_") + source.Key,
-                (help ? "Aid from " : "Violence by ") + source.Name, 2, 6,
+                (help ? "Aid from " : "Violence by ") + source.Name, 2, 2,
                 help ? new[] { new MemoryTrigger("helped", (a,e) => a == e.Subject && matches(a,e)) }
                 : new[] { new MemoryTrigger("attack", (a,e) => a == e.Subject && matches(a,e)),
                     new MemoryTrigger("murder", (a,e) => a != e.Subject && matches(a,e)) },

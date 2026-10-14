@@ -66,7 +66,7 @@ civilian controller selects it in `npc/content-module`.
 
 | API | Content owned by the module |
 | --- | --- |
-| `Trait`, `Memory` | Decision-axis effects, prerequisites, triggers, evidence and ordered outcomes |
+| `Trait`, `Memory` | Decision-axis effects, prerequisites, triggers, evidence, eligible outcomes and disposition shifts |
 | `Value` | Stable desired-state ID, trait/opinion-based importance, identity suffix and satisfaction/cooldown policies |
 | `GoalSource` | `Evaluate(context, offers)`: current/desired state, subject, deficit, confidence and causes |
 | `Capability` | Duration, acceptance/interruption policies, desired facts, optional direct action and speech |

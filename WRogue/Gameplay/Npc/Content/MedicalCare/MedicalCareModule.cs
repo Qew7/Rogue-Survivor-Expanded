@@ -57,7 +57,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         void RegisterContent(NpcCatalogBuilder catalog)
         {
             catalog.Perception(NpcPerceptionKind.Items, PerceiveItems);
-            catalog.Perception(NpcPerceptionKind.Person, c => NpcMedicalObservation.Perceive(c.Game, c.Owner, c.Person, c.Owner.Personality.Knowledge.Person(c.Person.PersonalityIdentity), c.Turn));
+            catalog.Perception(NpcPerceptionKind.Person, c => NpcMedicalObservation.Perceive(c.Game, c.Owner, c.Person, c.KnownPerson, c.Turn));
             RegisterEvents(catalog);
             catalog.Operator(new NpcOperatorDefinition("medicine.ask", NpcPlanAction.AskMedicine, c => NpcMedicineActions.Ask(new NpcActionContext(c)), archiveText: step => "ask for medicine"));
             catalog.Operator(new NpcOperatorDefinition("medicine.give", NpcPlanAction.GiveMedicine, c => NpcMedicineActions.Give(new NpcActionContext(c)), archiveText: step => "give medicine"));
@@ -79,7 +79,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             });
             catalog.Event(new NpcEventDefinition("medicine_acquired", NpcRecordCategory.Life, false, e => (e.Subject ?? "Someone") + " acquired medicine to treat their wounds.", null));
             catalog.Event(new NpcEventDefinition("treated_wounds", NpcRecordCategory.Life, false, e => (e.Subject ?? "Someone") + " treated their wounds with real medicine.", null));
-            catalog.Event(new NpcEventDefinition("requested_medicine", NpcRecordCategory.Help, true, e => (e.Subject ?? "Someone") + " asked " + (e.Other ?? "someone") + " for medicine.", f => f.ReportSubject + " asked " + (f.ReportOther == null ? "" : f.ReportOther + " ") + "for medicine") { AudibleReport = true, PlayerReply = new NpcPlayerReply("medicine", "medicine_promised", "request_refused", "Yes, I'll bring you medicine.", "No, I can't help with medicine."), SummarizeReports = f => NpcRecordDescriptions.RequestGroup(f, "medicine") });
+            catalog.Event(new NpcEventDefinition("requested_medicine", NpcRecordCategory.Help, true, e => (e.Subject ?? "Someone") + " asked " + (e.Other ?? "someone") + " for medicine.", f => f.ReportSubject + " asked " + (f.ReportOther == null ? "" : f.ReportOther + " ") + "for medicine") { AudibleReport = true, PlayerReply = new NpcPlayerReply("medicine", "medicine_promised", "request_refused", "Yes, I'll bring you medicine.", "No, I can't help with medicine."), SummarizeReports = f => NpcRecordDescriptions.RequestGroup(f, "medicine"), ReportPriority = -30 });
             catalog.Event(new NpcEventDefinition("medicine_offered", NpcRecordCategory.Help, true, e => (e.Subject ?? "Someone") + " offered medicine in exchange for supplies to " + (e.Other ?? "someone") + ".", null));
             catalog.Event(new NpcEventDefinition("bartered_medicine", NpcRecordCategory.Help, true, e => (e.Subject ?? "Someone") + " obtained medicine by trading with " + (e.Other ?? "someone") + ".", null)
                 { ReportActorRole = NpcReportActorRole.Both,

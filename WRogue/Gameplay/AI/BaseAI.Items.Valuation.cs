@@ -349,9 +349,9 @@ namespace djack.RogueSurvivor.Gameplay.AI
 
             // Okay:
             // - Anything else.
-            int preference = PersonalitySystem.Bias(m_Actor, DecisionKind.Item, it);
+            int preference = PersonalitySystem.Bias(m_Actor, NpcPersonalityAxis.Item, it);
             if (it is ItemFood || it is ItemMedicine || it is ItemAmmo)
-                preference += PersonalitySystem.Bias(m_Actor, DecisionKind.Supplies);
+                preference += PersonalitySystem.Bias(m_Actor, NpcPersonalityAxis.Supplies);
             if (preference >= 10) return ItemRating.NEED;
             if (preference <= -10 && !(it is ItemFood) && !(it is ItemMedicine))
                 return ItemRating.JUNK;
@@ -420,7 +420,7 @@ namespace djack.RogueSurvivor.Gameplay.AI
             ItemRating askedRating = RateItem(game, asked, true);
             // compare ratings with matrix (lazy way of doing lots of if/else)
             TradeRating rating = TRADE_RATING_MATRIX[(int)offeredRating, (int)askedRating];
-            int willingness = PersonalitySystem.Bias(m_Actor, DecisionKind.Trade) + attitude;
+            int willingness = PersonalitySystem.Bias(m_Actor, NpcPersonalityAxis.Trade) + attitude;
             if (rating == TradeRating.MAYBE && willingness >= 20) return TradeRating.ACCEPT;
             if (rating == TradeRating.MAYBE && willingness <= -20) return TradeRating.REFUSE;
             return rating;

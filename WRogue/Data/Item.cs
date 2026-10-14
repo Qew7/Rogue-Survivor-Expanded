@@ -22,6 +22,7 @@ namespace djack.RogueSurvivor.Data
         [System.Runtime.Serialization.OptionalField] string m_StolenFromName;
         [System.Runtime.Serialization.OptionalField] string m_TheftStoryId;
         [System.Runtime.Serialization.OptionalField] long m_TheftEventId;
+        [System.Runtime.Serialization.OptionalField] bool m_StolenGoodsFound;
         #endregion
 
         #region Properties
@@ -113,6 +114,8 @@ namespace djack.RogueSurvivor.Data
         public string StolenFromName { get { return m_StolenFromName; } }
         public string TheftStoryId { get { return m_TheftStoryId; } }
         public long TheftEventId { get { return m_TheftEventId; } }
+        public bool StolenGoodsFound { get { return m_StolenGoodsFound; } }
+        public void MarkStolenGoodsFound() { if (IsStolen) m_StolenGoodsFound = true; }
         public void MarkStolen(Guid groupId, Guid leaderId, string leaderName, string storyId, long eventId)
         {
             if (IsStolen) return;
@@ -123,6 +126,7 @@ namespace djack.RogueSurvivor.Data
         {
             m_StolenFromGroupId = Guid.Empty; m_StolenFromLeaderId = Guid.Empty;
             m_StolenFromName = null; m_TheftStoryId = null; m_TheftEventId = 0;
+            m_StolenGoodsFound = false;
         }
         public void RememberTheftEvent(long eventId) { if (IsStolen && m_TheftEventId == 0) m_TheftEventId = eventId; }
         public void CopyTheftFrom(Item source)
@@ -130,12 +134,13 @@ namespace djack.RogueSurvivor.Data
             m_StolenFromGroupId = source.m_StolenFromGroupId; m_StolenFromLeaderId = source.m_StolenFromLeaderId;
             m_StolenFromName = source.m_StolenFromName; m_TheftStoryId = source.m_TheftStoryId;
             m_TheftEventId = source.m_TheftEventId;
+            m_StolenGoodsFound = source.m_StolenGoodsFound;
         }
         public bool SameTheftAs(Item other)
         {
             return m_StolenFromLeaderId == other.m_StolenFromLeaderId &&
                 m_StolenFromGroupId == other.m_StolenFromGroupId && m_TheftStoryId == other.m_TheftStoryId &&
-                m_TheftEventId == other.m_TheftEventId;
+                m_TheftEventId == other.m_TheftEventId && m_StolenGoodsFound == other.m_StolenGoodsFound;
         }
         #endregion
 

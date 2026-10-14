@@ -28,11 +28,11 @@ static class GoalBiasSinglePassScenario
         int group, compassion, trade, courage, law, supplies;
         PersonalitySystem.GoalBiases(owner, registry, out group, out compassion, out trade,
             out courage, out law, out supplies);
-        Check.Equal(PersonalitySystem.Bias(owner, DecisionKind.Group, registry: registry), group, "group bias matches");
-        Check.Equal(PersonalitySystem.Bias(owner, DecisionKind.Compassion, registry: registry), compassion, "compassion bias matches");
-        Check.Equal(PersonalitySystem.Bias(owner, DecisionKind.Trade, registry: registry), trade, "trade bias matches");
-        Check.Equal(PersonalitySystem.Bias(owner, DecisionKind.Courage, registry: registry), courage, "courage bias matches");
-        Check.Equal(PersonalitySystem.Bias(owner, DecisionKind.Law, registry: registry), law, "law bias matches");
-        Check.Equal(PersonalitySystem.Bias(owner, DecisionKind.Supplies, registry: registry), supplies, "supplies bias matches");
+        Check.Equal(PersonalitySystem.Bias(owner, NpcPersonalityAxis.Group, registry: registry), group, "group bias matches");
+        Check.Equal(PersonalitySystem.Bias(owner, NpcPersonalityAxis.Compassion, registry: registry), compassion, "compassion bias matches");
+        Check.Equal(PersonalitySystem.Bias(owner, NpcPersonalityAxis.Trade, registry: registry), trade, "trade bias matches");
+        Check.Equal(PersonalitySystem.Bias(owner, NpcPersonalityAxis.Courage, registry: registry), courage, "courage bias matches");
+        Check.Equal(PersonalitySystem.Bias(owner, NpcPersonalityAxis.Law, registry: registry), law, "law bias matches");
+        Check.Equal(PersonalitySystem.Bias(owner, NpcPersonalityAxis.Supplies, registry: registry), supplies, "supplies bias matches");
     }
 }

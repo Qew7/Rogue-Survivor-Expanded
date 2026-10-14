@@ -15,15 +15,15 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             c.PlanSeed(StockpilePlanOperators.Seed);
             c.OperatorSource(new NpcOperatorSource("food.reserve", catalog => catalog.Facts.Mask("FoodReserve"), StockpilePlanOperators.Build));
             c.Interest(new NpcInterestDefinition("food_reserve", context => {
-                int supplies = PersonalitySystem.Bias(context.Owner, DecisionKind.Supplies) + context.Scarcity;
+                int supplies = PersonalitySystem.Bias(context.Owner, NpcPersonalityAxis.Supplies) + context.Scarcity;
                 if (supplies >= 15) Remember(context, "food_reserve", context.Self, 3, supplies);
             }, (context, interest, offers) => {
-                if (PersonalitySystem.Bias(context.Owner, DecisionKind.Supplies) + context.Scarcity < 15) return;
+                if (PersonalitySystem.Bias(context.Owner, NpcPersonalityAxis.Supplies) + context.Scarcity < 15) return;
                 int units = context.FoodUnits;
                 offers.Add(context.Self, "FoodReserve", "stockpile_food", units, interest.Need,
                     units < interest.Need ? 100 : 0, 100, interest.CauseId, resource: "food", self: true);
             }));
-            c.Value(new NpcValueDefinition("Residence", "Return to my chosen shelter", null, m => 20 + m.Group - PersonalitySystem.Bias(m.Owner, DecisionKind.Explore), true)
+            c.Value(new NpcValueDefinition("Residence", "Return to my chosen shelter", null, m => 20 + m.Group - PersonalitySystem.Bias(m.Owner, NpcPersonalityAxis.Explore), true)
                 { ArrivalEvent = "home_maintained" });
             c.Event(new NpcEventDefinition("home_maintained", NpcRecordCategory.Life, true, e => (e.Subject ?? "Someone") + " returned to their chosen shelter."));
             c.Interest(new NpcInterestDefinition("residence", ObserveHome, (context, interest, offers) => {
@@ -48,7 +48,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         static void ObserveHome(NpcGoalContext c)
         {
             NpcInterest prior = c.Owner.Personality.Interest("residence", c.Self.Id);
-            if ((prior != null && prior.ExpiresTurn > c.Turn) || PersonalitySystem.Bias(c.Owner, DecisionKind.Explore) >= 0 ||
+            if ((prior != null && prior.ExpiresTurn > c.Turn) || PersonalitySystem.Bias(c.Owner, NpcPersonalityAxis.Explore) >= 0 ||
                 !c.Owner.Location.Map.GetTileAt(c.Owner.Location.Position).IsInside) return;
             Remember(c, "residence", c.Self, 1, 20);
         }

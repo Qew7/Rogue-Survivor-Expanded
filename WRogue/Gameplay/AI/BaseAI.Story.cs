@@ -25,8 +25,8 @@ namespace djack.RogueSurvivor.Gameplay.AI
         {
             NpcKnowledge knowledge = m_Actor.Personality.Knowledge; int turn = m_Actor.Location.Map.LocalTime.TurnCounter;
             if (turn < knowledge.NextTalkTurn) return null;
-            bool social = 10 + PersonalitySystem.Bias(m_Actor, DecisionKind.Group) +
-                PersonalitySystem.Bias(m_Actor, DecisionKind.Compassion) / 2 >= 25;
+            bool social = 10 + PersonalitySystem.Bias(m_Actor, NpcPersonalityAxis.Group) +
+                PersonalitySystem.Bias(m_Actor, NpcPersonalityAxis.Compassion) / 2 >= 25;
             NpcFact chosen = null; Actor listener = null; int best = Int32.MinValue;
             foreach (NpcFact fact in knowledge.Facts)
             {

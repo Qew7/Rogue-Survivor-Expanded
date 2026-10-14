@@ -192,6 +192,11 @@
     <Compile Include="Gameplay\Npc\Conversation\NpcConversation.cs" />
     <Compile Include="Gameplay\Npc\Events\NpcObservation.cs" />
     <Compile Include="Gameplay\Npc\Events\NpcRecordDescriptions.cs" />
+    <Compile Include="Gameplay\Npc\Axes\HumanLifeAxis.cs" />
+    <Compile Include="Gameplay\Npc\Axes\CareCircleAxis.cs" />
+    <Compile Include="Gameplay\Npc\Axes\MessageTrustAxis.cs" />
+    <Compile Include="Gameplay\Npc\Axes\ScarcityAxis.cs" />
+    <Compile Include="Gameplay\Npc\Axes\PatienceAxis.cs" />
     <Compile Include="Gameplay\Npc\Goals\NpcGoalContext.cs" />
     <Compile Include="Gameplay\Npc\Goals\NpcGoalGenerator.State.cs" />
     <Compile Include="Gameplay\Npc\Goals\NpcGoalGenerator.cs" />
@@ -216,6 +221,7 @@
     <Compile Include="Gameplay\Npc\Runtime\NpcClockContext.cs" />
     <Compile Include="Gameplay\Npc\Runtime\NpcContentCatalog.cs" />
     <Compile Include="Gameplay\Npc\Runtime\NpcStorySystem.cs" />
+    <Compile Include="Gameplay\Npc\Runtime\NpcImmediateEmotion.cs" />
     <Compile Include="Gameplay\Npc\Runtime\PersonalitySystem.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -253,6 +259,7 @@
     <Compile Include="Data\ItemModel.cs" />
     <Compile Include="Data\Location.cs" />
     <Compile Include="Data\Map.cs" />
+    <Compile Include="Data\Map.MemoryResolution.cs" />
     <Compile Include="Data\MapObject.cs" />
     <Compile Include="Data\Skill.cs" />
     <Compile Include="Data\TimedTask.cs" />

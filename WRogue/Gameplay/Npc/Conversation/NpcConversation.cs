@@ -89,15 +89,15 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 case NpcSelfReportTone.Harmful:
                     return speaker.Personality.HasTrait("cruel") || speaker.Personality.HasTrait("rebellious") ||
                         speaker.Personality.HasTrait("hotheaded") || speaker.Personality.HasTrait("vindictive") ||
-                        PersonalitySystem.Bias(speaker, DecisionKind.Law, registry: game.NpcContent.Personalities) <= -15 &&
-                        PersonalitySystem.Bias(speaker, DecisionKind.Courage, registry: game.NpcContent.Personalities) >= 10;
+                        PersonalitySystem.Bias(speaker, NpcPersonalityAxis.Law, registry: game.NpcContent.Personalities) <= -15 &&
+                        PersonalitySystem.Bias(speaker, NpcPersonalityAxis.Courage, registry: game.NpcContent.Personalities) >= 10;
                 case NpcSelfReportTone.Helpful:
-                    return PersonalitySystem.Bias(speaker, DecisionKind.Compassion, registry: game.NpcContent.Personalities) >= 15 ||
-                        PersonalitySystem.Bias(speaker, DecisionKind.Group, registry: game.NpcContent.Personalities) >= 15 ||
-                        PersonalitySystem.Bias(speaker, DecisionKind.Trade, registry: game.NpcContent.Personalities) >= 15;
+                    return PersonalitySystem.Bias(speaker, NpcPersonalityAxis.Compassion, registry: game.NpcContent.Personalities) >= 15 ||
+                        PersonalitySystem.Bias(speaker, NpcPersonalityAxis.Group, registry: game.NpcContent.Personalities) >= 15 ||
+                        PersonalitySystem.Bias(speaker, NpcPersonalityAxis.Trade, registry: game.NpcContent.Personalities) >= 15;
                 default:
-                    return PersonalitySystem.Bias(speaker, DecisionKind.Group, registry: game.NpcContent.Personalities) >= 15 ||
-                        PersonalitySystem.Bias(speaker, DecisionKind.Trade, registry: game.NpcContent.Personalities) >= 15;
+                    return PersonalitySystem.Bias(speaker, NpcPersonalityAxis.Group, registry: game.NpcContent.Personalities) >= 15 ||
+                        PersonalitySystem.Bias(speaker, NpcPersonalityAxis.Trade, registry: game.NpcContent.Personalities) >= 15;
             }
         }
 
@@ -158,8 +158,10 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 lines.Add(line);
                 reported.Add(part);
             }
-            game.DoSay(speaker, listener, StoryText(game.NpcContent, speaker, reported, lines), RogueGame.Sayflags.IS_STORY | RogueGame.Sayflags.IS_RUMOR |
-                (free ? RogueGame.Sayflags.IS_FREE_ACTION : RogueGame.Sayflags.NONE), fact.EventId, fact.StoryId);
+            string speech = StoryText(game.NpcContent, speaker, reported, lines);
+            long speechId = game.DoSay(speaker, listener, speech, RogueGame.Sayflags.IS_STORY | RogueGame.Sayflags.IS_RUMOR |
+                (free ? RogueGame.Sayflags.IS_FREE_ACTION : RogueGame.Sayflags.NONE), fact.EventId, fact.StoryId,
+                deferNpcArchive: true);
             List<Actor> hearers = new List<Actor>();
             foreach (Actor hearer in speaker.Location.Map.Actors)
             {
@@ -168,15 +170,21 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 if (hearer.Personality == null) hearer.Personality = new PersonalityState();
                 hearers.Add(hearer);
             }
+            bool[] learned = new bool[hearers.Count];
             foreach (NpcFact part in chapter)
             {
-                foreach (Actor hearer in hearers)
+                for (int i = 0; i < hearers.Count; i++)
                 {
-                    NpcKnowledgeSystem.Hear(game, hearer, speaker, part);
+                    Actor hearer = hearers[i];
+                    if (NpcKnowledgeSystem.Hear(game, hearer, speaker, part)) learned[i] = true;
                     speaker.Personality.Knowledge.Told(part.EventId, hearer.PersonalityIdentity, turn);
                 }
                 speaker.Personality.Knowledge.Told(part.EventId, listener.PersonalityIdentity, turn);
             }
+            for (int i = 0; i < hearers.Count; i++)
+                if (!hearers[i].IsPlayer && (learned[i] || hearers[i] == listener))
+                    game.RecordHeardSpeech(speaker, listener, hearers[i], speech, "heard_rumor",
+                        speechId, fact.EventId, fact.StoryId);
             speaker.Personality.Knowledge.NextTalkTurn = turn + 30;
             NpcEvents.Publish(game, "rumor_shared", speaker, listener, fact.EventId, fact.StoryId);
             if (profile != null) profile("rumor share", System.Diagnostics.Stopwatch.GetTimestamp() - started);
@@ -356,7 +364,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             {
                 if (speaker.Personality.HasTrait("timid") &&
                     (definition.Categories & NpcRecordCategory.Combat) != 0) score += 3;
-                if (speaker.Personality.HasTrait("compassionate") &&
+                if (PersonalitySystem.Bias(speaker, NpcPersonalityAxis.Compassion,
+                    registry: catalog.Personalities) > 10 &&
                     (definition.Categories & NpcRecordCategory.Help) != 0) score += 3;
             }
             return score;

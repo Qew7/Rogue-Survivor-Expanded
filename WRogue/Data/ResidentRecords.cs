@@ -39,6 +39,7 @@ namespace djack.RogueSurvivor.Data
         [System.Runtime.Serialization.OptionalField] Dictionary<string, bool> m_Keys;
         [System.Runtime.Serialization.OptionalField] HashSet<string> m_KeySet;
         [NonSerialized] HashSet<long> m_EventKeys;
+        [NonSerialized] bool m_SpeechKeysCompacted;
         [NonSerialized] ResidentRecords m_Owner;
         public IList<ResidentEntry> Entries { get { return m_Entries.AsReadOnly(); } }
         public int EntryCount { get { return m_Entries.Count; } }
@@ -64,23 +65,31 @@ namespace djack.RogueSurvivor.Data
                 foreach (ResidentEntry entry in m_Entries)
                     if (entry.EventDedupKey) m_EventKeys.Add(entry.EventId);
             }
-            if (m_Keys == null) return;
-            var observations = new Dictionary<long, ResidentEntry>();
-            foreach (ResidentEntry entry in m_Entries)
-                if (entry.EventId != 0 && (entry.Text.StartsWith("Experienced: ", StringComparison.Ordinal) ||
-                    entry.Text.StartsWith("Witnessed: ", StringComparison.Ordinal)))
-                    observations[entry.EventId] = entry;
-            foreach (string key in m_Keys.Keys)
+            if (m_Keys != null)
             {
-                long eventId;
-                ResidentEntry observation;
-                if (key.StartsWith("event:", StringComparison.Ordinal) &&
-                    Int64.TryParse(key.Substring(6), out eventId) &&
-                    observations.TryGetValue(eventId, out observation))
-                { observation.EventDedupKey = true; m_EventKeys.Add(eventId); continue; }
-                m_KeySet.Add(key);
+                var observations = new Dictionary<long, ResidentEntry>();
+                foreach (ResidentEntry entry in m_Entries)
+                    if (entry.EventId != 0 && (entry.Text.StartsWith("Experienced: ", StringComparison.Ordinal) ||
+                        entry.Text.StartsWith("Witnessed: ", StringComparison.Ordinal)))
+                        observations[entry.EventId] = entry;
+                foreach (string key in m_Keys.Keys)
+                {
+                    if (key.StartsWith("heard_speech:", StringComparison.Ordinal)) continue;
+                    long eventId;
+                    ResidentEntry observation;
+                    if (key.StartsWith("event:", StringComparison.Ordinal) &&
+                        Int64.TryParse(key.Substring(6), out eventId) &&
+                        observations.TryGetValue(eventId, out observation))
+                    { observation.EventDedupKey = true; m_EventKeys.Add(eventId); continue; }
+                    m_KeySet.Add(key);
+                }
+                m_Keys = null;
             }
-            m_Keys = null;
+            if (!m_SpeechKeysCompacted)
+            {
+                m_KeySet.RemoveWhere(key => key.StartsWith("heard_speech:", StringComparison.Ordinal));
+                m_SpeechKeysCompacted = true;
+            }
         }
         public void Add(string key, int turn, string text, ObservedEvent observed = null, bool gainedTrait = false, long[] supportingCauses = null)
         {
@@ -90,12 +99,12 @@ namespace djack.RogueSurvivor.Data
         void AddCore(string key, int turn, string text, ObservedEvent observed, bool gainedTrait, long[] supportingCauses)
         {
             CompactKeys();
-            bool eventKey = observed != null && observed.EventId != 0 && key.StartsWith("event:", StringComparison.Ordinal);
+            bool eventKey = observed != null && observed.EventId != 0 && key != null && key.StartsWith("event:", StringComparison.Ordinal);
             if (eventKey)
             { if (!m_EventKeys.Add(observed.EventId)) return; }
-            else if (!m_KeySet.Add(key)) return;
+            else if (key != null && !m_KeySet.Add(key)) return;
             if (m_Owner != null) text = m_Owner.ShareText(text);
-            string kind = key.Split(':')[0];
+            string kind = observed == null ? key.Split(':')[0] : observed.Kind;
             var entry = new ResidentEntry(turn, text, m_Entries.Count, observed == null ? kind : observed.Kind,
                 observed != null && observed.Direct, observed == null ? Guid.Empty : observed.SubjectId,
                 observed == null ? Guid.Empty : observed.OtherId, gainedTrait,

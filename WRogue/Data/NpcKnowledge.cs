@@ -58,6 +58,7 @@ namespace djack.RogueSurvivor.Data
         public Guid GroupId;
         public long MedicalCause;
         public string MedicalStory;
+        [System.Runtime.Serialization.OptionalField] public int NextMedicineRequestTurn;
         public int LossUnits;
         public long LossCause;
         public Location LossPlace;
@@ -86,6 +87,7 @@ namespace djack.RogueSurvivor.Data
         public readonly List<NpcKnownExit> Exits = new List<NpcKnownExit>();
         readonly Dictionary<string, int> told = new Dictionary<string, int>();
         public int NextTalkTurn, NextPlanTurn, Revision;
+        [System.Runtime.Serialization.OptionalField] public int NextMedicineRequestTurn;
         public bool Learn(NpcFact fact)
         {
             for (int i = 0; i < Facts.Count; i++)
@@ -148,6 +150,7 @@ namespace djack.RogueSurvivor.Data
                 person.SocialCause = old.SocialCause; person.ReciprocityTurn = old.ReciprocityTurn;
                 person.MedicalNeed = old.MedicalNeed; person.MedicalTurn = old.MedicalTurn; person.MedicalConfidence = old.MedicalConfidence;
                 person.Wounds = old.Wounds; person.MedicalCause = old.MedicalCause; person.MedicalStory = old.MedicalStory;
+                person.NextMedicineRequestTurn = old.NextMedicineRequestTurn;
                 person.FactionId = old.FactionId; person.GroupId = old.GroupId;
                 person.LossUnits = old.LossUnits; person.LossCause = old.LossCause; person.LossPlace = old.LossPlace;
                 People.Remove(old);

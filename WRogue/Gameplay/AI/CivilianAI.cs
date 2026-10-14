@@ -20,6 +20,11 @@ namespace djack.RogueSurvivor.Gameplay.AI
     class CivilianAI : OrderableAI
     {
         internal static Action<long> ProfileIntentPrep;
+        static bool CanSeekTrade(Actor actor, int turn)
+        {
+            PersonalityState state = actor.Personality;
+            return state == null || turn >= state.NextTradeAttemptTurn;
+        }
         #region Constants
         const int FOLLOW_NPCLEADER_MAXDIST = 1;
         const int FOLLOW_PLAYERLEADER_MAXDIST = 1;
@@ -613,8 +618,9 @@ namespace djack.RogueSurvivor.Gameplay.AI
 
                 #region Trade
                 decisionStart = decisionProfile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
-                int tradeBias = PersonalitySystem.Bias(m_Actor, DecisionKind.Trade);
-                if (Directives.CanTrade && (tradeBias == 0 ||
+                bool canSeekTrade = Directives.CanTrade && CanSeekTrade(m_Actor, map.LocalTime.TurnCounter);
+                int tradeBias = canSeekTrade ? PersonalitySystem.Bias(m_Actor, NpcPersonalityAxis.Trade) : 0;
+                if (canSeekTrade && (tradeBias == 0 ||
                     game.Rules.RollChance(Math.Max(0, Math.Min(100, 70 + tradeBias)))) &&
                     m_Actor.Inventory != null && !m_Actor.Inventory.IsEmpty)
                 {
@@ -887,7 +893,7 @@ namespace djack.RogueSurvivor.Gameplay.AI
             #endregion
 
             // 22 go revive corpse.
-            ActorAction revive = PersonalitySystem.Bias(m_Actor, DecisionKind.Compassion) <= -20 ? null :
+            ActorAction revive = PersonalitySystem.Bias(m_Actor, NpcPersonalityAxis.Compassion) <= -20 ? null :
                 BehaviorGoReviveCorpse(game, FilterCorpses(game, mapPercepts));
             if (revive != null)
             {
@@ -898,7 +904,7 @@ namespace djack.RogueSurvivor.Gameplay.AI
             // 23 use exit.
             #region
             if (game.Rules.RollChance(Math.Max(0, Math.Min(100,
-                USE_EXIT_CHANCE + PersonalitySystem.Bias(m_Actor, DecisionKind.Explore)))))
+                USE_EXIT_CHANCE + PersonalitySystem.Bias(m_Actor, NpcPersonalityAxis.Explore)))))
             {
                 ActorAction useExit = BehaviorUseExit(game, UseExitFlags.DONT_BACKTRACK);
                 if (useExit != null)
@@ -976,9 +982,9 @@ namespace djack.RogueSurvivor.Gameplay.AI
 
             // 28 (law enforcer) watch for murderers.
             #region
-            if ((m_Actor.Model.Abilities.IsLawEnforcer || PersonalitySystem.Bias(m_Actor, DecisionKind.Law) >= 25) &&
+            if ((m_Actor.Model.Abilities.IsLawEnforcer || PersonalitySystem.Bias(m_Actor, NpcPersonalityAxis.Law) >= 25) &&
                 mapPercepts != null && game.Rules.RollChance(Math.Max(0, Math.Min(100,
-                    LAW_ENFORCE_CHANCE + PersonalitySystem.Bias(m_Actor, DecisionKind.Law)))))
+                    LAW_ENFORCE_CHANCE + PersonalitySystem.Bias(m_Actor, NpcPersonalityAxis.Law)))))
             {
                 Actor target;
                 ActorAction lawAction = BehaviorEnforceLaw(game, mapPercepts, out target);

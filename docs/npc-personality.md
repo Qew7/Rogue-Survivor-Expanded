@@ -7,6 +7,32 @@ memory instances, and a bounded journal of significant events it experienced or
 witnessed. Personal memories also live in lasting relationship records after
 resolution. No definition object or callback is serialized with the actor.
 
+NPCs also have five changing dispositions: value of human life, circle of care,
+trust in reports, anxiety about scarce resources, and patience. Each effective
+value is clamped to −100..100 and combines a faction baseline, current traits,
+a saved experience offset from resolved memories, and temporary need modifiers.
+Hunger narrows care, raises scarcity and reduces patience; carrying unspoiled
+food eases the hunger-driven scarcity increase. Sleep loss reduces
+care and patience; low sanity reduces human life, message trust and patience.
+These modifiers disappear when the need recovers. Acquiring or losing a trait
+changes the calculated value immediately. Value of life affects defense, retaliation
+and medical aid; circle of care affects aid to people outside the group; trust
+changes the confidence placed in rumors and radio reports; resource anxiety
+affects food aid and reserve goals. Patience changes when an NPC confronts someone,
+retaliates, accepts an apology, or honors a refusal over disputed supplies. NPCs
+also accumulate short-lived frustration from refused help or trades, contested
+supplies, broken agreements, warnings, expulsion, and abandonment. Frustration
+fades over time and successful agreements ease it. Patience sets how much
+frustration an NPC can bear before snapping. A frustrated NPC may lash out
+verbally or, if willing to fight and close enough, attack even without a cruel
+trait. The actual outburst and its trigger are reportable; participants and
+witnesses gain two-day memories. These scores are private NPC behavior state.
+The player has no dispositions. An observed event can briefly change an NPC's
+recoverable sanity according to traits and dispositions; it does not immediately
+write a lasting experience offset. A bonded companion's death costs a ruthless
+NPC less sanity than a caring one, while the player retains the existing cost.
+Radio news likewise uses real listener traits and dispositions.
+
 ## Relationships
 
 An NPC keeps separate private records for people, groups, and factions.
@@ -71,6 +97,13 @@ bind separate participant goals, with resource reservations and saved pacing.
 Eligible followers can preserve their group under a successor after an NPC
 leader's death.
 
+Medicine requests now pause for four hours per requester and one day per
+recipient. These limits persist across new goals, sightings, and saved games;
+they reduce repeated requests in Read Records and radio without suppressing
+actual aid, trade, or a new request to someone else after the shorter pause.
+The existing report priority also places a routine medicine plea below other
+eligible radio headlines; it remains eligible when there is no stronger news.
+
 Goals now describe desired results. A bounded planner composes available actions
 at runtime, using the NPC's traits, relationships and local knowledge to compare
 methods. Acquiring food can involve a known pickup, a request or a real offered
@@ -121,22 +154,39 @@ exploration, compassion, and supply value. Conflicting starting traits can be
 registered as a pair. A trait needing new goals/actions can register its
 interest, goal source and operator in its module; common orchestration resolves
 these contracts without branching on the trait's ID.
+`NpcPersonalityAxis` in `PersonalityState.cs` is the single list of both
+decision tendencies and changing dispositions. A trait uses `TraitEffect` for
+either kind of axis; `WithEffect` adds one to an existing definition. The four
+original changing dispositions still derive part of their value from older
+decision effects, preserving their established values. Faction baselines,
+projected trait effects, temporary need modifiers and immediate event reactions
+are defined per disposition under `WRogue/Gameplay/Npc/Axes/`.
+`PersonalitySystem.Disposition` applies the shared −100..100 clamp. New traits
+may specify a disposition effect directly.
+To add a changing disposition, assign the next non-negative experience slot,
+increase `NpcPersonalityAxes.DispositionCount`, give factions a baseline,
+then define the events, memories and decisions that use it. Negative axes are
+decision-only and have no experience slot. Keep existing slot numbers stable
+for saved games.
 Group trust uses both the leader's traits and the follower's desire for company;
 a solitary follower can lose trust over time while a sociable one gains it faster.
 
-A `MemoryDefinition` owns its `MemoryTrigger`s and ordered `MemoryOutcome`s.
+A `MemoryDefinition` owns its `MemoryTrigger`s and `MemoryOutcome`s.
 Its relationship roles select the event's subject, other participant, or group
 leader, and its feeling values specify personal and collective reactions.
 Triggers filter `SignificantEvent`s by kind and observer relationship. Outcomes
 may inspect current traits and the actor's witnessed-event journal. Definitions
 can declare evidence event kinds; a pending memory retains the latest observed
 turn for each declared kind even after older journal entries are evicted. Use
-this for events that must affect an outcome days later. A successful
-outcome awards one eligible trait or one level of an existing living skill. The
-last outcomes should usually provide related skill fallbacks so a capped skill
-does not silently consume a memory. Resolution occurs on the
-actor's map when its local day advances. Starting memories use the same
-definitions and have a randomly rolled two-to-six-day deadline.
+this for events that must affect an outcome days later. At resolution, the NPC
+randomly chooses among available categories: gain a relevant trait, improve a
+relevant living skill, lose a current trait whose disposition effect opposes the
+experience, or change the memory's disposition axis. Traits with dependents
+cannot be removed this way. Within the trait and skill categories, the first
+eligible catalog outcome is used, so definitions should provide related skill
+fallbacks. New memories, including starting memories, resolve exactly two days
+after they start on the actor's map. Older saves can retain an earlier stored
+deadline; later stored deadlines are capped at two days.
 
 For a new trigger of an existing event kind, register another `MemoryTrigger`.
 For a new kind of significant event, publish a `SignificantEvent` from the
@@ -230,10 +280,10 @@ speaks about them.
 There are 42 additional acquired traits, paired with 42 source-specific memories:
 nine unique encounters, eighteen faction experiences, and fifteen world/story
 events. None of these memories or traits is randomly assigned at character
-creation. Each memory has a two-to-six-day deadline. Its first outcome offers
-the special trait when the NPC has the required starting trait; otherwise it
-offers a related skill, then a fallback skill. Existing traits and skill caps
-still apply. `friend_<faction>` and `wary_<faction>` conflict with each other.
+creation. Each memory has a two-day deadline. Its trait outcome offers the
+special trait when the NPC has the required starting trait; a related or fallback
+skill is another possible outcome. Existing traits and skill caps still apply.
+`friend_<faction>` and `wary_<faction>` conflict with each other.
 Player memories preserve history without awarding these NPC outcomes.
 
 Unique encounters happen when an awake intelligent living observer sees the
@@ -330,8 +380,9 @@ their travel without inventing a destination. District labels use the same
 kind colors as the world map in Read Records and the heard journal.
 The chronicle keeps internal
 story IDs available for search but hides them from displayed lines. Traits
-unrelated to the goal are omitted. The archive records the actual gained trait when a memory resolves;
-a skill appears only if the eligible trait outcomes were unavailable.
+unrelated to the goal are omitted. The archive records the actual randomly
+chosen memory outcome, including a gained or lost trait, improved skill, or
+disposition change.
 
 This main-menu reader reveals saved NPC records outside gameplay. Format-5
 saves carry a separate compressed archive, so reading does not load the world,
@@ -407,9 +458,9 @@ When a severe retreat actually moves the NPC, `fled_in_fear` enters the world
 record. Witnesses can pass it on as a rumor. A listener who learns the threat's
 identity treats that person as dangerous, with the flight event as evidence.
 The fleeing NPC gains a private `frightened_escape` memory, which temporarily
-reduces resolve and resolves after two to five days. Depending on existing
-traits, it may develop into panic attacks, trauma or hardening; otherwise the
-NPC can gain Strong Psyche. Repeated movement while that memory is pending
+reduces resolve and resolves after two days. Depending on existing traits,
+the NPC may develop panic attacks, trauma or hardening, or gain Strong Psyche.
+Repeated movement while that memory is pending
 does not generate another flight event.
 
 ## Verification

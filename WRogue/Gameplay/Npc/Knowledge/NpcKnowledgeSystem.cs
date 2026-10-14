@@ -83,7 +83,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                     long personStarted = profile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
                     NpcKnownPerson known = knowledge.See(person, turn);
                     known.Hostile = game.Rules.AreEnemies(actor, person);
-                    game.NpcContent.Perceive(NpcPerceptionKind.Person, new NpcPerceptionContext(game, actor, percept.Location, person));
+                    game.NpcContent.Perceive(NpcPerceptionKind.Person,
+                        new NpcPerceptionContext(game, actor, percept.Location, person, knownPerson: known));
                     if (profile != null) profile("knowledge person", System.Diagnostics.Stopwatch.GetTimestamp() - personStarted);
                 }
                 Inventory items = percept.Percepted as Inventory;
@@ -125,7 +126,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             }
             int improvement = Math.Max(0, confidence - (previous == null ? 0 : previous.Confidence));
             bool learned = knowledge.Learn(fact);
-            if (learned && refuted) NpcTestimony.Refute(game.NpcContent, listener, speaker, fact);
+            if (learned && refuted) NpcTestimony.Refute(game, listener, speaker, fact);
             if (learned && fact.NamesSubject && !fact.NoSubjectLocation)
                 listener.Personality.Knowledge.LearnPerson(new NpcKnownPerson { Id = fact.SubjectId, Name = fact.ReportSubject, Place = fact.Place,
                     SeenTurn = fact.EventTurn, Confidence = confidence, Source = NpcKnowledgeSource.Told, Dead = game.NpcContent.Event(fact.Kind) != null && game.NpcContent.Event(fact.Kind).ProvesDeath && confidence >= 60 });
@@ -140,8 +141,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             RelationshipRecord trust = listener.Personality.Person(speaker.PersonalityIdentity);
             int confidence = Math.Max(0, Math.Min(95, source.Confidence - 20 + (trust == null ? 0 : trust.Trust / 10) +
                 (trust == null ? 0 : -trust.Grievance / 5) +
-                Math.Min(0, PersonalitySystem.Bias(listener, DecisionKind.Group)) / 2 +
-                PersonalitySystem.Disposition(listener, NpcDispositionAxis.MessageTrust) / 3));
+                Math.Min(0, PersonalitySystem.Bias(listener, NpcPersonalityAxis.Group)) / 2 +
+                PersonalitySystem.Disposition(listener, NpcPersonalityAxis.MessageTrust) / 3));
             if (source.Kind == "claimed_permission")
             {
                 NpcFact contrary = listener.Personality.Knowledge.Facts.Find(f => f.EventId == source.EventId && f.Kind == "base_theft");

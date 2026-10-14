@@ -33,7 +33,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                     ulong at = d.At(seller.Place); if (at == 0) continue;
                     d.Travel(seller.Place, seller.Id, at);
                     d.Add(NpcPlanAction.BarterFood, seller.Place, seller.Id, at, 0,
-                        (ulong)(NpcPlanFact.Food | NpcPlanFact.SpareFood), 0, 12 - PersonalitySystem.Bias(d.Owner, DecisionKind.Trade) / 3);
+                        (ulong)(NpcPlanFact.Food | NpcPlanFact.SpareFood), 0, 12 - PersonalitySystem.Bias(d.Owner, NpcPersonalityAxis.Trade) / 3);
                 }
                 foreach (NpcKnownPlace cache in d.Owner.Personality.Knowledge.Places)
                 {
@@ -44,8 +44,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                     ulong gain = (ulong)NpcPlanFact.Food;
                     if (food + cache.Units >= 2) gain |= (ulong)NpcPlanFact.SpareFood;
                     d.Add(NpcPlanAction.PickupFood, cache.Place, Guid.Empty, at, 0, gain, 0,
-                        9 - PersonalitySystem.Bias(d.Owner, DecisionKind.Explore) / 4 - PersonalitySystem.Bias(d.Owner, DecisionKind.Supplies) / 4 +
-                        cache.Risk * Math.Max(0, 6 + PersonalitySystem.Bias(d.Owner, DecisionKind.Law) / 3 - PersonalitySystem.Bias(d.Owner, DecisionKind.Courage) / 4));
+                        9 - PersonalitySystem.Bias(d.Owner, NpcPersonalityAxis.Explore) / 4 - PersonalitySystem.Bias(d.Owner, NpcPersonalityAxis.Supplies) / 4 +
+                        cache.Risk * Math.Max(0, 6 + PersonalitySystem.Bias(d.Owner, NpcPersonalityAxis.Law) / 3 - PersonalitySystem.Bias(d.Owner, NpcPersonalityAxis.Courage) / 4));
                 }
                 var peers = new List<Actor>(d.Visible); peers.Sort((a, b) => a.PersonalityIdentity.CompareTo(b.PersonalityIdentity));
                 int n = 0;
@@ -57,7 +57,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                         d.Owner.Personality.Knowledge.WasTold(-d.Goal.Sequence, peer.PersonalityIdentity)) continue;
                     ulong at = d.At(peer.Location), asked = NpcFactLayout.Question(n++);
                     d.Travel(peer.Location, peer.PersonalityIdentity, at);
-                    int cost = 15 - PersonalitySystem.Bias(d.Owner, DecisionKind.Group) / 3 - PersonalitySystem.Bias(d.Owner, DecisionKind.Compassion) / 5 -
+                    int cost = 15 - PersonalitySystem.Bias(d.Owner, NpcPersonalityAxis.Group) / 3 - PersonalitySystem.Bias(d.Owner, NpcPersonalityAxis.Compassion) / 5 -
                         PersonalitySystem.Attitude(d.Owner, peer) / 5 - (d.Owner.Leader == peer ? 5 : 0);
                     d.Add(NpcPlanAction.AskFood, peer.Location, peer.PersonalityIdentity, at, asked | (ulong)NpcPlanFact.Food,
                         asked | (ulong)NpcPlanFact.Food, 0, cost);

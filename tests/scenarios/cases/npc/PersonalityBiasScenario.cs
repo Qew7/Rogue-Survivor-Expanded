@@ -16,11 +16,11 @@ static class PersonalityBiasScenario
             ItemEntertainment magazine = new ItemEntertainment(world.Game.GameItems.MAGAZINE);
             ItemEntertainment book = new ItemEntertainment(world.Game.GameItems.BOOK);
             actor.Personality.AddTrait(new TraitInstance("likes_items", magazine.Model.ID));
-            Check.Equal(35, PersonalitySystem.Bias(actor, DecisionKind.Item, magazine),
+            Check.Equal(35, PersonalitySystem.Bias(actor, NpcPersonalityAxis.Item, magazine),
                 "generic preference applies to its configured model");
-            Check.Equal(0, PersonalitySystem.Bias(actor, DecisionKind.Item, book),
+            Check.Equal(0, PersonalitySystem.Bias(actor, NpcPersonalityAxis.Item, book),
                 "preference does not affect other models in the same item class");
-            Check.Equal(0, PersonalitySystem.Bias(actor, DecisionKind.Item),
+            Check.Equal(0, PersonalitySystem.Bias(actor, NpcPersonalityAxis.Item),
                 "item preference has no effect without an item");
 
             int ordinaryTrust = world.Game.Rules.ActorTrustIncrease(actor);

@@ -64,12 +64,15 @@ namespace djack.RogueSurvivor.Engine
         // for the player should try to mimick most of trade results obtained by player negociating trade but not mandatory.
         public void DoTrade(Actor speaker, Actor target)
         {
+            Actor initiator = speaker;
             // clean up activities
             speaker.Activity = Activity.IDLE;
             target.Activity = Activity.IDLE;
 
             bool isVisible = IsVisibleToPlayer(speaker) || IsVisibleToPlayer(target);
             if (isVisible) AddMessage(MakeMessage(speaker, string.Format("wants to make a quick trade with {0}.", target.Name)));
+            string tradeStory = "trade:" + speaker.PersonalityIdentity.ToString("N") + ":" +
+                target.PersonalityIdentity.ToString("N") + ":" + target.Location.Map.LocalTime.TurnCounter;
 
             // the basic idea is to pick an item the speaker wants from target,
             // and offer an item the speaker is willing to get rid of.
@@ -82,6 +85,7 @@ namespace djack.RogueSurvivor.Engine
             if ((!targetAI.Directives.CanTrade) && (speaker != target.Leader))
             {
                 if (isVisible) AddMessage(MakeMessage(target, "is not willing to trade."));
+                ReportTradeRefusal(target, initiator, tradeStory);
                 return;
             }
 
@@ -254,9 +258,21 @@ namespace djack.RogueSurvivor.Engine
             else
             {
                 if (isVisible) AddMessage(MakeMessage(target, string.Format("{0}.", Conjugate(target, VERB_REFUSE_THE_DEAL))));
+                ReportTradeRefusal(target, initiator, tradeStory);
                 if (target.IsPlayer || speaker.IsPlayer)
                     RedrawPlayScreen();
             }
+        }
+
+        void ReportTradeRefusal(Actor refuser, Actor initiator, string storyId)
+        {
+            if (!initiator.IsPlayer && initiator.Personality != null)
+            {
+                int turn = refuser.Location.Map.LocalTime.TurnCounter;
+                initiator.Personality.NextTradeAttemptTurn = turn + WorldTime.TURNS_PER_HOUR;
+            }
+            ReportPersonalityEvent("trade_refused", refuser, initiator, refuser.Location.Map,
+                refuser.Location.Position, storyId: storyId);
         }
 
         /// <summary>
@@ -308,6 +324,10 @@ namespace djack.RogueSurvivor.Engine
         }
 
         public void DoSay(Actor speaker, Actor target, string text, Sayflags flags, long causeId = 0, string storyId = null)
+        { DoSay(speaker, target, text, flags, causeId, storyId, false); }
+
+        internal long DoSay(Actor speaker, Actor target, string text, Sayflags flags, long causeId,
+            string storyId, bool deferNpcArchive)
         {
             Color sayColor = ((flags & Sayflags.IS_DANGER) != 0) ? SAYOREMOTE_DANGER_COLOR : SAYOREMOTE_NORMAL_COLOR;
 
@@ -343,36 +363,47 @@ namespace djack.RogueSurvivor.Engine
                 AddMessageIfAudibleForPlayer(speaker.Location,
                     new Message("You overhear: \"" + text + "\"", m_Session.WorldTime.TurnCounter, sayColor));
 
+            long speechId = 0;
             if ((flags & Sayflags.IS_STORY) != 0 && Session.Get.GamePreset.NpcPersonalitiesEnabled)
             {
-                long speechId = Session.Get.NextPersonalityEventId();
-                int turn = speaker.Location.Map.LocalTime.TurnCounter;
+                speechId = Session.Get.NextPersonalityEventId();
                 foreach (Actor listener in speaker.Location.Map.Actors)
                 {
                     if (listener == speaker || listener.IsDead || listener.IsSleeping || listener.Model.Abilities.IsUndead ||
                         !listener.Model.Abilities.IsIntelligent ||
                         m_Rules.StdDistance(listener.Location.Position, speaker.Location.Position) > listener.AudioRange) continue;
-                    bool identified = listener == target || (m_Rules.GridDistance(listener.Location.Position, speaker.Location.Position) <=
-                        m_Rules.ActorFOV(listener, speaker.Location.Map.LocalTime, m_Session.World.Weather) &&
-                        LOS.CanTraceViewLine(listener.Location, speaker.Location.Position));
+                    if (deferNpcArchive && !listener.IsPlayer) continue;
                     string kind = (flags & Sayflags.IS_RUMOR) != 0 ? "heard_rumor" :
                         (flags & Sayflags.IS_REQUEST) != 0 ? "heard_request" : "heard_reply";
-                    if (listener.IsPlayer)
-                    {
-                        if (listener.Personality == null) listener.Personality = new PersonalityState();
-                        listener.Personality.HearSpeech(new HeardJournalEntry(turn, kind,
-                            identified ? speaker.UnmodifiedName : "someone", text, causeId));
-                    }
-                    ResidentRecord record = Session.Get.ResidentRecords.Register(listener);
-                    if (record == null) continue;
-                    var observed = new ObservedEvent(kind, turn, identified ? speaker.UnmodifiedName : null, null,
-                        listener == target, subjectId: identified ? speaker.PersonalityIdentity : Guid.Empty,
-                        eventId: speechId, causeId: causeId, storyId: storyId);
-                    observed.RecordCategories = (int)Gameplay.Personality.NpcRecordCategory.Encounters;
-                    record.Add("heard_speech:" + speechId, turn,
-                        "Heard " + (identified ? speaker.UnmodifiedName : "someone") + " say: \"" + text + "\".", observed);
+                    RecordHeardSpeech(speaker, target, listener, text, kind, speechId, causeId, storyId);
                 }
             }
+            return speechId;
+        }
+
+        internal void RecordHeardSpeech(Actor speaker, Actor target, Actor listener, string text, string kind,
+            long speechId, long causeId, string storyId)
+        {
+            if (speechId == 0) return;
+            int turn = speaker.Location.Map.LocalTime.TurnCounter;
+            bool identified = listener == target || (m_Rules.GridDistance(listener.Location.Position, speaker.Location.Position) <=
+                m_Rules.ActorFOV(listener, speaker.Location.Map.LocalTime, m_Session.World.Weather) &&
+                LOS.CanTraceViewLine(listener.Location, speaker.Location.Position));
+            if (listener.IsPlayer)
+            {
+                if (listener.Personality == null) listener.Personality = new PersonalityState();
+                listener.Personality.HearSpeech(new HeardJournalEntry(turn, kind,
+                    identified ? speaker.UnmodifiedName : "someone", text, causeId));
+            }
+            ResidentRecord record = Session.Get.ResidentRecords.Register(listener);
+            if (record == null) return;
+            var observed = new ObservedEvent(kind, turn, identified ? speaker.UnmodifiedName : null, null,
+                listener == target, subjectId: identified ? speaker.PersonalityIdentity : Guid.Empty,
+                eventId: speechId, causeId: causeId, storyId: storyId);
+            observed.RecordCategories = (int)Gameplay.Personality.NpcRecordCategory.Encounters;
+            // Speech IDs are unique and each listener is visited once; no saved dedup key is needed.
+            record.Add(null, turn,
+                "Heard " + (identified ? speaker.UnmodifiedName : "someone") + " say: \"" + text + "\".", observed);
         }
 
         /// <summary>
@@ -553,7 +584,7 @@ namespace djack.RogueSurvivor.Engine
         {
             if (item == null || !item.IsStolen || finder == null || finder.Personality == null ||
                 !m_Session.GamePreset.NpcPersonalitiesEnabled) return;
-            if (kind == "stolen_goods_found" && item.LastDroppedBy == finder) return;
+            if (kind == "stolen_goods_found" && (item.LastDroppedBy == finder || item.StolenGoodsFound)) return;
             Guid victim = item.StolenFromLeaderId;
             SocialGroup group = finder.SocialGroup;
             if (finder.PersonalityIdentity != victim &&
@@ -571,6 +602,15 @@ namespace djack.RogueSurvivor.Engine
                   ClaimantName = item.StolenFromName, ItemId = item.StoryIdentity,
                   ModelId = item.Model.ID, Resource = item.Model.SingleName, Units = Math.Max(1, item.Quantity) };
             Gameplay.Personality.PersonalitySystem.Report(this, found);
+            if (kind == "stolen_goods_found")
+            {
+                // A pickup may have merged the ground stack into carried stacks, leaving
+                // `item` empty. Mark the actual received goods as well as the source.
+                foreach (Item carried in finder.Inventory.Items)
+                    if (carried.Model == item.Model && carried.SameTheftAs(item))
+                        carried.MarkStolenGoodsFound();
+                item.MarkStolenGoodsFound();
+            }
             NpcFact fact = finder.Personality.Knowledge.Facts.Find(f => f.EventId == found.Id && f.Kind == kind);
             if (fact != null) Gameplay.Personality.NpcReputation.StolenGoods(finder, fact, 100);
         }

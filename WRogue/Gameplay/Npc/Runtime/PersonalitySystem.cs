@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using djack.RogueSurvivor.Data;
 using djack.RogueSurvivor.Engine;
 using djack.RogueSurvivor.Engine.Items;
+using djack.RogueSurvivor.Gameplay.Personality.Axes;
 
 namespace djack.RogueSurvivor.Gameplay.Personality
 {
@@ -96,7 +97,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             return NpcRelationshipValue.Calculate(observer, target.PersonalityIdentity, group, target.Faction == null ? -1 : target.Faction.ID, false);
         }
 
-        public static int Bias(Actor actor, DecisionKind decision, Item item = null, PersonalityRegistry registry = null,
+        public static int Bias(Actor actor, NpcPersonalityAxis axis, Item item = null, PersonalityRegistry registry = null,
             string excludeTrait = null)
         {
             if (actor == null || actor.Personality == null || !Session.Get.GamePreset.NpcPersonalitiesEnabled)
@@ -110,22 +111,29 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 if (definition.ItemParameter && (item == null || item.Model.ID != instance.ItemModelId))
                     continue;
                 foreach (TraitEffect effect in definition.Effects)
-                    if (effect.Decision == decision && (effect.Applies == null || effect.Applies(actor, item)))
+                    if (effect.Axis == axis && (effect.Applies == null || effect.Applies(actor, item)))
                         total += effect.Amount;
             }
             return Math.Max(-100, Math.Min(100, total));
         }
 
-        public static int Disposition(Actor actor, NpcDispositionAxis axis, NpcContentCatalog catalog = null,
+        public static int Disposition(Actor actor, NpcPersonalityAxis axis, NpcContentCatalog catalog = null,
             string excludeTrait = null)
         {
+            if (!NpcPersonalityAxes.IsDisposition(axis)) throw new ArgumentOutOfRangeException("axis");
             if (actor == null || actor.IsPlayer || actor.Personality == null || !Session.Get.GamePreset.NpcPersonalitiesEnabled)
                 return 0;
             catalog = catalog ?? Registry.Content;
             NpcFactionPolicy faction = catalog.FactionPolicy(actor.Faction == null ? -1 : actor.Faction.ID);
-            int baseline = axis == NpcDispositionAxis.HumanLife ? faction.HumanLife :
-                axis == NpcDispositionAxis.CareCircle ? faction.CareCircle :
-                axis == NpcDispositionAxis.MessageTrust ? faction.MessageTrust : faction.Scarcity;
+            int baseline;
+            switch (axis)
+            {
+                case NpcPersonalityAxis.HumanLife: baseline = HumanLifeAxis.Faction(faction) + HumanLifeAxis.Context(actor); break;
+                case NpcPersonalityAxis.CareCircle: baseline = CareCircleAxis.Faction(faction) + CareCircleAxis.Context(actor); break;
+                case NpcPersonalityAxis.MessageTrust: baseline = MessageTrustAxis.Faction(faction) + MessageTrustAxis.Context(actor); break;
+                case NpcPersonalityAxis.Scarcity: baseline = ScarcityAxis.Faction(faction) + ScarcityAxis.Context(actor); break;
+                default: baseline = PatienceAxis.Faction(faction) + PatienceAxis.Context(actor); break;
+            }
             foreach (TraitInstance trait in actor.Personality.TraitList)
             {
                 if (trait.Id == excludeTrait) continue;
@@ -135,38 +143,54 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             return Math.Max(-100, Math.Min(100, baseline + actor.Personality.ExperienceValue(axis)));
         }
 
-        static int TraitDisposition(TraitDefinition trait, NpcDispositionAxis axis)
+        static int TraitDisposition(TraitDefinition trait, NpcPersonalityAxis axis)
         {
             int value = 0;
             foreach (TraitEffect effect in trait.Effects)
             {
                 if (effect.Applies != null) continue;
-                if (axis == NpcDispositionAxis.HumanLife)
-                    value += effect.Decision == DecisionKind.Compassion ? effect.Amount * 3 / 4 : effect.Decision == DecisionKind.Law ? effect.Amount / 4 : 0;
-                else if (axis == NpcDispositionAxis.CareCircle)
-                    value += effect.Decision == DecisionKind.Group ? effect.Amount / 2 : effect.Decision == DecisionKind.Compassion ? effect.Amount / 3 : 0;
-                else if (axis == NpcDispositionAxis.MessageTrust)
-                    value += effect.Decision == DecisionKind.Group ? effect.Amount / 2 : effect.Decision == DecisionKind.Law ? effect.Amount / 4 : 0;
-                else value += effect.Decision == DecisionKind.Supplies ? effect.Amount * 3 / 4 : effect.Decision == DecisionKind.Trade ? -effect.Amount / 4 : 0;
+                switch (axis)
+                {
+                    case NpcPersonalityAxis.HumanLife: value += HumanLifeAxis.Trait(effect); break;
+                    case NpcPersonalityAxis.CareCircle: value += CareCircleAxis.Trait(effect); break;
+                    case NpcPersonalityAxis.MessageTrust: value += MessageTrustAxis.Trait(effect); break;
+                    case NpcPersonalityAxis.Scarcity: value += ScarcityAxis.Trait(effect); break;
+                    case NpcPersonalityAxis.Patience: value += PatienceAxis.Trait(effect); break;
+                }
             }
             return value;
         }
 
-        static void ObserveDisposition(Actor observer, SignificantEvent e)
+        internal static void GoalDispositions(Actor actor, NpcContentCatalog catalog,
+            out int humanLife, out int careCircle, out int messageTrust, out int scarcity, out int patience)
         {
-            if (observer.IsPlayer) return;
-            if (e.Kind == "kill_human" && observer == e.Other)
-                observer.Personality.ChangeExperience(NpcDispositionAxis.HumanLife, -8);
-            else if (e.Kind == "murder" && observer != e.Other)
-                observer.Personality.ChangeExperience(NpcDispositionAxis.HumanLife, 5);
-            else if (e.Kind == "helped" && observer == e.Subject)
-                observer.Personality.ChangeExperience(NpcDispositionAxis.CareCircle, 5);
-            else if (e.Kind == "abandoned" && observer == e.Subject)
-                observer.Personality.ChangeExperience(NpcDispositionAxis.CareCircle, -8);
-            else if (e.Kind == "starvation" && observer == e.Subject)
-                observer.Personality.ChangeExperience(NpcDispositionAxis.Scarcity, 8);
-            else if ((e.Kind == "supplies_lost" || e.Kind == "base_theft") && observer == e.Subject)
-                observer.Personality.ChangeExperience(NpcDispositionAxis.Scarcity, 6);
+            humanLife = careCircle = messageTrust = scarcity = patience = 0;
+            if (actor == null || actor.IsPlayer || actor.Personality == null || !Session.Get.GamePreset.NpcPersonalitiesEnabled) return;
+            NpcFactionPolicy faction = catalog.FactionPolicy(actor.Faction == null ? -1 : actor.Faction.ID);
+            humanLife = HumanLifeAxis.Faction(faction) + HumanLifeAxis.Context(actor);
+            careCircle = CareCircleAxis.Faction(faction) + CareCircleAxis.Context(actor);
+            messageTrust = MessageTrustAxis.Faction(faction) + MessageTrustAxis.Context(actor);
+            scarcity = ScarcityAxis.Faction(faction) + ScarcityAxis.Context(actor);
+            patience = PatienceAxis.Faction(faction) + PatienceAxis.Context(actor);
+            foreach (TraitInstance trait in actor.Personality.TraitList)
+            {
+                TraitDefinition definition = catalog.Personalities.Trait(trait.Id);
+                if (definition == null || definition.ItemParameter) continue;
+                foreach (TraitEffect effect in definition.Effects)
+                {
+                    if (effect.Applies != null) continue;
+                    humanLife += HumanLifeAxis.Trait(effect);
+                    careCircle += CareCircleAxis.Trait(effect);
+                    messageTrust += MessageTrustAxis.Trait(effect);
+                    scarcity += ScarcityAxis.Trait(effect);
+                    patience += PatienceAxis.Trait(effect);
+                }
+            }
+            humanLife = Math.Max(-100, Math.Min(100, humanLife + actor.Personality.ExperienceValue(NpcPersonalityAxis.HumanLife)));
+            careCircle = Math.Max(-100, Math.Min(100, careCircle + actor.Personality.ExperienceValue(NpcPersonalityAxis.CareCircle)));
+            messageTrust = Math.Max(-100, Math.Min(100, messageTrust + actor.Personality.ExperienceValue(NpcPersonalityAxis.MessageTrust)));
+            scarcity = Math.Max(-100, Math.Min(100, scarcity + actor.Personality.ExperienceValue(NpcPersonalityAxis.Scarcity)));
+            patience = Math.Max(-100, Math.Min(100, patience + actor.Personality.ExperienceValue(NpcPersonalityAxis.Patience)));
         }
 
         internal static void GoalBiases(Actor actor, PersonalityRegistry registry,
@@ -180,14 +204,14 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 if (definition == null || definition.ItemParameter) continue;
                 foreach (TraitEffect effect in definition.Effects)
                 {
-                    switch (effect.Decision)
+                    switch (effect.Axis)
                     {
-                        case DecisionKind.Group: if (effect.Applies == null || effect.Applies(actor, null)) group += effect.Amount; break;
-                        case DecisionKind.Compassion: if (effect.Applies == null || effect.Applies(actor, null)) compassion += effect.Amount; break;
-                        case DecisionKind.Trade: if (effect.Applies == null || effect.Applies(actor, null)) trade += effect.Amount; break;
-                        case DecisionKind.Courage: if (effect.Applies == null || effect.Applies(actor, null)) courage += effect.Amount; break;
-                        case DecisionKind.Law: if (effect.Applies == null || effect.Applies(actor, null)) law += effect.Amount; break;
-                        case DecisionKind.Supplies: if (effect.Applies == null || effect.Applies(actor, null)) supplies += effect.Amount; break;
+                        case NpcPersonalityAxis.Group: if (effect.Applies == null || effect.Applies(actor, null)) group += effect.Amount; break;
+                        case NpcPersonalityAxis.Compassion: if (effect.Applies == null || effect.Applies(actor, null)) compassion += effect.Amount; break;
+                        case NpcPersonalityAxis.Trade: if (effect.Applies == null || effect.Applies(actor, null)) trade += effect.Amount; break;
+                        case NpcPersonalityAxis.Courage: if (effect.Applies == null || effect.Applies(actor, null)) courage += effect.Amount; break;
+                        case NpcPersonalityAxis.Law: if (effect.Applies == null || effect.Applies(actor, null)) law += effect.Amount; break;
+                        case NpcPersonalityAxis.Supplies: if (effect.Applies == null || effect.Applies(actor, null)) supplies += effect.Amount; break;
                     }
                 }
             }
@@ -269,7 +293,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                     lifeEvent.Id, lifeEvent.CauseId, lifeEvent.StoryId);
                 NpcRecordDescriptions.Annotate(observation, eventDefinition, game.NpcContent);
                 if (!observer.Personality.Remember(observation)) continue;
-                ObserveDisposition(observer, lifeEvent);
+                NpcImmediateEmotion.Observe(game, observer, lifeEvent);
                 var eventObservation = new NpcObservation(game, observer, lifeEvent, direct);
                 if (direct && lifeEvent.StoryId != null)
                     foreach (NpcIntent goal in observer.Personality.Intents)
@@ -304,6 +328,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public static void ResolveDue(RogueGame game, Map map)
         {
             if (game == null || map == null || !Session.Get.GamePreset.NpcPersonalitiesEnabled) return;
+            map.ResetMemoryResolutionTurn();
             foreach (Actor actor in map.Actors)
             {
                 if (actor.Personality == null || actor.IsDead || actor.Model.Abilities.IsUndead ||
@@ -323,6 +348,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                     Session.Get.ResidentRecords.MemoryResolved(actor, memory, game.NpcContent.Personalities);
                     actor.Personality.RemoveMemory(memory);
                 }
+                map.ConsiderMemoryResolution(actor);
             }
         }
 

@@ -6,18 +6,16 @@ using djack.RogueSurvivor.Engine.Items;
 
 namespace djack.RogueSurvivor.Gameplay.Personality
 {
-    enum DecisionKind { Item, Courage, Group, Law, Trade, Explore, Compassion, Supplies }
-
     // Definitions and effects are registered once; instances keep only IDs and parameters.
     sealed class TraitEffect
     {
-        public readonly DecisionKind Decision;
+        public readonly NpcPersonalityAxis Axis;
         public readonly int Amount;
         public readonly Func<Actor, Item, bool> Applies;
 
-        public TraitEffect(DecisionKind decision, int amount, Func<Actor, Item, bool> applies = null)
+        public TraitEffect(NpcPersonalityAxis axis, int amount, Func<Actor, Item, bool> applies = null)
         {
-            Decision = decision;
+            Axis = axis;
             Amount = amount;
             Applies = applies;
         }
@@ -31,7 +29,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public bool EarnedOnly { get; private set; }
         public readonly bool ItemParameter;
         public readonly string RequiresTrait;
-        public readonly TraitEffect[] Effects;
+        public TraitEffect[] Effects { get; private set; }
         public INpcTraitInterest Interest { get; set; }
         public int RelationFactionId { get; private set; } = -1;
         public int RelationBias { get; private set; }
@@ -62,5 +60,13 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         { EarnedOnly = true; return this; }
         public TraitDefinition TowardFaction(int id, int amount)
         { RelationFactionId = id; RelationBias = amount; return this; }
+        public TraitDefinition WithEffect(NpcPersonalityAxis axis, int amount)
+        {
+            TraitEffect[] effects = new TraitEffect[Effects.Length + 1];
+            Array.Copy(Effects, effects, Effects.Length);
+            effects[Effects.Length] = new TraitEffect(axis, amount);
+            Effects = effects;
+            return this;
+        }
     }
 }

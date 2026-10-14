@@ -26,7 +26,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 { actor.SocialGroup.Plan.Stage = "failed"; actor.SocialGroup.Plan.Destination = default(Location); }
             });
             var gather = new NpcIntentDefinition(GatherSuppliesId, "Gather supplies for a companion",
-            NpcIntentMethod.GatherFood, 35, 30, WorldTime.TURNS_PER_DAY, 180, 1, new NpcIntentWeight(DecisionKind.Compassion, 1), new NpcIntentWeight(DecisionKind.Supplies, 1), new NpcIntentWeight(DecisionKind.Explore, 1, 2));
+            NpcIntentMethod.GatherFood, 35, 30, WorldTime.TURNS_PER_DAY, 180, 1, new NpcIntentWeight(NpcPersonalityAxis.Compassion, 1), new NpcIntentWeight(NpcPersonalityAxis.Supplies, 1), new NpcIntentWeight(NpcPersonalityAxis.Explore, 1, 2));
             gather.ReportAfterDelivery = true;
 
             gather.Result = (c, g) => (ulong)(NpcPlanFact.Delivered | NpcPlanFact.Reported);
@@ -34,12 +34,12 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             gather.DirectAction = NpcGroupSupplyActions.Stage;
             catalog.Capability(gather);
             var coordinate = new NpcIntentDefinition(CoordinateSuppliesId, "Coordinate supplies for the group",
-            NpcIntentMethod.Coordinate, 20, 25, WorldTime.TURNS_PER_DAY, 180, 0, new NpcIntentWeight(DecisionKind.Group, 1), new NpcIntentWeight(DecisionKind.Compassion, 1, 2));
+            NpcIntentMethod.Coordinate, 20, 25, WorldTime.TURNS_PER_DAY, 180, 0, new NpcIntentWeight(NpcPersonalityAxis.Group, 1), new NpcIntentWeight(NpcPersonalityAxis.Compassion, 1, 2));
             coordinate.Selectable = false;
             coordinate.Result = (c, g) => (ulong)(NpcPlanFact.None);
             catalog.Capability(coordinate);
             var shelter = new NpcIntentDefinition("seek_group_shelter", "Reach the group's known shelter",
-            NpcIntentMethod.ReachShelter, 25, 35, 180, 180, 0, new NpcIntentWeight(DecisionKind.Group, 1), new NpcIntentWeight(DecisionKind.Courage, -1, 2));
+            NpcIntentMethod.ReachShelter, 25, 35, 180, 180, 0, new NpcIntentWeight(NpcPersonalityAxis.Group, 1), new NpcIntentWeight(NpcPersonalityAxis.Courage, -1, 2));
 
             shelter.Result = (c, g) => (ulong)(NpcPlanFact.Sheltered);
             shelter.TravelArrived = a => a.Location.Map.GetTileAt(a.Location.Position).IsInside;
@@ -54,23 +54,23 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             catalog.Perception(NpcPerceptionKind.Surroundings, PerceiveSurroundings);
             RegisterEvents(catalog);
             catalog.Operator(new NpcOperatorDefinition("group.report_delivery", NpcPlanAction.ReportDelivery, c => NpcGroupSupplyActions.Report(new NpcActionContext(c)), archiveText: step => "report the delivery"));
-            catalog.Memory(new MemoryDefinition("completed_group_delivery", "Completed a group supply mission", 2, 5,
+            catalog.Memory(new MemoryDefinition("completed_group_delivery", "Completed a group supply mission", 2, 2,
                 new[] { new MemoryTrigger("supplies_delivered", (a, e) => a == e.Subject) },
                 new MemoryOutcome(null, "selfless", null), new MemoryOutcome(null, null, Skills.IDs.LEADERSHIP))
                 .Relate(MemoryRelationRole.Other, 5, MemoryRelationRole.Other), false);
-            catalog.Memory(new MemoryDefinition("reached_group_shelter", "Reached the group's shelter", 2, 5,
+            catalog.Memory(new MemoryDefinition("reached_group_shelter", "Reached the group's shelter", 2, 2,
                 new[] { new MemoryTrigger("shelter_reached", (a, e) => a == e.Subject) },
                 new MemoryOutcome(null, "protector", null), new MemoryOutcome(null, null, Skills.IDs.STRONG_PSYCHE))
                 .Relate(MemoryRelationRole.None, 0, MemoryRelationRole.Subject), false);
-            catalog.Memory(new MemoryDefinition("witnessed_group_succession", "Witnessed a new group leader", 2, 5,
+            catalog.Memory(new MemoryDefinition("witnessed_group_succession", "Witnessed a new group leader", 2, 2,
                 new[] { new MemoryTrigger("group_succession", (a, e) => a.SocialGroup != null && e.Subject != null && a.SocialGroup == e.Subject.SocialGroup) },
                 new MemoryOutcome(null, "protector", null), new MemoryOutcome(null, null, Skills.IDs.LEADERSHIP))
                 .Relate(MemoryRelationRole.Subject, 0, MemoryRelationRole.Subject), false);
-            catalog.Memory(new MemoryDefinition("left_after_succession", "Left after a contested succession", 2, 5,
+            catalog.Memory(new MemoryDefinition("left_after_succession", "Left after a contested succession", 2, 2,
                 new[] { new MemoryTrigger("group_split", (a, e) => a == e.Subject) },
                 new MemoryOutcome(null, "hermit", null), new MemoryOutcome(null, null, Skills.IDs.LEADERSHIP))
                 .Relate(MemoryRelationRole.Other, -5, MemoryRelationRole.Other), false);
-            catalog.Memory(new MemoryDefinition("saw_group_split", "Witnessed a group divide", 2, 5,
+            catalog.Memory(new MemoryDefinition("saw_group_split", "Witnessed a group divide", 2, 2,
                 new[] { new MemoryTrigger("group_split", (a, e) => a != e.Subject && a != e.Other && e.Subject != null && e.Other != null &&
                     (a.SocialGroup == e.Subject.SocialGroup || a.SocialGroup == e.Other.SocialGroup)) },
                 new MemoryOutcome(null, null, Skills.IDs.LEADERSHIP)).Relate(MemoryRelationRole.Subject, 0, MemoryRelationRole.Subject), false);
@@ -93,7 +93,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                     o.Owner.Personality.Opinion(o.Source.Subject.PersonalityIdentity, o.Source.Subject.UnmodifiedName).AdjustSocial(trust: -10, grievance: 5);
                 else if (o.Owner != o.Source.Subject && o.Owner.SocialGroup == o.Source.Other.SocialGroup)
                     o.Owner.Personality.Opinion(o.Source.Subject.PersonalityIdentity, o.Source.Subject.UnmodifiedName).AdjustSocial(
-                        trust: PersonalitySystem.Bias(o.Owner, DecisionKind.Group) >= 0 ? -5 : 2);
+                        trust: PersonalitySystem.Bias(o.Owner, NpcPersonalityAxis.Group) >= 0 ? -5 : 2);
             });
             catalog.On("group_succession", NpcObservationPhase.Knowledge, OnKnowledge);
             catalog.On("shelter_suggested", NpcObservationPhase.Knowledge, OnKnowledge);

@@ -17,7 +17,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             catalog.Value(new NpcValueDefinition("Safety", "Reach safety", NpcGoalValue.Safety, m => 20 - m.Courage + m.Fear / 2, false));
             catalog.Value(new NpcValueDefinition("Autonomy", "Leave an unsafe group", NpcGoalValue.Autonomy, m => 40 - m.Group - m.Courage / 2 - Math.Min(2 * Rules.TRUST_TRUSTING_THRESHOLD, Math.Max(0, m.Owner.TrustInLeader)) * 30 / Rules.TRUST_TRUSTING_THRESHOLD, false));
             var avoid = new NpcIntentDefinition("avoid_reported_threat", "Avoid a reported aggressor",
-            NpcIntentMethod.AvoidPerson, 20, 35, 180, 180, -1, new NpcIntentWeight(DecisionKind.Courage, -1));
+            NpcIntentMethod.AvoidPerson, 20, 35, 180, 180, -1, new NpcIntentWeight(NpcPersonalityAxis.Courage, -1));
 
             avoid.Result = (c, g) => (ulong)(NpcPlanFact.Safe);
             avoid.AllowHostile = true;
@@ -26,7 +26,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             catalog.Capability(avoid);
             var leave = new NpcIntentDefinition("leave_unsafe_group", "Leave an unsafe leader",
             NpcIntentMethod.LeaveGroup, 40, 55, WorldTime.TURNS_PER_DAY, WorldTime.TURNS_PER_DAY, -1,
-            new NpcIntentWeight(DecisionKind.Group, -1), new NpcIntentWeight(DecisionKind.Courage, -1, 2));
+            new NpcIntentWeight(NpcPersonalityAxis.Group, -1), new NpcIntentWeight(NpcPersonalityAxis.Courage, -1, 2));
 
             leave.Result = (c, g) => (ulong)(NpcPlanFact.Left);
             leave.Departure = true; leave.AllowHostile = true;
@@ -54,7 +54,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         void RegisterContent(NpcCatalogBuilder catalog)
         {
             catalog.Perception(NpcPerceptionKind.Person, c => {
-                NpcKnownPerson known = c.Owner.Personality.Knowledge.Person(c.Person.PersonalityIdentity);
+                NpcKnownPerson known = c.KnownPerson;
                 if (!known.Hostile) return;
                 if (known.Danger < 70) { known.Danger = 70; c.Owner.Personality.Knowledge.Revision++; }
                 known.ThreatTurn = c.Turn; known.ThreatConfidence = 100;
@@ -63,15 +63,15 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             catalog.Operator(new NpcOperatorDefinition("safety.confirm", NpcPlanAction.ConfirmSafety, c => NpcSafetyActions.Confirm(new NpcActionContext(c)), archiveText: step => "check that someone is safe"));
             catalog.Operator(new NpcOperatorDefinition("shelter.enter", NpcPlanAction.EnterShelter, c => NpcSafetyActions.Shelter(new NpcActionContext(c)), archiveText: step => "enter the shelter"));
             catalog.Operator(new NpcOperatorDefinition("group.leave", NpcPlanAction.LeaveGroup, c => NpcSafetyActions.Leave(new NpcActionContext(c.Game, c.Owner, c.Goal, c.Owner.Leader)), archiveText: step => "leave the group"));
-            catalog.Memory(new MemoryDefinition("left_unsafe_group", "Left an unsafe group", 2, 6,
+            catalog.Memory(new MemoryDefinition("left_unsafe_group", "Left an unsafe group", 2, 2,
                 new[] { new MemoryTrigger("left_group", (a, e) => a == e.Subject) },
                 new MemoryOutcome(null, "hermit", null), new MemoryOutcome(null, null, Skills.IDs.STRONG_PSYCHE))
                 .Relate(MemoryRelationRole.Other, 0, MemoryRelationRole.Other), false);
-            catalog.Memory(new MemoryDefinition("companion_departed", "A companion chose to leave", 2, 6,
+            catalog.Memory(new MemoryDefinition("companion_departed", "A companion chose to leave", 2, 2,
                 new[] { new MemoryTrigger("left_group", (a, e) => a == e.Other) },
                 new MemoryOutcome(null, "protector", null), new MemoryOutcome(null, null, Skills.IDs.LEADERSHIP))
                 .Relate(MemoryRelationRole.Subject, -5), false);
-            catalog.Memory(new MemoryDefinition("frightened_escape", "Escaped a mortal threat", 2, 5,
+            catalog.Memory(new MemoryDefinition("frightened_escape", "Escaped a mortal threat", 2, 2,
                 new[] { new MemoryTrigger("fled_in_fear", (a, e) => a == e.Subject && !a.IsPlayer) },
                 new MemoryOutcome((a, m) => a.Personality.HasTrait("fearful"), "panic_attacks", null),
                 new MemoryOutcome((a, m) => a.Personality.HasTrait("timid"), "traumatized", null),

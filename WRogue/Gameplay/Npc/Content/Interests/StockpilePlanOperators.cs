@@ -29,7 +29,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 {
                     NpcPlanningState before = d.Catalog.Facts.Mask("FoodStock" + count), after = d.Catalog.Facts.Mask("FoodStock" + Math.Min(6, count + cache.Units));
                     if (count + cache.Units >= desired) after |= d.Catalog.Facts.Mask("FoodReserve");
-                    d.Add("food.take", cache.Place, Guid.Empty, at | before, used, after | used, before, 5 - PersonalitySystem.Bias(d.Owner, DecisionKind.Supplies) / 5);
+                    d.Add("food.take", cache.Place, Guid.Empty, at | before, used, after | used, before, 5 - PersonalitySystem.Bias(d.Owner, NpcPersonalityAxis.Supplies) / 5);
                 }
             }
         }

@@ -131,8 +131,10 @@ The marker survives dropping, corpse loot, gifts, trades and save/load; a later
 find or transfer can add a fact to the original theft story without storing a
 long-lived actor reference on the item. Stolen-goods facts retain the claimant
 group and item IDs as well, so members can recognize a retold loss after the
-original leader is out of sight and a visible item does not create the same
-discovery every turn. `items/stolen-goods` checks this state.
+original leader is out of sight. The optional per-item found flag prevents a
+second discovery after the goods move or a witness forgets the first report.
+The flag follows stack merges and splits; ownership provenance remains for
+later handoffs. `items/stolen-goods-discovery-once` checks this state.
 
 Radio receivers retain their tuning state, and portable receivers retain their
 station, power state and batteries. The Session retains the survivor station
@@ -151,6 +153,27 @@ several relationships; it is stored once and remains in those histories after
 resolution, with its outcome and turn. Player relationships retain their own
 experienced/witnessed events and do not expose another NPC's private memory
 during gameplay.
+
+The five NPC disposition axes store only their accumulated experience offsets
+in an optional `PersonalityState` array, ordered human life, care circle,
+message trust, scarcity, patience. A four-element array from an earlier save
+supplies zero patience experience and grows on the first change. The faction
+baseline, current trait effects and temporary hunger, carried food, sleep and sanity modifiers
+are recalculated after loading. Immediate event reactions change the existing
+recoverable sanity value; resolved memories can write lasting disposition
+experience offsets. Older saves deserialize
+without the array and start with zero experience offsets. Players receive no
+disposition scores or resolution effects. `NpcPersonalityAxis` keeps these
+experience slots at numeric values 0–4; decision-only axes have negative
+values and are never stored in that array. NPC personalities also optionally
+store bounded frustration and the last turn it changed. Old saves start at
+zero; frustration fades lazily as map turns pass. A saved outburst retains its
+cause and story through the existing reaction and event fields. New memories
+have a two-day deadline;
+older pending memories resolve at their stored deadline or two days after their
+start, whichever is earlier. Resolved memory IDs distinguish gained traits,
+removed traits, skills, and disposition changes. The map's next pending memory
+deadline is transient and rebuilt from its actors after loading.
 
 NPC courage is recalculated from current conditions and has no new saved stat.
 The `frightened_escape` memory, witnessed `fled_in_fear` fact and any reported
@@ -182,7 +205,10 @@ model ID. Generated goal keys distinguish resources, obligations and specific
 items; their supporting event IDs are retained in `Causes`.
 
 Personality state also retains bounded NPC intentions and pending spoken
-reactions, per-template cooldowns and the intention sequence. An intention stores
+reactions, per-template cooldowns and the intention sequence. It also stores
+an optional `NextTradeAttemptTurn`: after an AI-initiated trade is refused,
+that trader waits one in-game hour before initiating another trade. Older saves
+default it to zero; player-initiated trades do not set it. An intention stores
 its stable definition ID, target identity/name snapshot, last known map/position
 and attitude, cause/story IDs, initial priority, start/deadline/finish turns,
 status, retry delay/count, announcement state and outcome. Reactions store target
@@ -235,6 +261,10 @@ retain separate goals under the same execution ID. These keys and remaining
 cooldowns survive loading. Earlier intentions without this optional payload
 retain their original execution/acceptance rules. `RestoreHealth` and medicine
 plan actions are appended without changing existing enum values.
+`NpcKnowledge.NextMedicineRequestTurn` and each known person's
+`NextMedicineRequestTurn` are optional. Existing saves begin without a request
+pause; subsequent medicine requests establish the four-hour global and one-day
+per-person limits, which survive save/load and fresh sightings.
 
 Knowledge retains bounded facts with original event IDs/time, source IDs,
 confidence, retelling hops, named participant IDs and remembered positions;
@@ -341,8 +371,17 @@ Older plan entries contain only action names, so their destinations cannot be
 reconstructed by the archive reader.
 Heard speech uses existing resident entries with kinds `heard_rumor`,
 `heard_request` and `heard_reply`. Only awake intelligent NPCs within audio range
-gain an entry; seeing the speaker is not required. Text, event ID and any known
+can gain an entry; seeing the speaker is not required. A spoken rumor is archived
+for its addressed NPC and for bystanders who learned at least one fact from its
+complete chapter. All audible NPCs still receive the facts, and the player's
+heard journal is unchanged. Other story speech keeps its existing archive rule.
+Speech entries no longer retain a separate string deduplication key; old
+`heard_speech:` keys are discarded on the next save. Text, event ID and any known
 cause/story ID survive archive-only load, under the **Encounters** filter.
+Read Records folds repeated, identical heard-rumor text from the same recorded
+source, about the same event and story, for one resident into its first line
+with a count and the last hearing time. The individual archive entries remain
+available for save/load, search, and event statistics.
 Retained `NpcFact` entries optionally store `SubjectReportName` and
 `OtherReportName`, the observer's original spoken description of each participant.
 They also optionally store `CauseId`, copied from the significant event and
@@ -364,6 +403,9 @@ Unanswered player requests reuse saved `NpcReaction` state and expire after 30
 turns. Its optional `Overheard` field distinguishes requests made to someone
 else from requests addressed to the player. Player promises use the existing
 `NpcCommitment` state and deadline.
+NPC reactions also optionally record whether a reply is an attack. This lets a
+boundary dispute produce a real melee action when its recipient acts, while
+older reactions remain ordinary speech.
 The player's `PersonalityState` also has an optional bounded `HeardJournalEntry`
 list (up to 128 entries), storing turn, speech kind, identified or anonymous
 speaker, text and cause ID. Heard speech is populated only for awake players

@@ -72,6 +72,36 @@ namespace djack.RogueSurvivor.Engine
 
     static partial class RecordsReader
     {
+        struct HeardRumorKey : IEquatable<HeardRumorKey>
+        {
+            readonly Guid listener, source;
+            readonly long cause;
+            readonly string story, text;
+            readonly bool direct;
+            public HeardRumorKey(ResidentRecord resident, ResidentEntry entry)
+            { listener = resident.Identity; source = entry.SubjectId; cause = entry.CauseId;
+                story = entry.StoryId; text = entry.Text; direct = entry.Direct; }
+            public bool Equals(HeardRumorKey other)
+            { return listener == other.listener && source == other.source && cause == other.cause &&
+                direct == other.direct && String.Equals(story, other.story, StringComparison.Ordinal) &&
+                String.Equals(text, other.text, StringComparison.Ordinal); }
+            public override bool Equals(object other)
+            { return other is HeardRumorKey && Equals((HeardRumorKey)other); }
+            public override int GetHashCode()
+            {
+                unchecked
+                { return (((((listener.GetHashCode() * 31 + source.GetHashCode()) * 31 + cause.GetHashCode()) * 31 +
+                    direct.GetHashCode()) * 31 + (story == null ? 0 : story.GetHashCode())) * 31 +
+                    (text == null ? 0 : text.GetHashCode())); }
+            }
+        }
+
+        struct HeardRumorCount
+        {
+            public ResidentEntry First;
+            public int Count, LastTurn;
+        }
+
         public static RecordsSave Load(string path)
         {
             // Deliberately do not restore Session, mods, options, player, or simulation.
@@ -144,11 +174,32 @@ namespace djack.RogueSurvivor.Engine
             List<KeyValuePair<ResidentRecord, ResidentEntry>> entries = MatchingEntries(save, selected, query, search, filter);
             entries.Sort(CompareEntries);
 
+            var repeats = new Dictionary<HeardRumorKey, HeardRumorCount>();
+            foreach (KeyValuePair<ResidentRecord, ResidentEntry> pair in entries)
+            {
+                if (pair.Value.Kind != "heard_rumor" || pair.Value.CauseId <= 0) continue;
+                var key = new HeardRumorKey(pair.Key, pair.Value);
+                HeardRumorCount count;
+                if (!repeats.TryGetValue(key, out count)) count.First = pair.Value;
+                count.Count++;
+                count.LastTurn = pair.Value.Turn;
+                repeats[key] = count;
+            }
+
             List<string> lines = new List<string>(entries.Count);
             if (save.Records.IsPartial)
                 lines.Add("Partial history: only recoverable records were available when the archive was rebuilt.");
             foreach (KeyValuePair<ResidentRecord, ResidentEntry> pair in entries)
-                AddWrappedLine(lines, EntryLine(save, pair.Key, pair.Value));
+            {
+                HeardRumorCount count = default(HeardRumorCount);
+                bool rumor = pair.Value.Kind == "heard_rumor" && pair.Value.CauseId > 0 &&
+                    repeats.TryGetValue(new HeardRumorKey(pair.Key, pair.Value), out count);
+                if (rumor && count.First != pair.Value) continue;
+                string line = EntryLine(save, pair.Key, pair.Value);
+                if (rumor && count.Count > 1)
+                    line += " (heard " + count.Count + " times; last at " + new WorldTime(count.LastTurn) + ")";
+                AddWrappedLine(lines, line);
+            }
             if (entries.Count == 0) lines.Add("No recorded events before this save.");
             if (cacheable)
             {

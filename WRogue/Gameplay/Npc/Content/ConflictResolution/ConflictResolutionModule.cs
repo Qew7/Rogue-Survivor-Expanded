@@ -11,11 +11,11 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             RegisterMechanic(c, "Protection", "Defend someone I value", "defend_person", "Defended",
                 m => 25 + m.Compassion + m.Courage + m.Group / 2 + m.CommunitySecurity + m.HumanLife / 2, NpcConflictActions.Defend, true);
             RegisterMechanic(c, "Retaliation", "Retaliate for remembered harm", "retaliate", "Retaliated",
-                m => m.Courage - m.Compassion - m.Law + m.Grievance / 2 - m.HumanLife, NpcConflictActions.Retaliate, true);
+                m => m.Courage - m.Compassion - m.Law + m.Grievance / 2 - m.HumanLife - m.Patience / 2, NpcConflictActions.Retaliate, true);
             RegisterMechanic(c, "Intimidation", "Deter remembered misconduct", "intimidate", "ThreatCommunicated",
-                m => m.Courage - m.Law - m.Compassion + m.Grievance / 3 - m.HumanLife / 3, NpcConflictActions.Threaten);
+                m => m.Courage - m.Law - m.Compassion + m.Grievance / 3 - m.HumanLife / 3 - m.Patience / 2, NpcConflictActions.Threaten);
             RegisterMechanic(c, "RepairTrust", "Attempt to repair a relationship", "apologize", "ApologyCommunicated",
-                m => 20 + m.Compassion + m.Law + m.Attachment / 2, NpcConflictActions.Apologize);
+                m => 20 + m.Compassion + m.Law + m.Attachment / 2 + m.Patience / 2, NpcConflictActions.Apologize);
             RegisterMechanic(c, "GroupSecurity", "Exclude a dangerous companion", "expel_member", "MemberExpelled",
                 m => 15 + m.Group + m.Law + m.Courage + m.Grievance / 3, NpcConflictActions.Expel);
             c.Capabilities["defend_person"].OnTargetDeath = killed => new NpcIntentOutcome(NpcIntentStatus.Completed, "the known threat died");

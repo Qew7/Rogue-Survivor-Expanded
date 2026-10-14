@@ -8,11 +8,13 @@ namespace djack.RogueSurvivor.Gameplay.Personality
     {
         public readonly RogueGame Game;
         public readonly Actor Owner, Person;
+        public readonly NpcKnownPerson KnownPerson;
         public readonly Inventory Items;
         public readonly Location Place;
         public readonly int Turn, Risk;
-        public NpcPerceptionContext(RogueGame game, Actor owner, Location place, Actor person = null, Inventory items = null, int risk = 0)
-        { Game = game; Owner = owner; Place = place; Person = person; Items = items; Risk = risk; Turn = owner.Location.Map.LocalTime.TurnCounter; }
+        public NpcPerceptionContext(RogueGame game, Actor owner, Location place, Actor person = null, Inventory items = null, int risk = 0,
+            NpcKnownPerson knownPerson = null)
+        { Game = game; Owner = owner; Place = place; Person = person; KnownPerson = knownPerson; Items = items; Risk = risk; Turn = owner.Location.Map.LocalTime.TurnCounter; }
     }
     sealed class NpcReportContext
     {

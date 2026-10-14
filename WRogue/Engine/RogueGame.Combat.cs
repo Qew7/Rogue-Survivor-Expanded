@@ -13,6 +13,7 @@ using djack.RogueSurvivor.Engine.MapObjects;
 using djack.RogueSurvivor.Gameplay;
 using djack.RogueSurvivor.Gameplay.AI;
 using djack.RogueSurvivor.Gameplay.Generators;
+using djack.RogueSurvivor.Gameplay.Personality;
 
 using Message = djack.RogueSurvivor.Data.Message;
 using djack.RogueSurvivor.Engine.Tasks;
@@ -121,7 +122,7 @@ namespace djack.RogueSurvivor.Engine
             {
                 if (m_Rules.HasActorBondWith(deadGuy.Leader, deadGuy))
                 {
-                    SpendActorSanity(deadGuy.Leader, Rules.SANITY_HIT_BOND_DEATH);
+                    SpendActorSanity(deadGuy.Leader, NpcImmediateEmotion.BondDeathLoss(deadGuy.Leader, NpcContent));
                     if (IsVisibleToPlayer(deadGuy.Leader))
                     {
                         if (deadGuy.Leader.IsPlayer && !deadGuy.Leader.IsBotPlayer) ClearMessages();
@@ -137,7 +138,7 @@ namespace djack.RogueSurvivor.Engine
                 {
                     if (m_Rules.HasActorBondWith(fo, deadGuy))
                     {
-                        SpendActorSanity(fo, Rules.SANITY_HIT_BOND_DEATH);
+                        SpendActorSanity(fo, NpcImmediateEmotion.BondDeathLoss(fo, NpcContent));
                         if (IsVisibleToPlayer(fo))
                         {
                             if (fo.IsPlayer && !fo.IsBotPlayer) ClearMessages();

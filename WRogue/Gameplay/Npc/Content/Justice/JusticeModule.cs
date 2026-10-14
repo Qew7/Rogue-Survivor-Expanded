@@ -12,14 +12,14 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         {
             catalog.OperatorSource(new NpcOperatorSource("person.boundary", c => (ulong)NpcPlanFact.Warned, d => CompanionPlanOperators.Build(d, true)));
             catalog.GoalSource(this);
-            catalog.Value(new NpcValueDefinition("Justice", "Communicate a boundary", NpcGoalValue.Justice, m => 15 + m.Courage + m.Law + m.Grievance / 2, false));
+            catalog.Value(new NpcValueDefinition("Justice", "Communicate a boundary", NpcGoalValue.Justice, m => 15 + m.Courage + m.Law + m.Grievance / 2 - m.Patience / 2, false));
             catalog.Value(new NpcValueDefinition("Restitution", "Replace supplies lost through my actions", NpcGoalValue.Restitution, m => 15 + m.Law + m.Compassion + m.Feeling / 4, true) { AfterDelivery = c => {
                 NpcKnownPerson person = c.Owner.Personality.Knowledge.Person(c.Target.PersonalityIdentity);
                 if (person != null) person.LossUnits = Math.Max(0, person.LossUnits - 1);
                 c.Publish("restitution_given", c.Target); return person != null && person.LossUnits > 0;
             } });
             var confront = new NpcIntentDefinition("confront_reported_aggressor", "Confront a reported aggressor",
-            NpcIntentMethod.ConfrontPerson, 15, 35, 180, 180, -1, new NpcIntentWeight(DecisionKind.Courage, 1), new NpcIntentWeight(DecisionKind.Law, 1));
+            NpcIntentMethod.ConfrontPerson, 15, 35, 180, 180, -1, new NpcIntentWeight(NpcPersonalityAxis.Courage, 1), new NpcIntentWeight(NpcPersonalityAxis.Law, 1));
 
             confront.Result = (c, g) => (ulong)(NpcPlanFact.Warned);
             confront.SocialPriority = r => r.Grievance / 2;
@@ -61,6 +61,38 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             NpcMemoryContent.Received(catalog, "boundary_defied", "Someone rejected a boundary", "boundary_defied", -8, "mistrustful");
             NpcMemoryContent.Received(catalog, "restitution", "Someone replaced lost supplies", "restitution_given", 10, null);
             NpcMemoryContent.Received(catalog, "restitution_refused", "A demand for compensation was refused", "restitution_refused", -8, "mistrustful");
+            catalog.Memory(new MemoryDefinition("boundary_respected", "My boundary was respected", 2, 2,
+                new[] { new MemoryTrigger("boundary_accepted", (a, e) => a == e.Other) },
+                new MemoryOutcome(null, "patient", null), new MemoryOutcome(null, null, Skills.IDs.CHARISMATIC))
+                .Relate(MemoryRelationRole.Subject, 6).ChangeDisposition(NpcPersonalityAxis.Patience, 8), false);
+            catalog.Memory(new MemoryDefinition("boundary_conceded", "I respected someone's boundary", 2, 2,
+                new[] { new MemoryTrigger("boundary_accepted", (a, e) => a == e.Subject) },
+                new MemoryOutcome(null, "patient", null), new MemoryOutcome(null, null, Skills.IDs.CHARISMATIC))
+                .Relate(MemoryRelationRole.Other, 3).ChangeDisposition(NpcPersonalityAxis.Patience, 6), false);
+            catalog.Memory(new MemoryDefinition("boundary_respect_witnessed", "I saw a warning respected", 2, 2,
+                new[] { new MemoryTrigger("boundary_accepted", (a, e) => a != e.Subject && a != e.Other) },
+                new MemoryOutcome(null, "patient", null), new MemoryOutcome(null, null, Skills.IDs.CHARISMATIC))
+                .Relate(MemoryRelationRole.Subject, 0).ChangeDisposition(NpcPersonalityAxis.Patience, 3), false);
+            catalog.Memory(new MemoryDefinition("boundary_ignored", "My boundary was ignored", 2, 2,
+                new[] { new MemoryTrigger("boundary_defied", (a, e) => a == e.Other) },
+                new MemoryOutcome(null, "hotheaded", null), new MemoryOutcome(null, null, Skills.IDs.STRONG_PSYCHE))
+                .Relate(MemoryRelationRole.Subject, -8).ChangeDisposition(NpcPersonalityAxis.Patience, -8), false);
+            catalog.Memory(new MemoryDefinition("boundary_rejected", "I rejected someone's boundary", 2, 2,
+                new[] { new MemoryTrigger("boundary_defied", (a, e) => a == e.Subject) },
+                new MemoryOutcome(null, "hotheaded", null), new MemoryOutcome(null, null, Skills.IDs.STRONG_PSYCHE))
+                .Relate(MemoryRelationRole.Other, -4).ChangeDisposition(NpcPersonalityAxis.Patience, -6), false);
+            catalog.Memory(new MemoryDefinition("boundary_defiance_witnessed", "I saw a warning defied", 2, 2,
+                new[] { new MemoryTrigger("boundary_defied", (a, e) => a != e.Subject && a != e.Other) },
+                new MemoryOutcome(null, "vigilant", null), new MemoryOutcome(null, null, Skills.IDs.STRONG_PSYCHE))
+                .Relate(MemoryRelationRole.Subject, 0).ChangeDisposition(NpcPersonalityAxis.Patience, -3), false);
+            catalog.Memory(new MemoryDefinition("boundary_violence", "Violence followed a warning", 2, 2,
+                new[] { new MemoryTrigger("boundary_escalated", (a, e) => a == e.Other || a != e.Subject && a != e.Other) },
+                new MemoryOutcome(null, "vigilant", null), new MemoryOutcome(null, null, Skills.IDs.STRONG_PSYCHE))
+                .Relate(MemoryRelationRole.Subject, -10).ChangeDisposition(NpcPersonalityAxis.Patience, -10), false);
+            catalog.Memory(new MemoryDefinition("boundary_lashed_out", "I struck someone who warned me", 2, 2,
+                new[] { new MemoryTrigger("boundary_escalated", (a, e) => a == e.Subject) },
+                new MemoryOutcome(null, "hotheaded", null), new MemoryOutcome(null, null, Skills.IDs.MARTIAL_ARTS))
+                .Relate(MemoryRelationRole.Other, -5).ChangeDisposition(NpcPersonalityAxis.Patience, -8), false);
         }
         void RegisterEvents(NpcCatalogBuilder catalog)
         {
@@ -85,8 +117,15 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             });
             catalog.OnReport("boundary_defied", c => NpcReputation.Reputation(c, false, false, true));
             catalog.Event(new NpcEventDefinition("confronted", NpcRecordCategory.None, false, e => (e.Subject ?? "Someone") + " warned " + (e.Other ?? "someone") + " about known misconduct.", null) { StoryStage = (g, s, e) => "completed" });
-            catalog.Event(new NpcEventDefinition("boundary_accepted", NpcRecordCategory.None, false, e => (e.Subject ?? "Someone") + " accepted " + (e.Other ?? "someone") + "'s boundary.", null));
+            catalog.Event(new NpcEventDefinition("boundary_accepted", NpcRecordCategory.Encounters, true,
+                e => (e.Subject ?? "Someone") + " accepted " + (e.Other ?? "someone") + "'s boundary.",
+                f => (f.ReportSubject ?? "Someone") + " agreed to respect " + (f.ReportOther ?? "someone") + "'s warning")
+                { ReportConclusion = true });
             catalog.Event(new NpcEventDefinition("boundary_defied", NpcRecordCategory.None, true, e => (e.Subject ?? "Someone") + " rejected " + (e.Other ?? "someone") + "'s boundary.", f => f.ReportSubject + " rejected " + (f.ReportOther == null ? "a" : f.ReportOther + "'s") + " warning") { SelfReportTone = NpcSelfReportTone.Harmful });
+            catalog.Event(new NpcEventDefinition("boundary_escalated", NpcRecordCategory.Combat, true,
+                e => (e.Subject ?? "Someone") + " struck at " + (e.Other ?? "someone") + " after a warning.",
+                f => (f.ReportSubject ?? "Someone") + " struck at " + (f.ReportOther ?? "someone") + " after a warning")
+                { SelfReportTone = NpcSelfReportTone.Harmful, ReportPriority = 8 });
             catalog.Event(new NpcEventDefinition("base_theft", NpcRecordCategory.None, true,
                 e => (e.Subject ?? "Someone") + " stole from " + (e.Other ?? "someone") + "'s base.",
                 f => f.NamesSubject ? f.ReportSubject + " stole from " + (f.ReportOther ?? "someone") + "'s base" :
@@ -122,7 +161,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             catalog.Memory(new MemoryDefinition("false_testimony_exposed", "Caught a contradictory permission claim", 2, 2,
                 new[] { new MemoryTrigger("false_testimony_exposed", (a, e) => a == e.Other) },
                 new MemoryOutcome(null, "mistrustful", null), new MemoryOutcome(null, null, Skills.IDs.STRONG_PSYCHE))
-                .Relate(MemoryRelationRole.Subject, -8).ChangeDisposition(NpcDispositionAxis.MessageTrust, -15), false);
+                .Relate(MemoryRelationRole.Subject, -8).ChangeDisposition(NpcPersonalityAxis.MessageTrust, -15), false);
             catalog.Event(new NpcEventDefinition("restitution_given", NpcRecordCategory.Help, false, e => (e.Subject ?? "Someone") + " replaced supplies lost by " + (e.Other ?? "someone") + ".", null));
             catalog.Event(new NpcEventDefinition("restitution_requested", NpcRecordCategory.Help, true, e => (e.Subject ?? "Someone") + " asked " + (e.Other ?? "someone") + " to compensate lost supplies.", null) { AudibleReport = true, PlayerReply = new NpcPlayerReply("replacement supplies", "food_promised", "restitution_refused", "Yes, I'll replace your supplies.", "No, I won't replace them.") });
             catalog.Event(new NpcEventDefinition("restitution_refused", NpcRecordCategory.Help, true, e => (e.Subject ?? "Someone") + " refused " + (e.Other ?? "someone") + "'s demand for compensation.", null) { SelfReportTone = NpcSelfReportTone.Harmful });
@@ -188,11 +227,17 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 owner.Personality.Opinion(subject.Id, subject.Name).AdjustSocial(trust: source.Kind == "boundary_accepted" ? 5 : -10, grievance: source.Kind == "boundary_accepted" ? -5 : 10);
             }
             if (source.Kind == "confronted" && source.Other == owner && NpcIntentSystem.Enabled(owner))
-                NpcReplies.Reply(owner, source.Subject, source, PersonalitySystem.Bias(owner, DecisionKind.Law) + PersonalitySystem.Bias(owner, DecisionKind.Compassion) >= 0 ?
-                    "boundary_accepted" : "boundary_defied", "I understand. I'll respect that.", "You don't decide what I do.");
+            {
+                int patience = PersonalitySystem.Disposition(owner, NpcPersonalityAxis.Patience, observation.Game.NpcContent);
+                if (!NpcReplies.Setback(observation, 25, "Don't tell me what to do!",
+                    "boundary_escalated", "boundary_defied"))
+                    NpcReplies.Reply(owner, source.Subject, source, PersonalitySystem.Bias(owner, NpcPersonalityAxis.Law) +
+                        PersonalitySystem.Bias(owner, NpcPersonalityAxis.Compassion) + patience / 2 >= 0 ?
+                        "boundary_accepted" : "boundary_defied", "I understand. I'll respect that.", "You don't decide what I do.");
+            }
             if (source.Kind == "restitution_requested" && source.Other == owner && subject != null && NpcIntentSystem.Enabled(owner))
             {
-                bool accept = PersonalitySystem.Bias(owner, DecisionKind.Law) + PersonalitySystem.Bias(owner, DecisionKind.Compassion) >= 10;
+                bool accept = PersonalitySystem.Bias(owner, NpcPersonalityAxis.Law) + PersonalitySystem.Bias(owner, NpcPersonalityAxis.Compassion) >= 10;
                 if (accept && subject.LossCause > 0) subject.LossUnits = Math.Max(subject.LossUnits, source.Units);
                 NpcReplies.Reply(owner, source.Subject, source, accept ? "boundary_accepted" : "restitution_refused", "I'll try to replace what was lost.", "I won't replace your supplies.");
             }

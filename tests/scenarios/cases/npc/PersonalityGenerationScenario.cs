@@ -30,9 +30,8 @@ static class PersonalityGenerationScenario
             foreach (MemoryInstance memory in first.Personality.Memories)
             {
                 Check.Equal(true, memoryIds.Add(memory.Id), "starting memories are distinct");
-                Check.Equal(true, memory.ResolveTurn - memory.StartTurn >= 2 * WorldTime.TURNS_PER_DAY &&
-                    memory.ResolveTurn - memory.StartTurn <= 6 * WorldTime.TURNS_PER_DAY,
-                    "starting memory resolves in two to six days");
+                Check.Equal(2 * WorldTime.TURNS_PER_DAY, memory.ResolveTurn - memory.StartTurn,
+                    "starting memory resolves after two days");
             }
             for (int i = 0; i < 80; i++)
             {
@@ -59,7 +58,7 @@ static class PersonalityGenerationScenario
             Actor disabled = world.Game.GameActors.FemaleCivilian.CreateNumberedName(
                 world.Game.GameFactions.TheCivilians, 0);
             Check.Equal(null, disabled.Personality, "disabled preset creates no personality");
-            Check.Equal(0, PersonalitySystem.Bias(first, DecisionKind.Group),
+            Check.Equal(0, PersonalitySystem.Bias(first, NpcPersonalityAxis.Group),
                 "disabled preset suppresses effects on existing actors");
         });
     }

@@ -11,11 +11,11 @@ static class PersonalityRegistryScenario
         {
             PersonalityRegistry catalog = new PersonalityRegistry();
             catalog.Register(new TraitDefinition("collector", "Collector", false, false, null,
-                new TraitEffect(DecisionKind.Item, 15)));
+                new TraitEffect(NpcPersonalityAxis.Item, 15)));
             catalog.Register(new TraitDefinition("renegade", "Renegade", false, false, null,
-                new TraitEffect(DecisionKind.Law, -15)));
+                new TraitEffect(NpcPersonalityAxis.Law, -15)));
             catalog.Register(new TraitDefinition("specialist", "Specialist", true, false, "collector",
-                new TraitEffect(DecisionKind.Item, 30)));
+                new TraitEffect(NpcPersonalityAxis.Item, 30)));
             catalog.Conflict("collector", "renegade");
             catalog.Register(new MemoryDefinition("lost_collection", "Lost collection", 2, 4,
                 new[] { new MemoryTrigger("theft", (candidate, eventData) => candidate == eventData.Other) },

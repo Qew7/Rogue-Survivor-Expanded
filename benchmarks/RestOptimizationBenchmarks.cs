@@ -104,19 +104,5 @@ static class RestOptimizationBenchmarks
         PerformanceBenchmarks.Measure("sense dense items and corpses", 1000,
             () => sensor.Sense(world.Game, observer));
 
-        Map cachedMap = observer.Location.Map;
-        Point cachedPosition = observer.Location.Position;
-        int cachedRange = world.Game.Rules.ActorFOV(observer, cachedMap.LocalTime,
-            world.Game.Session.World.Weather);
-        int cachedTurn = cachedMap.LocalTime.TurnCounter;
-        PerformanceBenchmarks.Measure("FOV cache key validation", 100000, () =>
-        {
-            Map currentMap = observer.Location.Map;
-            bool hit = currentMap == cachedMap && observer.Location.Position == cachedPosition &&
-                currentMap.LocalTime.TurnCounter == cachedTurn &&
-                world.Game.Rules.ActorFOV(observer, currentMap.LocalTime,
-                    world.Game.Session.World.Weather) == cachedRange;
-            if (!hit) throw new InvalidOperationException("stable FOV key missed");
-        });
     }
 }

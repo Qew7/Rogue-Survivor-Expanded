@@ -11,8 +11,8 @@ sealed class NpcRestContent : INpcContentModule, INpcGoalSource
     public string Id { get { return "scenario.rest"; } }
     public void Register(NpcCatalogBuilder catalog)
     {
-        catalog.Trait(new TraitDefinition("restful", "Restful", false, false, null, new TraitEffect(DecisionKind.Supplies, 30)));
-        catalog.Trait(new TraitDefinition("rested_resolve", "Rested resolve", true, false, "restful", new TraitEffect(DecisionKind.Courage, 5)));
+        catalog.Trait(new TraitDefinition("restful", "Restful", false, false, null, new TraitEffect(NpcPersonalityAxis.Supplies, 30)));
+        catalog.Trait(new TraitDefinition("rested_resolve", "Rested resolve", true, false, "restful", new TraitEffect(NpcPersonalityAxis.Courage, 5)));
         for (int i = 0; i < 12; i++) catalog.Fact("rest.fact." + i.ToString("D2"));
         catalog.Event(new NpcEventDefinition("regained_stamina", NpcRecordCategory.Life, true,
             e => e.Subject + " regained stamina by taking a breath.", required: NpcEventFields.Subject | NpcEventFields.PositiveUnits));

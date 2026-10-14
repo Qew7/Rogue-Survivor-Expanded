@@ -8,9 +8,9 @@ namespace djack.RogueSurvivor.Gameplay.Personality
 {
     sealed class NpcPlanDomain
     {
-        static readonly DecisionKind[] s_TraitDecisions = { DecisionKind.Group, DecisionKind.Compassion,
-            DecisionKind.Trade, DecisionKind.Explore, DecisionKind.Supplies, DecisionKind.Law,
-            DecisionKind.Courage };
+        static readonly NpcPersonalityAxis[] s_TraitDecisions = { NpcPersonalityAxis.Group, NpcPersonalityAxis.Compassion,
+            NpcPersonalityAxis.Trade, NpcPersonalityAxis.Explore, NpcPersonalityAxis.Supplies, NpcPersonalityAxis.Law,
+            NpcPersonalityAxis.Courage };
         public readonly List<NpcPlanStep> Actions = new List<NpcPlanStep>();
         public ulong Initial;
         NpcPlanningState extraInitial;
@@ -32,7 +32,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         {
             Game = game; Owner = owner; Goal = goal; Visible = visible; plan = goal.Plan;
             Turn = owner.Location.Map.LocalTime.TurnCounter; Catalog = catalog ?? game.NpcContent;
-            foreach (DecisionKind kind in s_TraitDecisions)
+            foreach (NpcPersonalityAxis kind in s_TraitDecisions)
                 Traits = unchecked(Traits * 31 + PersonalitySystem.Bias(owner, kind, registry: Catalog.Personalities));
             foreach (Action<NpcPlanDomain> seed in Catalog.PlanSeeds) seed(this);
             if (plan != null && plan.CompletedFacts != null) foreach (string name in plan.CompletedFacts)

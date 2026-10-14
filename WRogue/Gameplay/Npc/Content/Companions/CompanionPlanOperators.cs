@@ -21,9 +21,9 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 {
                     d.Actions.RemoveAll(a => a.Action == NpcPlanAction.Warn);
                     d.Add(NpcPlanAction.Warn, d.Goal.LastKnown, d.Goal.TargetId, targetAt | (ulong)NpcPlanFact.LocationKnown, 0, (ulong)NpcPlanFact.Warned, 0,
-                        5 - PersonalitySystem.Bias(d.Owner, DecisionKind.Courage) / 5 - PersonalitySystem.Bias(d.Owner, DecisionKind.Law) / 10);
+                        5 - PersonalitySystem.Bias(d.Owner, NpcPersonalityAxis.Courage) / 5 - PersonalitySystem.Bias(d.Owner, NpcPersonalityAxis.Law) / 10);
                     d.Add(NpcPlanAction.DemandRestitution, d.Goal.LastKnown, d.Goal.TargetId, targetAt | (ulong)NpcPlanFact.LocationKnown, 0, (ulong)NpcPlanFact.Warned, 0,
-                        8 - PersonalitySystem.Bias(d.Owner, DecisionKind.Supplies) / 3 - PersonalitySystem.Bias(d.Owner, DecisionKind.Trade) / 3);
+                        8 - PersonalitySystem.Bias(d.Owner, NpcPersonalityAxis.Supplies) / 3 - PersonalitySystem.Bias(d.Owner, NpcPersonalityAxis.Trade) / 3);
                 }
                 if (target == null) foreach (Actor peer in visible)
                 {

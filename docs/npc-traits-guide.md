@@ -19,6 +19,13 @@ The numbers below modify decision-making tendencies. They are **not percentages 
 
 For example, `Brave` adds 25 to Courage and 8 to Exploration. This does not mean that an NPC is 25% less likely to flee: threat assessment also considers health, stamina, and enemies. `Likes` and `Dislikes` apply only to the specific item model named by the trait.
 
+Patience is a changing NPC disposition alongside these decision tendencies.
+Faction, traits, and experience determine it: `Patient` raises it by 35 and
+`Hotheaded` lowers it by 40. Refusals, disputed supplies, broken agreements,
+warnings and abandonment build temporary frustration. It fades with time or
+a successful agreement. Patience determines when that frustration becomes a
+verbal outburst or an attack; compassion alone does not prevent a snap.
+
 ## Starting traits (50)
 
 Opposing pairs cannot appear on the same NPC: Kind/Cruel, Law-abiding/Rebellious, Brave/Timid, Sociable/Solitary, Generous/Selfish, Trusting/Suspicious, Organized/Messy, Homebody/Wanderer, Peacemaker/Hotheaded, Devout/Skeptic.

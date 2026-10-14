@@ -14,7 +14,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             catalog.GoalSource(this);
             catalog.Value(new NpcValueDefinition("Belonging", "Restore contact", NpcGoalValue.Belonging, m => 20 + m.Group + m.Compassion / 2 + m.Attachment / 2 + m.Feeling / 2, false));
             var seek = new NpcIntentDefinition("seek_companion", "Find a missing companion",
-            NpcIntentMethod.SeekPerson, 20, 35, WorldTime.TURNS_PER_DAY, 180, 1, new NpcIntentWeight(DecisionKind.Group, 1), new NpcIntentWeight(DecisionKind.Compassion, 1, 2));
+            NpcIntentMethod.SeekPerson, 20, 35, WorldTime.TURNS_PER_DAY, 180, 1, new NpcIntentWeight(NpcPersonalityAxis.Group, 1), new NpcIntentWeight(NpcPersonalityAxis.Compassion, 1, 2));
 
             seek.Result = (c, g) => (ulong)(NpcPlanFact.Contact);
             seek.SocialPriority = r => r.Attachment / 2;
@@ -44,7 +44,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             RegisterEvents(catalog);
             catalog.Operator(new NpcOperatorDefinition("person.ask_location", NpcPlanAction.AskLocation, c => new ActionNpcAskLocation(c.Owner, c.Game, c.Target, c.Goal), archiveText: step => "ask for directions"));
             catalog.Operator(new NpcOperatorDefinition("person.reunite", NpcPlanAction.Reunite, c => NpcContactActions.Reunite(new NpcActionContext(c)), archiveText: step => "reunite with someone"));
-            catalog.Memory(new MemoryDefinition("found_a_companion", "Found a missing companion", 2, 5,
+            catalog.Memory(new MemoryDefinition("found_a_companion", "Found a missing companion", 2, 2,
                 new[] { new MemoryTrigger("reunited", (a, e) => a == e.Subject) },
                 new MemoryOutcome(null, "protector", null), new MemoryOutcome(null, null, Skills.IDs.LEADERSHIP))
                 .Relate(MemoryRelationRole.Other, 5, MemoryRelationRole.Other), false);

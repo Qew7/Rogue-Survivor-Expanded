@@ -50,7 +50,8 @@ The retained game-side changes keep the same NPC actions and rumor delivery:
   moving actors take effect immediately. There is no cross-call FOV cache.
 - Map objects and actor positions use transient tile-position arrays; zone
   lookup uses a row index. Map auxiliary structures are rebuilt after load.
-- Goal evaluation reuses actor-only trait influences within one evaluation,
+- Goal evaluation reuses actor-only trait influences and computes the five
+  disposition scales in one trait pass within each evaluation,
   visits traits once for all six influences, avoids sorting candidates when
   none can start a goal, and skips constructing zero-deficit offers only when
   no active goal needs them. Existing goals can still finish normally.
@@ -89,12 +90,15 @@ streams matched after every wait. The named
 entries, followers, rumor delivery, and save/load.
 
 On the fixed-seed 5×5 timing fixture with 70 civilians per district, the
-four-worker median was **2.37 seconds for 30 waits**, across three samples.
-Before followers were kept off other entry cells, neighboring entries had to
-be ordered and the median was **2.69 seconds** on the same fixture. The
-approximately 12% difference is a local Docker/Mono result, not a guaranteed
-gain on every city or machine. Timing excludes world construction and state
-digests. More workers did not materially improve this fixture beyond four.
+current working tree measured **1.99 seconds for 30 waits** with four workers
+(three samples: 1.95, 1.99 and 2.00 seconds). One worker took 2.88 seconds;
+two took 2.23, and eight took 1.96. The production equivalence benchmark
+matched actor state, ordered rumors, stories, radio and resident records after
+every wait with 1, 2, 4 and 8 workers. Timing excludes world construction and
+state digests. These are local Docker/Mono results, not guaranteed timings for
+other cities or machines. The current tree also spaces NPC trade attempts after
+a refusal by one game hour, so the difference from the earlier 2.37-second
+measurement is not solely a behavior-preserving code optimization.
 
 ## Radio
 
@@ -182,6 +186,9 @@ workload.
   map-object invalidation.
 - **Recursive shadowcasting:** changed visibility at corners and ran
   slower on the open arena, so it did not preserve behavior or speed.
+- **FOV ray-loop rewrites:** fewer cell reads, flattened ray offsets, and an
+  integer radius check were flat or slower in the full-city or focused FOV
+  benchmarks, so the original loop remains.
 - **Thread-local FOV buffers and alternate sparse-resource sensing:** the
   full 5×5 wait time did not improve consistently; the resource variant
   slowed dense maps. The current simpler sensor was retained.

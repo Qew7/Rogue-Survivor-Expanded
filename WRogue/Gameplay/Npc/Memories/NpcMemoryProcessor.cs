@@ -33,6 +33,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             MemoryInstance memory = new MemoryInstance(definition.Id, turn, turn + 2 * WorldTime.TURNS_PER_DAY,
                 subject, relatedToSubject, subjectId, relations == null ? Guid.Empty : relations.Person);
             if (!actor.Personality.AddMemory(memory)) return;
+            if (actor.Location.Map != null) actor.Location.Map.ConsiderMemoryResolution(actor);
             if (relations != null)
             {
                 if (relations.Person != Guid.Empty) actor.Personality.RememberPerson(relations.Person, relations.PersonName, memory, impact);

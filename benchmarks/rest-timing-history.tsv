@@ -1,0 +1,2 @@
+measured_at_utc	staged_tree	host	docker_cpus	workers_1_ms	workers_2_ms	workers_4_ms	workers_8_ms
+2026-10-14T16:32:22Z	2015a40d9d03bf7cc3e005c3ee8fcf409863fb58	Darwin_arm64	8	2805.1	2159.7	1899.0	1894.9

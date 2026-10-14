@@ -622,13 +622,13 @@ namespace djack.RogueSurvivor.Engine
         {
             int skillBonus = SKILL_CHARISMATIC_TRUST_BONUS * actor.Sheet.SkillTable.GetSkillLevel((int)Skills.IDs.CHARISMATIC);
             int personality = Gameplay.Personality.PersonalitySystem.Bias(actor,
-                Gameplay.Personality.DecisionKind.Group) / 5;
+                NpcPersonalityAxis.Group) / 5;
             personality += Gameplay.Personality.PersonalitySystem.Bias(actor,
-                Gameplay.Personality.DecisionKind.Compassion) / 5;
+                NpcPersonalityAxis.Compassion) / 5;
             if (follower != null)
             {
                 personality += Gameplay.Personality.PersonalitySystem.Bias(follower,
-                    Gameplay.Personality.DecisionKind.Group) / 5;
+                    NpcPersonalityAxis.Group) / 5;
                 personality += Gameplay.Personality.PersonalitySystem.Attitude(follower, actor) / 10;
             }
             int change = TRUST_BASE_INCREASE + skillBonus + personality;

@@ -10,7 +10,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public void Register(NpcCatalogBuilder catalog)
         {
             foreach (var faction in PersonalityWorldContent.Factions) catalog.FactionPolicy((int)faction.Id, new NpcFactionPolicy(faction.Supply, faction.Shelter, faction.Care, faction.Security, faction.Courage,
-                faction.HumanLife, faction.CareCircle, faction.MessageTrust, faction.Scarcity));
+                faction.HumanLife, faction.CareCircle, faction.MessageTrust, faction.Scarcity, faction.Patience));
             catalog.Event(new NpcEventDefinition("craps", NpcRecordCategory.World));
             catalog.Event(new NpcEventDefinition("floods", NpcRecordCategory.World));
             catalog.OnReport("death", c => {
@@ -47,6 +47,10 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 { ReportActorRole = NpcReportActorRole.Both,
                   DescribeSelfReport = (f, speaker) => f.OtherId == speaker.PersonalityIdentity ?
                       "I traded with " + (f.ReportSubject ?? "someone") : null });
+            catalog.Event(new NpcEventDefinition("trade_refused", NpcRecordCategory.Encounters, true,
+                e => (e.Subject ?? "Someone") + " declined a trade offered by " + (e.Other ?? "someone") + ".",
+                f => (f.ReportSubject ?? "Someone") + " declined " + (f.ReportOther ?? "someone") + "'s trade offer")
+                { ReportPriority = -30 });
             catalog.On("chat", NpcObservationPhase.Relationships, RememberContact);
             catalog.On("traded", NpcObservationPhase.Relationships, RememberContact);
             catalog.On("death", NpcObservationPhase.Goals, OnGoals);

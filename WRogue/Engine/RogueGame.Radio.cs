@@ -284,6 +284,7 @@ namespace djack.RogueSurvivor.Engine
             HashSet<string> knownStories = null;
             string lastKind = null;
             bool lastKindMatches = false;
+            int lastKindPriority = 0;
             string lastStoryId = null;
             bool lastStoryKnown = false;
             if (playerFacts != null && playerFacts.Count > 0)
@@ -308,14 +309,17 @@ namespace djack.RogueSurvivor.Engine
                     int age = now - fact.EventTurn;
                     if (fact.Source != NpcKnowledgeSource.Told || fact.Place.Map == null ||
                         age > 2 * WorldTime.TURNS_PER_DAY || fact.Confidence < 40 || fact.Hops >= 3) continue;
-                    if (station != 0)
+                    if (lastKind == null || fact.Kind != lastKind)
                     {
-                        if (lastKind == null || fact.Kind != lastKind)
-                        { lastKind = fact.Kind; lastKindMatches = RadioMatches(station, lastKind); }
-                        if (!lastKindMatches) continue;
+                        lastKind = fact.Kind;
+                        lastKindMatches = station == 0 || RadioMatches(station, lastKind);
+                        NpcEventDefinition definition = NpcContent.Event(lastKind);
+                        lastKindPriority = definition == null ? 0 : definition.ReportPriority;
                     }
+                    if (!lastKindMatches) continue;
                     int score = (2 * WorldTime.TURNS_PER_DAY - Math.Max(0, age)) /
                         (WorldTime.TURNS_PER_DAY / 24);
+                    score += 2 * lastKindPriority;
                     score += (int)((uint)(fact.EventId * 1103515245L + slot * 101L +
                         station * 37L + seed) % 64u);
                     // Player familiarity can add at most 32 points.
@@ -431,23 +435,7 @@ namespace djack.RogueSurvivor.Engine
 
         void ApplyRadioSanity(Actor listener, NpcFact fact)
         {
-            if (!listener.Model.Abilities.HasSanity || listener.Personality == null) return;
-            RelationshipRecord subject = fact.NamesSubject ? listener.Personality.Person(fact.SubjectId) : null;
-            RelationshipRecord other = fact.NamesOther ? listener.Personality.Person(fact.OtherId) : null;
-            bool closeSubject = subject != null && (subject.Attachment >= 20 || subject.Feeling >= 30);
-            bool closeOther = other != null && (other.Attachment >= 20 || other.Feeling >= 30);
-            int delta = 0;
-            if (closeSubject && (fact.Kind == "attack" || fact.Kind == "death" || fact.Kind == "murder"))
-                delta = listener.Personality.HasTrait("timid") ? -2 : -1;
-            else if ((fact.Kind == "stolen_goods_found" || fact.Kind == "stolen_goods_passed") &&
-                (closeOther || fact.OtherId == listener.PersonalityIdentity ||
-                 listener.SocialGroup != null && listener.SocialGroup.Identity == fact.ClaimantGroupId))
-                delta = listener.Personality.HasTrait("timid") ? -2 : -1;
-            else if (fact.Kind == "psychopaths_arrival" && listener.Personality.HasTrait("timid"))
-                delta = -1;
-            else if ((closeSubject || closeOther) &&
-                     (fact.Kind == "shared_food" || fact.Kind == "shared_medicine" || fact.Kind == "promise_kept"))
-                delta = listener.Personality.HasTrait("compassionate") ? 2 : 1;
+            int delta = NpcImmediateEmotion.Radio(listener, fact, NpcContent);
             if (delta < 0) SpendActorSanity(listener, -delta);
             else if (delta > 0) RegenActorSanity(listener, delta);
         }

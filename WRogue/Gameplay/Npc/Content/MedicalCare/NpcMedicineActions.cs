@@ -8,6 +8,13 @@ namespace djack.RogueSurvivor.Gameplay.Personality
 {
     static class NpcMedicineActions
     {
+        public static bool CanAsk(Actor owner, Guid recipient, int turn)
+        {
+            NpcKnowledge knowledge = owner.Personality.Knowledge;
+            NpcKnownPerson person = knowledge.Person(recipient);
+            return turn >= knowledge.NextMedicineRequestTurn &&
+                (person == null || turn >= person.NextMedicineRequestTurn);
+        }
         public static ActorAction Take(NpcActionContext c)
         { return c.Action(() => {
             ItemMedicine medicine = NpcPlanExecution.Medicine(c.Game, c.Owner, c.Step.Place); string reason;
@@ -28,11 +35,18 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             if (!c.Goal.Finished) { c.Goal.Plan.Invalidate(); c.Goal.Plan.NextPlanningTurn = c.Owner.Location.Map.LocalTime.TurnCounter; }
         }); }
         public static ActorAction Ask(NpcActionContext c)
-        { return c.Action(() => c.NearPerson(c.Step.Target) && !c.Owner.Personality.Knowledge.WasTold(-c.Goal.Sequence, c.Step.Target) &&
+        { return c.Action(() => c.NearPerson(c.Step.Target) &&
+            CanAsk(c.Owner, c.Step.Target, c.Owner.Location.Map.LocalTime.TurnCounter) &&
+            !c.Owner.Personality.Knowledge.WasTold(-c.Goal.Sequence, c.Step.Target) &&
             NpcPlanExecution.Medicine(c.Game, c.Owner, c.Owner.Location, true) == null, () => {
             c.Game.DoSay(c.Owner, c.Target, "Could you spare medicine? I'm trying to get treatment.", RogueGame.Sayflags.IS_STORY | RogueGame.Sayflags.IS_REQUEST,
                 c.Goal.CauseId, c.Goal.StoryId);
-            c.Owner.Personality.Knowledge.Told(-c.Goal.Sequence, c.Step.Target, c.Owner.Location.Map.LocalTime.TurnCounter);
+            int turn = c.Owner.Location.Map.LocalTime.TurnCounter;
+            NpcKnowledge knowledge = c.Owner.Personality.Knowledge;
+            knowledge.Told(-c.Goal.Sequence, c.Step.Target, turn);
+            knowledge.NextMedicineRequestTurn = turn + 4 * WorldTime.TURNS_PER_HOUR;
+            NpcKnownPerson recipient = knowledge.Person(c.Step.Target);
+            if (recipient != null) recipient.NextMedicineRequestTurn = turn + WorldTime.TURNS_PER_DAY;
             c.Publish("requested_medicine", c.Target); c.Goal.Plan.Invalidate(); c.Goal.NextAttempt = c.Owner.Location.Map.LocalTime.TurnCounter + 8;
         }); }
         public static ActorAction Give(NpcActionContext c) { return Aid(c, false); }

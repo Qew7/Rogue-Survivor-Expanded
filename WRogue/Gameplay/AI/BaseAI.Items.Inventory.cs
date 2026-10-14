@@ -112,7 +112,7 @@ namespace djack.RogueSurvivor.Gameplay.AI
             // prefer range then damage
             Attack a = (rWp.Model as ItemRangedWeaponModel).Attack;
             return Math.Max(0, 10000 * a.Range + 100 * a.DamageValue + rWp.Ammo +
-                2000 * PersonalitySystem.Bias(m_Actor, DecisionKind.Item, rWp));
+                2000 * PersonalitySystem.Bias(m_Actor, NpcPersonalityAxis.Item, rWp));
         }
 
         protected Item GetFirstMeleeWeapon(Predicate<Item> fn)
@@ -564,7 +564,7 @@ namespace djack.RogueSurvivor.Gameplay.AI
             // prefer weapon with more dmg, then atk, then disarm, then less sta loss.
             Attack a = (mWp.Model as ItemMeleeWeaponModel).Attack;
             return Math.Max(0, 100000 * a.DamageValue + 1000 * a.HitValue + a.DisarmChance -
-                a.StaminaPenalty + 10000 * PersonalitySystem.Bias(m_Actor, DecisionKind.Item, mWp));
+                a.StaminaPenalty + 10000 * PersonalitySystem.Bias(m_Actor, NpcPersonalityAxis.Item, mWp));
         }
 
         /// <summary>

@@ -39,7 +39,7 @@ namespace djack.RogueSurvivor.Data
     }
 
     [Serializable]
-    class Map : ISerializable
+    partial class Map : ISerializable
     {        
         internal static Action<long> ProfileZoneLookup;
         #region Constants
@@ -337,6 +337,7 @@ namespace djack.RogueSurvivor.Data
 
             m_aux_ActorsByPosition = new Actor[width * height];
             m_ActorsList = new List<Actor>(5);
+            m_aux_NextMemoryResolutionTurn = int.MaxValue;
 
             m_aux_MapObjectsByPosition = new MapObject[width * height];
             m_MapObjectsList = new List<MapObject>(5);
@@ -615,6 +616,7 @@ namespace djack.RogueSurvivor.Data
             else
             {
                 m_ActorsList.Add(actor);
+                ConsiderMemoryResolution(actor);
             }
             m_aux_ActorsByPosition[position.Y * m_Width + position.X] = actor;
             actor.Location = new Location(this, position);
@@ -652,6 +654,7 @@ namespace djack.RogueSurvivor.Data
             // reset check actor index, as it is now invalidated.
             m_iCheckNextActorIndex = 0;
         }
+
         #endregion
 
         #region Map Objects
@@ -1376,12 +1379,14 @@ namespace djack.RogueSurvivor.Data
             // Reconstruct auxiliary fields
             ///////////////////////////////
             m_aux_ActorsByPosition = new Actor[m_Width * m_Height];
+            m_aux_NextMemoryResolutionTurn = int.MaxValue;
             foreach (Actor a in m_ActorsList)
             {
                 Point position = a.Location.Position;
                 if (!IsInBounds(position) || m_aux_ActorsByPosition[position.Y * m_Width + position.X] != null)
                     throw new InvalidOperationException("invalid or duplicate actor position " + position);
                 m_aux_ActorsByPosition[position.Y * m_Width + position.X] = a;
+                ConsiderMemoryResolution(a);
             }
 
             m_aux_GroundItemsList = new List<Inventory>();

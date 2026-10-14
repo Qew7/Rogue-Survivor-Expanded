@@ -1,4 +1,5 @@
 using System;
+using System.Reflection;
 using djack.RogueSurvivor.Data;
 using djack.RogueSurvivor.Engine;
 using djack.RogueSurvivor.Gameplay.Personality;
@@ -36,12 +37,31 @@ static class NpcDispositionMemoryScenario
                 if (memory.OutcomeId.StartsWith("removed_trait:"))
                     Check.Equal(false, survivor.Personality.HasTrait("minimalist"), "removal affects the actual trait list");
                 if (memory.OutcomeId.StartsWith("disposition:"))
-                    Check.Equal(23, survivor.Personality.ExperienceValue(NpcDispositionAxis.Scarcity),
-                        "resolution adds the memory's scarcity change to the observed starvation change");
+                    Check.Equal(15, survivor.Personality.ExperienceValue(NpcPersonalityAxis.Scarcity),
+                        "resolution applies the memory's scarcity change without an immediate lasting shift");
                 world.Map.RemoveActor(survivor);
             }
             Check.Equal(true, gained && skilled && removed && shifted,
                 "fixed-seed resolutions reach all four eligible outcome categories");
+
+            NpcIntentSupport.Player(world, 6, 1);
+            world.Map.LocalTime.TurnCounter = 17;
+            Actor timed = NpcIntentSupport.Actor(world, "timed survivor", 1, 1);
+            timed.Personality = new PersonalityState();
+            PersonalitySystem.Report(world.Game, new SignificantEvent("starvation", timed, null,
+                world.Map, timed.Location.Position, world.Map.LocalTime.TurnCounter));
+            MemoryInstance dueOnTurn = timed.Personality.Memories[0];
+            world.Map.LocalTime.TurnCounter = dueOnTurn.ResolveTurn - 1;
+            int dayBefore = world.Map.LocalTime.Day;
+            Type flags = typeof(RogueGame).GetNestedType("SimFlags", BindingFlags.NonPublic);
+            Check.Call(world.Game, "NextMapTurn", new[] { typeof(Map), flags },
+                world.Map, Enum.Parse(flags, "LODETAIL_TURN"));
+            Check.Equal(dueOnTurn.ResolveTurn, world.Map.LocalTime.TurnCounter,
+                "ordinary map turn reaches a deadline between day boundaries");
+            Check.Equal(dayBefore, world.Map.LocalTime.Day,
+                "memory resolution does not wait for the next midnight");
+            Check.Equal(true, dueOnTurn.OutcomeId != null,
+                "ordinary map turn resolves a memory exactly two days later");
         });
     }
 }
