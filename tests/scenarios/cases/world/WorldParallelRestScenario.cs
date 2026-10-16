@@ -4,6 +4,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using djack.RogueSurvivor.Data;
 using djack.RogueSurvivor.Engine;
@@ -26,9 +27,14 @@ static class WorldParallelRestScenario
                 if (x == 0 && y == 0) continue;
                 var district = new District(new Point(x, y), DistrictKind.RESIDENTIAL);
                 var map = new Map(7820 + x * 3 + y, "parallel district", 5, 3);
+                var sewers = new Map(7920 + x * 3 + y, "sewers", 5, 3);
                 for (int row = 0; row < 3; row++) for (int col = 0; col < 5; col++)
+                {
                     map.SetTileModelAt(col, row, world.Game.GameTiles.FLOOR_ASPHALT);
+                    sewers.SetTileModelAt(col, row, world.Game.GameTiles.FLOOR_ASPHALT);
+                }
                 district.EntryMap = map;
+                district.SewersMap = sewers;
                 city[x, y] = district;
             }
             Session.Get.World = city;
@@ -82,6 +88,10 @@ static class WorldParallelRestScenario
             player.ActionPoints = Rules.BASE_ACTION_COST;
             world.Game.DoWait(player);
             Check.Call(world.Game, "AdvancePlay", new[] { typeof(District), flags }, city[0, 0], active);
+            Check.Call(world.Game, "StartSimThread");
+            Check.Equal(true, SpinWait.SpinUntil(() => city[2, 2].EntryMap.LocalTime.TurnCounter == 1, 5000),
+                "background districts reach the live turn");
+            Check.Call(world.Game, "StopSimThread", false);
             for (int x = 0; x < 3; x++) for (int y = 0; y < 3; y++)
                 Check.Equal(1, city[x, y].EntryMap.LocalTime.TurnCounter,
                     "each district advances once during parallel rest");
@@ -92,6 +102,10 @@ static class WorldParallelRestScenario
             player.ActionPoints = Rules.BASE_ACTION_COST;
             world.Game.DoWait(player);
             Check.Call(world.Game, "AdvancePlay", new[] { typeof(District), flags }, city[0, 0], active);
+            Check.Call(world.Game, "StartSimThread");
+            Check.Equal(true, SpinWait.SpinUntil(() => city[2, 2].EntryMap.LocalTime.TurnCounter ==
+                Session.Get.WorldTime.TurnCounter, 5000), "background hour completes");
+            Check.Call(world.Game, "StopSimThread", false);
             for (int station = 0; station < 4; station++)
             {
                 long key = (1L << 2) | (uint)station;

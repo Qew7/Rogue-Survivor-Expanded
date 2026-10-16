@@ -39,7 +39,7 @@ static class GamePresetScenario
             Check.Call(typeof(RogueGame), "ChangeGamePreset",
                 new[] { typeof(GamePreset), typeof(int), typeof(int) }, standard, personalityRow - 1, 1);
             Check.Equal(true, standard.NpcPersonalitiesEnabled, "menu action restores personalities");
-            int restRow = Array.IndexOf(presetLabels, "Simulate distant districts while resting");
+            int restRow = Array.IndexOf(presetLabels, "Background simulation of distant districts");
             Check.Equal(true, restRow >= 0, "rest simulation appears in new-game menu");
             Check.Call(typeof(RogueGame), "ChangeGamePreset", new[] { typeof(GamePreset), typeof(int), typeof(int) }, standard, restRow - 1, 1);
             Check.Equal(true, standard.DisableDistantSimulationDuringRest, "menu action disables distant rest simulation");

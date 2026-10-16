@@ -3,6 +3,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using djack.RogueSurvivor.Data;
 using djack.RogueSurvivor.Engine;
 using djack.RogueSurvivor.Engine.Actions;
@@ -36,9 +37,11 @@ static class WorldParallelRestExactArrivalsScenario
                 if (x == 0 && y == 0) continue;
                 var district = new District(new Point(x, y), DistrictKind.RESIDENTIAL);
                 var map = new Map(7852 + x * 3 + y, "parallel district", 5, 3);
+                var sewers = new Map(7952 + x * 3 + y, "sewers", 5, 3);
                 for (int row = 0; row < 3; row++) for (int col = 0; col < 5; col++)
-                    map.SetTileModelAt(col, row, world.Game.GameTiles.FLOOR_ASPHALT);
-                district.EntryMap = map;
+                { map.SetTileModelAt(col, row, world.Game.GameTiles.FLOOR_ASPHALT);
+                    sewers.SetTileModelAt(col, row, world.Game.GameTiles.FLOOR_ASPHALT); }
+                district.EntryMap = map; district.SewersMap = sewers;
                 city[x, y] = district;
             }
             Session.Get.World = city;
@@ -91,9 +94,12 @@ static class WorldParallelRestExactArrivalsScenario
                 BindingFlags.Instance | BindingFlags.NonPublic).SetValue(world.Game, 4);
             Type flags = typeof(RogueGame).GetNestedType("SimFlags", BindingFlags.NonPublic);
             object active = Enum.Parse(flags, "NOT_SIMULATING");
-            player.ActionPoints = Rules.BASE_ACTION_COST;
-            world.Game.DoWait(player);
+            player.ActionPoints = Rules.BASE_ACTION_COST; world.Game.DoWait(player);
             Check.Call(world.Game, "AdvancePlay", new[] { typeof(District), flags }, city[0, 0], active);
+            Check.Call(world.Game, "StartSimThread");
+            Check.Equal(true, SpinWait.SpinUntil(() => leader.Location.Map == destination && rival.Location.Map == destination,
+                5000), "background district turns finish both arrivals");
+            Check.Call(world.Game, "StopSimThread", false);
             Check.Same(destination, leader.Location.Map, "leader arrives from the first source");
             Check.Same(destination, follower.Location.Map, "follower crosses with the leader");
             Check.Same(destination, rival.Location.Map, "second source arrives at its distinct entry");

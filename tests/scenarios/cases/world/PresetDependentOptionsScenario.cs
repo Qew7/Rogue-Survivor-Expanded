@@ -17,9 +17,9 @@ static class PresetDependentOptionsScenario
             preset.HasOptions = true;
             string[] labels = (string[])typeof(RogueGame).GetField("GamePresetLabels",
                 BindingFlags.Static | BindingFlags.NonPublic).GetValue(null);
-            int rest = Array.IndexOf(labels, "Simulate distant districts while resting");
+            int rest = Array.IndexOf(labels, "Background simulation of distant districts");
             int finish = Array.IndexOf(labels, "Finish distant simulation after resting");
-            int parallel = Array.IndexOf(labels, "Parallel distant simulation while resting");
+            int parallel = Array.IndexOf(labels, "Parallel background simulation");
             Check.Equal(true, rest >= 0 && finish == rest + 1 && parallel == finish + 1,
                 "dependent rest controls appear together");
             Check.Equal(false, preset.FinishDistantSimulationAfterRest, "finishing rest debt defaults off");
@@ -28,10 +28,6 @@ static class PresetDependentOptionsScenario
             Check.Equal("N/A", Value(preset, rest), "rest simulation is inactive when district simulation is off");
             Check.Equal("N/A", Value(preset, finish), "finish option is inactive when simulation is off");
             Check.Equal("N/A", Value(preset, parallel), "parallel option is inactive when simulation is off");
-            Check.Equal("district simulation", OptionRequirement(options, GameOptions.IDs.GAME_SIM_THREAD, preset),
-                "simulation thread is inactive without district simulation");
-            Check.Equal("district simulation", OptionRequirement(options, GameOptions.IDs.GAME_SIMULATE_SLEEP, preset),
-                "legacy sleep simulation is inactive without district simulation");
             Toggle(preset, finish);
             Toggle(preset, parallel);
             Toggle(preset, rest);
@@ -44,9 +40,6 @@ static class PresetDependentOptionsScenario
 
             options.SimulateDistricts = GameOptions.SimRatio.FULL;
             preset.Options = options;
-            Check.Equal("distant rest simulation disabled in the preset",
-                OptionRequirement(options, GameOptions.IDs.GAME_SIM_THREAD, preset),
-                "legacy simulation thread is inactive while preset rest simulation owns the work");
             Toggle(preset, finish);
             Toggle(preset, parallel);
             Check.Equal(false, preset.ParallelDistantSimulationDuringRest,
@@ -59,10 +52,6 @@ static class PresetDependentOptionsScenario
             Toggle(preset, rest);
             Check.Equal("N/A", Value(preset, finish), "finish option is inactive when rest simulation is off");
             Check.Equal("N/A", Value(preset, parallel), "parallel option is inactive when rest simulation is off");
-            Check.Equal(null, OptionRequirement(options, GameOptions.IDs.GAME_SIM_THREAD, preset),
-                "legacy simulation thread becomes available when rest simulation is off");
-            Check.Equal("simulation thread disabled", OptionRequirement(options, GameOptions.IDs.GAME_SIMULATE_SLEEP, preset),
-                "legacy sleep simulation depends on the thread being off");
             Toggle(preset, finish);
             Check.Equal(true, preset.FinishDistantSimulationAfterRest,
                 "inactive child keeps its chosen value for later");

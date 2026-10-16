@@ -77,13 +77,6 @@ namespace djack.RogueSurvivor.Engine
                 case GameOptions.IDs.UI_MUSIC_VOLUME: return options.PlayMusic ? null : "music";
                 case GameOptions.IDs.UI_SHOW_PLAYER_TAG_ON_MINIMAP:
                     return options.IsMinimapOn ? null : "the minimap";
-                case GameOptions.IDs.GAME_SIM_THREAD:
-                case GameOptions.IDs.GAME_SIMULATE_SLEEP:
-                    if (!options.IsSimON) return "district simulation";
-                    if (preset != null && !preset.DisableDistantSimulationDuringRest)
-                        return "distant rest simulation disabled in the preset";
-                    return option == GameOptions.IDs.GAME_SIMULATE_SLEEP && options.SimThread ?
-                        "simulation thread disabled" : null;
                 case GameOptions.IDs.GAME_STARVED_ZOMBIFICATION_CHANCE:
                     if (!options.NPCCanStarveToDeath) return "NPC starvation deaths";
                     return preset != null && !preset.ImmediateZombification ? "instant zombification" : null;
@@ -127,8 +120,6 @@ namespace djack.RogueSurvivor.Engine
                    GameOptions.IDs.UI_SHOW_TARGETS,
                    // sim
                    GameOptions.IDs.GAME_SIMULATE_DISTRICTS,
-                   GameOptions.IDs.GAME_SIM_THREAD,
-                   GameOptions.IDs.GAME_SIMULATE_SLEEP,
                    // death
                    GameOptions.IDs.GAME_DEATH_SCREENSHOT,
                    GameOptions.IDs.GAME_PERMADEATH,
@@ -276,8 +267,6 @@ namespace djack.RogueSurvivor.Engine
                                 if (s_Options.SimulateDistricts != GameOptions.SimRatio.OFF)
                                     s_Options.SimulateDistricts = (GameOptions.SimRatio)(s_Options.SimulateDistricts - 1);
                                 break;
-                            case GameOptions.IDs.GAME_SIMULATE_SLEEP: s_Options.SimulateWhenSleeping = !s_Options.SimulateWhenSleeping; break;
-                            case GameOptions.IDs.GAME_SIM_THREAD: s_Options.SimThread = !s_Options.SimThread; break;
                             case GameOptions.IDs.GAME_ZOMBIFICATION_CHANCE: s_Options.ZombificationChance -= 5; break;
                             case GameOptions.IDs.GAME_REVEAL_STARTING_DISTRICT: s_Options.RevealStartingDistrict = !s_Options.RevealStartingDistrict; break;
                             case GameOptions.IDs.GAME_ALLOW_UNDEADS_EVOLUTION: s_Options.AllowUndeadsEvolution = !s_Options.AllowUndeadsEvolution; break;
@@ -336,8 +325,6 @@ namespace djack.RogueSurvivor.Engine
                                     s_Options.SimulateDistricts = (GameOptions.SimRatio)(s_Options.SimulateDistricts + 1);
                                 }
                                 break;
-                            case GameOptions.IDs.GAME_SIMULATE_SLEEP: s_Options.SimulateWhenSleeping = !s_Options.SimulateWhenSleeping; break;
-                            case GameOptions.IDs.GAME_SIM_THREAD: s_Options.SimThread = !s_Options.SimThread; break;
                             case GameOptions.IDs.GAME_ZOMBIFICATION_CHANCE: s_Options.ZombificationChance += 5; break;
                             case GameOptions.IDs.GAME_REVEAL_STARTING_DISTRICT: s_Options.RevealStartingDistrict = !s_Options.RevealStartingDistrict; break;
                             case GameOptions.IDs.GAME_ALLOW_UNDEADS_EVOLUTION:
@@ -367,8 +354,6 @@ namespace djack.RogueSurvivor.Engine
                 }
 
                 // force some options combinations.
-                if (s_Options.SimThread)
-                    s_Options.SimulateWhenSleeping = false;
                 // apply options.
                 ApplyOptions(false);
             }

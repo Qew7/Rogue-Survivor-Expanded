@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using djack.RogueSurvivor.Data;
 using djack.RogueSurvivor.Engine;
 using djack.RogueSurvivor.Engine.AI;
@@ -18,7 +19,12 @@ static partial class RestSimulationBenchmarks
     static readonly MethodInfo Advance = typeof(RogueGame).GetMethod("AdvancePlay",
         BindingFlags.Instance | BindingFlags.NonPublic, null, new[] { typeof(District), Flags }, null);
     static readonly object Active = Enum.Parse(Flags, "NOT_SIMULATING");
+    static readonly MethodInfo StartBackground = typeof(RogueGame).GetMethod("StartSimThread",
+        BindingFlags.Instance | BindingFlags.NonPublic);
+    static readonly MethodInfo StopBackground = typeof(RogueGame).GetMethod("StopSimThread",
+        BindingFlags.Instance | BindingFlags.NonPublic);
     static int initialLiving, initialUndead, connections;
+    static double LastForegroundMs;
 
     public static void Run()
     {
@@ -44,13 +50,19 @@ static partial class RestSimulationBenchmarks
         const int civiliansPerDistrict = 70;
         RunOne(false, size, civiliansPerDistrict, GameOptions.SimRatio.FULL); // Warm models and JIT.
         double[] samples = new double[3];
+        double[] foreground = new double[3];
         for (int i = 0; i < samples.Length; i++)
+        {
             samples[i] = RunOne(false, size, civiliansPerDistrict, GameOptions.SimRatio.FULL);
+            foreground[i] = LastForegroundMs;
+        }
         Array.Sort(samples);
+        Array.Sort(foreground);
         Console.WriteLine("REST LARGE {0}x{0} districts ({1} beyond the nearby radius), {2} waits, {3} living, {4} undead, {5} border links, FULL simulation",
             size, size * size - 4, Turns, initialLiving, initialUndead, connections);
         Console.WriteLine("Median {0:F1} ms ({1:F1} ms/wait); samples {2:F1}, {3:F1}, {4:F1} ms",
             samples[1], samples[1] / Turns, samples[0], samples[1], samples[2]);
+        Console.WriteLine("Foreground median {0:F1} ms ({1:F1} ms/wait)", foreground[1], foreground[1] / Turns);
     }
 
     public static void RunMemory(int turns, bool collect)
@@ -397,12 +409,31 @@ static partial class RestSimulationBenchmarks
     static void RunRest(RogueGame game, District district, Actor player, int turns,
         Action<Session, int> afterTurn = null)
     {
+        LastForegroundMs = 0;
         for (int turn = 0; turn < turns; turn++)
         {
             player.ActionPoints = Rules.BASE_ACTION_COST;
             game.DoWait(player);
+            Stopwatch foreground = Stopwatch.StartNew();
             Advance.Invoke(game, new[] { (object)district, Active });
+            LastForegroundMs += foreground.Elapsed.TotalMilliseconds;
+            StartBackground.Invoke(game, null);
+            try
+            {
+                int target = Session.Get.WorldTime.TurnCounter;
+                if (!SpinWait.SpinUntil(() => AllDistrictsAt(target), 120000))
+                    throw new InvalidOperationException("Background districts did not catch up to turn " + target);
+            }
+            finally { StopBackground.Invoke(game, new object[] { false }); }
             if (afterTurn != null) afterTurn(Session.Get, turn + 1);
         }
+    }
+
+    static bool AllDistrictsAt(int turn)
+    {
+        World city = Session.Get.World;
+        for (int x = 0; x < city.Size; x++) for (int y = 0; y < city.Size; y++)
+            if (city[x, y].EntryMap.LocalTime.TurnCounter < turn) return false;
+        return true;
     }
 }

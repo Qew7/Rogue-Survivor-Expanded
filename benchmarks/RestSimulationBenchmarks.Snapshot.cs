@@ -20,13 +20,20 @@ static partial class RestSimulationBenchmarks
             foreach (int workers in new[] { 1, 2, 4, 8 })
             {
                 double[] samples = new double[3];
+                double[] foreground = new double[3];
                 for (int i = 0; i < samples.Length; i++)
+                {
                     samples[i] = RunOne(false, 5, 70, GameOptions.SimRatio.FULL,
                         turns: turns, workers: workers, snapshotPath: start,
                         restoreSnapshot: true, parallelRest: true);
+                    foreground[i] = LastForegroundMs;
+                }
                 Array.Sort(samples);
+                Array.Sort(foreground);
                 Console.WriteLine("REST TIMING exact arrivals, {0} workers: {1:F1}, {2:F1}, {3:F1} ms; median {2:F1} ms",
                     workers, samples[0], samples[1], samples[2]);
+                Console.WriteLine("  foreground median {0:F1} ms ({1:F1} ms/wait)",
+                    foreground[1], foreground[1] / turns);
             }
         }
         finally

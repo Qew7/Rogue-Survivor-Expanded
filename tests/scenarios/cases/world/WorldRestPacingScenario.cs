@@ -39,7 +39,7 @@ static class WorldRestPacingScenario
             typeof(RogueGame).GetField("m_PlayerLongWaitEnd", fields).SetValue(world.Game, new WorldTime(15));
             Advance(world, player, flags, active);
             Check.Equal(11, Session.Get.WorldTime.TurnCounter, "player turn advances normally");
-            Check.Equal(3, distant.LocalTime.TurnCounter, "first wait spreads older district turns");
+            Check.Equal(11, distant.LocalTime.TurnCounter, "neighboring district catches up before player input");
             for (int turn = 12; turn <= 15; turn++) Advance(world, player, flags, active);
             Check.Equal(15, distant.LocalTime.TurnCounter, "all district turns finish at the natural wait end");
             Check.Equal(true, listener.Personality.Knowledge.Facts.Exists(f =>

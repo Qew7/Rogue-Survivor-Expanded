@@ -125,8 +125,8 @@ namespace djack.RogueSurvivor.Engine
                 "Undead rot speed", "Skeleton spawn weight", "Shambler spawn weight",
                 "Master spawn weight", "Infection: weak at", "Infection: tired at",
                 "Infection: vomiting at", "Infection: bleeding at", "Infection: death at",
-                "Infection symptom rate", "NPC traits and memories", "Simulate distant districts while resting",
-                "Finish distant simulation after resting", "Parallel distant simulation while resting", "Other gameplay options"
+                "Infection symptom rate", "NPC traits and memories", "Background simulation of distant districts",
+                "Finish distant simulation after resting", "Parallel background simulation", "Other gameplay options"
             };
 
         static readonly string[] GamePresetDescriptions = {
@@ -164,9 +164,9 @@ namespace djack.RogueSurvivor.Engine
             "Infection percentage at which infection becomes fatal.",
             "Scale how often infection symptoms occur. 100% is the normal rate.",
             "Give living NPCs personality traits and evolving memories.",
-            "Advance every district while the player sleeps or waits. Distant NPCs act and exchange reports.\nTurn this off to keep distant districts paused until visited.",
+            "Start simulating distant districts during sleep or waiting, then continue in the background during play.\nTurn this off to simulate only the player's district and its eight neighbors.",
             "Finish all remaining distant district turns before returning control after sleep or waiting.\nLeave this off to keep unfinished turns for later simulation.",
-            "Simulate districts at the same time while resting, grouping conflicting border arrivals.\nDistrict crossings resolve during their turn.",
+            "Simulate distant districts concurrently in the background, grouping conflicting border arrivals.\nDistrict crossings resolve during their turn.",
             "Open the full gameplay options, including population, events and other rules."
         };
 

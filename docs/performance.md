@@ -59,18 +59,19 @@ The retained game-side changes keep the same NPC actions and rumor delivery:
   goal. Item, trade, perception, and exploration paths avoid redundant short
   scans and allocations where the same action choice is preserved.
 
-Long sleep and waits budget older district-turn debt across remaining player
-turns, simulating the oldest local clocks first. With the default preset
-option, unfinished debt remains when rest ends and advances on later rests or
-district entry; the separate "finish after rest" option drains it. A single
-wait receives its normal district-turn budget. The game displays simulated
-district turns and an estimated completion time, and limits sleep redraws to
-four per real second. Budgeting spreads work across rest; it does not omit NPC
-actions or rumor generation.
+In the experimental background branch, each live turn synchronously advances
+the player's district and up to eight neighbors. Sleeping or waiting enables a
+background worker for farther districts; it continues while the player reads
+or enters commands after resting. The worker pauses before the next live turn,
+save, or district change. Disabling the preset's distant simulation option
+keeps those farther districts paused. The separate "finish after rest" option
+waits for all remaining distant turns before accepting a command. The rest
+benchmarks explicitly wait for background catch-up after each turn, so
+their total time measures full-city work rather than player input latency.
 
 ### Parallel district simulation
 
-The `Parallel distant simulation while resting` preset option uses up to
+The `Parallel background simulation` preset option uses up to
 four workers by default. Each turn, distant districts are split by checkerboard
 color. Same-color districts with distinct entry cells can run together.
 Districts competing for the **same** destination entry, sharing active
@@ -81,7 +82,7 @@ interdistrict entry points, so neighboring entries need no district-wide
 serialization. Brief destination locking still protects concurrent arrivals.
 NPCs, rumors, stories, and radio advance under the same game rules.
 
-The deterministic `--bench-rest-parallel-production` check replayed one saved
+The deterministic `--bench-rest-parallel-production` check previously replayed one saved
 5×5 start for 30 waits with 1, 2, 4, and 8 workers. Actor state, ordered
 rumors, stories, radio programs, resident records, and district random
 streams matched after every wait. The named
@@ -89,16 +90,26 @@ streams matched after every wait. The named
 `world/parallel-rest-exact-arrivals` scenarios cover contested and nearby
 entries, followers, rumor delivery, and save/load.
 
-On the fixed-seed 5×5 timing fixture with 70 civilians per district, the
-current working tree measured **1.99 seconds for 30 waits** with four workers
+Before this experimental change, the fixed-seed 5×5 timing fixture with 70
+civilians per district measured **1.99 seconds for 30 waits** with four workers
 (three samples: 1.95, 1.99 and 2.00 seconds). One worker took 2.88 seconds;
-two took 2.23, and eight took 1.96. The production equivalence benchmark
+two took 2.23, and eight took 1.96. The earlier production equivalence benchmark
 matched actor state, ordered rumors, stories, radio and resident records after
 every wait with 1, 2, 4 and 8 workers. Timing excludes world construction and
 state digests. These are local Docker/Mono results, not guaranteed timings for
-other cities or machines. The current tree also spaces NPC trade attempts after
+other cities or machines. That tree also spaced NPC trade attempts after
 a refusal by one game hour, so the difference from the earlier 2.37-second
 measurement is not solely a behavior-preserving code optimization.
+
+On the same Docker/Mono setup, the experimental background branch measured
+**2.47 seconds** for 30 waits with four workers (2.31, 2.47, 2.54 seconds)
+when the benchmark waited for every district after every turn. Only **0.52
+seconds**, or 17.2 ms per wait, were spent in the synchronous live turn;
+the rest ran in the background. The same fixture on the parent branch measured
+**1.96 seconds** for total completion (1.93, 1.96, 1.97 seconds). Thus full
+catch-up took about 26% longer in this experiment, while the measured live
+turn became much shorter. The foreground figure excludes UI work and any wait
+for an in-progress background batch when the next command arrives.
 
 ## Radio
 

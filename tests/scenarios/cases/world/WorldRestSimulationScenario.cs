@@ -3,6 +3,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using djack.RogueSurvivor.Data;
 using djack.RogueSurvivor.Engine;
 using djack.RogueSurvivor.Gameplay.Personality;
@@ -17,20 +18,25 @@ static class WorldRestSimulationScenario
             GamePreset preset = GamePreset.BuiltIn(GameMode.GM_STANDARD);
             Session.Get.GamePreset = preset;
             Actor player = NpcIntentSupport.Player(world, 2, 1);
-            World city = new World(2);
+            World city = new World(4);
             city[0, 0] = world.Map.District;
-            for (int x = 0; x < 2; x++) for (int y = 0; y < 2; y++)
+            for (int x = 0; x < 4; x++) for (int y = 0; y < 4; y++)
             {
                 if (x == 0 && y == 0) continue;
                 District district = new District(new Point(x, y), DistrictKind.RESIDENTIAL);
                 Map map = new Map(4972 + x * 2 + y, "distant", 5, 3);
+                Map sewers = new Map(5072 + x * 2 + y, "sewers", 5, 3);
                 for (int row = 0; row < 3; row++) for (int col = 0; col < 5; col++)
+                {
                     map.SetTileModelAt(col, row, world.Game.GameTiles.FLOOR_ASPHALT);
+                    sewers.SetTileModelAt(col, row, world.Game.GameTiles.FLOOR_ASPHALT);
+                }
                 district.EntryMap = map;
+                district.SewersMap = sewers;
                 city[x, y] = district;
             }
             Session.Get.World = city;
-            Map distant = city[1, 1].EntryMap;
+            Map distant = city[3, 3].EntryMap;
             Actor witness = NpcIntentSupport.Actor(world, "witness", 3, 1, "sociable");
             world.Map.RemoveActor(witness);
             distant.PlaceActorAt(witness, new Point(1, 1));
@@ -47,14 +53,18 @@ static class WorldRestSimulationScenario
             player.ActionPoints = Rules.BASE_ACTION_COST;
             world.Game.DoWait(player);
             Check.Call(world.Game, "AdvancePlay", new[] { typeof(District), flags }, world.Map.District, active);
-            Check.Equal(1, distant.LocalTime.TurnCounter, "ordinary wait simulates a distant district");
+            Check.Equal(1, city[1, 0].EntryMap.LocalTime.TurnCounter,
+                "ordinary wait simulates a neighboring district");
+            Check.Equal(0, distant.LocalTime.TurnCounter, "distant district waits for background work");
 
             preset.DisableDistantSimulationDuringRest = true;
             Session.Get.GamePreset = preset;
             player.ActionPoints = Rules.BASE_ACTION_COST;
             world.Game.DoWait(player);
             Check.Call(world.Game, "AdvancePlay", new[] { typeof(District), flags }, world.Map.District, active);
-            Check.Equal(1, distant.LocalTime.TurnCounter, "preset switch keeps distant district paused");
+            Check.Equal(2, city[1, 0].EntryMap.LocalTime.TurnCounter,
+                "preset switch still advances neighboring districts");
+            Check.Equal(0, distant.LocalTime.TurnCounter, "preset switch keeps distant district paused");
 
             preset.DisableDistantSimulationDuringRest = false;
             preset.ParallelDistantSimulationDuringRest = true;
@@ -64,10 +74,12 @@ static class WorldRestSimulationScenario
             player.ActionPoints = Rules.BASE_ACTION_COST;
             world.Game.DoStartSleeping(player);
             Check.Call(world.Game, "AdvancePlay", new[] { typeof(District), flags }, world.Map.District, active);
-            Check.Equal(true, city[0, 1].EntryMap.LocalTime.TurnCounter < Session.Get.WorldTime.TurnCounter ||
-                city[1, 0].EntryMap.LocalTime.TurnCounter < Session.Get.WorldTime.TurnCounter ||
-                distant.LocalTime.TurnCounter < Session.Get.WorldTime.TurnCounter,
-                "sleep spreads the older distant turns");
+            Check.Equal(0, distant.LocalTime.TurnCounter, "sleep leaves far work to the worker");
+            Check.Call(world.Game, "StartSimThread");
+            Check.Equal(true, SpinWait.SpinUntil(() =>
+                distant.LocalTime.TurnCounter == Session.Get.WorldTime.TurnCounter, 5000),
+                "far district catches up on the background thread");
+            Check.Call(world.Game, "StopSimThread", false);
             world.Game.DoWakeUp(player);
             Check.Call(world.Game, "FinishRestSimulationIfNeeded");
             Check.Equal(Session.Get.WorldTime.TurnCounter, distant.LocalTime.TurnCounter,
@@ -79,7 +91,7 @@ static class WorldRestSimulationScenario
             {
                 BinarySaveStore.Save(savePath, Session.Get);
                 Session loaded = BinarySaveStore.Load<Session>(savePath);
-                Map loadedDistant = loaded.World[1, 1].EntryMap;
+                Map loadedDistant = loaded.World[3, 3].EntryMap;
                 Check.Equal(distant.LocalTime.TurnCounter, loadedDistant.LocalTime.TurnCounter,
                     "distant local time survives save and load");
                 Check.Equal(true, loadedDistant.Actors.Any(a => a.Name == "neighbor" &&

@@ -183,19 +183,12 @@ namespace djack.RogueSurvivor.Engine
             #endregion
         }
 
-        // alpha10
-        void AfterPlayerEnterDistrict()
-        {
-            // restart sim thread if on
-            if (s_Options.IsSimON && s_Options.SimThread)
-                StartSimThread();
-        }
-
         #endregion
         #region Simulation
         [ThreadStatic] static bool s_ParallelRestWorker;
         internal static bool IsParallelRestWorker { get { return s_ParallelRestWorker; } }
         internal int ParallelRestWorkers;
+        bool m_BackgroundDistantSimulationActive;
 
         bool IsParallelRestCrossing(Actor actor, Point exitPoint, out District destination)
         {
@@ -506,9 +499,87 @@ namespace djack.RogueSurvivor.Engine
                 m_RestHasDeferredSimulation = false;
                 return;
             }
-            if (m_RestHasDeferredSimulation && s_Options.IsSimON &&
-                !m_Session.GamePreset.DisableDistantSimulationDuringRest)
+            if (s_Options.IsSimON && !m_Session.GamePreset.DisableDistantSimulationDuringRest &&
+                (m_BackgroundDistantSimulationActive || m_RestHasDeferredSimulation))
+            {
+                StopSimThread(false);
                 SimulateDistantDistrictsThrough(m_Session.WorldTime.TurnCounter);
+            }
+        }
+
+        // Called only while the live turn is paused. StopSimThread joins after one
+        // district turn, so input, saving, and district changes see a stable world.
+        void SimulateBackgroundDistantDistricts()
+        {
+            World world = m_Session.World;
+            District current = m_Session.CurrentMap.District;
+            Point playerPosition = current.WorldPosition;
+            while (m_SimWorker != null && !m_SimWorker.StopRequestedOnWorkerThread)
+            {
+                int target = m_Session.WorldTime.TurnCounter;
+                int oldest = Int32.MaxValue;
+                for (int x = 0; x < world.Size; x++) for (int y = 0; y < world.Size; y++)
+                {
+                    if (Math.Abs(x - playerPosition.X) <= 1 && Math.Abs(y - playerPosition.Y) <= 1)
+                        continue;
+                    District candidate = world[x, y];
+                    if (candidate == null || candidate.EntryMap.LocalTime.TurnCounter >= target) continue;
+                    oldest = Math.Min(oldest, candidate.EntryMap.LocalTime.TurnCounter);
+                }
+                if (oldest == Int32.MaxValue) return;
+                var batch = new List<District>();
+                int color = -1;
+                for (int x = 0; x < world.Size; x++) for (int y = 0; y < world.Size; y++)
+                {
+                    if (Math.Abs(x - playerPosition.X) <= 1 && Math.Abs(y - playerPosition.Y) <= 1)
+                        continue;
+                    District candidate = world[x, y];
+                    if (candidate == null || candidate.EntryMap.LocalTime.TurnCounter != oldest) continue;
+                    if (color < 0) color = (x + y) & 1;
+                    if (!m_Session.GamePreset.ParallelDistantSimulationDuringRest || ((x + y) & 1) == color)
+                        batch.Add(candidate);
+                }
+                if (!m_Session.GamePreset.ParallelDistantSimulationDuringRest)
+                    batch.RemoveRange(1, batch.Count - 1);
+                else if (batch.Count > 4)
+                    batch.RemoveRange(4, batch.Count - 4);
+                SimulateBackgroundDistantBatch(batch, current);
+            }
+        }
+
+        void SimulateBackgroundDistantBatch(List<District> batch, District current)
+        {
+            var slots = new HashSet<int>();
+            foreach (District district in batch)
+                foreach (Map map in district.Maps)
+                {
+                    slots.Add(map.LocalTime.TurnCounter / WorldTime.TURNS_PER_HOUR);
+                    slots.Add((map.LocalTime.TurnCounter + 1) / WorldTime.TURNS_PER_HOUR);
+                }
+            foreach (int slot in slots)
+                for (int station = 0; station < 4; station++) GetRadioProgram(station, slot);
+            const int idsPerTurn = 65536;
+            var eventIds = new long[batch.Count];
+            for (int i = 0; i < batch.Count; i++)
+                eventIds[i] = m_Session.ReservePersonalityEventIds(idsPerTurn);
+            ResidentRecords records = m_Session.ResidentRecords;
+            NpcStoryDirector director = m_Session.NpcDirector;
+            var options = new ParallelOptions { MaxDegreeOfParallelism =
+                m_Session.GamePreset.ParallelDistantSimulationDuringRest ?
+                    Math.Max(1, ParallelRestWorkers > 0 ? ParallelRestWorkers : Math.Min(4, Environment.ProcessorCount)) : 1 };
+            foreach (List<int> wave in RestSimulationWaves(batch, director, current))
+                Parallel.ForEach(wave, options, i =>
+                {
+                    bool previous = s_ParallelRestWorker;
+                    s_ParallelRestWorker = true;
+                    try
+                    {
+                        m_Session.WithPersonalityEventIds(eventIds[i], idsPerTurn,
+                            () => SimulateDistrict(batch[i]));
+                    }
+                    finally { s_ParallelRestWorker = previous; }
+                });
+            director.CompactFinished();
         }
 
         /// <summary>
@@ -538,18 +609,13 @@ namespace djack.RogueSurvivor.Engine
                     District otherDistrict = m_Session.World[dx, dy];
                     if (otherDistrict == null) continue;
 
-                    // don't sim if up to date!
-                    int dTurns = d.EntryMap.LocalTime.TurnCounter - otherDistrict.EntryMap.LocalTime.TurnCounter;
-                    if (dTurns > 0)
+                    while (otherDistrict.EntryMap.LocalTime.TurnCounter < d.EntryMap.LocalTime.TurnCounter)
                     {
-                        //Logger.WriteLine(Logger.Stage.RUN_MAIN, "sim has to catch " + dTurns + " turns");
-                        // simulate district.
                         hadToSim = true;
                         SimulateDistrict(otherDistrict);
-                        //Console.Out.WriteLine("  sim simulated district " + otherDistrict.Name+ " turn now "+otherDistrict.EntryMap.LocalTime.TurnCounter);
+                        if (!m_IsGameRunning || m_HasLoadedGame || m_Player == null || m_Player.IsDead)
+                            return hadToSim;
                     }
-                    //else  // DEBUG
-                    //    Console.Out.WriteLine("  sim district " + otherDistrict.Name + " is up to date " + otherDistrict.EntryMap.LocalTime.TurnCounter);
                 }
 
             return hadToSim;
@@ -559,20 +625,11 @@ namespace djack.RogueSurvivor.Engine
         bool m_RestartSimulationAfterReincarnation;
         void StartSimThread()
         {
-            if (s_Options.IsSimON && s_Options.SimThread &&
-                (m_Session.GamePreset == null || m_Session.GamePreset.DisableDistantSimulationDuringRest))
+            if (s_Options.IsSimON && m_BackgroundDistantSimulationActive &&
+                m_Session.GamePreset != null && !m_Session.GamePreset.DisableDistantSimulationDuringRest)
             {
                 if (m_SimWorker == null)
-                {
-                    District playerDistrict = m_Player.Location.Map.District;
-                    m_SimWorker = new DistrictSimulationWorker(delegate
-                    {
-                        while (m_Player != null && SimulateNearbyDistricts(playerDistrict))
-                        {
-                            if (m_SimWorker.StopRequestedOnWorkerThread) break;
-                        }
-                    });
-                }
+                    m_SimWorker = new DistrictSimulationWorker(SimulateBackgroundDistantDistricts);
                 m_SimWorker.Start();
             }
         }

@@ -145,6 +145,8 @@ namespace djack.RogueSurvivor.Engine
             // play until player dies or quits.
             while (m_Player != null && !m_Player.IsDead && m_IsGameRunning)
             {
+                // A background district turn must finish before the next live turn changes the world.
+                if (m_BackgroundDistantSimulationActive) StopSimThread(false);
                 // timer.
                 DateTime timeBefore = DateTime.Now;
 
@@ -155,6 +157,13 @@ namespace djack.RogueSurvivor.Engine
                 // play.
                 m_HasLoadedGame = false;
                 AdvancePlay(m_Session.CurrentMap.District, SimFlags.NOT_SIMULATING);
+                if (m_BackgroundDistantSimulationActive && m_IsGameRunning && !m_HasLoadedGame &&
+                    m_Player != null && !m_Player.IsDead)
+                {
+                    StartSimThread();
+                    if (m_Player.IsSleeping || m_IsPlayerLongWait)
+                        System.Threading.Thread.Sleep(10);
+                }
                 if (m_RestartSimulationAfterReincarnation)
                 {
                     m_RestartSimulationAfterReincarnation = false;
@@ -177,6 +186,7 @@ namespace djack.RogueSurvivor.Engine
                 if (m_Session.WorldTime.TurnCounter % BGMUSIC_UPDATE_TURNS == 0)
                     UpdateBgMusic();
             }
+            StopSimThread(false);
             if (m_IsGameRunning)
                 RestoreMenuMods();
         }
@@ -317,8 +327,6 @@ namespace djack.RogueSurvivor.Engine
                                     if (LoadGame(GetUserSave()))
                                     {
                                         loop = false;
-                                        if (s_Options.IsSimON && s_Options.SimThread)
-                                            StartSimThread();
                                     }
                                     else
                                     {
@@ -408,6 +416,8 @@ namespace djack.RogueSurvivor.Engine
 
         void StartNewGame()
         {
+            StopSimThread(false);
+            m_BackgroundDistantSimulationActive = false;
             bool isUndead = m_CharGen.IsUndead;
 
             // generate world.
@@ -472,9 +482,6 @@ namespace djack.RogueSurvivor.Engine
                 BotReleaseControl();
 #endif
 
-            // start simulation thread.
-            StopSimThread(false);  // alpha10 stop-start
-            StartSimThread();
             Logger.WriteLine(Logger.Stage.RUN_MAIN, "new game ready");
         }
 
@@ -645,20 +652,16 @@ namespace djack.RogueSurvivor.Engine
                     else m_Session.RadioDropTurn = 0;
                 }
 
-                // Rest advances the whole city in chronological order before the next player action.
+                // Keep the player's neighboring districts current on every live turn.
                 if (district == m_Session.CurrentMap.District)
                 {
                     bool resting = m_Player != null &&
                         (playerWasSleeping || m_Player.IsSleeping || m_PlayerWaitedThisTurn);
-                    if (s_Options.IsSimON && m_Session.GamePreset != null &&
-                        !m_Session.GamePreset.DisableDistantSimulationDuringRest)
-                    {
-                        if (resting) SimulateDistantDistrictsThrough(m_Session.WorldTime.TurnCounter, RemainingRestTurns());
-                        else SimulateNearbyDistricts(district);
-                    }
-                    else if (s_Options.IsSimON && m_Player != null && m_Player.IsSleeping &&
-                        s_Options.SimulateWhenSleeping)
+                    if (s_Options.IsSimON)
                         SimulateNearbyDistricts(district);
+                    if (resting && m_Session.GamePreset != null &&
+                        !m_Session.GamePreset.DisableDistantSimulationDuringRest)
+                        m_BackgroundDistantSimulationActive = true;
                     m_PlayerWaitedThisTurn = false;
                 }
 

@@ -153,7 +153,9 @@ namespace djack.RogueSurvivor.Engine
                 RedrawPlayScreen();
 
                 // 2. Get input.
+                if (m_BackgroundDistantSimulationActive) StartSimThread();
                 PlayerInputEvent input = m_InputReader.Read(m_MouseMoveInterruptedKey);
+                if (m_BackgroundDistantSimulationActive) StopSimThread(false);
                 m_MouseMoveInterruptedKey = null;
                 bool hasKey = input.Key != null;
                 KeyEventArgs inKey = input.Key;

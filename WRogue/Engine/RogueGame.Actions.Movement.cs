@@ -500,10 +500,8 @@ namespace djack.RogueSurvivor.Engine
 
             // if player is leaving and changing district, prepare district.
             // alpha10.1 disallow bots from leaving districts
-            bool playerChangedDistrict = false;  // alpha10
             if (isPlayer && !actor.IsBotPlayer && exit.ToMap.District != fromMap.District)
             {
-                playerChangedDistrict = true;  // alpha10
                 BeforePlayerEnterDistrict(exit.ToMap.District);
             }
 
@@ -588,11 +586,6 @@ namespace djack.RogueSurvivor.Engine
             {
                 DoFollowersEnterMap(actor, fromMap, fromPos, exit.ToMap, exit.ToPosition);
             }
-
-            // alpha10
-            // handle player changing district
-            if (playerChangedDistrict)
-                AfterPlayerEnterDistrict();
 
             // done.
             return true;
