@@ -1,7 +1,8 @@
 # NPC traits and memories
 
-For a Russian-language map of the social systems and the distinction between
-`Feeling` and `Attitude`, see [NPC social systems](npc-social-systems.md).
+This document owns trait, memory and relationship mechanics. For the complete
+social-system map and the distinction between `Feeling` and `Attitude`, see
+[NPC social systems](npc-social-systems.md).
 
 Intelligent living actors created through `ActorModel` receive three distinct starting traits
 and one or two unresolved memories when the new-game preset enables NPC traits
@@ -57,8 +58,9 @@ those records retain the memory, its resolution turn, and its outcome. Records
 store identities and names, not Actor references, so a dead person is still
 remembered and save graphs do not keep them alive.
 
-Each event changes the feeling toward the person. The same experience has a
-smaller group effect and, for non-civilian factions, a smaller faction effect.
+A memory with a personal relationship role changes feeling toward that person.
+The same experience can have a smaller group effect and, for non-civilian
+factions, a smaller faction effect. Other events may leave feeling unchanged.
 The three feelings and acquired faction-specific trait biases add for a current
 target, clamped to -100..100. Dislike can
 stop trade offers and recruitment; positive feeling can make a marginal trade
@@ -67,12 +69,10 @@ An unresolved, confidently known serious violation makes effective attitude towa
 the offender at most -30, even when older positive memories remain. Recruitment
 requires both the prospective leader and follower to accept each other at that
 threshold. Clearing the violation restores the underlying remembered attitude.
-An NPC's warning does not itself clear a violation. The warned NPC's Law,
-Compassion and Patience affect its answer; the warning NPC's Compassion, Law,
-Patience, trust in reports and grievance determine whether an accepted boundary
-settles the current incident. A refusal keeps the concern active. A civilian
-leader checks visible recruits for legality first, then prefers higher attitude
-and uses distance to break ties.
+The warning and its reply resolve the current incident according to the two
+actors' personalities; see [social consequences](npc-social-stories.md).
+Recruitment chooses among eligible visible candidates by attitude; see
+[NPC intentions](npc-intentions.md).
 Accumulated `TrustInLeader` remains the authority for trusting the current
 leader: while it meets the existing threshold, the follower accepts that
 leader's trade offers and does not exclude them from autonomous trade solely
@@ -136,7 +136,7 @@ and evidence confidence. It accepts no event kind: observations first update
 beliefs, and changed state then motivates a goal. Existing debt or injury can
 produce a goal without a new significant event. New urgent needs can replace a
 weaker generated goal at the decision boundary. Private starts record the
-the goal and its relevant motive in Read Records; numeric scores remain internal.
+goal and its relevant motive in Read Records; numeric scores remain internal.
 Routine generated-goal reevaluation is spread across ten map-turn groups based
 on each NPC's stable identity. Existing goals still execute and receive their
 normal per-decision checks on every action. A newly observed significant event

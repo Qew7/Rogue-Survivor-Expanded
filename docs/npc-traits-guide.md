@@ -2,6 +2,10 @@
 
 This guide lists **all 116 traits** in the game's default catalog: 50 starting traits and 66 acquired traits. The English names match those shown in the game; each `ID` is used in code and saved games. The guide applies to NPCs when **NPC personalities** is enabled. Each intelligent living NPC starts with three distinct starting traits. The player receives no starting NPC traits, and resolving the player's memories does not grant NPC traits.
 
+For how traits interact with dispositions, relationships, knowledge and actions,
+see the [social-system overview](npc-social-systems.md). This guide owns the
+complete trait list and numerical effects.
+
 ## How to read the effects
 
 The numbers below modify decision-making tendencies. They are **not percentages or direct stat bonuses**. `+` increases a tendency; `−` decreases it. Effects from multiple traits add together for each tendency and are capped at −100 to +100. Decisions also depend on the situation, needs, relationships, faction, and available actions.
@@ -85,7 +89,14 @@ Opposing pairs cannot appear on the same NPC: Kind/Cruel, Law-abiding/Rebellious
 
 ## Acquired traits: personal experiences (24)
 
-These traits appear when a corresponding memory resolves, usually after 2–6 in-game days. “Requires” means the NPC must already have the listed base trait. A memory grants the first available outcome in an ordered list: a trait or a skill upgrade. The event therefore **does not guarantee** the listed trait.
+These traits can appear when a corresponding memory resolves after two in-game
+days. “Requires” means the NPC must already have the listed base trait.
+Resolution randomly chooses among eligible outcome categories: gain a trait,
+improve a skill, remove an opposing trait, or shift a changing disposition when
+that memory defines one. Within the trait and skill categories, the first
+eligible registered outcome is used. The event therefore **does not guarantee**
+the listed trait. Older saves may retain an earlier deadline, while later
+deadlines are capped at two days.
 
 | In-game name | ID | Requires | Effects and possible source |
 | --- | --- | --- | --- |

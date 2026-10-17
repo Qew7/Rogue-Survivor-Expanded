@@ -1,5 +1,9 @@
 # NPC social consequences and connected stories
 
+This document owns concrete social episodes and their outcomes. For the
+relationship between traits, memories, beliefs and decisions, see the
+[social-system overview](npc-social-systems.md).
+
 NPCs generate desired states from their needs, beliefs and relationships, then
 choose legal game actions with costs influenced by their traits. Actual outcomes
 change those inputs for other people. Goals and action mechanics are authored;
@@ -24,7 +28,7 @@ Only the initiator spends AP. Looking at someone does not inspect their inventor
 
 A resource reservation exposes a competing plan when its actor is visible. A
 contender spends an action asking that person to yield. The holder's compassion,
-trade preference, supplies preference, personal need and known attitude determine
+trade preference, supplies preference, personal need and social feeling determine
 their proposed reply. Only actual speech publishes `resource_yielded` or
 `resource_refused`. Yielding releases the reservation. An outstanding conversation
 makes that source unavailable until an answer. Law and courage determine whether
@@ -68,10 +72,23 @@ discussion. It can be told to another person as an assessment, with confidence
 loss, without fabricating a recent sighting. Duplicate reports cannot repeatedly
 penalize reputation.
 
-Warnings produce actual replies according to the recipient's law and compassion
-biases. Acceptance and defiance have different relation effects. Defiance or a
-refused demand supplies new evidence of unresolved misconduct. Historical
-misconduct remains until addressed; current danger has its separate expiry.
+Speaking a warning does not resolve the known violation. The recipient's law,
+compassion, patience and accumulated frustration determine whether the later
+answer accepts the boundary, defies it or becomes an outburst. The warner then
+weighs an accepted answer with their own compassion, law, patience, trust in
+reports and grievance. Only acceptance linked to the **current** warning and
+current incident can clear that warner's known violation; the answer still
+changes trust and grievance when it is not enough. Defiance or a refused demand
+supplies new evidence of unresolved misconduct. Apology can ease grievance and
+fear without clearing the violation or restoring group membership. Current
+danger has its separate expiry.
+
+A leader does not issue a routine group food mission for a member whose serious
+violation is confidently known. Urgent group medicine remains possible.
+If the beneficiary leaves the group, an existing group food or medicine mission
+ends; faction missions retain their independent membership rules. Ordinary
+personal aid and a previously spoken promise have separate motivations, so a
+reliable promisor can still deliver to someone they now distrust.
 
 ## Lasting interests and history
 
@@ -99,8 +116,10 @@ and cannot create witnessed events.
 
 Social memories register outside the starting pool. `kept_my_word` can resolve
 to `reliable` for an honest NPC. `promise_broken` can resolve to `disillusioned`
-for a trusting recipient. Ineligible or existing traits use skill fallbacks.
-These traits affect the decision axes used by goals, methods and replies.
+for a trusting recipient. The eligible trait, skill, opposing-trait removal and
+disposition-shift categories compete at resolution; skill outcomes remain
+available when a trait cannot be gained. These traits affect the decision axes
+used by goals, methods and replies.
 Player memory resolution awards no NPC traits or skills.
 
 ## Causal episodes, records and bounds
@@ -184,7 +203,9 @@ status without keeping actor references.
 - Interests: `npc/resource-yield`, `npc/resource-refusal`, `npc/resource-respect`,
   `npc/restitution-demand`, `npc/restitution`.
 - Commitments: `npc/promise-delivery`, `npc/promise-deadline`,
-  `npc/promise-release`, `npc/boundary-response`.
+  `npc/promise-release`, `npc/reliable-promise-despite-distrust`.
+- Warnings and groups: `npc/boundary-response`,
+  `npc/boundary-resolution-after-reply`, `npc/group-supply-after-expulsion`.
 - Lasting interests: `npc/valued-possession`, `npc/threatened-home`,
   `npc/collective-goal-values`, `npc/reputation-report`.
 - Boundaries and causality: `npc/social-boundaries`, `npc/social-persistence`,

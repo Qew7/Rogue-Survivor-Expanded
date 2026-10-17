@@ -4,6 +4,9 @@ NPC mechanics live under `WRogue/Gameplay/Npc/`. Runtime services evaluate
 registered contracts; feature modules own their content and policies. The
 namespace remains `djack.RogueSurvivor.Gameplay.Personality` because saved
 worlds identify existing types by their full name.
+This is the extension contract for developers; the
+[social-system overview](npc-social-systems.md) explains the concepts and
+points to the canonical state and runtime paths.
 
 ## Ownership and flow
 

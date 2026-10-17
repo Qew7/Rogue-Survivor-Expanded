@@ -8,6 +8,14 @@ NPC, что он знает о других, как события превра�
 personalities. Игрок может иметь записи об отношениях, но не получает NPC-шкалы
 и стартовые черты.
 
+Это обзор взаимодействия подсистем. Полные значения черт и их ID поддерживаются
+в [справочнике черт](npc-traits-guide.md), механика памяти и отношений — в
+[npc-personality.md](npc-personality.md), цели и планирование — в
+[npc-intentions.md](npc-intentions.md), конкретные социальные эпизоды — в
+[npc-social-stories.md](npc-social-stories.md), а контракт расширения модулей —
+в [npc-content-modules.md](npc-content-modules.md). Здесь есть понятия, связи
+между ними и указатели на каноничные участки кода.
+
 ## Общая модель
 
 У игры нет одного «социального рейтинга» и одного центра, который принимает все
@@ -133,53 +141,27 @@ personalities. Игрок может иметь записи об отношен
 относится к конкретной модели предмета. Противоположные стартовые черты вроде
 `kind`/`cruel`, `lawful`/`rebellious` и `sociable`/`solitary` не выдаются вместе.
 
-Полный набор стартовых ID:
-
-`kind`, `cruel`, `lawful`, `rebellious`, `brave`, `timid`, `sociable`,
-`solitary`, `loyal`, `independent`, `generous`, `selfish`, `frugal`,
-`impulsive`, `patient`, `vigilant`, `careless`, `curious`, `cautious`,
-`ambitious`, `humble`, `honest`, `deceptive`, `trusting`, `suspicious`,
-`protective`, `vindictive`, `forgiving`, `organized`, `messy`, `hoarder`,
-`minimalist`, `healer`, `scavenger`, `homebody`, `wanderer`, `peacemaker`,
-`hotheaded`, `pragmatic`, `idealist`, `thrillseeker`, `fearful`, `disciplined`,
-`stubborn`, `adaptable`, `devout`, `skeptic`, `opportunist`, `likes_items`,
-`dislikes_items`.
-
 Приобретаемые черты разделены **по источнику опыта**, а не по отдельным
 механизмам применения:
 
 - **24 личных исхода:** выживание, насилие, помощь, предательство, обещания и
   другие переживания. Например, `selfless`, `mistrustful`, `protector`,
-  `reliable`, `disillusioned`. Полный набор ID: `maniac`, `cannibal`,
-  `kleptomaniac`, `zealot`, `panic_attacks`, `paranoid`, `berserker`, `selfless`,
-  `hardened`, `mistrustful`, `obsessive_collector`, `traumatized`, `vengeful`,
-  `resolute`, `protector`, `hermit`, `fanatic`, `predator`, `survivor`,
-  `pacifist`, `battle_scarred`, `scarcity_hardened`, `reliable`, `disillusioned`.
+  `reliable`, `disillusioned`.
 - **9 встреч с уникальными персонажами:** от `bear_resolve` после встречи с
-  Big Bear до `sewer_dread`. Полный набор ID: `bear_resolve`,
-  `blade_discipline`, `holiday_spirit`, `rogue_ingenuity`, `duck_camaraderie`,
-  `hans_drill`, `prisoner_secrets`, `masked_survivor`, `sewer_dread`.
+  Big Bear до `sewer_dread`.
 - **18 отношений с фракциями:** семейства `friend_*` и `wary_*`, приобретаемые
   после помощи, нападения или убийства при подходящей исходной черте. Они дают
   и обычные эффекты на склонности, и смещение отношения к членам конкретной
   фракции. Не у каждой фракции есть оба варианта; конфликтующие варианты одной
-  фракции несовместимы. Полный набор ID: `wary_char`, `friend_char`,
-  `wary_undead`, `wary_army`, `friend_army`, `wary_bikers`, `friend_bikers`,
-  `wary_gangstas`, `friend_gangstas`, `wary_police`, `friend_police`,
-  `wary_blackops`, `friend_blackops`, `wary_psychopaths`,
-  `friend_psychopaths`, `wary_survivors`, `friend_survivors`, `wary_ferals`.
+  фракции несовместимы.
 - **15 мировых переживаний:** например, `refugee_solidarity`,
   `army_confidence`, `roadside_vigilance`, `convoy_hope`, `betrayal_scar`.
   Требуют соответствующей наблюдаемой встречи или мирового события и могут
-  изменить отношение к фракции. Полный набор ID: `night_watch`,
-  `underground_caution`, `refugee_solidarity`, `army_confidence`,
-  `relief_organizer`, `roadside_vigilance`, `hells_souls_defiance`,
-  `free_angels_watchfulness`, `streetwise`, `craps_grudge`, `floods_caution`,
-  `blackops_distrust`, `convoy_hope`, `char_whistleblower`, `betrayal_scar`.
+  изменить отношение к фракции.
 
 Точное имя, ID, численные эффекты и условие каждой из 116 черт приведены в
-[каталоге черт](npc-traits-guide.md). Он служит полным справочником значений;
-этот документ объясняет, как их читает движок. Новая черта не обязана иметь
+[каталоге черт](npc-traits-guide.md). Он служит единственным полным справочником
+значений и ID; этот документ объясняет, как их читает движок. Новая черта не обязана иметь
 собственную ветку в AI: обычный путь — зарегистрировать её эффекты на общие
 оси. Для особого поведения модуль может добавить интерес, источник цели,
 реакцию на событие или оператор.
