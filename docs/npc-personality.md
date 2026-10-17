@@ -175,8 +175,12 @@ decision tendencies and changing dispositions. A trait uses `TraitEffect` for
 either kind of axis; `WithEffect` adds one to an existing definition. The four
 original changing dispositions still derive part of their value from older
 decision effects, preserving their established values. Faction baselines,
-projected trait effects, temporary need modifiers and immediate event reactions
-are defined per disposition under `WRogue/Gameplay/Npc/Axes/`.
+projected trait effects and temporary need modifiers are defined per
+disposition under `WRogue/Gameplay/Npc/Axes/`. An event's
+`NpcEventDefinition` in its owning content module selects its optional
+`ImmediateSanity` and `RadioSanity` reactions. These callbacks can reuse axis
+calculations and shared `NpcImmediateEmotion` helpers; the runtime dispatches
+them without selecting effects by event ID.
 `PersonalitySystem.Disposition` applies the shared −100..100 clamp. New traits
 may specify a disposition effect directly.
 To add a changing disposition, assign the next non-negative experience slot,
