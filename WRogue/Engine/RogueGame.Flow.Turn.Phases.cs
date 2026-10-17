@@ -61,15 +61,13 @@ namespace djack.RogueSurvivor.Engine
                             List<Corpse> zombifiedCorpses = new List<Corpse>(tryZombifyCorpses.Count);
                             foreach (Corpse c in tryZombifyCorpses)
                             {
-                                // only one actor per tile!
-                                if (map.GetActorAt(c.Position) == null)
+                                Point? risePosition = FindCorpseRisePosition(map, c.Position);
+                                if (risePosition.HasValue)
                                 {
-                                    float corpseState = (float)c.HitPoints / (float)c.MaxHitPoints;
-                                    int zombifiedHP = (int)(corpseState * m_Rules.ActorMaxHPs(c.DeadGuy));
                                     zombifiedCorpses.Add(c);
-                                    Actor zombified = Zombify(null, c.DeadGuy, false);
+                                    Zombify(null, c.DeadGuy, false, new Location(map, risePosition.Value));
 
-                                    if (IsVisibleToPlayer(map, c.Position))
+                                    if (IsVisibleToPlayer(map, risePosition.Value))
                                     {
                                         AddMessage(new Message(String.Format("The corpse of {0} rise again!!", c.DeadGuy.Name), map.LocalTime.TurnCounter, Color.Red));
                                         // FIXME --
@@ -225,6 +223,29 @@ namespace djack.RogueSurvivor.Engine
                 }  // non STD game.
                 #endregion
 
+        }
+
+        Point? FindCorpseRisePosition(Map map, Point origin)
+        {
+            int maxRadius = Math.Max(Math.Max(origin.X, map.Width - 1 - origin.X),
+                Math.Max(origin.Y, map.Height - 1 - origin.Y));
+            for (int radius = 0; radius <= maxRadius; radius++)
+            {
+                List<Point> nearest = null;
+                for (int y = Math.Max(0, origin.Y - radius); y <= Math.Min(map.Height - 1, origin.Y + radius); y++)
+                    for (int x = Math.Max(0, origin.X - radius); x <= Math.Min(map.Width - 1, origin.X + radius); x++)
+                    {
+                        if (Math.Max(Math.Abs(x - origin.X), Math.Abs(y - origin.Y)) != radius ||
+                            map.GetActorAt(x, y) != null || !map.GetTileAt(x, y).Model.IsWalkable)
+                            continue;
+                        MapObject obstacle = map.GetMapObjectAt(x, y);
+                        if (obstacle != null && !obstacle.IsWalkable) continue;
+                        if (nearest == null) nearest = new List<Point>();
+                        nearest.Add(new Point(x, y));
+                    }
+                if (nearest != null) return nearest.Count == 1 ? nearest[0] : nearest[m_Rules.Roll(0, nearest.Count)];
+            }
+            return null;
         }
 
         void AdvanceMapScents(Map map)

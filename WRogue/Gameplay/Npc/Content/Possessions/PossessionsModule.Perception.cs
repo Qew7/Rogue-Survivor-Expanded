@@ -17,6 +17,9 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                             string kind = "item:" + attachment.ItemId.ToString("N");
                             if (count > 0 || knowledge.Places.Exists(p => p.Kind == kind && p.Place == place))
                                 knowledge.RememberPlace(new NpcKnownPlace(place, kind, turn, count, risk)); }
+            foreach (Item item in items.Items)
+                if (item.IsStolen)
+                    c.Game.ReportStolenGoods(actor, null, item, "stolen_goods_found", place.Position);
             NpcHomeObservation.RememberHome(actor);
         }
     }

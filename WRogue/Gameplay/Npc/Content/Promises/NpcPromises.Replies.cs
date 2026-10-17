@@ -12,8 +12,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             bool medical = source.Kind == "requested_medicine";
             if (medical && NpcServices.TryPrepare(game, owner, source)) return;
             bool supplies = medical ? NpcPlanExecution.Medicine(game, owner, owner.Location, true) != null : NpcFoodSupply.SpareFood(game, owner, source.Subject) != null;
-            int compassion = PersonalitySystem.Bias(owner, DecisionKind.Compassion), law = PersonalitySystem.Bias(owner, DecisionKind.Law);
-            if (medical && supplies && PersonalitySystem.Bias(owner, DecisionKind.Trade) >= 15 && compassion <= 0)
+            int compassion = PersonalitySystem.Bias(owner, NpcPersonalityAxis.Compassion), law = PersonalitySystem.Bias(owner, NpcPersonalityAxis.Law);
+            if (medical && supplies && PersonalitySystem.Bias(owner, NpcPersonalityAxis.Trade) >= 15 && compassion <= 0)
             { owner.Personality.Reactions.Add(new NpcReaction(source.Subject, "I'll exchange medicine for other supplies.", source.Id, source.Turn, "medicine_offered", source.StoryId)); return; }
             if (!supplies && compassion > 0 && law > 0 && owner.Personality.CanRememberCommitment && source.Subject.Personality.CanRememberCommitment &&
                 !owner.Personality.Commitments.Exists(p => p.Status == NpcCommitmentStatus.Active &&

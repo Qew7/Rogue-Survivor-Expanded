@@ -111,7 +111,7 @@ namespace djack.RogueSurvivor.Data
         #region Factory
         Actor Create(Faction faction, int spawnTime)
         {
-            ++m_CreatedCount;
+            System.Threading.Interlocked.Increment(ref m_CreatedCount);
             Actor actor = new Actor(this, faction, spawnTime) { Controller = InstanciateController() };
             PersonalitySystem.Initialize(actor, Session.Get.GameDiceRoller);
             return actor;
@@ -133,7 +133,7 @@ namespace djack.RogueSurvivor.Data
         public Actor CreateNumberedName(Faction faction, int spawnTime)
         {
             Actor actor = Create(faction, spawnTime);
-            String number = m_CreatedCount.ToString();
+            String number = DiceRoller.IsOverridden ? Session.Get.NextPersonalityEventId().ToString() : m_CreatedCount.ToString();
             actor.Name += number;
             actor.IsProperName = true;
             return actor;

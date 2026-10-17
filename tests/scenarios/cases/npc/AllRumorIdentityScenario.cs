@@ -28,8 +28,10 @@ static class AllRumorIdentityScenario
                 {
                     string archive = definition.Describe(new ObservedEvent(definition.Id, 0,
                         fact.SubjectName, fact.OtherName, false, subjectId: fact.SubjectId, otherId: fact.OtherId));
-                    if (archive.Contains("Secret Subject"))
+                    if (archive.Contains("Secret Subject") && definition.Id != "base_theft")
                         Check.Equal(true, report.Contains("a biker"), definition.Id + ": report uses the subject's faction description");
+                    if (definition.Id == "base_theft")
+                        Check.Equal(false, report.Contains("a biker"), "unidentified base thief stays anonymous");
                     if (archive.Contains("Secret Other"))
                         Check.Equal(true, report.Contains("a police officer"), definition.Id + ": report uses the other actor's faction description");
                 }

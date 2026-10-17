@@ -399,6 +399,16 @@ namespace djack.RogueSurvivor.Engine
         Map m_CurrentMap;
         [OptionalField]
         ResidentRecords m_ResidentRecords;
+        [OptionalField]
+        Guid m_RadioHostId;
+        [OptionalField]
+        int m_RadioDropTurn;
+        [OptionalField]
+        int m_RadioDropX, m_RadioDropY;
+        [OptionalField]
+        RadioProgram[] m_RadioPrograms;
+        [OptionalField]
+        Dictionary<long, RadioProgram> m_RadioProgramHistory;
         #endregion
 
         #region Scoring
@@ -423,6 +433,8 @@ namespace djack.RogueSurvivor.Engine
 
         [OptionalField]
         DiceRoller m_GameDiceRoller;
+        [OptionalField]
+        DiceRoller m_IdentityDiceRoller;
 
         [NonSerialized]
         static Session s_TheSession;
@@ -458,6 +470,14 @@ namespace djack.RogueSurvivor.Engine
             set { if (value == null) throw new ArgumentNullException("value"); value.Validate(); m_GamePreset = value.Copy(); }
         }
 
+        public Guid RadioHostId { get { return m_RadioHostId; } set { m_RadioHostId = value; } }
+        public int RadioDropTurn { get { return m_RadioDropTurn; } set { m_RadioDropTurn = value; } }
+        public Point RadioDropDistrict { get { return new Point(m_RadioDropX, m_RadioDropY); }
+            set { m_RadioDropX = value.X; m_RadioDropY = value.Y; } }
+        internal RadioProgram[] RadioPrograms { get { return m_RadioPrograms ?? (m_RadioPrograms = new RadioProgram[4]); } }
+        internal Dictionary<long, RadioProgram> RadioProgramHistory { get { return m_RadioProgramHistory ??
+            (m_RadioProgramHistory = new Dictionary<long, RadioProgram>()); } }
+
         public ModStamp[] Mods
         {
             get { return m_Mods ?? new ModStamp[0]; }
@@ -474,6 +494,11 @@ namespace djack.RogueSurvivor.Engine
                 return m_GameDiceRoller;
             }
         }
+        internal DiceRoller IdentityDiceRoller
+        {
+            get { return m_IdentityDiceRoller ?? (m_IdentityDiceRoller =
+                new DiceRoller(unchecked(Seed ^ 0x4D9B2371))); }
+        }
         public WorldTime WorldTime { get { return m_WorldTime; } }
         public ResidentRecords ResidentRecords
         {
@@ -481,8 +506,27 @@ namespace djack.RogueSurvivor.Engine
         }
         internal void RestoreResidentRecords(ResidentRecords records) { m_ResidentRecords = records; }
         long m_PersonalityEventSequence;
+        [ThreadStatic] static Session s_EventIdSession;
+        [ThreadStatic] static long s_EventIdNext, s_EventIdEnd;
+        internal long ReservePersonalityEventIds(int count)
+        { return System.Threading.Interlocked.Add(ref m_PersonalityEventSequence, count) - count + 1; }
+        internal void WithPersonalityEventIds(long first, int count, Action action)
+        {
+            Session previousSession = s_EventIdSession;
+            long previousNext = s_EventIdNext, previousEnd = s_EventIdEnd;
+            s_EventIdSession = this; s_EventIdNext = first; s_EventIdEnd = first + count;
+            try { action(); }
+            finally { s_EventIdSession = previousSession; s_EventIdNext = previousNext; s_EventIdEnd = previousEnd; }
+        }
         internal long NextPersonalityEventId()
-        { return System.Threading.Interlocked.Increment(ref m_PersonalityEventSequence); }
+        {
+            if (s_EventIdSession == this)
+            {
+                if (s_EventIdNext == s_EventIdEnd) throw new InvalidOperationException("district event ID range exhausted");
+                return s_EventIdNext++;
+            }
+            return System.Threading.Interlocked.Increment(ref m_PersonalityEventSequence);
+        }
         public int LastTurnPlayerActed { get; set; }
 
         public World World
@@ -565,11 +609,16 @@ namespace djack.RogueSurvivor.Engine
             GameMode = GameMode.GM_STANDARD;
             this.Seed = (int)DateTime.UtcNow.TimeOfDay.Ticks;
             m_GameDiceRoller = new DiceRoller(Seed);
+            m_IdentityDiceRoller = null;
             m_CurrentMap = null;
             m_Scoring = new Scoring();
             m_World = null;
             m_ResidentRecords = new ResidentRecords();
             m_NpcDirector = null;
+            m_RadioHostId = Guid.Empty;
+            m_RadioDropTurn = 0;
+            m_RadioPrograms = null;
+            m_RadioProgramHistory = null;
             m_PersonalityEventSequence = 0;
             m_WorldTime = new WorldTime();
             this.LastTurnPlayerActed = 0;

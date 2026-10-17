@@ -37,7 +37,7 @@ static class PersonalityPlayerRelationshipsSaveScenario
                 Session.Restore(loaded);
                 foreach (MemoryInstance pending in savedPlayer.Personality.Memories)
                     map.LocalTime.TurnCounter = Math.Max(map.LocalTime.TurnCounter, pending.ResolveTurn);
-                PersonalitySystem.ResolveDue(world.Game, map);
+                PersonalityScenarioResolution.PreferFirstOutcome(world.Game, map);
                 BinarySaveStore.Save(path, Session.Get);
                 Session reloaded = BinarySaveStore.Load<Session>(path);
                 Map finalMap = reloaded.World[0, 0].EntryMap;

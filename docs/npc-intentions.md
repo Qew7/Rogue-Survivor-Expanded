@@ -1,5 +1,9 @@
 # Trait-driven NPC intentions
 
+This document owns goal admission, selection, planning and shared tasks. For
+the whole social model and the distinction between relationship feeling and
+effective attitude, see the [social-system overview](npc-social-systems.md).
+
 The system connects local knowledge, perceived events and survival needs to
 persistent intentions, generated desired states, action plans and real AI actions. It includes
 personal goals, spoken reports, searches, shared group episodes and a bounded story director. It uses
@@ -112,11 +116,20 @@ change the preferred result as well as the method used to achieve it.
 | Justice | Communicate a boundary about known unaddressed misconduct | Law, courage and grievance |
 | Belonging | Restore contact with a known missing group member | Group preference, compassion, attachment and feeling |
 | Autonomy | Leave membership under a known dangerous leader | Group preference, courage and leader trust |
-| Medical care | Meet another person's known treatment need | Compassion, attachment and known attitude |
-| Commitment | Deliver the resource personally promised | Law, compassion and known attitude |
-| Restitution | Compensate an outstanding food loss | Law, compassion and known attitude |
+| Medical care | Meet another person's known treatment need | Compassion, attachment, human-life value, faction care and social feeling |
+| Commitment | Deliver the resource personally promised | Law, compassion and social feeling |
+| Restitution | Compensate an outstanding food loss | Law, compassion and social feeling |
 | Possession | Recover a valued model or specific owned item | Supplies and an established preference |
 | Home | Return to a personally attached threatened place | Group preference and supplies |
+
+Here **social feeling** means `NpcMotivation.Feeling`: personal, group and
+faction feeling plus a contribution from trust, fear and grievance. It does not
+apply `PersonalitySystem.Attitude`'s cap for a serious known violation. Goal
+sources separately test eligibility, such as whether a known recipient is a
+combat enemy. Thus a promise or emergency care can remain motivated when a
+new group invitation is refused. See [concrete social outcomes](npc-social-stories.md).
+The Justice goal communicates a boundary; the spoken warning alone does not
+clear the violation. Its later reply and the warner's assessment decide that.
 
 These values and game actions are authored mechanics. Subjects, current
 shortfalls, importance, competing desires and action sequences are bound during
@@ -207,7 +220,8 @@ known situation can motivate a timid person to withdraw and a lawful person to
 approach and communicate a boundary. A warning changes no HP and creates no
 invented attack or crime.
 
-Attitude is the existing combined person/group/faction assessment. During
+Here attitude is the effective person/group/faction assessment, including the
+cap for a confidently known serious violation. During
 pursuit, target attitude and position are refreshed only when the target is
 visible. Current traits still change motivation when the target is unseen.
 Departure additionally subtracts a leader-trust penalty from 0 to 60.
@@ -369,6 +383,12 @@ hierarchy and membership; cycles are rejected. Relationships address the group
 identity and display its observed leader's name. A witnessed succession updates
 the label while preserving previous group experiences.
 
+For an ordinary invitation, the civilian controller first filters currently
+visible candidates through `CanActorTakeLead`: both sides must accept each
+other's effective `Attitude`, and membership, faction and other game rules must
+allow joining. It then tries candidates in descending attitude order; distance
+breaks ties. A nearby ineligible person does not block a farther suitable one.
+
 When an NPC leader dies, an eligible living, awake follower who can see the
 leader may succeed them. Group preference, supply preference and leadership
 capacity rank candidates; actor identity breaks ties. Surviving followers retain
@@ -387,7 +407,12 @@ by another participant can satisfy delivery. The gift retains the ordinary
 donor reserve
 and inventory rules. The coordinator has a separate waiting goal: delivery out
 of sight does not remotely tell them it succeeded. It completes when the
-collector reports back. A departed member cannot execute a stale group task.
+collector reports back.
+The leader does not start a routine group food plan for a member they
+confidently regard as a serious offender; urgent group medicine may still be
+proposed. If the beneficiary leaves the group, the collector abandons the
+assigned food or medicine goal and the group plan fails. Independent and
+faction goals retain their own eligibility rules.
 
 Shelter plans require a remembered recent threat and a previously visited indoor
 place. Members who hear the proposal independently accept according to their
@@ -449,6 +474,21 @@ record contains identifiers and location snapshots, not references to its
 actors. The director's pacing and reservation state survives saves. Terminal
 stories, plans and intentions clear their map references, and starting a new
 Session clears its old director.
+
+When several recent tellable facts share a story ID, NPCs tell up to ten as
+one chronological report. Household radios and four station-specific portable
+receivers carry the same hourly program for their station throughout the city.
+Survivor Network covers all stories, Military Dispatch covers military events
+and announces the district of an actual supply flight one or two days ahead,
+Local Calls covers requests and aid, and Gang Frequency covers violence and
+raids. A listener's known earlier episode raises the chance of hearing its
+continuation, while unknown stories remain eligible. Every station also airs
+short themed interludes and reports from other cities; the city's seed chooses
+one disputed account of the virus's origin. Radio reports teach individual
+facts as hearsay; relationship and traits determine any sanity change.
+Receivers on the map can be pushed and tuned by bumping them, and their sound
+draws nearby zombies. The survivor station broadcasts from a single underground
+studio in a business district and falls silent when its host dies.
 
 ## Generating plans from desired states
 
@@ -583,6 +623,7 @@ Composition and long-run scenarios: `npc/operator-composition`,
 `npc/residence-interest-expiry`, `npc/interest-save`,
 `npc/intimidation-response`, `npc/reconciliation`,
 `npc/reconciliation-refusal`, `npc/group-expulsion`,
+`npc/recruitment-by-relationship`, `npc/group-recruitment-after-expulsion`,
 `npc/group-protection`, `npc/group-medicine`, `npc/faction-medicine`,
 `npc/retaliation` and `npc/long-run-0/1/2`. These exercise registered
 extensions, real consequences, invalid boundaries, save continuation and

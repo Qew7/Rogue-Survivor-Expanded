@@ -32,7 +32,7 @@ static class PlannerBarterScenario
             MemoryInstance memory = null; foreach (MemoryInstance pending in buyer.Personality.Memories) if (pending.Id == "traded_for_food") memory = pending;
             Check.Equal(true, memory != null, "completed exchange creates a personal experience");
             int charisma = buyer.Sheet.SkillTable.GetSkillLevel((int)Skills.IDs.CHARISMATIC);
-            world.Map.LocalTime.TurnCounter = memory.ResolveTurn; PersonalitySystem.ResolveDue(world.Game, world.Map);
+            world.Map.LocalTime.TurnCounter = memory.ResolveTurn; PersonalityScenarioResolution.PreferFirstOutcome(world.Game, world.Map);
             Check.Equal(charisma + 1, buyer.Sheet.SkillTable.GetSkillLevel((int)Skills.IDs.CHARISMATIC), "negotiation memory resolves to a real skill outcome");
         });
     }

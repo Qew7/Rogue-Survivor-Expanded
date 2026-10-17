@@ -57,7 +57,7 @@ static class RecordsHistoryScenario
             Check.Equal(true, personal.Entries.Count > 40, "reader history retains events beyond journal eviction");
             world.Map.LocalTime.TurnCounter = resident.Personality.Memories[0].ResolveTurn;
             Session.Get.WorldTime.TurnCounter = world.Map.LocalTime.TurnCounter;
-            PersonalitySystem.ResolveDue(world.Game, world.Map);
+            PersonalityScenarioResolution.PreferFirstOutcome(world.Game, world.Map);
             Check.Equal(true, resident.Personality.HasTrait("selfless"), "real resolution grants advanced trait");
             world.Game.KillActor(null, resident, "scenario", false);
             Check.Equal(false, world.Map.HasActor(resident), "dead resident leaves live actor collection");

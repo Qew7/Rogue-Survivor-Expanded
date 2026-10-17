@@ -465,6 +465,11 @@ namespace djack.RogueSurvivor.Engine
             // set activity & state.
             actor.Activity = Activity.SLEEPING;
             actor.IsSleeping = true;
+            if (actor == m_Player)
+            {
+                m_RestStartTurn = m_Session.WorldTime.TurnCounter;
+                m_RestStartTicks = System.Diagnostics.Stopwatch.GetTimestamp();
+            }
         }
 
         public void DoWakeUp(Actor actor)

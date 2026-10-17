@@ -69,7 +69,7 @@ namespace djack.RogueSurvivor.Engine
         }
 
         // alpha10.1 messages modified for autosave
-        // alpha10.1 start & stop sim thread here instead of caller
+        // Save a stable world; input handling can resume background work afterward.
         void DoSaveGame(string saveName, bool isAutoSave = false)
         {
             StopSimThread(false);  // alpha10.1
@@ -90,10 +90,9 @@ namespace djack.RogueSurvivor.Engine
             RedrawPlayScreen();
             m_UI.UI_Repaint();
 
-            StartSimThread();  // alpha10.1
         }
 
-        // alpha10.1 start & stop sim thread here instead of caller
+        // Pause background work before replacing the session.
         bool DoLoadGame(string saveName)
         {
             StopSimThread(false); // alpha10.1
@@ -111,7 +110,6 @@ namespace djack.RogueSurvivor.Engine
                     m_Session.WorldTime.TurnCounter, Color.Red));
             }
 
-            StartSimThread();  // alpha10.1
             return loaded;
         }
 
@@ -186,6 +184,8 @@ namespace djack.RogueSurvivor.Engine
             }
 
             RefreshPlayer();
+            m_BackgroundDistantSimulationActive = m_Session.GamePreset != null &&
+                !m_Session.GamePreset.DisableDistantSimulationDuringRest;
 
             AddMessage(new Message("LOADING DONE.", m_Session.WorldTime.TurnCounter, Color.Yellow));
             AddMessage(new Message("Welcome back to Rogue Survivor!", m_Session.WorldTime.TurnCounter, Color.LightGreen));

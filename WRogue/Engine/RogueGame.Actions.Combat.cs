@@ -173,11 +173,14 @@ namespace djack.RogueSurvivor.Engine
         }
 #endif
 
-        public void DoMeleeAttack(Actor attacker, Actor defender, NpcIntent npcGoal = null)
+        public void DoMeleeAttack(Actor attacker, Actor defender, NpcIntent npcGoal = null,
+            long causeId = 0, string storyId = null)
         {
             // An unexpected attack is significant; routine blows in an ongoing fight are not.
             if (!m_Rules.AreEnemies(attacker, defender))
-                ReportPersonalityEvent("attack", defender, attacker, defender.Location.Map, defender.Location.Position, causeId: npcGoal == null ? 0 : npcGoal.CauseId, storyId: npcGoal == null ? null : npcGoal.StoryId);
+                ReportPersonalityEvent("attack", defender, attacker, defender.Location.Map, defender.Location.Position,
+                    causeId: npcGoal == null ? causeId : npcGoal.CauseId,
+                    storyId: npcGoal == null ? storyId : npcGoal.StoryId);
             // set activiy & target.
             attacker.Activity = Activity.FIGHTING;
             attacker.TargetActor = defender;
@@ -301,11 +304,8 @@ namespace djack.RogueSurvivor.Engine
                         {
                             if (attacker.Model.Abilities.CanZombifyKilled && !defender.Model.Abilities.IsUndead && m_Rules.RollChance(s_Options.ZombificationChance))
                             {
-                                if (defender.IsPlayer)
-                                {
-                                    // remove player corpse.
-                                    defender.Location.Map.TryRemoveCorpseOf(defender);
-                                }
+                                // The risen actor replaces the victim's corpse, including for NPCs.
+                                defender.Location.Map.TryRemoveCorpseOf(defender);
                                 // add new zombie.
                                 Zombify(attacker, defender, false);
 

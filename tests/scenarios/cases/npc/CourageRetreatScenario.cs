@@ -47,7 +47,7 @@ static class CourageRetreatScenario
             Check.Equal(true, fact != null && fact.OtherId == zombie.PersonalityIdentity, "witness retains the threat attribution");
             int due = owner.Personality.Memories.First(m => m.Id == "frightened_escape").ResolveTurn;
             world.Map.LocalTime.TurnCounter = due;
-            PersonalitySystem.ResolveDue(world.Game, world.Map);
+            PersonalityScenarioResolution.PreferFirstOutcome(world.Game, world.Map);
             Check.Equal(true, owner.Personality.HasTrait("traumatized"), "timid survivor can develop lasting trauma");
             Check.Equal(false, owner.Personality.Memories.Any(m => m.Id == "frightened_escape"), "resolved fear no longer suppresses current resolve");
             Check.Equal(false, NpcCourage.CanFear(zombie), "undead never use civilian fear");

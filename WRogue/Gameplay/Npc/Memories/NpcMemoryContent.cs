@@ -8,7 +8,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
     {
         public static void Received(NpcCatalogBuilder catalog, string id, string name, string kind, int feeling, string trait)
         {
-            catalog.Memory(new MemoryDefinition(id, name, 2, 5,
+            catalog.Memory(new MemoryDefinition(id, name, 2, 2,
                 new[] { new MemoryTrigger(kind, (a, e) => a == e.Other) },
                 new MemoryOutcome(null, trait, trait == null ? (Skills.IDs?)Skills.IDs.CHARISMATIC : null),
                 new MemoryOutcome(null, null, Skills.IDs.STRONG_PSYCHE))

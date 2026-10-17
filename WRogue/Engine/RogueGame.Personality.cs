@@ -7,12 +7,48 @@ namespace djack.RogueSurvivor.Engine
 {
     partial class RogueGame
     {
-        void ReportPersonalityEvent(string kind, Actor subject, Actor other, Map map, Point position,
-            bool otherIsDirect = true, bool subjectIsDirect = true, long causeId = 0, string storyId = null)
+        long ReportPersonalityEvent(string kind, Actor subject, Actor other, Map map, Point position,
+            bool otherIsDirect = true, bool subjectIsDirect = true, long causeId = 0, string storyId = null,
+            string resource = null)
         {
-            if (map == null || !m_Session.GamePreset.NpcPersonalitiesEnabled) return;
-            PersonalitySystem.Report(this, new SignificantEvent(kind, subject, other,
-                map, position, map.LocalTime.TurnCounter, otherIsDirect, subjectIsDirect, causeId: causeId, storyId: storyId));
+            if (map == null || !m_Session.GamePreset.NpcPersonalitiesEnabled) return 0;
+            SignificantEvent reported = new SignificantEvent(kind, subject, other,
+                map, position, map.LocalTime.TurnCounter, otherIsDirect, subjectIsDirect, causeId: causeId, storyId: storyId)
+                { Resource = resource };
+            PersonalitySystem.Report(this, reported);
+            return reported.Id;
+        }
+
+        void DiscoverXpdBaseLosses(Actor actor)
+        {
+            if (m_Session == null || !m_Session.GamePreset.NpcPersonalitiesEnabled || actor.IsDead || actor.IsSleeping ||
+                actor.Model.Abilities.IsUndead || !actor.Model.Abilities.IsIntelligent ||
+                actor.Personality == null && !actor.IsPlayer) return;
+            Map map = actor.Location.Map;
+            if (!map.HasUnnoticedBaseLosses) return;
+            XpdBase claim = map.XpdBaseAt(actor.Location.Position);
+            if (claim == null || !claim.Owns(actor)) return;
+            IList<XpdBaseLoss> losses = claim.UnnoticedLosses;
+            if (losses == null) return;
+            for (int i = losses.Count - 1; i >= 0; i--)
+            {
+                XpdBaseLoss loss = losses[i];
+                if (!NpcKnowledgeSystem.Visible(this, actor, new Location(map, loss.Position))) continue;
+                if (loss.Victim != null)
+                {
+                    List<Corpse> corpses = map.GetCorpsesAt(loss.Position);
+                    if (corpses == null || !corpses.Exists(c => c.DeadGuy == loss.Victim))
+                    { map.RemoveUnnoticedBaseLoss(claim, loss); continue; }
+                }
+                map.RemoveUnnoticedBaseLoss(claim, loss);
+                if (loss.Victim != null)
+                    ReportPersonalityEvent("base_raid", actor, loss.Victim, map, loss.Position,
+                        false, true, loss.CauseId, loss.StoryId);
+                else
+                    PersonalitySystem.Report(this, new SignificantEvent("base_robbed", actor, null,
+                        map, loss.Position, map.LocalTime.TurnCounter, false, true, loss.CauseId, loss.StoryId)
+                        { Resource = loss.Resource, Units = loss.Units });
+            }
         }
 
         void ReportNewPersonalityArrivals(Map map, HashSet<Actor> before, string kind)

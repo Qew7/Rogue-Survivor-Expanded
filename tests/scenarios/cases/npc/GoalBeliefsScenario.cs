@@ -18,16 +18,17 @@ static class GoalBeliefsScenario
             var report = new NpcFact { EventId = 600, Kind = "attack", SubjectId = victim.PersonalityIdentity, OtherId = target.PersonalityIdentity,
                 SubjectName = victim.UnmodifiedName, OtherName = target.UnmodifiedName, Place = victim.Location, Confidence = 60 };
             speaker.Personality.Knowledge.Learn(report);
+            int reportedConfidence = NpcKnowledgeSystem.ReportConfidence(owner, speaker, report);
             Check.Equal(true, world.Try(new ActionNpcTell(speaker, world.Game, owner, report)), "real conversation delivers uncertain evidence");
             NpcKnownPerson known = owner.Personality.Knowledge.Person(target.PersonalityIdentity);
-            Check.Equal(40, known.ViolationConfidence, "uncertainty belongs to the wrongdoing claim");
+            Check.Equal(reportedConfidence, known.ViolationConfidence, "uncertainty belongs to the wrongdoing claim");
             Check.Equal(null, NpcIntentSupport.Intent(owner, "confront_reported_aggressor"), "weak confidence lowers expected benefit below admission");
             target.MarkAsAgressorOf(owner);
             owner.MarkAsSelfDefenceFrom(target);
             var sight = new LOSSensor(LOSSensor.SensingFilter.ACTORS);
             NpcKnowledgeSystem.Perceive(world.Game, owner, sight.Sense(world.Game, owner));
             Check.Equal(100, known.ThreatConfidence, "current hostile presence establishes credible danger");
-            Check.Equal(40, known.ViolationConfidence, "seeing the person does not confirm their reported crime");
+            Check.Equal(reportedConfidence, known.ViolationConfidence, "seeing the person does not confirm their reported crime");
             target.RemoveAggressorOf(owner);
             owner.RemoveSelfDefenceFrom(target);
             NpcKnowledgeSystem.Perceive(world.Game, owner, sight.Sense(world.Game, owner));
@@ -36,10 +37,10 @@ static class GoalBeliefsScenario
             Check.Equal(true, world.Try(new ActionNpcTell(corroborator, world.Game, owner, stronger)), "another actual source supplies stronger evidence");
             NpcIntentSupport.Turn(world, owner);
             Check.Equal(true, NpcIntentSupport.HasEvent(owner, "confronted"), "credible belief now motivates a real warning");
-            Check.Equal(0, known.Violation, "the communicated boundary addresses the known incident");
+            Check.Equal(100, known.Violation, "warning does not settle the incident before the offender answers");
             owner.Personality.Opinion(speaker.PersonalityIdentity, speaker.UnmodifiedName).AdjustSocial(trust: 100);
             Check.Equal(true, NpcKnowledgeSystem.Hear(world.Game, owner, speaker, stronger), "more trusted retelling updates retained evidence");
-            Check.Equal(0, known.Violation, "retelling an addressed incident does not reopen the same obligation");
+            Check.Equal(100, known.Violation, "retelling does not settle an incident that is still open");
             Check.Equal(false, NpcIntentSupport.HasEvent(owner, "attack"), "reports never fabricate personally witnessed violence");
         });
     }

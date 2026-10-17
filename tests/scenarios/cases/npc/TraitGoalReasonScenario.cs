@@ -17,7 +17,11 @@ static class TraitGoalReasonScenario
                 world.Game.NpcContent.Value(NpcGoalValue.Care),
                 neighbor.PersonalityIdentity, 0, 100, 100, 100, 0);
             string reason = NpcValues.TraitInfluence(helper, goal, world.Game.NpcContent);
-            Check.Equal(true, reason != null && reason.Contains("trait Kind") && reason.Contains("25"),
+            int without = world.Game.NpcContent.Value(NpcGoalValue.Care).Importance(
+                new NpcMotivation(world.Game.NpcContent, helper, neighbor.PersonalityIdentity, "kind"));
+            int contribution = goal.Importance - Math.Max(0, Math.Min(200, without));
+            Check.Equal(true, contribution > 0 && reason != null && reason.Contains("trait Kind") &&
+                reason.Contains("by " + contribution),
                 "reason reports the measured importance contribution of Kind");
             NpcGeneratedGoal unchanged = NpcValues.Evaluate(world.Game.NpcContent, helper,
                 world.Game.NpcContent.Value(NpcGoalValue.Nutrition),

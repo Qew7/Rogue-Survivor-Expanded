@@ -63,7 +63,7 @@ static class BuildingExplorationRumorScenario
             Check.Equal(true, world.Try(new ActionNpcTell(explorer, world.Game, fresh, own)),
                 "the explorer can also tell their own story");
             Check.Equal(true, player.Personality.HeardJournal.Any(e => e.CauseId == own.EventId &&
-                e.Text.Contains("I was involved when")), "self-report keeps participant wording");
+                e.Text.Contains("I explored a building")), "explorer describes their own discovery");
 
             var disabled = GamePreset.BuiltIn(GameMode.GM_STANDARD);
             disabled.NpcPersonalitiesEnabled = false;

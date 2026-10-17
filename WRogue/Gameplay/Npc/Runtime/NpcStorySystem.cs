@@ -71,9 +71,9 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             {
                 if (!NpcIntentSystem.Enabled(follower) || follower.IsSleeping || follower.Location.Map != leader.Location.Map ||
                     !NpcKnowledgeSystem.Visible(game, follower, leader.Location)) continue;
-                int groupBias = PersonalitySystem.Bias(follower, DecisionKind.Group);
+                int groupBias = PersonalitySystem.Bias(follower, NpcPersonalityAxis.Group);
                 if (groupBias < 0) continue;
-                int value = groupBias + PersonalitySystem.Bias(follower, DecisionKind.Supplies) + game.Rules.ActorMaxFollowers(follower);
+                int value = groupBias + PersonalitySystem.Bias(follower, NpcPersonalityAxis.Supplies) + game.Rules.ActorMaxFollowers(follower);
                 if (best == null || value > score || (value == score && follower.PersonalityIdentity.CompareTo(best.PersonalityIdentity) < 0)) { best = follower; score = value; }
             }
             if (best == null) return;
@@ -90,14 +90,14 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 int grievance = opinion == null ? 0 : opinion.Grievance;
                 int feeling = opinion == null ? 0 : opinion.Feeling;
                 if (follower.TrustInLeader < -60 || grievance >= 40 ||
-                    PersonalitySystem.Bias(follower, DecisionKind.Group) < -15 && feeling < 0)
+                    PersonalitySystem.Bias(follower, NpcPersonalityAxis.Group) < -15 && feeling < 0)
                     dissenters.Add(follower);
             }
             if (dissenters.Count == 0) return;
             Actor rival = null; int rivalScore = Int32.MinValue;
             foreach (Actor dissenter in dissenters)
             {
-                int value = game.Rules.ActorMaxFollowers(dissenter) + PersonalitySystem.Bias(dissenter, DecisionKind.Group);
+                int value = game.Rules.ActorMaxFollowers(dissenter) + PersonalitySystem.Bias(dissenter, NpcPersonalityAxis.Group);
                 if (rival == null || value > rivalScore || value == rivalScore && dissenter.PersonalityIdentity.CompareTo(rival.PersonalityIdentity) < 0)
                 { rival = dissenter; rivalScore = value; }
             }

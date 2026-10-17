@@ -27,7 +27,7 @@ static class PromiseDeadlineScenario
             int memories = relation.Memories.Count; NpcIntentSystem.AdvanceClock(world.Game, world.Map);
             Check.Equal(memories, relation.Memories.Count, "deadline is assessed only once");
             MemoryInstance memory = null; foreach (MemoryInstance candidate in relation.Memories) if (candidate.Id == "promise_broken") memory = candidate;
-            world.Map.LocalTime.TurnCounter = memory.ResolveTurn; PersonalitySystem.ResolveDue(world.Game, world.Map);
+            world.Map.LocalTime.TurnCounter = memory.ResolveTurn; PersonalityScenarioResolution.PreferFirstOutcome(world.Game, world.Map);
             Check.Equal(true, recipient.Personality.HasTrait("disillusioned"), "lasting experience changes later decision weights");
             Check.Equal(true, relation.Memories.Contains(memory), "resolved disappointment remains in relationship history");
         });

@@ -17,10 +17,10 @@ static class ServiceOpenAgreementsScenario
                 Patient = Guid.NewGuid(), Shelter = owner.Location, DueTurn = 1 };
             owner.Personality.RememberService(agreement);
             Check.Equal(true, owner.Personality.HasOpenServiceAgreements, "offered service enters the active set");
-            NpcServices.Expire(world.Game.NpcContent, owner);
+            NpcServices.Expire(world.Game, owner);
             Check.Equal(true, owner.Personality.HasOpenServiceAgreements, "unexpired offer stays open");
             world.Map.LocalTime.TurnCounter = 1;
-            NpcServices.Expire(world.Game.NpcContent, owner);
+            NpcServices.Expire(world.Game, owner);
             Check.Equal(NpcServiceStatus.Refused, owner.Personality.ServiceAgreements[0].Status,
                 "map deadline closes an unanswered offer");
             Check.Equal(false, owner.Personality.HasOpenServiceAgreements,

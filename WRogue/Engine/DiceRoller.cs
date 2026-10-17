@@ -8,6 +8,32 @@ namespace djack.RogueSurvivor.Engine
     [Serializable]
     class DiceRoller
     {
+        [ThreadStatic] static DiceRoller s_OverrideTarget;
+        internal static bool IsOverridden { get { return s_OverrideTarget != null; } }
+
+        // A simulated district owns its random stream even when another district
+        // runs on a different worker. Keep the override scoped to this thread.
+        internal static void WithOverride(DiceRoller target, Action action)
+        {
+            DiceRoller previousTarget = s_OverrideTarget;
+            s_OverrideTarget = target;
+            try { action(); }
+            finally { s_OverrideTarget = previousTarget; }
+        }
+        internal static Guid NewGuid()
+        {
+            DiceRoller roller = s_OverrideTarget;
+            if (roller == null)
+                roller = Session.Get.IdentityDiceRoller;
+            if (roller == null) return Guid.NewGuid();
+            byte[] bytes = new byte[16];
+            for (int part = 0; part < 4; part++)
+            {
+                uint value = (uint)roller.Roll(Int32.MinValue, Int32.MaxValue);
+                for (int offset = 0; offset < 4; offset++) bytes[part * 4 + offset] = (byte)(value >> (offset * 8));
+            }
+            return new Guid(bytes);
+        }
         #region Fields
         uint m_State;
         #endregion
@@ -40,6 +66,8 @@ namespace djack.RogueSurvivor.Engine
         {
             // sanity check, fixes crashes.
             if (max <= min) return min;
+            if (s_OverrideTarget != null && !ReferenceEquals(this, s_OverrideTarget))
+                return s_OverrideTarget.Roll(min, max);
 
             lock (this)
             {
@@ -53,6 +81,8 @@ namespace djack.RogueSurvivor.Engine
 
         public float RollFloat()
         {
+            if (s_OverrideTarget != null && !ReferenceEquals(this, s_OverrideTarget))
+                return s_OverrideTarget.RollFloat();
             lock (this)
             {
                 return (NextUInt() >> 8) / 16777216f;

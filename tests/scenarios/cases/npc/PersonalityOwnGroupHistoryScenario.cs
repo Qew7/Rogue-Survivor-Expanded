@@ -38,7 +38,7 @@ static class PersonalityOwnGroupHistoryScenario
             Check.Equal(0, unrelated.Personality.Memories.Count, "outside witness does not acquire another group's base loss");
             world.Map.LocalTime.TurnCounter = Math.Max(leader.Personality.Memories[0].ResolveTurn,
                 follower.Personality.Memories[0].ResolveTurn);
-            PersonalitySystem.ResolveDue(world.Game, world.Map);
+            PersonalityScenarioResolution.PreferFirstOutcome(world.Game, world.Map);
             Check.Equal(0, leader.Personality.Memories.Count, "leader resolves their loss");
             Check.Equal(1, own.Memories.Count, "resolved group loss remains in history");
             string path = Path.Combine(Path.GetTempPath(), "own-group-" + Guid.NewGuid().ToString("N"));

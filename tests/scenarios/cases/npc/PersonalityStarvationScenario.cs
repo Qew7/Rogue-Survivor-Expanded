@@ -36,7 +36,7 @@ static class PersonalityStarvationScenario
                 "continuing to starve does not flood the event journal");
             int due = survivor.Personality.Memories[0].ResolveTurn;
             world.Map.LocalTime.TurnCounter = due;
-            PersonalitySystem.ResolveDue(world.Game, world.Map);
+            PersonalityScenarioResolution.PreferFirstOutcome(world.Game, world.Map);
             Check.Equal(true, survivor.Personality.HasTrait("cannibal"),
                 "pragmatic survivor resolves starvation into cannibal trait");
         });

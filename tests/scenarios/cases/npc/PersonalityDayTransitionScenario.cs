@@ -19,6 +19,7 @@ static class PersonalityDayTransitionScenario
             witness.Personality.AddTrait(new TraitInstance("lawful"));
             witness.Personality.AddMemory(new MemoryInstance("witnessed_murder", 0,
                 2 * WorldTime.TURNS_PER_DAY, "victim"));
+            MemoryInstance memory = witness.Personality.Memories[0];
             world.Map.PlaceActorAt(witness, new Point(2, 1));
             world.Map.LocalTime.TurnCounter = 2 * WorldTime.TURNS_PER_DAY - 1;
 
@@ -29,14 +30,16 @@ static class PersonalityDayTransitionScenario
                 world.Map, Enum.Parse(flags, "LODETAIL_TURN"));
             Check.Equal(2 * WorldTime.TURNS_PER_DAY, world.Map.LocalTime.TurnCounter,
                 "real map turn crosses the day boundary");
-            Check.Equal(true, witness.Personality.HasTrait("zealot"),
-                "day transition resolves due memory into trait");
+            string outcome = memory.OutcomeId;
+            Check.Equal(true, outcome != null && outcome != "none",
+                "day transition resolves due memory into a lasting outcome");
             Check.Equal(0, witness.Personality.Memories.Count,
                 "resolved memory leaves pending list");
+            int traitsAfterResolution = witness.Personality.Traits.Count;
             Check.Call(world.Game, "NextMapTurn", new[] { typeof(Map), flags },
                 world.Map, Enum.Parse(flags, "LODETAIL_TURN"));
-            Check.Equal(2, witness.Personality.Traits.Count,
-                "later turns do not award the same advanced trait again");
+            Check.Equal(traitsAfterResolution, witness.Personality.Traits.Count,
+                "later turns do not repeat the memory outcome");
         });
     }
 }

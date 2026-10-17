@@ -25,7 +25,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             var e = new ObservedEvent(kind, turn, name, owner.UnmodifiedName, true, subjectId: subject, otherId: owner.PersonalityIdentity,
                 eventId: id, causeId: cause, storyId: story);
             owner.Personality.Remember(e); Session.Get.ResidentRecords.Observe(owner, e);
-            owner.Personality.Knowledge.Learn(new NpcFact { EventId = id, Kind = kind, SubjectId = subject, SubjectName = name,
+            owner.Personality.Knowledge.Learn(new NpcFact { EventId = id, CauseId = cause, Kind = kind, SubjectId = subject, SubjectName = name,
                 OtherId = owner.PersonalityIdentity, OtherName = owner.UnmodifiedName, EventTurn = turn, LearnedTurn = turn,
                 Confidence = 80, Source = NpcKnowledgeSource.Inferred, SourceId = owner.PersonalityIdentity, Place = owner.Location,
                 StoryId = story, NoSubjectLocation = true });

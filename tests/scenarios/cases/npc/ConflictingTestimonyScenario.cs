@@ -30,6 +30,7 @@ static class ConflictingTestimonyScenario
             Actor newcomer = NpcIntentSupport.Actor(world, "newcomer", 4, 1, "trusting");
             RelationshipRecord prior = witness.Personality.Person(thief.PersonalityIdentity);
             int before = prior == null ? 0 : prior.Grievance;
+            int sanityBefore = witness.Sanity;
             Check.Equal(true, world.Try(new ActionNpcTell(thief, world.Game, newcomer, claim)), "thief actually tells the claim");
             Check.Equal(true, newcomer.Personality.Knowledge.Facts.Exists(f => f.Kind == "claimed_permission"), "newcomer hears a claim");
             Check.Equal(true, witness.Personality.Knowledge.Facts.Exists(f => f.Kind == "claimed_permission"), "eyewitness hears the claim");
@@ -38,6 +39,10 @@ static class ConflictingTestimonyScenario
             Check.Equal(true, witness.Personality.Person(thief.PersonalityIdentity).Grievance > before,
                 "eyewitness distrusts the contradicting speaker");
             Check.Equal(true, NpcIntentSupport.HasEvent(witness, "false_testimony_exposed"), "private contradiction is recorded");
+            Check.Equal(sanityBefore - 1, witness.Sanity,
+                "a refuted claim briefly disturbs the eyewitness");
+            Check.Equal(0, witness.Personality.ExperienceValue(NpcPersonalityAxis.MessageTrust),
+                "a refuted claim does not immediately rewrite lasting trust");
             Check.Equal(true, witness.Personality.Memories.Any(m => m.Id == "false_testimony_exposed"),
                 "contradiction becomes a personal memory");
             Actor third = NpcIntentSupport.Actor(world, "third listener", 5, 1, "trusting");

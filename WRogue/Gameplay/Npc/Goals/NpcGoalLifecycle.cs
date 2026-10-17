@@ -8,10 +8,18 @@ namespace djack.RogueSurvivor.Gameplay.Personality
     {
         public static void Apply(Actor owner, List<NpcGoalCandidate> candidates, NpcContentCatalog catalog, bool maintain)
         {
-            foreach (NpcIntent intent in owner.Personality.Intents)
+            Action<string, long> profile = RogueGame.ProfileSimulationPhase;
+            long started = profile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
+            foreach (NpcIntent intent in owner.Personality.IntentList)
                 if (!intent.Finished && intent.Generated != null)
                 {
-                    NpcGoalCandidate fresh = candidates.Find(c => c.State.Key == intent.Generated.Key);
+                    NpcGoalCandidate fresh = null;
+                    if (candidates.Count != 0)
+                    {
+                        string key = intent.Generated.Key;
+                        for (int i = 0; i < candidates.Count; i++)
+                            if (candidates[i].State.Key == key) { fresh = candidates[i]; break; }
+                    }
                     if (fresh != null)
                     {
                         if (intent.Plan != null && intent.Generated.Current != fresh.State.Current)
@@ -20,7 +28,9 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                     }
                     else { intent.Generated.Utility = 0; intent.Generated.EvaluatedTurn = owner.Location.Map.LocalTime.TurnCounter; }
                 }
-            foreach (NpcIntent intent in owner.Personality.Intents)
+            if (profile != null) profile("apply refresh", System.Diagnostics.Stopwatch.GetTimestamp() - started);
+            started = profile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
+            foreach (NpcIntent intent in owner.Personality.IntentList)
                 if (maintain && !intent.Finished && intent.Generated != null && intent.Generated.Utility < NpcGoalGenerator.MinimumUtility)
                 {
                     NpcValueDefinition value = catalog.Value(intent.Generated);
@@ -28,8 +38,23 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                     NpcIntentSystem.Finish(catalog, owner, intent, satisfied ? NpcIntentStatus.Completed : NpcIntentStatus.Abandoned,
                         satisfied ? "observed that the desired state was satisfied" : "motivation changed");
                 }
-            candidates.Sort((a, b) => { int score = b.State.Utility.CompareTo(a.State.Utility);
-                return score != 0 ? score : String.CompareOrdinal(a.State.Key, b.State.Key); });
+            if (profile != null) profile("apply stale", System.Diagnostics.Stopwatch.GetTimestamp() - started);
+            started = profile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
+            int viableCandidates = 0;
+            foreach (NpcGoalCandidate candidate in candidates)
+                if (candidate.State.Utility >= NpcGoalGenerator.MinimumUtility) viableCandidates++;
+            if (viableCandidates == 0)
+            {
+                if (profile != null) profile("apply no viable", System.Diagnostics.Stopwatch.GetTimestamp() - started);
+                return;
+            }
+            if (viableCandidates == 1)
+                candidates.Sort((a, b) => b.State.Utility.CompareTo(a.State.Utility));
+            else
+                candidates.Sort((a, b) => { int score = b.State.Utility.CompareTo(a.State.Utility);
+                    return score != 0 ? score : String.CompareOrdinal(a.State.Key, b.State.Key); });
+            if (profile != null) profile("apply sort", System.Diagnostics.Stopwatch.GetTimestamp() - started);
+            started = profile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
             foreach (NpcGoalCandidate candidate in candidates)
             {
                 if (candidate.State.Utility < NpcGoalGenerator.MinimumUtility || HasEquivalent(owner, candidate, catalog)) continue;
@@ -39,7 +64,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 {
                     if (!maintain) continue;
                     NpcIntent weakest = null; int active = 0;
-                    foreach (NpcIntent intent in owner.Personality.Intents)
+                    foreach (NpcIntent intent in owner.Personality.IntentList)
                         if (!intent.Finished)
                         {
                             active++;
@@ -52,10 +77,11 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 }
                 Start(catalog, owner, candidate.Target, candidate.Capability, candidate.Cause, candidate.Story, candidate.State);
             }
+            if (profile != null) profile("apply admit", System.Diagnostics.Stopwatch.GetTimestamp() - started);
         }
         static bool HasEquivalent(Actor owner, NpcGoalCandidate candidate, NpcContentCatalog catalog)
         {
-            foreach (NpcIntent intent in owner.Personality.Intents)
+            foreach (NpcIntent intent in owner.Personality.IntentList)
                 if (!intent.Finished && ((intent.Generated != null && intent.Generated.Key == candidate.State.Key) ||
                     (intent.DefinitionId == candidate.Capability.Id && intent.TargetId == candidate.Target.Id && (intent.Generated == null || candidate.State.Resource == null)) ||
                     (catalog.Value(candidate.State) != null && Array.IndexOf(catalog.Value(candidate.State).EquivalentCapabilities, intent.DefinitionId) >= 0))) return true;

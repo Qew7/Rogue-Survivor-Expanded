@@ -38,7 +38,7 @@ static class PersonalityWorldExperiencesScenario
                 Check.Equal(true, witness.Personality.Faction(experience.Faction) != null,
                     "even supplies and story discoveries retain faction attribution");
                 world.Map.LocalTime.TurnCounter = witness.Personality.Memories[0].ResolveTurn;
-                PersonalitySystem.ResolveDue(world.Game, world.Map);
+                PersonalityScenarioResolution.PreferFirstOutcome(world.Game, world.Map);
                 Check.Equal(true, witness.Personality.HasTrait(experience.Trait), "event awards its acquired trait");
                 Check.Equal(before + experience.Amount, PersonalitySystem.Bias(witness, experience.Axis),
                     "special trait changes the real AI decision bias");

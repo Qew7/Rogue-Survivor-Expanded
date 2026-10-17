@@ -349,9 +349,9 @@ namespace djack.RogueSurvivor.Gameplay.AI
 
             // Okay:
             // - Anything else.
-            int preference = PersonalitySystem.Bias(m_Actor, DecisionKind.Item, it);
+            int preference = PersonalitySystem.Bias(m_Actor, NpcPersonalityAxis.Item, it);
             if (it is ItemFood || it is ItemMedicine || it is ItemAmmo)
-                preference += PersonalitySystem.Bias(m_Actor, DecisionKind.Supplies);
+                preference += PersonalitySystem.Bias(m_Actor, NpcPersonalityAxis.Supplies);
             if (preference >= 10) return ItemRating.NEED;
             if (preference <= -10 && !(it is ItemFood) && !(it is ItemMedicine))
                 return ItemRating.JUNK;
@@ -420,7 +420,7 @@ namespace djack.RogueSurvivor.Gameplay.AI
             ItemRating askedRating = RateItem(game, asked, true);
             // compare ratings with matrix (lazy way of doing lots of if/else)
             TradeRating rating = TRADE_RATING_MATRIX[(int)offeredRating, (int)askedRating];
-            int willingness = PersonalitySystem.Bias(m_Actor, DecisionKind.Trade) + attitude;
+            int willingness = PersonalitySystem.Bias(m_Actor, NpcPersonalityAxis.Trade) + attitude;
             if (rating == TradeRating.MAYBE && willingness >= 20) return TradeRating.ACCEPT;
             if (rating == TradeRating.MAYBE && willingness <= -20) return TradeRating.REFUSE;
             return rating;
@@ -440,6 +440,13 @@ namespace djack.RogueSurvivor.Gameplay.AI
         /// <see cref="RateTradeOffer(RogueGame, Actor, Item, Item)"/>
         protected TradeRating RateItemExhange(RogueGame game, Item oIt, Item nIt)
         {
+            if (oIt is ItemTracker)
+            {
+                int oldBatteries = ((ItemTracker)oIt).Batteries;
+                int newBatteries = ((ItemTracker)nIt).Batteries;
+                return newBatteries > oldBatteries ? TradeRating.ACCEPT :
+                    newBatteries < oldBatteries ? TradeRating.REFUSE : TradeRating.MAYBE;
+            }
             // first reject/accept if one is junk and not the other
             ItemRating oRating = RateItem(game, oIt, true);
             ItemRating nRating = RateItem(game, nIt, false);

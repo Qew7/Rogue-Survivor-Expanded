@@ -23,9 +23,12 @@ namespace djack.RogueSurvivor.Data
         }
         public void Link(NpcStory child, string parent, Actor owner, long cause)
         {
-            if (parent == null || parent == child.Id || child.Parents.Contains(parent) || Ancestor(parent, child.Id)) return;
-            if (child.Parents.Count < 8) child.Parents.Add(parent);
-            Session.Get.ResidentRecords.LinkStory(owner, parent, child.Id, cause);
+            lock (this)
+            {
+                if (parent == null || parent == child.Id || child.Parents.Contains(parent) || Ancestor(parent, child.Id)) return;
+                if (child.Parents.Count < 8) child.Parents.Add(parent);
+                Session.Get.ResidentRecords.LinkStory(owner, parent, child.Id, cause);
+            }
         }
         bool Ancestor(string from, string target)
         {

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using djack.RogueSurvivor.Data;
 namespace djack.RogueSurvivor.Gameplay.Personality
 {
@@ -40,6 +41,15 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             string participants = fact.ReportSubject == null ? fact.ReportOther :
                 fact.ReportOther == null ? fact.ReportSubject : fact.ReportSubject + " and " + fact.ReportOther;
             return "there was " + fact.Kind.Replace('_', ' ') + (participants == null ? "" : " involving " + participants);
+        }
+
+        public static string RequestGroup(IList<NpcFact> facts, string resource)
+        {
+            var names = new List<string>();
+            foreach (NpcFact fact in facts) names.Add(fact.ReportOther);
+            string recipients = names.Count == 2 ? names[0] + " and " + names[1] :
+                String.Join(", ", names.GetRange(0, names.Count - 1).ToArray()) + ", and " + names[names.Count - 1];
+            return facts[0].ReportSubject + " asked " + recipients + " for " + resource;
         }
     }
 }

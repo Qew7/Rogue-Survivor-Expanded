@@ -291,6 +291,14 @@ namespace djack.RogueSurvivor.UI
             m_RogueForm.UI_PostMouseButtons(e.Button);
         }
 
+        protected override void OnMouseWheel(MouseEventArgs e)
+        {
+            if (e is HandledMouseEventArgs) ((HandledMouseEventArgs)e).Handled = true;
+            base.OnMouseWheel(e);
+            MouseLocation = e.Location;
+            m_RogueForm.UI_PostMouseWheelDelta(e.Delta);
+        }
+
         protected override void OnSizeChanged(EventArgs e)
         {
             base.OnSizeChanged(e);

@@ -74,7 +74,6 @@ static class AIAndGenerationBenchmarks
         {
             foreach (Point destination in destinations) route.CanReach(destination);
         });
-        CachePotentialBenchmarks.Run(world, observer, sight, route, destinations);
 
         BaseTownGenerator.Parameters parameters = BaseTownGenerator.DEFAULT_PARAMS;
         parameters.MapWidth = 40;

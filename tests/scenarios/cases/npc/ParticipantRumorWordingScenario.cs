@@ -33,8 +33,8 @@ static class ParticipantRumorWordingScenario
             Actor listener = NpcIntentSupport.Actor(world, "listener", 3, 1);
             Check.Equal(true, world.Try(new ActionNpcTell(actor, world.Game, listener, participantFact)),
                 "participant tells the event");
-            Check.Equal(true, Heard(player, "I was involved when", participantFact.EventId),
-                "participant does not claim to be a witness of their own action");
+            Check.Equal(true, Heard(player, "I shared food with", participantFact.EventId),
+                "participant describes their own action in first person");
             Actor second = NpcIntentSupport.Actor(world, "second listener", 0, 2);
             Check.Equal(true, world.Try(new ActionNpcTell(witness, world.Game, second, witnessFact)),
                 "witness tells the same event");

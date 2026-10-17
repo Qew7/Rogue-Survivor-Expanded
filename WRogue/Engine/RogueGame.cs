@@ -23,6 +23,8 @@ namespace djack.RogueSurvivor.Engine
 {
     partial class RogueGame
     {
+        internal static Action<string, long> ProfileSimulationPhase;
+
         #region Constants
         public const int MAP_MAX_HEIGHT = 100;
         public const int MAP_MAX_WIDTH = 100;
@@ -491,7 +493,12 @@ namespace djack.RogueSurvivor.Engine
 
         bool m_IsPlayerLongWait;
         bool m_IsPlayerLongWaitForcedStop;
+        bool m_PlayerWaitedThisTurn;
         WorldTime m_PlayerLongWaitEnd;
+
+        long m_RestProgressLastDraw;
+        int m_RestStartTurn;
+        long m_RestStartTicks;
 
         DistrictSimulationWorker m_SimWorker;
         #endregion
@@ -875,11 +882,16 @@ namespace djack.RogueSurvivor.Engine
         /// <returns></returns>
         Actor Zombify(Actor zombifier, Actor deadVictim, bool isStartingGame)
         {
-            Actor newZombie = m_TownGenerator.MakeZombified(zombifier, deadVictim, isStartingGame ? 0 : deadVictim.Location.Map.LocalTime.TurnCounter);
+            return Zombify(zombifier, deadVictim, isStartingGame, deadVictim.Location);
+        }
+
+        Actor Zombify(Actor zombifier, Actor deadVictim, bool isStartingGame, Location spawn)
+        {
+            Actor newZombie = m_TownGenerator.MakeZombified(zombifier, deadVictim, isStartingGame ? 0 : spawn.Map.LocalTime.TurnCounter);
 
             // add to map.
             if (!isStartingGame)
-                deadVictim.Location.Map.PlaceActorAt(newZombie, deadVictim.Location.Position);
+                spawn.Map.PlaceActorAt(newZombie, spawn.Position);
             if (!isStartingGame)
                 ReportPersonalityEvent("zombified", newZombie, deadVictim,
                     newZombie.Location.Map, newZombie.Location.Position);
@@ -975,7 +987,7 @@ namespace djack.RogueSurvivor.Engine
         /// <param name="valuesOnNewLine">false: draw values on same line as entries; true: draw values on new lines</param>
         /// <param param name="rightPadding">x padding to add when displaying values</param>
         /// <returns></returns>
-        void DrawMenuOrOptions(int currentChoice, Color entriesColor, string[] entries, Color valuesColor, string[] values, int gx, ref int gy, bool valuesOnNewLine = false, int rightPadding = 256)
+        void DrawMenuOrOptions(int currentChoice, Color entriesColor, string[] entries, Color valuesColor, string[] values, int gx, ref int gy, bool valuesOnNewLine = false, int rightPadding = 256, bool[] available = null)
         {
             int right = gx + rightPadding;
 
@@ -983,15 +995,17 @@ namespace djack.RogueSurvivor.Engine
                 throw new ArgumentException("values length!= choices length");
 
             // display.
-            Color entriesShadowColor = Color.FromArgb(entriesColor.A, entriesColor.R / 2, entriesColor.G / 2, entriesColor.B / 2);
             for (int i = 0; i < entries.Length; i++)
             {
+                Color entryColor = available != null && !available[i] ? Color.Gray : entriesColor;
+                Color valueColor = available != null && !available[i] ? Color.Gray : valuesColor;
+                Color entryShadowColor = Color.FromArgb(entryColor.A, entryColor.R / 2, entryColor.G / 2, entryColor.B / 2);
                 string choiceStr;
                 if (i == currentChoice)
                     choiceStr = String.Format("---> {0}", entries[i]);
                 else
                     choiceStr = String.Format("     {0}", entries[i]);
-                m_UI.UI_DrawStringBold(entriesColor, choiceStr, gx, gy, entriesShadowColor);
+                m_UI.UI_DrawStringBold(entryColor, choiceStr, gx, gy, entryShadowColor);
 
                 if (values != null)
                 {
@@ -1004,11 +1018,11 @@ namespace djack.RogueSurvivor.Engine
                     if (valuesOnNewLine)
                     {
                         gy += BOLD_LINE_SPACING;
-                        m_UI.UI_DrawStringBold(valuesColor, valueStr, gx + right, gy);
+                        m_UI.UI_DrawStringBold(valueColor, valueStr, gx + right, gy);
                     }
                     else
                     {
-                        m_UI.UI_DrawStringBold(valuesColor, valueStr, right, gy);
+                        m_UI.UI_DrawStringBold(valueColor, valueStr, right, gy);
                     }
                 }
 

@@ -2,6 +2,7 @@ using System.Drawing;
 using djack.RogueSurvivor.Data;
 using djack.RogueSurvivor.Engine;
 using djack.RogueSurvivor.Engine.Items;
+using djack.RogueSurvivor.Gameplay.Personality;
 
 static class StoryGroupSuppliesScenario
 {
@@ -14,6 +15,7 @@ static class StoryGroupSuppliesScenario
             Actor leader = NpcIntentSupport.Actor(world, "leader", 1, 1, "loyal", "organized");
             Actor hungry = NpcIntentSupport.Actor(world, "hungry", 2, 1, "sociable");
             Actor collector = NpcIntentSupport.Actor(world, "collector", 1, 2, "generous", "scavenger");
+            leader.Personality.ChangeExperience(NpcPersonalityAxis.Scarcity, -30);
             leader.AddFollower(hungry); leader.AddFollower(collector);
             hungry.FoodPoints = Session.Get.GamePreset.HungerPoints - 1;
             NpcIntentSupport.Turn(world, hungry);

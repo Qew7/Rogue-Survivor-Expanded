@@ -545,15 +545,20 @@ namespace djack.RogueSurvivor.Engine
                 if (lightBonus == 0)
                 {
                     Map map = actor.Location.Map;
-                    if (map.HasAnyAdjacentInMap(actor.Location.Position,
-                        (pt) =>
+                    Point position = actor.Location.Position;
+                    if (map.IsInBounds(position))
+                        foreach (Direction direction in Direction.COMPASS)
                         {
-                            Actor other = map.GetActorAt(pt);
-                            if (other == null)
-                                return false;
-                            return HasLightOnEquipped(other);
-                        }))
-                        lightBonus = 1;
+                            Point offset = direction.Vector;
+                            int x = position.X + offset.X, y = position.Y + offset.Y;
+                            if (!map.IsInBounds(x, y)) continue;
+                            Actor other = map.GetActorAt(x, y);
+                            if (other != null && HasLightOnEquipped(other))
+                            {
+                                lightBonus = 1;
+                                break;
+                            }
+                        }
                 }
                 FOV += lightBonus;
             }
@@ -617,13 +622,13 @@ namespace djack.RogueSurvivor.Engine
         {
             int skillBonus = SKILL_CHARISMATIC_TRUST_BONUS * actor.Sheet.SkillTable.GetSkillLevel((int)Skills.IDs.CHARISMATIC);
             int personality = Gameplay.Personality.PersonalitySystem.Bias(actor,
-                Gameplay.Personality.DecisionKind.Group) / 5;
+                NpcPersonalityAxis.Group) / 5;
             personality += Gameplay.Personality.PersonalitySystem.Bias(actor,
-                Gameplay.Personality.DecisionKind.Compassion) / 5;
+                NpcPersonalityAxis.Compassion) / 5;
             if (follower != null)
             {
                 personality += Gameplay.Personality.PersonalitySystem.Bias(follower,
-                    Gameplay.Personality.DecisionKind.Group) / 5;
+                    NpcPersonalityAxis.Group) / 5;
                 personality += Gameplay.Personality.PersonalitySystem.Attitude(follower, actor) / 10;
             }
             int change = TRUST_BASE_INCREASE + skillBonus + personality;

@@ -937,6 +937,12 @@ namespace djack.RogueSurvivor.Gameplay.Generators
             return new ItemTracker(m_Game.GameItems.POLICE_RADIO);
         }
 
+        public ItemRadio MakeItemBroadcastRadio(int station)
+        {
+            if (station < 0 || station > 3) throw new ArgumentOutOfRangeException("station");
+            return new ItemRadio((ItemTrackerModel)m_Game.GameItems[(GameItems.IDs)((int)GameItems.IDs.RADIO_SURVIVORS + station)]);
+        }
+
         public Item MakeItemGrenade()
         {
             return new ItemGrenade(m_Game.GameItems.GRENADE, m_Game.GameItems.GRENADE_PRIMED)

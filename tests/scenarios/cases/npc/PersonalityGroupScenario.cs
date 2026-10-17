@@ -40,7 +40,7 @@ static class PersonalityGroupScenario
             foreach (MemoryInstance memory in recruit.Personality.Memories)
                 due = System.Math.Max(due, memory.ResolveTurn);
             world.Map.LocalTime.TurnCounter = due;
-            PersonalitySystem.ResolveDue(world.Game, world.Map);
+            PersonalityScenarioResolution.PreferFirstOutcome(world.Game, world.Map);
             Check.Equal(true, recruit.Personality.HasTrait("selfless"),
                 "generous recruit resolves group experience into selflessness");
             Check.Equal(true, recruit.Personality.HasTrait("mistrustful"),

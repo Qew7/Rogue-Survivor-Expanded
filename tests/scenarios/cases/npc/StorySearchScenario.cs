@@ -38,7 +38,7 @@ static class StorySearchScenario
             Check.Equal(true, NpcIntentSupport.HasEvent(companion, "reunited"), "found person experiences the encounter");
             MemoryInstance memory = null;
             foreach (MemoryInstance pending in seeker.Personality.Memories) if (pending.Id == "found_a_companion") memory = pending;
-            annex.LocalTime.TurnCounter = memory.ResolveTurn; PersonalitySystem.ResolveDue(world.Game, annex);
+            annex.LocalTime.TurnCounter = memory.ResolveTurn; PersonalityScenarioResolution.PreferFirstOutcome(world.Game, annex);
             Check.Equal(true, seeker.Personality.HasTrait("protector"), "protective searcher develops the memory outcome");
         });
     }

@@ -33,7 +33,7 @@ static class PersonalitySpecialTraitAiScenario
                 "unresolved violence leaves an unfamiliar soldier above the trade rejection threshold");
             foreach (MemoryInstance memory in speaker.Personality.Memories)
                 world.Map.LocalTime.TurnCounter = Math.Max(world.Map.LocalTime.TurnCounter, memory.ResolveTurn);
-            PersonalitySystem.ResolveDue(world.Game, world.Map);
+            PersonalityScenarioResolution.PreferFirstOutcome(world.Game, world.Map);
             Check.Equal(true, speaker.Personality.HasTrait("wary_army"), "violence develops distrust of Army");
             Check.Equal(-43, PersonalitySystem.Attitude(speaker, soldier),
                 "acquired faction trait pushes other soldiers below the trade rejection threshold");
@@ -61,7 +61,7 @@ static class PersonalitySpecialTraitAiScenario
                 world.Map, speaker.Location.Position, world.Map.LocalTime.TurnCounter));
             foreach (MemoryInstance memory in speaker.Personality.Memories)
                 world.Map.LocalTime.TurnCounter = Math.Max(world.Map.LocalTime.TurnCounter, memory.ResolveTurn);
-            PersonalitySystem.ResolveDue(world.Game, world.Map);
+            PersonalityScenarioResolution.PreferFirstOutcome(world.Game, world.Map);
             Check.Equal(false, speaker.Personality.HasTrait("friend_army"),
                 "a conflicting faction trait cannot be awarded even with its prerequisite");
             RelationshipRecord relationship = speaker.Personality.Person(soldier.PersonalityIdentity);

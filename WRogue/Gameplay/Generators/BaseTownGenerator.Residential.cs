@@ -426,6 +426,29 @@ namespace djack.RogueSurvivor.Gameplay.Generators
             #region
             map.AddZone(MakeUniqueZone("Housing", b.BuildingRect, BuildingKind.House));
             MakeWalkwayZones(map, b);
+            Point? roomRadio = null;
+            if (m_DiceRoller.RollChance(24))
+                MapObjectPlaceInGoodPosition(map, b.InsideRect,
+                    pt => map.GetTileAt(pt).IsInside && map.GetTileAt(pt).Model.IsWalkable &&
+                        map.GetMapObjectAt(pt) == null && map.GetExitAt(pt) == null &&
+                        roomsList.Exists(room => room.Contains(pt)),
+                    m_DiceRoller, pt => { roomRadio = pt; return new RadioReceiver(GameImages.OBJ_RADIO); });
+            if (m_DiceRoller.RollChance(16))
+            {
+                bool placedRadio = false;
+                DoForEachTile(map, b.InsideRect, pt =>
+                {
+                    if (!placedRadio && map.GetTileAt(pt).IsInside && map.IsWalkable(pt.X, pt.Y) &&
+                        map.GetMapObjectAt(pt) == null && map.GetExitAt(pt) == null &&
+                        roomsList.Exists(room => room.Contains(pt) &&
+                            (!roomRadio.HasValue || !room.Contains(roomRadio.Value))) &&
+                        m_DiceRoller.RollChance(4))
+                    {
+                        map.DropItemAt(MakeItemBroadcastRadio(m_DiceRoller.Roll(0, 4)), pt);
+                        placedRadio = true;
+                    }
+                });
+            }
             #endregion
 
             // Done

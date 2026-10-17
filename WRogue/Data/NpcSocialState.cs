@@ -118,6 +118,13 @@ namespace djack.RogueSurvivor.Data
             if (Permissions.Count >= 16) Permissions.RemoveAt(0);
             Permissions.Add(permission);
         }
+        public int AvailablePermission(Guid grantor, Location place, string resource, int turn)
+        {
+            if (m_Permissions == null) return 0;
+            NpcSupplyPermission permission = m_Permissions.Find(p => p.Grantor == grantor && p.Place == place &&
+                p.Resource == resource && p.ExpiresTurn >= turn && p.Units > 0);
+            return permission == null ? 0 : permission.Units;
+        }
         public long UsePermission(Guid grantor, Location place, string resource, int turn, int requestedUnits, out int permittedUnits)
         {
             permittedUnits = 0;

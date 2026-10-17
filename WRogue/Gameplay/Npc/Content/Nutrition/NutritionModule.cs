@@ -20,8 +20,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             catalog.Value(new NpcValueDefinition("Nutrition", "Have usable food", NpcGoalValue.Nutrition, m => 70, true, RequestFoodId)
                 { EquivalentCapabilities = new[] { RequestFoodId, ObtainFoodId } });
             var obtain = new NpcIntentDefinition(ObtainFoodId, "Obtain usable food",
-            NpcIntentMethod.ObtainFood, 35, 20, 180, 180, 0, new NpcIntentWeight(DecisionKind.Explore, 1),
-            new NpcIntentWeight(DecisionKind.Supplies, 1), new NpcIntentWeight(DecisionKind.Group, -1, 2));
+            NpcIntentMethod.ObtainFood, 35, 20, 180, 180, 0, new NpcIntentWeight(NpcPersonalityAxis.Explore, 1),
+            new NpcIntentWeight(NpcPersonalityAxis.Supplies, 1), new NpcIntentWeight(NpcPersonalityAxis.Group, -1, 2));
 
             obtain.Result = (c, g) => (ulong)(NpcPlanFact.Food);
             obtain.Assess = (g, a, i) => !g.Rules.IsActorHungry(a) || NpcFoodSupply.HasFood(g, a) ? new NpcIntentOutcome(NpcIntentStatus.Completed, "observed that usable food is available") : null;
@@ -29,7 +29,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             catalog.Capability(obtain);
             var request = new NpcIntentDefinition(RequestFoodId, "Ask for food",
             NpcIntentMethod.RequestFood, 35, 20, 60, 180, 1,
-            new NpcIntentWeight(DecisionKind.Group, 1), new NpcIntentWeight(DecisionKind.Trade, 1, 2));
+            new NpcIntentWeight(NpcPersonalityAxis.Group, 1), new NpcIntentWeight(NpcPersonalityAxis.Trade, 1, 2));
 
             request.Result = (c, g) => (ulong)(NpcPlanFact.Food);
             request.CompleteEpisodeOnSuccess = true;
@@ -55,7 +55,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                     if (owner.Leader != null && owner.Leader.PersonalityIdentity == person.Id) preference += 10;
                     if (preference > best) { best = preference; listener = person; }
                 }
-                bool social = listener != null && 35 + PersonalitySystem.Bias(owner, DecisionKind.Group) + PersonalitySystem.Bias(owner, DecisionKind.Trade) / 2 >= 20;
+                bool social = listener != null && 35 + PersonalitySystem.Bias(owner, NpcPersonalityAxis.Group) + PersonalitySystem.Bias(owner, NpcPersonalityAxis.Trade) / 2 >= 20;
                 int available = context.HasFood || !context.Hungry ? 100 : 0;
                 offers.Add(social ? listener : self, NpcGoalValue.Nutrition,
                     context.Catalog.Capability(social ? RequestFoodId : ObtainFoodId),
@@ -70,16 +70,19 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             catalog.Operator(new NpcOperatorDefinition("food.take", NpcPlanAction.PickupFood, c => NpcFoodActions.Take(new NpcActionContext(c)), "food", NpcContentActions.FoodUnavailable, archiveText: step => "collect food"));
             catalog.Operator(new NpcOperatorDefinition("food.ask", NpcPlanAction.AskFood, c => NpcFoodActions.Request(new NpcActionContext(c)), archiveText: step => "ask for food"));
             catalog.Operator(new NpcOperatorDefinition("food.trade", NpcPlanAction.BarterFood, c => new ActionNpcBarter(c.Owner, c.Game, c.Goal, c.Step, c.Target), archiveText: step => "trade for food"));
-            catalog.Memory(new MemoryDefinition("traded_for_food", "Exchanged supplies for food", 2, 5,
+            catalog.Memory(new MemoryDefinition("traded_for_food", "Exchanged supplies for food", 2, 2,
                 new[] { new MemoryTrigger("bartered_food", (a, e) => a == e.Subject) },
                 new MemoryOutcome(null, null, Skills.IDs.CHARISMATIC)).Relate(MemoryRelationRole.Other, 2), false);
         }
         void RegisterEvents(NpcCatalogBuilder catalog)
         {
             catalog.OnReport("requested_food", HearNeed);
-            catalog.Event(new NpcEventDefinition("requested_food", NpcRecordCategory.Help, true, e => (e.Subject ?? "Someone") + " asked " + (e.Other ?? "someone") + " for food.", f => f.ReportSubject + " asked " + (f.ReportOther == null ? "" : f.ReportOther + " ") + "for food") { StoryStage = (g, s, e) => "contacted", AudibleReport = true, PlayerReply = new NpcPlayerReply("food", "food_promised", "request_refused", "Yes, I'll bring you food.", "No, I can't help with food.") });
+            catalog.Event(new NpcEventDefinition("requested_food", NpcRecordCategory.Help, true, e => (e.Subject ?? "Someone") + " asked " + (e.Other ?? "someone") + " for food.", f => f.ReportSubject + " asked " + (f.ReportOther == null ? "" : f.ReportOther + " ") + "for food") { StoryStage = (g, s, e) => "contacted", AudibleReport = true, PlayerReply = new NpcPlayerReply("food", "food_promised", "request_refused", "Yes, I'll bring you food.", "No, I can't help with food."), SummarizeReports = f => NpcRecordDescriptions.RequestGroup(f, "food") });
             catalog.Event(new NpcEventDefinition("food_offered", NpcRecordCategory.Help, true, e => (e.Subject ?? "Someone") + " offered to exchange food with " + (e.Other ?? "someone") + ".", null));
-            catalog.Event(new NpcEventDefinition("bartered_food", NpcRecordCategory.Help, true, e => (e.Subject ?? "Someone") + " obtained food by exchanging supplies with " + (e.Other ?? "someone") + ".", null) { ReportActorRole = NpcReportActorRole.Both });
+            catalog.Event(new NpcEventDefinition("bartered_food", NpcRecordCategory.Help, true, e => (e.Subject ?? "Someone") + " obtained food by exchanging supplies with " + (e.Other ?? "someone") + ".", null)
+                { ReportActorRole = NpcReportActorRole.Both,
+                  DescribeSelfReport = (f, speaker) => f.OtherId == speaker.PersonalityIdentity ?
+                      "I traded food with " + (f.ReportSubject ?? "someone") : null });
             catalog.Event(new NpcEventDefinition("supplies_acquired", NpcRecordCategory.None, false, e => (e.Subject ?? "Someone") + " acquired the supplies they were seeking.", null) { StoryStage = (g, s, e) => "acquired" });
             catalog.On("food_offered", NpcObservationPhase.Knowledge, OnKnowledge);
             catalog.On("requested_food", NpcObservationPhase.Knowledge, OnKnowledge);

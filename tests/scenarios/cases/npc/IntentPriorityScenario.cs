@@ -31,7 +31,7 @@ static class IntentPriorityScenario
             world.Map.RemoveActor(zombie);
             MemoryInstance change = new MemoryInstance("killed_person", 0, 50, "victim", false);
             change.RememberEvidence("kill_human", 1); owner.Personality.AddMemory(change);
-            world.Map.LocalTime.TurnCounter = 50; PersonalitySystem.ResolveDue(world.Game, world.Map);
+            world.Map.LocalTime.TurnCounter = 50; PersonalityScenarioResolution.PreferFirstOutcome(world.Game, world.Map);
             Check.Equal(true, owner.Personality.HasTrait("maniac"), "real memory resolution changes personality");
             NpcIntentSystem.Maintain(world.Game, owner, new Actor[0], false, false);
             Check.Equal(NpcIntentStatus.Abandoned, intent.Status, "changed traits revise motivation even when target is unseen");

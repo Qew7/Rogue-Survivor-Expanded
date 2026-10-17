@@ -10,7 +10,7 @@ static class CustomCatalogAssignedGoalScenario
         public void Register(NpcCatalogBuilder catalog)
         {
             catalog.Trait(new TraitDefinition("module_courage", "Module courage", false, false, null,
-                new TraitEffect(DecisionKind.Courage, 35)));
+                new TraitEffect(NpcPersonalityAxis.Courage, 35)));
         }
     }
 

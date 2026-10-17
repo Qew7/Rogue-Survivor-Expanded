@@ -62,7 +62,8 @@ namespace djack.RogueSurvivor.Data
                     if (reservedActor != Guid.Empty && story.ReservedActor == reservedActor) return false;
                     if (resource.Map != null && story.Resource == resource) return false;
                 }
-                return local < (key.StartsWith("group:", StringComparison.Ordinal) || key.StartsWith("faction:", StringComparison.Ordinal) ? 5 : 4) && total < 16;
+                return local < (key.StartsWith("group:", StringComparison.Ordinal) || key.StartsWith("faction:", StringComparison.Ordinal) ? 5 : 4) &&
+                    (RogueGame.IsParallelRestWorker || total < 16);
             }
         }
         public NpcStory Open(string id, string template, Actor owner, long cause, int deadline,
@@ -77,15 +78,38 @@ namespace djack.RogueSurvivor.Data
                     StartedTurn = turn, Deadline = deadline, Place = owner.Location, Resource = resource, ReservedActor = reservedActor };
                 Stories.Add(story); cooldowns[key] = turn + 180;
                 if (cooldowns.Count > 128) RemoveOldestCooldown();
-                while (Stories.Count > 64)
-                { int index = Stories.FindIndex(s => s.Finished); if (index < 0) break; Stories.RemoveAt(index); }
+                if (!RogueGame.IsParallelRestWorker) CompactFinished();
                 return story;
+            }
+        }
+        public void CompactFinished()
+        {
+            lock (this)
+            {
+                while (Stories.Count > 64)
+                {
+                    int oldest = -1;
+                    for (int i = 0; i < Stories.Count; i++)
+                    {
+                        NpcStory story = Stories[i];
+                        if (!story.Finished) continue;
+                        if (oldest < 0 || story.FinishedTurn < Stories[oldest].FinishedTurn ||
+                            story.FinishedTurn == Stories[oldest].FinishedTurn &&
+                            String.CompareOrdinal(story.Id, Stories[oldest].Id) < 0) oldest = i;
+                    }
+                    if (oldest < 0) break;
+                    Stories.RemoveAt(oldest);
+                }
+                Stories.Sort((a, b) => { int turn = a.StartedTurn.CompareTo(b.StartedTurn);
+                    return turn != 0 ? turn : String.CompareOrdinal(a.Id, b.Id); });
             }
         }
         void RemoveOldestCooldown()
         {
             string key = null; int time = Int32.MaxValue;
-            foreach (var pair in cooldowns) if (pair.Value < time) { key = pair.Key; time = pair.Value; }
+            foreach (var pair in cooldowns)
+                if (pair.Value < time || pair.Value == time && String.CompareOrdinal(pair.Key, key) < 0)
+                { key = pair.Key; time = pair.Value; }
             if (key != null) cooldowns.Remove(key);
         }
         public void Bind(NpcStory story, Actor actor, NpcIntent intent)

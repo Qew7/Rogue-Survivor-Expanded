@@ -8,8 +8,11 @@ namespace djack.RogueSurvivor.Data
     sealed class NpcFact
     {
         public long EventId;
+        [System.Runtime.Serialization.OptionalField] public long CauseId;
         public string Kind, SubjectName, OtherName, StoryId;
         [System.Runtime.Serialization.OptionalField] public string Resource;
+        [System.Runtime.Serialization.OptionalField] public Guid ClaimantGroupId;
+        [System.Runtime.Serialization.OptionalField] public Guid ItemId;
         // The words used by the first observer stay fixed when the fact is retold.
         [System.Runtime.Serialization.OptionalField] public string SubjectReportName;
         [System.Runtime.Serialization.OptionalField] public string OtherReportName;
@@ -26,10 +29,11 @@ namespace djack.RogueSurvivor.Data
         public bool NoSubjectLocation;
         public NpcFact Retell(Guid speaker, int turn, int confidence)
         {
-            return new NpcFact { EventId = EventId, Kind = Kind, SubjectName = SubjectName, OtherName = OtherName,
+            return new NpcFact { EventId = EventId, CauseId = CauseId, Kind = Kind, SubjectName = SubjectName, OtherName = OtherName,
                 SubjectReportName = SubjectReportName, OtherReportName = OtherReportName,
                 SubjectFactionId = SubjectFactionId, OtherFactionId = OtherFactionId,
-                StoryId = StoryId, Resource = Resource, SubjectId = SubjectId, OtherId = OtherId, SourceId = speaker, EventTurn = EventTurn,
+                StoryId = StoryId, Resource = Resource, ClaimantGroupId = ClaimantGroupId, ItemId = ItemId,
+                SubjectId = SubjectId, OtherId = OtherId, SourceId = speaker, EventTurn = EventTurn,
                 LearnedTurn = turn, Confidence = confidence, Hops = Hops + 1, Units = Units, Risk = Risk, Place = Place, Source = NpcKnowledgeSource.Told, NoSubjectLocation = NoSubjectLocation };
         }
     }
@@ -54,6 +58,7 @@ namespace djack.RogueSurvivor.Data
         public Guid GroupId;
         public long MedicalCause;
         public string MedicalStory;
+        [System.Runtime.Serialization.OptionalField] public int NextMedicineRequestTurn;
         public int LossUnits;
         public long LossCause;
         public Location LossPlace;
@@ -82,6 +87,7 @@ namespace djack.RogueSurvivor.Data
         public readonly List<NpcKnownExit> Exits = new List<NpcKnownExit>();
         readonly Dictionary<string, int> told = new Dictionary<string, int>();
         public int NextTalkTurn, NextPlanTurn, Revision;
+        [System.Runtime.Serialization.OptionalField] public int NextMedicineRequestTurn;
         public bool Learn(NpcFact fact)
         {
             for (int i = 0; i < Facts.Count; i++)
@@ -105,11 +111,16 @@ namespace djack.RogueSurvivor.Data
         }
         public NpcKnownPerson See(Actor actor, int turn)
         {
-            NpcKnownPerson person = Person(actor.PersonalityIdentity);
+            NpcKnownPerson person = null;
+            int knownIndex = -1;
+            Guid identity = actor.PersonalityIdentity;
+            for (int i = 0; i < People.Count; i++)
+                if (People[i].Id == identity)
+                { person = People[i]; knownIndex = i; break; }
             if (person == null || person.Place != actor.Location || person.Dead != actor.IsDead) Revision++;
             // Refresh recency before another participant can fill the bounded list.
-            if (person == null) person = new NpcKnownPerson { Id = actor.PersonalityIdentity };
-            else People.Remove(person);
+            if (person == null) person = new NpcKnownPerson { Id = identity };
+            else People.RemoveAt(knownIndex);
             People.Add(person); Trim(People, 32);
             person.Name = actor.UnmodifiedName; person.Place = actor.Location; person.SeenTurn = turn; person.Dead = actor.IsDead;
             person.FactionId = actor.Faction == null ? -1 : actor.Faction.ID;
@@ -139,6 +150,7 @@ namespace djack.RogueSurvivor.Data
                 person.SocialCause = old.SocialCause; person.ReciprocityTurn = old.ReciprocityTurn;
                 person.MedicalNeed = old.MedicalNeed; person.MedicalTurn = old.MedicalTurn; person.MedicalConfidence = old.MedicalConfidence;
                 person.Wounds = old.Wounds; person.MedicalCause = old.MedicalCause; person.MedicalStory = old.MedicalStory;
+                person.NextMedicineRequestTurn = old.NextMedicineRequestTurn;
                 person.FactionId = old.FactionId; person.GroupId = old.GroupId;
                 person.LossUnits = old.LossUnits; person.LossCause = old.LossCause; person.LossPlace = old.LossPlace;
                 People.Remove(old);
@@ -165,6 +177,20 @@ namespace djack.RogueSurvivor.Data
     }
     sealed partial class PersonalityState
     {
+        [System.Runtime.Serialization.OptionalField] int m_LastRadioDropTurn;
+        public int LastRadioDropTurn { get { return m_LastRadioDropTurn; } set { m_LastRadioDropTurn = value; } }
+        [System.Runtime.Serialization.OptionalField] int[] m_LastRadioSlots;
+        public bool FirstRadioHearing(int station, int slot)
+        {
+            if (m_LastRadioSlots == null)
+            {
+                m_LastRadioSlots = new int[4];
+                for (int i = 0; i < m_LastRadioSlots.Length; i++) m_LastRadioSlots[i] = -1;
+            }
+            if (m_LastRadioSlots[station] == slot) return false;
+            m_LastRadioSlots[station] = slot;
+            return true;
+        }
         NpcKnowledge m_Knowledge;
         public NpcKnowledge Knowledge { get { return m_Knowledge ?? (m_Knowledge = new NpcKnowledge()); } }
         internal bool HasKnowledge { get { return m_Knowledge != null; } }

@@ -43,6 +43,11 @@ Normal saves refresh living NPC snapshots before serialization; the diagnostic
 `SaveSnapshot` entry point preserves existing snapshots without accessing
 model catalogs.
 
+Resident entry IDs used to deduplicate observed events are reconstructed from
+the entries after loading. New archives store string keys only for other entry
+types. Loading an older archive migrates its string event keys on the next
+write; the entries and their deduplication behavior remain intact.
+
 Read Records reads only the archive section and checks its own GZip integrity.
 It requires personalities enabled and does not load maps, activate a Session,
 apply mods, change options, or start simulation. It can therefore read records
@@ -86,11 +91,57 @@ a Session root immediately.
 Numeric model/content IDs and string personality IDs remain stable. Tile,
 actor and item model definitions and personality callbacks are rebuilt from
 content; the save retains their IDs and instance state.
+The optional preset field `DisableDistantSimulationDuringRest` defaults to false
+for existing presets and saves. It is the single background city simulation
+switch: distant districts begin catching up during sleep or waiting and continue
+during play. The older serialized fields `FinishDistantSimulationAfterRest` and
+`ParallelDistantSimulationDuringRest` remain readable but no longer affect
+simulation. The background scheduler uses up to four workers and orders
+districts sharing the same destination entry. Followers choose landing cells outside every
+interdistrict entry point. Each distant district retains its own random stream,
+so an interrupted rest or a save/load continues that district's sequence. The
+session identity stream keeps generated IDs
+reproducible without consuming the gameplay random stream and is saved
+independently.
+`world/parallel-rest-crossings` and `world/parallel-rest-exact-arrivals`
+check the option, random streams, district turns, border arrivals, rumor
+delivery, and save/load.
+Recent hourly radio programs are retained in the session, so a district catching
+up after loading hears the same broadcast already heard elsewhere. Older saves
+without this optional history rebuild a program when first requested.
 
 The graph retains map ownership and exits, local/world clocks and RNG state,
 actor/item positions, corpse references, trap and base ownership, item dropper
 attribution, NPC orders, selected presets/options, and connected base sections.
 Auxiliary map indexes are not serialized and are rebuilt for gameplay.
+`world/rest-simulates-distant-districts` saves after a distant rest turn and
+reloads the district clock, NPC, and rumor learned from another NPC.
+An XPD base optionally keeps up to 32 unseen theft losses or fatal raids with
+their position, source event and story IDs. Theft losses retain resource and
+quantity but no thief identity; a raid retains the killed member's actor link.
+An owner or group member discovers one only after returning to the base and
+seeing the affected cell or the member's corpse.
+Stolen item instances retain the original victim group's stable identity, the
+leader's identity and name snapshot, and the theft event and story IDs. Inventory
+stacking keeps stolen goods from different thefts and clean goods separate.
+The marker survives dropping, corpse loot, gifts, trades and save/load; a later
+find or transfer can add a fact to the original theft story without storing a
+long-lived actor reference on the item. Stolen-goods facts retain the claimant
+group and item IDs as well, so members can recognize a retold loss after the
+original leader is out of sight. The optional per-item found flag prevents a
+second discovery after the goods move or a witness forgets the first report.
+The flag follows stack merges and splits; ownership provenance remains for
+later handoffs. `items/stolen-goods-discovery-once` checks this state.
+
+Radio receivers retain their tuning state, and portable receivers retain their
+station, power state and batteries. The Session retains the survivor station
+host's actor identity and the district and due turn of one scheduled military
+drop. Its four current hourly programs retain their text, source and facts so
+receivers remain synchronized after loading. Each listener retains the last
+forecast and the last hourly slot per station they heard, preventing repeated
+knowledge and sanity effects. The player's journal retains the broadcast text.
+Radio noise targets are transient and are restored by the next
+broadcast after loading.
 
 Personality state retains traits, pending memories, bounded observations,
 evidence turns, persistent actor identities, and person/group/faction
@@ -99,6 +150,27 @@ several relationships; it is stored once and remains in those histories after
 resolution, with its outcome and turn. Player relationships retain their own
 experienced/witnessed events and do not expose another NPC's private memory
 during gameplay.
+
+The five NPC disposition axes store only their accumulated experience offsets
+in an optional `PersonalityState` array, ordered human life, care circle,
+message trust, scarcity, patience. A four-element array from an earlier save
+supplies zero patience experience and grows on the first change. The faction
+baseline, current trait effects and temporary hunger, carried food, sleep and sanity modifiers
+are recalculated after loading. Immediate event reactions change the existing
+recoverable sanity value; resolved memories can write lasting disposition
+experience offsets. Older saves deserialize
+without the array and start with zero experience offsets. Players receive no
+disposition scores or resolution effects. `NpcPersonalityAxis` keeps these
+experience slots at numeric values 0–4; decision-only axes have negative
+values and are never stored in that array. NPC personalities also optionally
+store bounded frustration and the last turn it changed. Old saves start at
+zero; frustration fades lazily as map turns pass. A saved outburst retains its
+cause and story through the existing reaction and event fields. New memories
+have a two-day deadline;
+older pending memories resolve at their stored deadline or two days after their
+start, whichever is earlier. Resolved memory IDs distinguish gained traits,
+removed traits, skills, and disposition changes. The map's next pending memory
+deadline is transient and rebuilt from its actors after loading.
 
 NPC courage is recalculated from current conditions and has no new saved stat.
 The `frightened_escape` memory, witnessed `fled_in_fear` fact and any reported
@@ -130,7 +202,10 @@ model ID. Generated goal keys distinguish resources, obligations and specific
 items; their supporting event IDs are retained in `Causes`.
 
 Personality state also retains bounded NPC intentions and pending spoken
-reactions, per-template cooldowns and the intention sequence. An intention stores
+reactions, per-template cooldowns and the intention sequence. It also stores
+an optional `NextTradeAttemptTurn`: after an AI-initiated trade is refused,
+that trader waits one in-game hour before initiating another trade. Older saves
+default it to zero; player-initiated trades do not set it. An intention stores
 its stable definition ID, target identity/name snapshot, last known map/position
 and attitude, cause/story IDs, initial priority, start/deadline/finish turns,
 status, retry delay/count, announcement state and outcome. Reactions store target
@@ -183,6 +258,10 @@ retain separate goals under the same execution ID. These keys and remaining
 cooldowns survive loading. Earlier intentions without this optional payload
 retain their original execution/acceptance rules. `RestoreHealth` and medicine
 plan actions are appended without changing existing enum values.
+`NpcKnowledge.NextMedicineRequestTurn` and each known person's
+`NextMedicineRequestTurn` are optional. Existing saves begin without a request
+pause; subsequent medicine requests establish the four-hour global and one-day
+per-person limits, which survive save/load and fresh sightings.
 
 Knowledge retains bounded facts with original event IDs/time, source IDs,
 confidence, retelling hops, named participant IDs and remembered positions;
@@ -289,10 +368,23 @@ Older plan entries contain only action names, so their destinations cannot be
 reconstructed by the archive reader.
 Heard speech uses existing resident entries with kinds `heard_rumor`,
 `heard_request` and `heard_reply`. Only awake intelligent NPCs within audio range
-gain an entry; seeing the speaker is not required. Text, event ID and any known
+can gain an entry; seeing the speaker is not required. A spoken rumor is archived
+for its addressed NPC and for bystanders who learned at least one fact from its
+complete chapter. All audible NPCs still receive the facts, and the player's
+heard journal is unchanged. Other story speech keeps its existing archive rule.
+Speech entries no longer retain a separate string deduplication key; old
+`heard_speech:` keys are discarded on the next save. Text, event ID and any known
 cause/story ID survive archive-only load, under the **Encounters** filter.
+Read Records folds repeated, identical heard-rumor text from the same recorded
+source, about the same event and story, for one resident into its first line
+with a count and the last hearing time. The individual archive entries remain
+available for save/load, search, and event statistics.
 Retained `NpcFact` entries optionally store `SubjectReportName` and
 `OtherReportName`, the observer's original spoken description of each participant.
+They also optionally store `CauseId`, copied from the significant event and
+preserved on retelling. A story uses it for causal wording only when the linked
+earlier event is the immediately preceding visible report. Older saves default
+to zero and retain neutral chronological transitions.
 An acquaintance is named; an unfamiliar visible person is described by faction
 membership. Retelling and save/load preserve these descriptions while stable
 participant IDs remain available for causal records. Faction-only hearsay does
@@ -308,6 +400,9 @@ Unanswered player requests reuse saved `NpcReaction` state and expire after 30
 turns. Its optional `Overheard` field distinguishes requests made to someone
 else from requests addressed to the player. Player promises use the existing
 `NpcCommitment` state and deadline.
+NPC reactions also optionally record whether a reply is an attack. This lets a
+boundary dispute produce a real melee action when its recipient acts, while
+older reactions remain ordinary speech.
 The player's `PersonalityState` also has an optional bounded `HeardJournalEntry`
 list (up to 128 entries), storing turn, speech kind, identified or anonymous
 speaker, text and cause ID. Heard speech is populated only for awake players
@@ -339,6 +434,14 @@ counts another acquisition. This is not a count of distinct physical items.
 An explicitly missing archive can still be rebuilt from available actors,
 corpses and personality records and marked partial. This does not add support
 for old world envelopes or invent discarded events.
+
+Equal resident-entry text is shared in memory within one archive. The archive
+owns a transient string pool that is rebuilt while reading the records section;
+it is not serialized. Old and new saves keep every entry and its original text.
+
+On map reconstruction, radios saved with the old handheld-item image ID switch
+both their visible and remembered image IDs to the dedicated map-object tile.
+Their station, on/off state and location remain unchanged.
 
 ## Verification
 

@@ -125,7 +125,8 @@ namespace djack.RogueSurvivor.Engine
                 "Undead rot speed", "Skeleton spawn weight", "Shambler spawn weight",
                 "Master spawn weight", "Infection: weak at", "Infection: tired at",
                 "Infection: vomiting at", "Infection: bleeding at", "Infection: death at",
-                "Infection symptom rate", "NPC traits and memories", "Other gameplay options"
+                "Infection symptom rate", "NPC traits and memories", "Simulate whole city in background",
+                "Other gameplay options"
             };
 
         static readonly string[] GamePresetDescriptions = {
@@ -163,12 +164,13 @@ namespace djack.RogueSurvivor.Engine
             "Infection percentage at which infection becomes fatal.",
             "Scale how often infection symptoms occur. 100% is the normal rate.",
             "Give living NPCs personality traits and evolving memories.",
+            "Simulate nearby districts with each turn; catch up the rest in the background after sleeping or waiting.\nTurn this off to simulate only the player's district and its eight neighbors.",
             "Open the full gameplay options, including population, events and other rules."
         };
 
         static string[] GamePresetValues(GamePreset preset)
         {
-            return new string[] {
+            string[] values = {
                     "ENTER", "ENTER", "ENTER", OnOff(preset.Bases), OnOff(preset.ImmediateZombification),
                     OnOff(preset.Infection), OnOff(preset.Corpses), OnOff(preset.Evolution),
                     OnOff(preset.Skeletons), OnOff(preset.Shamblers), OnOff(preset.ZombieMasters),
@@ -182,8 +184,29 @@ namespace djack.RogueSurvivor.Engine
                     preset.InfectionWeakThreshold + "%", preset.InfectionTiredThreshold + "%",
                     preset.InfectionVomitThreshold + "%", preset.InfectionBleedThreshold + "%",
                     preset.InfectionDeathThreshold + "%", preset.InfectionEffectRatePercent + "%",
-                    OnOff(preset.NpcPersonalitiesEnabled), "ENTER"
+                    OnOff(preset.NpcPersonalitiesEnabled), OnOff(!preset.DisableDistantSimulationDuringRest),
+                    "ENTER"
             };
+            for (int i = 0; i < values.Length; i++)
+                if (GamePresetRequirement(preset, i) != null) values[i] = "N/A";
+            return values;
+        }
+
+        static string GamePresetRequirement(GamePreset preset, int option)
+        {
+            GameOptions options = preset.HasOptions ? preset.Options : s_Options;
+            switch (option)
+            {
+                case 7: return options.AllowUndeadsEvolution ? null : "undead evolution in Other gameplay options";
+                case 19: case 20: case 21: return preset.Corpses ? null : "Corpses";
+                case 22: case 27: case 28: case 29: case 30: case 31: case 32:
+                    return preset.Infection ? null : "Infection";
+                case 24: return preset.Skeletons ? null : "Skeletons";
+                case 25: return preset.Shamblers ? null : "Shamblers";
+                case 26: return preset.ZombieMasters ? null : "Zombie masters";
+                case 34: return options.IsSimON ? null : "district simulation in Other gameplay options";
+                default: return null;
+            }
         }
 
         bool EditGamePreset(GamePreset preset, GamePresetCollection saved, GameMode origin)
@@ -212,9 +235,10 @@ namespace djack.RogueSurvivor.Engine
                 {
                     int option = first + i;
                     int y = menuTop + i * rowHeight;
-                    m_UI.UI_DrawStringBold(option == descriptionIndex ? Color.Yellow : Color.White,
+                    bool available = GamePresetRequirement(preset, option) == null;
+                    m_UI.UI_DrawStringBold(!available ? Color.Gray : option == descriptionIndex ? Color.Yellow : Color.White,
                         (option == selected ? "---> " : "     ") + labels[option], 0, y);
-                    m_UI.UI_DrawStringBold(Color.LightGreen,
+                    m_UI.UI_DrawStringBold(available ? Color.LightGreen : Color.Gray,
                         values[option] + (option == selected ? " <---" : ""), 340, y);
                 }
                 m_UI.UI_DrawStringBold(Color.Yellow,
@@ -225,6 +249,10 @@ namespace djack.RogueSurvivor.Engine
                 for (int i = 0; i < descriptionLines.Length; i++)
                     m_UI.UI_DrawString(Color.LightGray, descriptionLines[i], 0,
                         descriptionTop + (i + 1) * BOLD_LINE_SPACING);
+                string requirement = GamePresetRequirement(preset, descriptionIndex);
+                if (requirement != null)
+                    m_UI.UI_DrawString(Color.Gray, "Requires " + requirement + ".", 0,
+                        descriptionTop + (descriptionLines.Length + 1) * BOLD_LINE_SPACING);
                 if (error != null)
                     m_UI.UI_DrawString(Color.Red, error, 0, CANVAS_HEIGHT - 3 * BOLD_LINE_SPACING);
                 DrawFootnote(Color.White, "UP/DOWN select, PGUP/PGDN page, LEFT/RIGHT change, ENTER choose, ESC cancels");
@@ -323,7 +351,7 @@ namespace djack.RogueSurvivor.Engine
                     s_Options = preset.HasOptions ? preset.Options : previous;
                     try
                     {
-                        HandleOptions(false, false);
+                        HandleOptions(false, false, preset);
                         m_UI.UI_PeekKey();
                         preset.Options = s_Options;
                         preset.HasOptions = true;
@@ -346,6 +374,7 @@ namespace djack.RogueSurvivor.Engine
 
         static void ChangeGamePreset(GamePreset preset, int selected, int direction)
         {
+            if (GamePresetRequirement(preset, selected + 1) != null) return;
             switch (selected)
             {
                 case 2: preset.Bases = !preset.Bases; break;
@@ -386,6 +415,7 @@ namespace djack.RogueSurvivor.Engine
                 case 30: preset.InfectionDeathThreshold = BoundedStep(preset.InfectionDeathThreshold, 5 * direction, 100); break;
                 case 31: preset.InfectionEffectRatePercent = BoundedStep(preset.InfectionEffectRatePercent, 10 * direction, 500); break;
                 case 32: preset.NpcPersonalitiesEnabled = !preset.NpcPersonalitiesEnabled; break;
+                case 33: preset.DisableDistantSimulationDuringRest = !preset.DisableDistantSimulationDuringRest; break;
             }
         }
 

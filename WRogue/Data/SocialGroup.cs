@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using djack.RogueSurvivor.Engine;
 
 namespace djack.RogueSurvivor.Data
 {
@@ -47,7 +48,7 @@ namespace djack.RogueSurvivor.Data
             lock (this)
             {
                 if (m_SocialGroup != null) return;
-                m_SocialGroup = new SocialGroup(this, m_GroupSequence++ == 0 ? PersonalityIdentity : Guid.NewGuid());
+                m_SocialGroup = new SocialGroup(this, m_GroupSequence++ == 0 ? PersonalityIdentity : DiceRoller.NewGuid());
                 AssignSocialGroup(this, m_SocialGroup);
             }
         }
@@ -76,7 +77,7 @@ namespace djack.RogueSurvivor.Data
         public void TransferSocialGroupTo(Actor successor)
         {
             if (successor == null || successor.IsDead || successor.Leader != this) throw new ArgumentException("Successor must be a living follower.");
-            SocialGroup group = m_SocialGroup ?? new SocialGroup(this, m_GroupSequence++ == 0 ? PersonalityIdentity : Guid.NewGuid());
+            SocialGroup group = m_SocialGroup ?? new SocialGroup(this, m_GroupSequence++ == 0 ? PersonalityIdentity : DiceRoller.NewGuid());
             var survivors = new List<Actor>(m_Followers);
             RemoveAllFollowers(); m_SocialGroup = null;
             successor.m_SocialGroup = group; group.Members.Clear(); group.Members.Add(successor.PersonalityIdentity);

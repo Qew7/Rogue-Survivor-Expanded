@@ -24,6 +24,7 @@ static class RecordsCausesScenario
             world.Map.DropItemAt(food, new Point(3, 1)); world.Game.DoTakeItem(thief, new Point(3, 1), food);
             Check.Equal(true, NpcIntentSupport.HasEvent(owner, "base_theft"), "physical theft supplies a real archived cause");
             thief.RemoveAggressorOf(owner); owner.RemoveSelfDefenceFrom(thief);
+            owner.Inventory.AddAll(new ItemFood(world.Game.GameItems.CANNED_FOOD) { Quantity = 5 });
             world.Map.RemoveActor(owner); world.Place(owner, 3, 0);
             NpcIntentSupport.Turn(world, owner);
             Check.Equal(true, NpcIntentSupport.HasEvent(thief, "restitution_requested"), "owner actually acts on the loss");

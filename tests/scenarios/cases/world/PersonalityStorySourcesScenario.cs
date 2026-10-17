@@ -76,7 +76,7 @@ static class PersonalityStorySourcesScenario
             Check.Equal(0, hidden.Personality.Memories.Count, "wall hides the transformation");
             foreach (MemoryInstance memory in witness.Personality.Memories)
                 world.Map.LocalTime.TurnCounter = Math.Max(world.Map.LocalTime.TurnCounter, memory.ResolveTurn);
-            PersonalitySystem.ResolveDue(world.Game, world.Map);
+            PersonalityScenarioResolution.PreferFirstOutcome(world.Game, world.Map);
             Check.Equal(true, witness.Personality.HasTrait("char_whistleblower"), "discovery develops its special trait");
             Check.Equal(true, witness.Personality.HasTrait("betrayal_scar"), "transformation develops its special trait");
             Check.Equal(1, personal.Memories.Count, "resolved story memory stays in the prisoner's history");

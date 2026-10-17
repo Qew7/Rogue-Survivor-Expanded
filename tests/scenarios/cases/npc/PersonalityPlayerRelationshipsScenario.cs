@@ -56,7 +56,7 @@ static class PersonalityPlayerRelationshipsScenario
                 "duplicate event does not inflate player's relationship");
             foreach (MemoryInstance pending in player.Personality.Memories)
                 world.Map.LocalTime.TurnCounter = Math.Max(world.Map.LocalTime.TurnCounter, pending.ResolveTurn);
-            PersonalitySystem.ResolveDue(world.Game, world.Map);
+            PersonalityScenarioResolution.PreferFirstOutcome(world.Game, world.Map);
             Check.Equal(0, player.Personality.Memories.Count, "player's pending memory resolves");
             Check.Equal(0, player.Personality.Traits.Count, "journal resolution grants no NPC trait");
             Check.Equal("none", player.Personality.Person(attacker.PersonalityIdentity).Memories[0].OutcomeId,

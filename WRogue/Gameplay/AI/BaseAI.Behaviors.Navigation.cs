@@ -683,25 +683,20 @@ namespace djack.RogueSurvivor.Gameplay.AI
                 {
                     Location next = m_Actor.Location + dir;
 
-                    // alpha10.1 bot mode fix
-#if DEBUG
                     if (!next.Map.IsInBounds(next.Position))
-                        return false;
-#endif
+                        return float.NaN;
 
                     if (exploration.HasExplored(next))
-                        return false;
+                        return float.NaN;
 
                     // alpha10.1 dont break stuff to explore
                     ActorAction bumpAction = game.Rules.IsBumpableFor(m_Actor, game, next);
                     if (bumpAction != null && (bumpAction is ActionBreak || bumpAction is ActionBashDoor))
-                        return false;
+                        return float.NaN;
 
-                    return IsValidMoveTowardGoalAction(bumpAction);
-                },
-                (dir) =>
-                {
-                    Location next = m_Actor.Location + dir;
+                    if (!IsValidMoveTowardGoalAction(bumpAction))
+                        return float.NaN;
+
                     Map map = next.Map;
                     Point pos = next.Position;
                     int trapsDamage = isIntelligent ? ComputeTrapsMaxDamageForMe(game, map, pos) : 0;
@@ -751,15 +746,8 @@ namespace djack.RogueSurvivor.Gameplay.AI
                         score += zoneAge;
                     //if (!exploration.HasExplored(map.GetZonesAt(pos.X, pos.Y)))
                     //    score += EXPLORE_ZONES;
-                    // 2nd Prefer unexplored locs.
-                    // alpha10.1 use age to prefer older locs
-                    int locAge = exploration.GetExploredAge(next);
-                    if (locAge == 0)  // unexplored (or expired)
-                        score += EXPLORE_LOCS;
-                    else
-                        score += 2 * locAge;
-                    //if (!exploration.HasExplored(next))
-                    //    score += EXPLORE_LOCS;
+                    // The validity check already excluded explored locations.
+                    score += EXPLORE_LOCS;
                     // 3rd Prefer doors and barricades (doors/windows, pushables)
                     MapObject mapObj = map.GetMapObjectAt(pos);
                     if (mapObj != null && (mapObj.IsMovable || mapObj is DoorWindow))

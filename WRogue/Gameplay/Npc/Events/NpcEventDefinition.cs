@@ -17,6 +17,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public readonly bool RetainFact;
         public readonly Func<ObservedEvent, string> Describe;
         public readonly Func<NpcFact, string> DescribeReport;
+        public Func<NpcFact, Actor, string> DescribeSelfReport;
         public readonly NpcEventFields Required;
         public readonly bool Private;
         public Func<Actor, SignificantEvent, bool> CanWitness, CanObserve;
@@ -25,8 +26,14 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public NpcReportActorRole ReportActorRole = NpcReportActorRole.Subject;
         public NpcSelfReportTone SelfReportTone;
         public Func<Actor, Actor, bool> CanReply;
+        public Func<Actor, SignificantEvent, NpcContentCatalog, int> ImmediateSanity;
+        public Func<Actor, NpcFact, NpcContentCatalog, int> RadioSanity;
         public NpcPlayerReply PlayerReply;
         public Func<djack.RogueSurvivor.Engine.RogueGame, NpcStory, SignificantEvent, string> StoryStage;
+        public Func<IList<NpcFact>, string> SummarizeReports;
+        public bool ReportConclusion;
+        public string[] ReportDisputesKinds;
+        public int ReportPriority;
         readonly List<Action<NpcObservation>>[] observers = {
             new List<Action<NpcObservation>>(), new List<Action<NpcObservation>>(),
             new List<Action<NpcObservation>>(), new List<Action<NpcObservation>>(), new List<Action<NpcObservation>>() };
