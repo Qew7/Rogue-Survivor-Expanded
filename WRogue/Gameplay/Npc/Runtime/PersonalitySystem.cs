@@ -297,7 +297,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                     lifeEvent.Id, lifeEvent.CauseId, lifeEvent.StoryId);
                 NpcRecordDescriptions.Annotate(observation, eventDefinition, game.NpcContent);
                 if (!observer.Personality.Remember(observation)) continue;
-                NpcImmediateEmotion.Observe(game, observer, lifeEvent);
+                NpcImmediateEmotion.Observe(game, observer, lifeEvent, eventDefinition);
                 var eventObservation = new NpcObservation(game, observer, lifeEvent, direct);
                 if (direct && lifeEvent.StoryId != null)
                     foreach (NpcIntent goal in observer.Personality.Intents)

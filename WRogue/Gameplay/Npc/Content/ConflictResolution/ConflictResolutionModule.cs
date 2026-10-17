@@ -8,9 +8,9 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public void Register(NpcCatalogBuilder c)
         {
             c.GoalSource(this);
-            RegisterMechanic(c, "Protection", "Defend someone I value", "defend_person", "Defended",
+            NpcIntentDefinition defense = RegisterMechanic(c, "Protection", "Defend someone I value", "defend_person", "Defended",
                 m => 25 + m.Compassion + m.Courage + m.Group / 2 + m.CommunitySecurity + m.HumanLife / 2, NpcConflictActions.Defend, true);
-            RegisterMechanic(c, "Retaliation", "Retaliate for remembered harm", "retaliate", "Retaliated",
+            NpcIntentDefinition retaliation = RegisterMechanic(c, "Retaliation", "Retaliate for remembered harm", "retaliate", "Retaliated",
                 m => m.Courage - m.Compassion - m.Law + m.Grievance / 2 - m.HumanLife - m.Patience / 2, NpcConflictActions.Retaliate, true);
             RegisterMechanic(c, "Intimidation", "Deter remembered misconduct", "intimidate", "ThreatCommunicated",
                 m => m.Courage - m.Law - m.Compassion + m.Grievance / 3 - m.HumanLife / 3 - m.Patience / 2, NpcConflictActions.Threaten);
@@ -18,25 +18,27 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 m => 20 + m.Compassion + m.Law + m.Attachment / 2 + m.Patience / 2, NpcConflictActions.Apologize);
             RegisterMechanic(c, "GroupSecurity", "Exclude a dangerous companion", "expel_member", "MemberExpelled",
                 m => 15 + m.Group + m.Law + m.Courage + m.Grievance / 3, NpcConflictActions.Expel);
-            c.Capabilities["defend_person"].OnTargetDeath = killed => new NpcIntentOutcome(NpcIntentStatus.Completed, "the known threat died");
-            c.Capabilities["retaliate"].OnTargetDeath = killed => new NpcIntentOutcome(killed ? NpcIntentStatus.Completed : NpcIntentStatus.Abandoned,
+            defense.OnTargetDeath = killed => new NpcIntentOutcome(NpcIntentStatus.Completed, "the known threat died");
+            retaliation.OnTargetDeath = killed => new NpcIntentOutcome(killed ? NpcIntentStatus.Completed : NpcIntentStatus.Abandoned,
                 killed ? "actually retaliated against the attacker" : "someone else ended the threat");
             RegisterEvents(c);
         }
-        static void RegisterMechanic(NpcCatalogBuilder c, string value, string description, string id, string fact,
+        static NpcIntentDefinition RegisterMechanic(NpcCatalogBuilder c, string value, string description, string id, string fact,
             Func<NpcMotivation, int> importance, Func<NpcActionContext, djack.RogueSurvivor.Data.ActorAction> action, bool combat = false)
         {
             c.Fact(fact); c.Value(new NpcValueDefinition(value, description, null, importance));
-            c.Capability(new NpcIntentDefinition(id, description, 180, 360) { ResultFacts = (catalog, g) => catalog.Facts.Mask(fact),
+            var capability = new NpcIntentDefinition(id, description, 180, 360) { ResultFacts = (catalog, g) => catalog.Facts.Mask(fact),
                 DirectAction = action, AssignedScore = (catalog, owner, target) =>
                     importance(new NpcMotivation(catalog, owner, target)),
-                AllowHostile = combat, ActDuringDanger = combat, AllowQuestions = true });
+                AllowHostile = combat, ActDuringDanger = combat, AllowQuestions = true };
+            c.Capability(capability);
             c.Operator(new NpcOperatorDefinition(id, null, context => action(new NpcActionContext(context))));
             c.OperatorSource(new NpcOperatorSource(id, catalog => catalog.Facts.Mask(fact), d => {
                 ulong at = d.At(d.Goal.LastKnown); if (at == 0) return;
                 d.Travel(d.Goal.LastKnown, d.Goal.TargetId, at);
                 d.Add(id, d.Goal.LastKnown, d.Goal.TargetId, at, 0, d.Catalog.Facts.Mask(fact), default(NpcPlanningState), 1);
             }));
+            return capability;
         }
         public void Evaluate(NpcGoalContext c, NpcGoalOffers offers)
         {

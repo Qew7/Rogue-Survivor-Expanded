@@ -120,8 +120,9 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             catalog.Event(new NpcEventDefinition("boundary_accepted", NpcRecordCategory.Encounters, true,
                 e => (e.Subject ?? "Someone") + " accepted " + (e.Other ?? "someone") + "'s boundary.",
                 f => (f.ReportSubject ?? "Someone") + " agreed to respect " + (f.ReportOther ?? "someone") + "'s warning")
-                { ReportConclusion = true });
-            catalog.Event(new NpcEventDefinition("boundary_defied", NpcRecordCategory.None, true, e => (e.Subject ?? "Someone") + " rejected " + (e.Other ?? "someone") + "'s boundary.", f => f.ReportSubject + " rejected " + (f.ReportOther == null ? "a" : f.ReportOther + "'s") + " warning") { SelfReportTone = NpcSelfReportTone.Harmful });
+                { ReportConclusion = true, ImmediateSanity = NpcImmediateEmotion.Patience });
+            catalog.Event(new NpcEventDefinition("boundary_defied", NpcRecordCategory.None, true, e => (e.Subject ?? "Someone") + " rejected " + (e.Other ?? "someone") + "'s boundary.", f => f.ReportSubject + " rejected " + (f.ReportOther == null ? "a" : f.ReportOther + "'s") + " warning")
+                { SelfReportTone = NpcSelfReportTone.Harmful, ImmediateSanity = NpcImmediateEmotion.Patience });
             catalog.Event(new NpcEventDefinition("boundary_escalated", NpcRecordCategory.Combat, true,
                 e => (e.Subject ?? "Someone") + " struck at " + (e.Other ?? "someone") + " after a warning.",
                 f => (f.ReportSubject ?? "Someone") + " struck at " + (f.ReportOther ?? "someone") + " after a warning")
@@ -130,21 +131,23 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 e => (e.Subject ?? "Someone") + " stole from " + (e.Other ?? "someone") + "'s base.",
                 f => f.NamesSubject ? f.ReportSubject + " stole from " + (f.ReportOther ?? "someone") + "'s base" :
                     (f.ReportOther ?? "Someone") + "'s base was robbed")
-                { SelfReportTone = NpcSelfReportTone.Harmful });
+                { SelfReportTone = NpcSelfReportTone.Harmful, ImmediateSanity = NpcImmediateEmotion.Scarcity });
             catalog.Event(new NpcEventDefinition("stolen_goods_passed", NpcRecordCategory.Encounters, true,
                 e => (e.Subject ?? "Someone") + " passed on stolen supplies from " + (e.Other ?? "a shelter") + ".",
                 f => (f.ReportSubject ?? "Someone") + " passed on " + (f.Resource ?? "supplies") +
                     " stolen from " + (f.ReportOther ?? "a survivor") + "'s shelter")
                 { ReportActorRole = NpcReportActorRole.Subject,
                   CanObserve = (a, e) => KnowsStolenVictim(a, e),
-                  CanWitness = (a, e) => KnowsStolenVictim(a, e) });
+                  CanWitness = (a, e) => KnowsStolenVictim(a, e),
+                  RadioSanity = NpcImmediateEmotion.RadioStolenGoods });
             catalog.Event(new NpcEventDefinition("stolen_goods_found", NpcRecordCategory.Encounters, true,
                 e => (e.Subject ?? "Someone") + " found stolen supplies.",
                 f => (f.ReportSubject ?? "Someone") + " found " + (f.Resource ?? "supplies") +
                     " stolen from " + (f.ReportOther ?? "a survivor") + "'s shelter")
                 { ReportActorRole = NpcReportActorRole.None, ReportConclusion = true,
                   CanObserve = (a, e) => KnowsStolenVictim(a, e),
-                  CanWitness = (a, e) => KnowsStolenVictim(a, e) });
+                  CanWitness = (a, e) => KnowsStolenVictim(a, e),
+                  RadioSanity = NpcImmediateEmotion.RadioStolenGoods });
             catalog.Event(new NpcEventDefinition("base_raid", NpcRecordCategory.Combat | NpcRecordCategory.World, true,
                 e => (e.Other ?? "A group member") + " was killed at " + (e.Subject ?? "someone") + "'s base.",
                 f => (f.ReportSubject ?? "someone") + "'s base was raided; " +

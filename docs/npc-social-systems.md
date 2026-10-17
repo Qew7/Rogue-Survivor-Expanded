@@ -490,7 +490,8 @@ Read Records показывает сохранённую ретроспекти�
   события и разрешает воспоминания. Создание состояния вызывается из
   [`ActorModel.cs`](../WRogue/Data/ActorModel.cs).
 - [`NpcEventDefinition.cs`](../WRogue/Gameplay/Npc/Events/NpcEventDefinition.cs)
-  описывает полезную нагрузку, аудиторию, сохранение факта и текст архива.
+  описывает полезную нагрузку, аудиторию, сохранение факта, текст архива и
+  необязательные реакции на личное наблюдение события и сообщение о нём по радио.
   [`NpcObservation.cs`](../WRogue/Gameplay/Npc/Events/NpcObservation.cs)
   определяет порядок фаз наблюдения. Физические источники событий расположены
   в `RogueGame.Actions.*`, `RogueGame.Combat.cs`, `RogueGame.Events.cs` и в

@@ -85,7 +85,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 { ReportActorRole = NpcReportActorRole.Both,
                   DescribeSelfReport = (f, speaker) => f.OtherId == speaker.PersonalityIdentity ?
                       "I traded medicine with " + (f.ReportSubject ?? "someone") : null });
-            catalog.Event(new NpcEventDefinition("shared_medicine", NpcRecordCategory.Help, true, e => (e.Subject ?? "Someone") + " gave medicine to " + (e.Other ?? "someone") + ".", null) { SelfReportTone = NpcSelfReportTone.Helpful });
+            catalog.Event(new NpcEventDefinition("shared_medicine", NpcRecordCategory.Help, true, e => (e.Subject ?? "Someone") + " gave medicine to " + (e.Other ?? "someone") + ".", null)
+                { SelfReportTone = NpcSelfReportTone.Helpful, RadioSanity = NpcImmediateEmotion.RadioGoodNews });
             catalog.Event(new NpcEventDefinition("treated_person", NpcRecordCategory.Help, false, e => (e.Subject ?? "Someone") + " treated " + (e.Other ?? "someone") + "'s wounds.", null));
             catalog.On("medicine_offered", NpcObservationPhase.Knowledge, OnKnowledge);
             catalog.On("requested_medicine", NpcObservationPhase.Relationships, OnRelationships);

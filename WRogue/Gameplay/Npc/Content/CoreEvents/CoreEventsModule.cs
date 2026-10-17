@@ -18,22 +18,28 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 bool accepted = person != null && person.Dead && person.Source == NpcKnowledgeSource.Told && person.SeenTurn == c.Fact.EventTurn;
                 if (accepted) NpcGoalLifecycle.KnownDeath(c.Listener, c.Fact.SubjectId, "learned of death through a report", c.Catalog);
             });
-            catalog.Event(new NpcEventDefinition("attack", NpcRecordCategory.Combat, true, e => (e.Other ?? "someone") + " attacked " + (e.Subject ?? "Someone") + ".", null) { ReportActorRole = NpcReportActorRole.Other, SelfReportTone = NpcSelfReportTone.Harmful });
+            catalog.Event(new NpcEventDefinition("attack", NpcRecordCategory.Combat, true, e => (e.Other ?? "someone") + " attacked " + (e.Subject ?? "Someone") + ".", null)
+                { ReportActorRole = NpcReportActorRole.Other, SelfReportTone = NpcSelfReportTone.Harmful,
+                  RadioSanity = NpcImmediateEmotion.RadioCloseLoss });
             catalog.Event(new NpcEventDefinition("murder", NpcRecordCategory.Combat, true,
                 e => (e.Other ?? "someone") + " murdered " + (e.Subject ?? "Someone") + ".",
                 f => (f.ReportOther ?? "someone") + " murdered " + (f.ReportSubject ?? "someone") +
                     (f.Resource == "base" ? " at their group's base" : ""))
-                { ReportActorRole = NpcReportActorRole.Other, SelfReportTone = NpcSelfReportTone.Harmful });
+                { ReportActorRole = NpcReportActorRole.Other, SelfReportTone = NpcSelfReportTone.Harmful,
+                  ImmediateSanity = NpcImmediateEmotion.HumanLife, RadioSanity = NpcImmediateEmotion.RadioCloseLoss });
             catalog.Event(new NpcEventDefinition("death", NpcRecordCategory.Combat | NpcRecordCategory.Life, true,
                 e => (e.Subject ?? "Someone") + " died" + (e.Other == null ? "." : "; killed by " + (e.Other ?? "someone") + "."),
                 f => (f.ReportSubject ?? "someone") + " died" +
                     (f.ReportOther == null ? "" : "; killed by " + f.ReportOther) +
                     (f.Resource == "base" ? " at their group's base" : ""))
                 { ProvesDeath = true, ReportActorRole = NpcReportActorRole.Other, SelfReportTone = NpcSelfReportTone.Harmful,
+                  RadioSanity = NpcImmediateEmotion.RadioCloseLoss,
                   DescribeSelfReport = (f, speaker) => f.OtherId == speaker.PersonalityIdentity && f.ReportSubject != null ?
                       "I killed " + f.ReportSubject + (f.Resource == "base" ? " at their group's base" : "") : null });
-            catalog.Event(new NpcEventDefinition("kill_human", NpcRecordCategory.Combat, false, e => (e.Other ?? "someone") + " killed " + (e.Subject ?? "Someone") + ".", null));
-            catalog.Event(new NpcEventDefinition("starvation", NpcRecordCategory.Life, false, e => (e.Subject ?? "Someone") + " faced starvation.", null));
+            catalog.Event(new NpcEventDefinition("kill_human", NpcRecordCategory.Combat, false, e => (e.Other ?? "someone") + " killed " + (e.Subject ?? "Someone") + ".", null)
+                { ImmediateSanity = NpcImmediateEmotion.HumanLife });
+            catalog.Event(new NpcEventDefinition("starvation", NpcRecordCategory.Life, false, e => (e.Subject ?? "Someone") + " faced starvation.", null)
+                { ImmediateSanity = NpcImmediateEmotion.Scarcity });
             catalog.Event(new NpcEventDefinition("zombified", NpcRecordCategory.Life, false, e => (e.Other ?? "someone") + " turned into " + (e.Subject ?? "Someone") + ".", null));
             catalog.Event(new NpcEventDefinition("base_loss", NpcRecordCategory.World, true, e => (e.Subject ?? "Someone") + " lost a base.", null) { ReportActorRole = NpcReportActorRole.None });
             catalog.Event(new NpcEventDefinition("raid", NpcRecordCategory.World, true, e => "A raid occurred.", f => "there was a raid"));
@@ -67,9 +73,11 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 else if (source.Kind == "army_supplies")
                     report = f => "there was an army relief drop" +
                         (f.ReportSubject == null ? "" : " involving " + f.ReportSubject);
-                catalog.Event(new NpcEventDefinition(source.Kind, WorldCategory(source.Kind),
+                var definition = new NpcEventDefinition(source.Kind, WorldCategory(source.Kind),
                     source.Kind == "army_supplies" || source.Kind.EndsWith("_raid") || source.Kind == "psychopaths_arrival",
-                    e => source.Name + (e.Subject == null ? "." : ": " + e.Subject + "."), report));
+                    e => source.Name + (e.Subject == null ? "." : ": " + e.Subject + "."), report);
+                if (source.Kind == "psychopaths_arrival") definition.RadioSanity = NpcImmediateEmotion.RadioPsychopathArrival;
+                catalog.Event(definition);
             }
         }
         static NpcRecordCategory WorldCategory(string kind)

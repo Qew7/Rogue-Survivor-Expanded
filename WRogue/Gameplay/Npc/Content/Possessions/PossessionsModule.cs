@@ -64,7 +64,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                     (f.ReportSubject ?? "Someone") + "'s base lost " +
                     (f.Units > 0 ? f.Units + " units of " : "") +
                     (f.Resource == "food" ? "food" : "stored supplies") + " from storage")
-                { ReportActorRole = NpcReportActorRole.Other, SelfReportTone = NpcSelfReportTone.Harmful });
+                { ReportActorRole = NpcReportActorRole.Other, SelfReportTone = NpcSelfReportTone.Harmful,
+                  ImmediateSanity = NpcImmediateEmotion.Scarcity });
             catalog.Event(new NpcEventDefinition("base_robbed", NpcRecordCategory.World, true,
                 e => (e.Subject ?? "Someone") + " discovered that their base was robbed.",
                 f => (f.ReportSubject ?? "someone") + " found their group's base robbed of " +

@@ -67,7 +67,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         {
             catalog.OnReport("contested_taken", c => NpcReputation.Reputation(c, false, false, true));
             catalog.Event(new NpcEventDefinition("resource_contested", NpcRecordCategory.None, true, e => (e.Subject ?? "Someone") + " asked " + (e.Other ?? "someone") + " to yield disputed supplies.", null));
-            catalog.Event(new NpcEventDefinition("resource_yielded", NpcRecordCategory.Help, true, e => (e.Subject ?? "Someone") + " yielded disputed supplies to " + (e.Other ?? "someone") + ".", f => f.ReportSubject + " allowed " + (f.ReportOther ?? "someone") + " to take disputed supplies") { SelfReportTone = NpcSelfReportTone.Helpful });
+            catalog.Event(new NpcEventDefinition("resource_yielded", NpcRecordCategory.Help, true, e => (e.Subject ?? "Someone") + " yielded disputed supplies to " + (e.Other ?? "someone") + ".", f => f.ReportSubject + " allowed " + (f.ReportOther ?? "someone") + " to take disputed supplies")
+                { SelfReportTone = NpcSelfReportTone.Helpful, ImmediateSanity = NpcImmediateEmotion.Patience });
             catalog.Event(new NpcEventDefinition("permission_used", NpcRecordCategory.Help, true, e => (e.Subject ?? "Someone") + " took supplies with " + (e.Other ?? "someone") + "'s permission.", f => f.ReportSubject + " took supplies with " + (f.ReportOther ?? "someone") + "'s permission") { SelfReportTone = NpcSelfReportTone.Helpful });
             catalog.Event(new NpcEventDefinition("group_supply_rule_strict", NpcRecordCategory.Encounters, true,
                 e => (e.Subject ?? "Someone") + " asked the group to seek permission before taking supplies.",
@@ -78,7 +79,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             catalog.OnReport("group_supply_rule_strict", c => HearRule(c, 40));
             catalog.OnReport("group_supply_rule_open", c => HearRule(c, 0));
             catalog.Event(new NpcEventDefinition("resource_refused", NpcRecordCategory.None, false, e => (e.Subject ?? "Someone") + " refused to yield supplies to " + (e.Other ?? "someone") + ".", null));
-            catalog.Event(new NpcEventDefinition("contested_taken", NpcRecordCategory.None, true, e => (e.Subject ?? "Someone") + " took supplies despite " + (e.Other ?? "someone") + "'s refusal.", f => f.ReportSubject + " took disputed supplies" + (f.ReportOther == null ? "" : " despite " + f.ReportOther + "'s refusal")) { SelfReportTone = NpcSelfReportTone.Harmful });
+            catalog.Event(new NpcEventDefinition("contested_taken", NpcRecordCategory.None, true, e => (e.Subject ?? "Someone") + " took supplies despite " + (e.Other ?? "someone") + "'s refusal.", f => f.ReportSubject + " took disputed supplies" + (f.ReportOther == null ? "" : " despite " + f.ReportOther + "'s refusal"))
+                { SelfReportTone = NpcSelfReportTone.Harmful, ImmediateSanity = NpcImmediateEmotion.Patience });
             catalog.On("contested_taken", NpcObservationPhase.Relationships, OnRelationships);
             catalog.On("resource_contested", NpcObservationPhase.Relationships, OnRelationships);
             catalog.On("resource_refused", NpcObservationPhase.Relationships, OnRelationships);

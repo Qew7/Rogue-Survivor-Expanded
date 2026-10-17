@@ -15,33 +15,21 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             actor.Sanity = Math.Max(0, Math.Min(game.Rules.ActorMaxSanity(actor), actor.Sanity + delta));
         }
 
-        public static void Observe(RogueGame game, Actor observer, SignificantEvent e)
+        public static void Observe(RogueGame game, Actor observer, SignificantEvent e, NpcEventDefinition definition)
         {
-            if (observer.IsPlayer || !observer.Model.Abilities.HasSanity ||
+            if (definition == null || definition.ImmediateSanity == null || observer.IsPlayer || !observer.Model.Abilities.HasSanity ||
                 !Session.Get.GamePreset.NpcPersonalitiesEnabled) return;
-            int delta;
-            switch (e.Kind)
-            {
-                case "kill_human": case "murder":
-                    delta = HumanLifeAxis.ImmediateSanity(observer, e,
-                        PersonalitySystem.Disposition(observer, NpcPersonalityAxis.HumanLife, game.NpcContent));
-                    break;
-                case "helped": case "abandoned":
-                    delta = CareCircleAxis.ImmediateSanity(observer, e,
-                        PersonalitySystem.Disposition(observer, NpcPersonalityAxis.CareCircle, game.NpcContent));
-                    break;
-                case "starvation": case "supplies_lost": case "base_theft":
-                    delta = ScarcityAxis.ImmediateSanity(observer, e,
-                        PersonalitySystem.Disposition(observer, NpcPersonalityAxis.Scarcity, game.NpcContent));
-                    break;
-                case "boundary_defied": case "boundary_accepted": case "resource_yielded": case "contested_taken":
-                    delta = PatienceAxis.ImmediateSanity(observer, e,
-                        PersonalitySystem.Disposition(observer, NpcPersonalityAxis.Patience, game.NpcContent));
-                    break;
-                default: return;
-            }
-            Apply(game, observer, delta);
+            Apply(game, observer, definition.ImmediateSanity(observer, e, game.NpcContent));
         }
+
+        public static int HumanLife(Actor observer, SignificantEvent e, NpcContentCatalog catalog)
+        { return HumanLifeAxis.ImmediateSanity(observer, e, PersonalitySystem.Disposition(observer, NpcPersonalityAxis.HumanLife, catalog)); }
+        public static int CareCircle(Actor observer, SignificantEvent e, NpcContentCatalog catalog)
+        { return CareCircleAxis.ImmediateSanity(observer, e, PersonalitySystem.Disposition(observer, NpcPersonalityAxis.CareCircle, catalog)); }
+        public static int Scarcity(Actor observer, SignificantEvent e, NpcContentCatalog catalog)
+        { return ScarcityAxis.ImmediateSanity(observer, e, PersonalitySystem.Disposition(observer, NpcPersonalityAxis.Scarcity, catalog)); }
+        public static int Patience(Actor observer, SignificantEvent e, NpcContentCatalog catalog)
+        { return PatienceAxis.ImmediateSanity(observer, e, PersonalitySystem.Disposition(observer, NpcPersonalityAxis.Patience, catalog)); }
 
         public static int BondDeathLoss(Actor actor, NpcContentCatalog catalog)
         {
@@ -59,35 +47,54 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public static int Radio(Actor listener, NpcFact fact, NpcContentCatalog catalog)
         {
             if (listener.Personality == null || !listener.Model.Abilities.HasSanity) return 0;
-            RelationshipRecord subject = fact.NamesSubject ? listener.Personality.Person(fact.SubjectId) : null;
-            RelationshipRecord other = fact.NamesOther ? listener.Personality.Person(fact.OtherId) : null;
-            bool closeSubject = subject != null && (subject.Attachment >= 20 || subject.Feeling >= 30);
-            bool closeOther = other != null && (other.Attachment >= 20 || other.Feeling >= 30);
+            NpcEventDefinition definition = catalog.Event(fact.Kind);
+            return definition == null || definition.RadioSanity == null ? 0 : definition.RadioSanity(listener, fact, catalog);
+        }
+
+        static bool Close(Actor listener, Guid id)
+        {
+            RelationshipRecord opinion = listener.Personality.Person(id);
+            return opinion != null && (opinion.Attachment >= 20 || opinion.Feeling >= 30);
+        }
+
+        public static int RadioCloseLoss(Actor listener, NpcFact fact, NpcContentCatalog catalog)
+        {
+            if (!fact.NamesSubject || !Close(listener, fact.SubjectId)) return 0;
             bool npc = !listener.IsPlayer && Session.Get.GamePreset.NpcPersonalitiesEnabled;
             bool timid = listener.Personality.HasTrait("timid") || listener.Personality.HasTrait("fearful");
-            if (closeSubject && (fact.Kind == "attack" || fact.Kind == "death" || fact.Kind == "murder"))
-            {
-                int life = npc ? PersonalitySystem.Disposition(listener, NpcPersonalityAxis.HumanLife, catalog) : 0;
-                int care = npc ? PersonalitySystem.Disposition(listener, NpcPersonalityAxis.CareCircle, catalog) : 0;
-                if (npc && (listener.Personality.HasTrait("maniac") || life <= -25 && care <= -20)) return 0;
-                return timid || npc && (life >= 20 || care >= 20 || listener.Personality.HasTrait("kind")) ? -2 : -1;
-            }
-            if ((fact.Kind == "stolen_goods_found" || fact.Kind == "stolen_goods_passed") &&
-                (closeOther || fact.OtherId == listener.PersonalityIdentity ||
-                 listener.SocialGroup != null && listener.SocialGroup.Identity == fact.ClaimantGroupId))
-                return timid || npc && (PersonalitySystem.Disposition(listener, NpcPersonalityAxis.Scarcity, catalog) >= 20 ||
-                    listener.Personality.HasTrait("frugal")) ? -2 : -1;
-            if (fact.Kind == "psychopaths_arrival" && timid &&
-                (!npc || PersonalitySystem.Disposition(listener, NpcPersonalityAxis.MessageTrust, catalog) >= -20)) return -1;
-            if ((closeSubject || closeOther) &&
-                (fact.Kind == "shared_food" || fact.Kind == "shared_medicine" || fact.Kind == "promise_kept"))
-            {
-                int care = npc ? PersonalitySystem.Disposition(listener, NpcPersonalityAxis.CareCircle, catalog) : 0;
-                if (npc && care <= -25 && (listener.Personality.HasTrait("cruel") ||
-                    listener.Personality.HasTrait("maniac"))) return 0;
-                return npc && (care >= 20 || listener.Personality.HasTrait("kind")) ? 2 : 1;
-            }
-            return 0;
+            int life = npc ? PersonalitySystem.Disposition(listener, NpcPersonalityAxis.HumanLife, catalog) : 0;
+            int care = npc ? PersonalitySystem.Disposition(listener, NpcPersonalityAxis.CareCircle, catalog) : 0;
+            if (npc && (listener.Personality.HasTrait("maniac") || life <= -25 && care <= -20)) return 0;
+            return timid || npc && (life >= 20 || care >= 20 || listener.Personality.HasTrait("kind")) ? -2 : -1;
+        }
+
+        public static int RadioStolenGoods(Actor listener, NpcFact fact, NpcContentCatalog catalog)
+        {
+            if ((!fact.NamesOther || !Close(listener, fact.OtherId)) &&
+                fact.OtherId != listener.PersonalityIdentity &&
+                (listener.SocialGroup == null || listener.SocialGroup.Identity != fact.ClaimantGroupId)) return 0;
+            bool timid = listener.Personality.HasTrait("timid") || listener.Personality.HasTrait("fearful");
+            bool npc = !listener.IsPlayer && Session.Get.GamePreset.NpcPersonalitiesEnabled;
+            return timid || npc && (PersonalitySystem.Disposition(listener, NpcPersonalityAxis.Scarcity, catalog) >= 20 ||
+                listener.Personality.HasTrait("frugal")) ? -2 : -1;
+        }
+
+        public static int RadioPsychopathArrival(Actor listener, NpcFact fact, NpcContentCatalog catalog)
+        {
+            if (!listener.Personality.HasTrait("timid") && !listener.Personality.HasTrait("fearful")) return 0;
+            return listener.IsPlayer || !Session.Get.GamePreset.NpcPersonalitiesEnabled ||
+                PersonalitySystem.Disposition(listener, NpcPersonalityAxis.MessageTrust, catalog) >= -20 ? -1 : 0;
+        }
+
+        public static int RadioGoodNews(Actor listener, NpcFact fact, NpcContentCatalog catalog)
+        {
+            if ((!fact.NamesSubject || !Close(listener, fact.SubjectId)) &&
+                (!fact.NamesOther || !Close(listener, fact.OtherId))) return 0;
+            bool npc = !listener.IsPlayer && Session.Get.GamePreset.NpcPersonalitiesEnabled;
+            int care = npc ? PersonalitySystem.Disposition(listener, NpcPersonalityAxis.CareCircle, catalog) : 0;
+            if (npc && care <= -25 && (listener.Personality.HasTrait("cruel") ||
+                listener.Personality.HasTrait("maniac"))) return 0;
+            return npc && (care >= 20 || listener.Personality.HasTrait("kind")) ? 2 : 1;
         }
     }
 }

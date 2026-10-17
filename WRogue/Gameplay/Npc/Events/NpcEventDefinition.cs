@@ -26,6 +26,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public NpcReportActorRole ReportActorRole = NpcReportActorRole.Subject;
         public NpcSelfReportTone SelfReportTone;
         public Func<Actor, Actor, bool> CanReply;
+        public Func<Actor, SignificantEvent, NpcContentCatalog, int> ImmediateSanity;
+        public Func<Actor, NpcFact, NpcContentCatalog, int> RadioSanity;
         public NpcPlayerReply PlayerReply;
         public Func<djack.RogueSurvivor.Engine.RogueGame, NpcStory, SignificantEvent, string> StoryStage;
         public Func<IList<NpcFact>, string> SummarizeReports;

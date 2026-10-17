@@ -55,7 +55,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             catalog.Event(new NpcEventDefinition("location_reported", NpcRecordCategory.None, false, e => (e.Subject ?? "Someone") + " answered " + (e.Other ?? "someone") + " about a companion's last known location.", null));
             catalog.Event(new NpcEventDefinition("reunited", NpcRecordCategory.None, false, e => (e.Subject ?? "Someone") + " found " + (e.Other ?? "someone") + " after searching.", null) { StoryStage = (g, s, e) => "completed" });
             catalog.Event(new NpcEventDefinition("joined_group", NpcRecordCategory.Encounters, false, e => (e.Subject ?? "Someone") + " joined " + (e.Other ?? "someone") + "'s group.", null));
-            catalog.Event(new NpcEventDefinition("abandoned", NpcRecordCategory.Encounters, false, e => (e.Subject ?? "Someone") + " was abandoned by " + (e.Other ?? "someone") + ".", null));
+            catalog.Event(new NpcEventDefinition("abandoned", NpcRecordCategory.Encounters, false, e => (e.Subject ?? "Someone") + " was abandoned by " + (e.Other ?? "someone") + ".", null)
+                { ImmediateSanity = NpcImmediateEmotion.CareCircle });
         }
     }
 }
