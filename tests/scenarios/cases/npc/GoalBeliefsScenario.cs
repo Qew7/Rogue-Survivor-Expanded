@@ -37,10 +37,10 @@ static class GoalBeliefsScenario
             Check.Equal(true, world.Try(new ActionNpcTell(corroborator, world.Game, owner, stronger)), "another actual source supplies stronger evidence");
             NpcIntentSupport.Turn(world, owner);
             Check.Equal(true, NpcIntentSupport.HasEvent(owner, "confronted"), "credible belief now motivates a real warning");
-            Check.Equal(0, known.Violation, "the communicated boundary addresses the known incident");
+            Check.Equal(100, known.Violation, "warning does not settle the incident before the offender answers");
             owner.Personality.Opinion(speaker.PersonalityIdentity, speaker.UnmodifiedName).AdjustSocial(trust: 100);
             Check.Equal(true, NpcKnowledgeSystem.Hear(world.Game, owner, speaker, stronger), "more trusted retelling updates retained evidence");
-            Check.Equal(0, known.Violation, "retelling an addressed incident does not reopen the same obligation");
+            Check.Equal(100, known.Violation, "retelling does not settle an incident that is still open");
             Check.Equal(false, NpcIntentSupport.HasEvent(owner, "attack"), "reports never fabricate personally witnessed violence");
         });
     }

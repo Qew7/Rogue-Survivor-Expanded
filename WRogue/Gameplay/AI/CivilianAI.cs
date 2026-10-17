@@ -839,17 +839,27 @@ namespace djack.RogueSurvivor.Gameplay.AI
                 bool canLead = !checkOurLeader && m_Actor.CountFollowers < game.Rules.ActorMaxFollowers(m_Actor);
                 if (canLead)
                 {
-                    Percept nearestFriend = FilterNearest(game, FilterNonEnemies(game, mapPercepts));
-                    if (nearestFriend != null)
+                    List<Percept> candidates = FilterNonEnemies(game, mapPercepts);
+                    if (candidates != null)
                     {
-                        // alpha10 only if unreachable by baseai simple behaviours
-                        if (CanReachSimple(game, nearestFriend.Location.Position, Tools.RouteFinder.SpecialActions.DOORS | Tools.RouteFinder.SpecialActions.JUMP))
+                        candidates.RemoveAll(p => !game.Rules.CanActorTakeLead(m_Actor, (Actor)p.Percepted));
+                        candidates.Sort((a, b) =>
                         {
-                            ActorAction leadAction = BehaviorLeadActor(game, nearestFriend);
+                            int relation = PersonalitySystem.Attitude(m_Actor, (Actor)b.Percepted).CompareTo(
+                                PersonalitySystem.Attitude(m_Actor, (Actor)a.Percepted));
+                            if (relation != 0) return relation;
+                            int distance = game.Rules.StdDistance(m_Actor.Location.Position, a.Location.Position).CompareTo(
+                                game.Rules.StdDistance(m_Actor.Location.Position, b.Location.Position));
+                            return distance != 0 ? distance : ((Actor)a.Percepted).PersonalityIdentity.CompareTo(((Actor)b.Percepted).PersonalityIdentity);
+                        });
+                        foreach (Percept candidate in candidates)
+                        {
+                            if (!CanReachSimple(game, candidate.Location.Position, Tools.RouteFinder.SpecialActions.DOORS | Tools.RouteFinder.SpecialActions.JUMP)) continue;
+                            ActorAction leadAction = BehaviorLeadActor(game, candidate);
                             if (leadAction != null)
                             {
                                 m_Actor.Activity = Activity.IDLE;
-                                m_Actor.TargetActor = nearestFriend.Percepted as Actor;
+                                m_Actor.TargetActor = candidate.Percepted as Actor;
                                 return leadAction;
                             }
                         }

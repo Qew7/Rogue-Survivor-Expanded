@@ -26,6 +26,7 @@ Open [localhost:6080](http://localhost:6080), click the game window, and press E
 ## Reference
 
 - [All NPC personality traits and their effects](docs/npc-traits-guide.md)
+- [Социальные системы NPC: отношения, память, слухи и решения](docs/npc-social-systems.md)
 
 ## Contribute
 

@@ -22,7 +22,9 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 if (faction != null && !faction.Finished && map.LocalTime.TurnCounter >= faction.Deadline)
                 { faction.Stage = "failed"; faction.Destination = default(Location); }
                 if (actor.SocialGroup != null && actor.SocialGroup.LeaderId == actor.PersonalityIdentity && actor.SocialGroup.Plan != null &&
-                    !actor.SocialGroup.Plan.Finished && map.LocalTime.TurnCounter >= actor.SocialGroup.Plan.Deadline)
+                    !actor.SocialGroup.Plan.Finished && (map.LocalTime.TurnCounter >= actor.SocialGroup.Plan.Deadline ||
+                    (actor.SocialGroup.Plan.Kind == "group_supplies" || actor.SocialGroup.Plan.Kind == "group_medicine") &&
+                    !actor.SocialGroup.Members.Contains(actor.SocialGroup.Plan.BeneficiaryId)))
                 { actor.SocialGroup.Plan.Stage = "failed"; actor.SocialGroup.Plan.Destination = default(Location); }
             });
             var gather = new NpcIntentDefinition(GatherSuppliesId, "Gather supplies for a companion",
@@ -32,11 +34,15 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             gather.Result = (c, g) => (ulong)(NpcPlanFact.Delivered | NpcPlanFact.Reported);
             gather.Resource = "food";
             gather.DirectAction = NpcGroupSupplyActions.Stage;
+            gather.Assess = (g, a, i) => i.GroupId != Guid.Empty &&
+                (a.SocialGroup == null || !a.SocialGroup.Members.Contains(i.TargetId)) ?
+                new NpcIntentOutcome(NpcIntentStatus.Abandoned, "beneficiary left the group") : null;
             catalog.Capability(gather);
             var coordinate = new NpcIntentDefinition(CoordinateSuppliesId, "Coordinate supplies for the group",
             NpcIntentMethod.Coordinate, 20, 25, WorldTime.TURNS_PER_DAY, 180, 0, new NpcIntentWeight(NpcPersonalityAxis.Group, 1), new NpcIntentWeight(NpcPersonalityAxis.Compassion, 1, 2));
             coordinate.Selectable = false;
             coordinate.Result = (c, g) => (ulong)(NpcPlanFact.None);
+            coordinate.Assess = gather.Assess;
             catalog.Capability(coordinate);
             var shelter = new NpcIntentDefinition("seek_group_shelter", "Reach the group's known shelter",
             NpcIntentMethod.ReachShelter, 25, 35, 180, 180, 0, new NpcIntentWeight(NpcPersonalityAxis.Group, 1), new NpcIntentWeight(NpcPersonalityAxis.Courage, -1, 2));

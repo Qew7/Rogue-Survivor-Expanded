@@ -166,7 +166,6 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             catalog.Event(new NpcEventDefinition("restitution_requested", NpcRecordCategory.Help, true, e => (e.Subject ?? "Someone") + " asked " + (e.Other ?? "someone") + " to compensate lost supplies.", null) { AudibleReport = true, PlayerReply = new NpcPlayerReply("replacement supplies", "food_promised", "restitution_refused", "Yes, I'll replace your supplies.", "No, I won't replace them.") });
             catalog.Event(new NpcEventDefinition("restitution_refused", NpcRecordCategory.Help, true, e => (e.Subject ?? "Someone") + " refused " + (e.Other ?? "someone") + "'s demand for compensation.", null) { SelfReportTone = NpcSelfReportTone.Harmful });
             catalog.On("base_theft", NpcObservationPhase.Knowledge, OnKnowledge);
-            catalog.On("confronted", NpcObservationPhase.Knowledge, OnKnowledge);
             catalog.On("base_theft", NpcObservationPhase.Relationships, OnRelationships);
             catalog.On("boundary_accepted", NpcObservationPhase.Relationships, OnRelationships);
             catalog.On("boundary_defied", NpcObservationPhase.Relationships, OnRelationships);
@@ -199,8 +198,6 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 subject.ThreatCause = source.Id; knowledge.Revision++;
                 subject.ViolationTurn = source.Turn; subject.ViolationConfidence = confidence; subject.ViolationCause = source.Id;
             }
-            if (source.Kind == "confronted" && source.Subject == owner && other != null)
-            { other.Violation = 0; other.AcknowledgedViolation = source.CauseId; knowledge.Revision++; }
         }
         static void OnRelationships(NpcObservation observation)
         {
@@ -222,9 +219,31 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             { other.LossUnits += Math.Max(1, source.Units); other.LossCause = source.Id; other.LossPlace = new Location(source.Map, source.Position); }
             if ((source.Kind == "boundary_accepted" || source.Kind == "boundary_defied" || source.Kind == "restitution_refused") && owner == source.Other && subject != null)
             {
-                subject.Violation = source.Kind == "boundary_accepted" ? 0 : 100;
-                subject.ViolationCause = source.Id; subject.ViolationTurn = source.Turn; subject.ViolationConfidence = 100;
-                owner.Personality.Opinion(subject.Id, subject.Name).AdjustSocial(trust: source.Kind == "boundary_accepted" ? 5 : -10, grievance: source.Kind == "boundary_accepted" ? -5 : 10);
+                RelationshipRecord opinion = owner.Personality.Opinion(subject.Id, subject.Name);
+                if (source.Kind == "boundary_accepted")
+                {
+                    bool answersCurrentWarning = false;
+                    foreach (ObservedEvent warning in owner.Personality.Events)
+                        if (warning.Kind == "confronted" && warning.EventId == source.CauseId &&
+                            warning.SubjectId == owner.PersonalityIdentity && warning.OtherId == subject.Id &&
+                            warning.CauseId == subject.ViolationCause)
+                        { answersCurrentWarning = true; break; }
+                    int acceptance = PersonalitySystem.Bias(owner, NpcPersonalityAxis.Compassion) +
+                        PersonalitySystem.Bias(owner, NpcPersonalityAxis.Law) / 4 +
+                        PersonalitySystem.Disposition(owner, NpcPersonalityAxis.Patience, observation.Game.NpcContent) / 2 +
+                        PersonalitySystem.Disposition(owner, NpcPersonalityAxis.MessageTrust, observation.Game.NpcContent) / 2 -
+                        opinion.Grievance / 2;
+                    if (answersCurrentWarning && acceptance >= 0)
+                    { subject.AcknowledgedViolation = subject.ViolationCause; subject.Violation = 0; knowledge.Revision++; }
+                    opinion.AdjustSocial(trust: 5, grievance: -5);
+                }
+                else
+                {
+                    subject.Violation = 100;
+                    subject.ViolationCause = source.Id; subject.ViolationTurn = source.Turn; subject.ViolationConfidence = 100;
+                    opinion.AdjustSocial(trust: -10, grievance: 10);
+                    knowledge.Revision++;
+                }
             }
             if (source.Kind == "confronted" && source.Other == owner && NpcIntentSystem.Enabled(owner))
             {

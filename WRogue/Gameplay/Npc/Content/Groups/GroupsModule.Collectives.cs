@@ -12,6 +12,9 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 (p, t) => p.FoodNeed > 0 && t - p.FoodNeedTurn <= 60, p => p.NeedCause).Register(catalog);
             var medicine = new NpcIntentDefinition("gather_group_medicine", "Gather medicine for a companion", WorldTime.TURNS_PER_DAY, 180) {
                 Result = (c, g) => (ulong)(NpcPlanFact.Delivered | NpcPlanFact.Reported), Resource = "medicine", ReportAfterDelivery = true };
+            medicine.Assess = (g, a, i) => i.GroupId != Guid.Empty &&
+                (a.SocialGroup == null || !a.SocialGroup.Members.Contains(i.TargetId)) ?
+                new NpcIntentOutcome(NpcIntentStatus.Abandoned, "beneficiary left the group") : null;
             catalog.Capability(medicine);
             catalog.Event(new NpcEventDefinition("group_medicine_requested", NpcRecordCategory.Help, false,
                 e => (e.Subject ?? "Someone") + " asked " + (e.Other ?? "someone") + " to fetch medicine for a companion."));

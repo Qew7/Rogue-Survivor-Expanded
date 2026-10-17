@@ -1,5 +1,8 @@
 # NPC traits and memories
 
+For a Russian-language map of the social systems and the distinction between
+`Feeling` and `Attitude`, see [NPC social systems](npc-social-systems.md).
+
 Intelligent living actors created through `ActorModel` receive three distinct starting traits
 and one or two unresolved memories when the new-game preset enables NPC traits
 and memories. The actor owns a `PersonalityState`: trait instances, unresolved
@@ -64,6 +67,12 @@ An unresolved, confidently known serious violation makes effective attitude towa
 the offender at most -30, even when older positive memories remain. Recruitment
 requires both the prospective leader and follower to accept each other at that
 threshold. Clearing the violation restores the underlying remembered attitude.
+An NPC's warning does not itself clear a violation. The warned NPC's Law,
+Compassion and Patience affect its answer; the warning NPC's Compassion, Law,
+Patience, trust in reports and grievance determine whether an accepted boundary
+settles the current incident. A refusal keeps the concern active. A civilian
+leader checks visible recruits for legality first, then prefers higher attitude
+and uses distance to break ties.
 Accumulated `TrustInLeader` remains the authority for trusting the current
 leader: while it meets the existing threshold, the follower accepts that
 leader's trade offers and does not exclude them from autonomous trade solely
@@ -98,6 +107,9 @@ Traits select avoiding or warning a reported aggressor, searching for a missing
 companion, accepting a supply assignment, or following a shelter proposal.
 Supply missions use real pickups, gifts and return reports. Shared episodes
 bind separate participant goals, with resource reservations and saved pacing.
+Leaders do not start routine group food missions for members they confidently
+regard as serious offenders; urgent group medicine remains possible. A group
+supply or medicine mission ends if its beneficiary leaves the group.
 Eligible followers can preserve their group under a successor after an NPC
 leader's death.
 

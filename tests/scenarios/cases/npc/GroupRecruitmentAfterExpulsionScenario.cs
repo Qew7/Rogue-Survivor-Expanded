@@ -43,8 +43,14 @@ static class GroupRecruitmentAfterExpulsionScenario
             Check.Equal(false, world.Try(new ActionTakeLead(recruit, world.Game, leader)),
                 "the real recruitment action cannot undo expulsion");
 
-            PersonalitySystem.Report(world.Game, new SignificantEvent("boundary_accepted", recruit, leader,
-                world.Map, recruit.Location.Position, 0));
+            recruit.Personality.AddTrait(new TraitInstance("lawful"));
+            recruit.Personality.AddTrait(new TraitInstance("kind"));
+            recruit.Personality.ChangeFrustration(world.Map.LocalTime.TurnCounter, -100);
+            NpcIntentSupport.Turn(world, leader);
+            Check.Equal(true, NpcIntentSupport.HasEvent(recruit, "confronted"), "leader gives an actual warning");
+            Check.Equal(100, known.Violation, "warning alone does not resolve the concern");
+            NpcIntentSupport.Turn(world, recruit);
+            Check.Equal(true, NpcIntentSupport.HasEvent(leader, "boundary_accepted"), "former follower answers the warning");
             Check.Equal(0, known.Violation, "accepted boundary clears the known violation");
             Check.Equal(true, PersonalitySystem.Attitude(leader, recruit) > -30,
                 "relationship can recover when the violation is cleared");
