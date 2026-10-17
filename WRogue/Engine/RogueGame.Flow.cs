@@ -492,8 +492,7 @@ namespace djack.RogueSurvivor.Engine
         /// <param name="sim"></param>
         void AdvancePlay(District district, SimFlags sim)
         {
-            if (m_Session.GamePreset != null && m_Session.GamePreset.ParallelDistantSimulationDuringRest &&
-                district != m_Session.CurrentMap.District)
+            if (district != m_Session.CurrentMap.District)
                 DiceRoller.WithOverride(district.SimulationDiceRoller(m_Session.Seed),
                     () => AdvanceDistrictTurn(district, sim));
             else

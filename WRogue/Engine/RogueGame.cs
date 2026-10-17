@@ -496,8 +496,6 @@ namespace djack.RogueSurvivor.Engine
         bool m_PlayerWaitedThisTurn;
         WorldTime m_PlayerLongWaitEnd;
 
-        string m_RestSimulationProgress;
-        bool m_RestHasDeferredSimulation;
         long m_RestProgressLastDraw;
         int m_RestStartTurn;
         long m_RestStartTicks;

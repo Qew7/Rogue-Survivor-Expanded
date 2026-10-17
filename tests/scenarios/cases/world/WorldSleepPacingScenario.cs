@@ -1,6 +1,7 @@
 using System;
 using System.Drawing;
 using System.Reflection;
+using System.Threading;
 using djack.RogueSurvivor.Data;
 using djack.RogueSurvivor.Engine;
 
@@ -12,7 +13,6 @@ static class WorldSleepPacingScenario
             ".....", ".....", "....."), world =>
         {
             GamePreset preset = GamePreset.BuiltIn(GameMode.GM_STANDARD);
-            preset.FinishDistantSimulationAfterRest = true;
             Session.Get.GamePreset = preset;
             Actor player = NpcIntentSupport.Player(world, 2, 1);
             World city = new World(4);
@@ -42,9 +42,13 @@ static class WorldSleepPacingScenario
             for (int i = 0; player.IsSleeping && i < 200; i++)
                 Check.Call(world.Game, "AdvancePlay", new[] { typeof(District), flags }, world.Map.District, active);
             Check.Equal(false, player.IsSleeping, "sleep eventually ends");
-            Check.Call(world.Game, "FinishRestSimulationIfNeeded");
+            Check.Call(world.Game, "StartSimThread");
+            Check.Equal(true, SpinWait.SpinUntil(() =>
+                distant.LocalTime.TurnCounter == Session.Get.WorldTime.TurnCounter, 10000),
+                "background worker catches up after sleep");
+            Check.Call(world.Game, "StopSimThread", false);
             Check.Equal(Session.Get.WorldTime.TurnCounter, distant.LocalTime.TurnCounter,
-                "all deferred turns finish before the player wakes");
+                "all deferred turns eventually finish without blocking wake-up");
         });
     }
 }

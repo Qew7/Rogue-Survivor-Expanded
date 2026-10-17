@@ -17,7 +17,6 @@ static class WorldParallelRestScenario
             ".....", ".....", "....."), world =>
         {
             GamePreset preset = GamePreset.BuiltIn(GameMode.GM_STANDARD);
-            preset.ParallelDistantSimulationDuringRest = true;
             Session.Get.GamePreset = preset;
             Actor player = NpcIntentSupport.Player(world, 2, 1);
             World city = new World(3);
@@ -120,8 +119,8 @@ static class WorldParallelRestScenario
             {
                 BinarySaveStore.Save(path, Session.Get);
                 Session loaded = BinarySaveStore.Load<Session>(path);
-                Check.Equal(true, loaded.GamePreset.ParallelDistantSimulationDuringRest,
-                    "parallel rest setting survives save and load");
+                Check.Equal(false, loaded.GamePreset.DisableDistantSimulationDuringRest,
+                    "background city setting survives save and load");
                 Check.Equal(city[1, 2].SimulationDiceRoller(Session.Get.Seed).Roll(0, 1000000),
                     loaded.World[1, 2].SimulationDiceRoller(loaded.Seed).Roll(0, 1000000),
                     "district random stream continues after load");

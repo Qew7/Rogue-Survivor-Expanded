@@ -59,20 +59,19 @@ The retained game-side changes keep the same NPC actions and rumor delivery:
   goal. Item, trade, perception, and exploration paths avoid redundant short
   scans and allocations where the same action choice is preserved.
 
-In the experimental background branch, each live turn synchronously advances
+With background city simulation enabled, each live turn synchronously advances
 the player's district and up to eight neighbors. Sleeping or waiting enables a
 background worker for farther districts; it continues while the player reads
 or enters commands after resting. The worker pauses before the next live turn,
-save, or district change. Disabling the preset's distant simulation option
-keeps those farther districts paused. The separate "finish after rest" option
-waits for all remaining distant turns before accepting a command. The rest
+save, or district change. Disabling the preset's background city simulation
+option keeps those farther districts paused. The rest
 benchmarks explicitly wait for background catch-up after each turn, so
 their total time measures full-city work rather than player input latency.
 
 ### Parallel district simulation
 
-The `Parallel background simulation` preset option uses up to
-four workers by default. Each turn, distant districts are split by checkerboard
+Background city simulation uses up to four workers by default. Each turn,
+distant districts are split by checkerboard
 color. Same-color districts with distinct entry cells can run together.
 Districts competing for the **same** destination entry, sharing active
 story/group state, or touching the player district remain ordered. Each
@@ -90,7 +89,7 @@ streams matched after every wait. The named
 `world/parallel-rest-exact-arrivals` scenarios cover contested and nearby
 entries, followers, rumor delivery, and save/load.
 
-Before this experimental change, the fixed-seed 5×5 timing fixture with 70
+Before background city simulation, the fixed-seed 5×5 timing fixture with 70
 civilians per district measured **1.99 seconds for 30 waits** with four workers
 (three samples: 1.95, 1.99 and 2.00 seconds). One worker took 2.88 seconds;
 two took 2.23, and eight took 1.96. The earlier production equivalence benchmark
@@ -101,7 +100,7 @@ other cities or machines. That tree also spaced NPC trade attempts after
 a refusal by one game hour, so the difference from the earlier 2.37-second
 measurement is not solely a behavior-preserving code optimization.
 
-On the same Docker/Mono setup, the experimental background branch measured
+On the same Docker/Mono setup, background city simulation measured
 **2.47 seconds** for 30 waits with four workers (2.31, 2.47, 2.54 seconds)
 when the benchmark waited for every district after every turn. Only **0.52
 seconds**, or 17.2 ms per wait, were spent in the synchronous live turn;

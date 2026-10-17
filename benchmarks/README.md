@@ -21,9 +21,9 @@ live here; `Dockerfile` compiles the C# files into the scenario runner image.
 | Parallel background timing | `sh tests/scenario.sh --bench-rest-parallel-timing` | Three 30-wait samples per worker count, waiting for background catch-up after each turn; excludes state digests from timing |
 | Rest optimization costs | `sh tests/scenario.sh --bench-rest-optimizations` | Actor lookup/movement and empty/sparse/dense sensing |
 | Synthetic sleep yield overhead | `sh tests/scenario.sh --bench-sleep-yield` | Ten sleeping map turns with and without a dummy worker; production pauses its worker during the live turn |
-| Rest simulation flamegraph | `PROFILE_KIND=rest sh benchmarks/bench-npc-calls.sh` | Mono call profile of serial waiting across 9 districts |
+| Rest simulation flamegraph | `PROFILE_KIND=rest sh benchmarks/bench-npc-calls.sh` | Mono call profile of waiting for background completion across 9 districts |
 | One-district rest flamegraph | `PROFILE_KIND=rest_one sh benchmarks/bench-npc-calls.sh` | Four waits in one district, without distant simulation |
-| Large-city rest flamegraph | `PROFILE_KIND=rest_large sh benchmarks/bench-npc-calls.sh` | Mono call profile of serial waiting across 5×5 districts |
+| Large-city rest flamegraph | `PROFILE_KIND=rest_large sh benchmarks/bench-npc-calls.sh` | Mono call profile of waiting for background completion across 5×5 districts |
 | Comparison with `0d243e6` | `bash benchmarks/bench-post-0d243e.sh` | `rogue-bench-post-baseline` |
 | NPC route, hunger, and sleep | `sh tests/scenario.sh --bench-npc-safety` | `rogue-bench-npc-safety` |
 | XPD base and supply routing | `sh tests/scenario.sh --bench-xpd` | `rogue-bench-xpd` |

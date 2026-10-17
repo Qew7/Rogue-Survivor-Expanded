@@ -274,7 +274,6 @@ static partial class RestSimulationBenchmarks
     {
         ScenarioWorld fixture = TownScenarioFactory.Create(7971, false);
         GamePreset preset = GamePreset.BuiltIn(GameMode.GM_STANDARD);
-        preset.ParallelDistantSimulationDuringRest = parallelRest;
         Session.Get.GamePreset = preset;
         GameOptions options = RogueGame.Options;
         options.MaxCivilians = civiliansPerDistrict;
@@ -339,9 +338,6 @@ static partial class RestSimulationBenchmarks
                 player = world.Game.Player;
                 for (int x = 0; x < city.Size; x++) for (int y = 0; y < city.Size; y++)
                     foreach (Map restoredMap in city[x, y].Maps) restoredMap.ReconstructAuxiliaryFields();
-                GamePreset restoredPreset = loaded.GamePreset;
-                restoredPreset.ParallelDistantSimulationDuringRest = parallelRest;
-                loaded.GamePreset = restoredPreset;
             }
             else BinarySaveStore.Save(snapshotPath, Session.Get);
         }

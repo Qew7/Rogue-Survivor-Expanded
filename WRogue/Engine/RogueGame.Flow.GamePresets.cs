@@ -125,8 +125,8 @@ namespace djack.RogueSurvivor.Engine
                 "Undead rot speed", "Skeleton spawn weight", "Shambler spawn weight",
                 "Master spawn weight", "Infection: weak at", "Infection: tired at",
                 "Infection: vomiting at", "Infection: bleeding at", "Infection: death at",
-                "Infection symptom rate", "NPC traits and memories", "Background simulation of distant districts",
-                "Finish distant simulation after resting", "Parallel background simulation", "Other gameplay options"
+                "Infection symptom rate", "NPC traits and memories", "Simulate whole city in background",
+                "Other gameplay options"
             };
 
         static readonly string[] GamePresetDescriptions = {
@@ -164,9 +164,7 @@ namespace djack.RogueSurvivor.Engine
             "Infection percentage at which infection becomes fatal.",
             "Scale how often infection symptoms occur. 100% is the normal rate.",
             "Give living NPCs personality traits and evolving memories.",
-            "Start simulating distant districts during sleep or waiting, then continue in the background during play.\nTurn this off to simulate only the player's district and its eight neighbors.",
-            "Finish all remaining distant district turns before returning control after sleep or waiting.\nLeave this off to keep unfinished turns for later simulation.",
-            "Simulate distant districts concurrently in the background, grouping conflicting border arrivals.\nDistrict crossings resolve during their turn.",
+            "Simulate nearby districts with each turn; catch up the rest in the background after sleeping or waiting.\nTurn this off to simulate only the player's district and its eight neighbors.",
             "Open the full gameplay options, including population, events and other rules."
         };
 
@@ -187,8 +185,7 @@ namespace djack.RogueSurvivor.Engine
                     preset.InfectionVomitThreshold + "%", preset.InfectionBleedThreshold + "%",
                     preset.InfectionDeathThreshold + "%", preset.InfectionEffectRatePercent + "%",
                     OnOff(preset.NpcPersonalitiesEnabled), OnOff(!preset.DisableDistantSimulationDuringRest),
-                    OnOff(preset.FinishDistantSimulationAfterRest),
-                    OnOff(preset.ParallelDistantSimulationDuringRest), "ENTER"
+                    "ENTER"
             };
             for (int i = 0; i < values.Length; i++)
                 if (GamePresetRequirement(preset, i) != null) values[i] = "N/A";
@@ -207,10 +204,7 @@ namespace djack.RogueSurvivor.Engine
                 case 24: return preset.Skeletons ? null : "Skeletons";
                 case 25: return preset.Shamblers ? null : "Shamblers";
                 case 26: return preset.ZombieMasters ? null : "Zombie masters";
-                case 34: case 35: case 36:
-                    if (!options.IsSimON) return "district simulation in Other gameplay options";
-                    return option != 34 && preset.DisableDistantSimulationDuringRest ?
-                        "Simulate distant districts while resting" : null;
+                case 34: return options.IsSimON ? null : "district simulation in Other gameplay options";
                 default: return null;
             }
         }
@@ -422,8 +416,6 @@ namespace djack.RogueSurvivor.Engine
                 case 31: preset.InfectionEffectRatePercent = BoundedStep(preset.InfectionEffectRatePercent, 10 * direction, 500); break;
                 case 32: preset.NpcPersonalitiesEnabled = !preset.NpcPersonalitiesEnabled; break;
                 case 33: preset.DisableDistantSimulationDuringRest = !preset.DisableDistantSimulationDuringRest; break;
-                case 34: preset.FinishDistantSimulationAfterRest = !preset.FinishDistantSimulationAfterRest; break;
-                case 35: preset.ParallelDistantSimulationDuringRest = !preset.ParallelDistantSimulationDuringRest; break;
             }
         }
 

@@ -68,10 +68,8 @@ static class SavePerformanceBenchmarks
                 }
             Console.WriteLine("SAVE PROFILE actor wrong map={0}; invalid position={1}; duplicate position={2}; corpse mismatch={3}",
                 wrongMap, invalidPosition, duplicatePosition, misplaced);
-            Console.WriteLine("SAVE PROFILE rest simulation enabled={0}; parallel rest={1}; finish after rest={2}",
-                !session.GamePreset.DisableDistantSimulationDuringRest,
-                session.GamePreset.ParallelDistantSimulationDuringRest,
-                session.GamePreset.FinishDistantSimulationAfterRest);
+            Console.WriteLine("SAVE PROFILE background city simulation enabled={0}",
+                !session.GamePreset.DisableDistantSimulationDuringRest);
             Console.WriteLine("SAVE PROFILE saved options={0}; district simulation={1}; processors={2}",
                 session.GamePreset.HasOptions, GameOptions.Name(session.GamePreset.Options.SimulateDistricts),
                 Environment.ProcessorCount);
@@ -180,9 +178,8 @@ static class SavePerformanceBenchmarks
             maps, tiles, actors, traits, pending, observed, relations, links);
         Console.WriteLine("SAVE PROFILE corpses={0}; ground items={1}; carried items={2}; map objects={3}; scents={4}; total district lag={5}",
             corpses, groundItems, carriedItems, mapObjects, scents, districtLag);
-        Console.WriteLine("SAVE PROFILE misplaced corpses={0}; rest simulation enabled={1}; parallel rest={2}; finish after rest={3}",
-            misplacedCorpses, !session.GamePreset.DisableDistantSimulationDuringRest,
-            session.GamePreset.ParallelDistantSimulationDuringRest, session.GamePreset.FinishDistantSimulationAfterRest);
+        Console.WriteLine("SAVE PROFILE misplaced corpses={0}; background city simulation enabled={1}",
+            misplacedCorpses, !session.GamePreset.DisableDistantSimulationDuringRest);
         Console.WriteLine("SAVE PROFILE residents={0}; entries={1}; text chars={2}; event IDs={3}",
             archive == null ? 0 : archive.Residents.Count, entries, textChars, eventIds);
         foreach (KeyValuePair<string, int> category in categories)

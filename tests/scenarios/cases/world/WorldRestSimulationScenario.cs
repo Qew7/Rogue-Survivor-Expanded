@@ -67,8 +67,6 @@ static class WorldRestSimulationScenario
             Check.Equal(0, distant.LocalTime.TurnCounter, "preset switch keeps distant district paused");
 
             preset.DisableDistantSimulationDuringRest = false;
-            preset.ParallelDistantSimulationDuringRest = true;
-            preset.FinishDistantSimulationAfterRest = true;
             Session.Get.GamePreset = preset;
             player.SleepPoints = 0;
             player.ActionPoints = Rules.BASE_ACTION_COST;
@@ -81,9 +79,8 @@ static class WorldRestSimulationScenario
                 "far district catches up on the background thread");
             Check.Call(world.Game, "StopSimThread", false);
             world.Game.DoWakeUp(player);
-            Check.Call(world.Game, "FinishRestSimulationIfNeeded");
             Check.Equal(Session.Get.WorldTime.TurnCounter, distant.LocalTime.TurnCounter,
-                "interrupted sleep catches the distant district up before player input");
+                "distant district stays caught up after waking");
             Check.Equal(true, neighbor.Personality.Knowledge.Facts.Exists(f => f.EventId == remoteFact.EventId &&
                 f.Source == NpcKnowledgeSource.Told), "simulated NPCs pass the remote event by word of mouth");
             string savePath = Path.Combine(Path.GetTempPath(), "rest-world-" + Guid.NewGuid().ToString("N"));

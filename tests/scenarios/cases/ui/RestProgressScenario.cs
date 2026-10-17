@@ -14,13 +14,6 @@ static class RestProgressScenario
             ScenarioUI ui = (ScenarioUI)world.Game.UI;
             Type game = typeof(RogueGame);
             const BindingFlags fields = BindingFlags.Instance | BindingFlags.NonPublic;
-            game.GetField("m_RestSimulationProgress", fields).SetValue(world.Game,
-                "Simulating city: 2/8 district turns, ~3s left");
-            world.Game.RedrawPlayScreen();
-            Check.Equal(true, ui.DrawnStrings.Exists(s => s.Contains("2/8 district turns")),
-                "simulation progress is drawn over the game");
-
-            game.GetField("m_RestSimulationProgress", fields).SetValue(world.Game, null);
             game.GetField("m_IsPlayerLongWait", fields).SetValue(world.Game, true);
             game.GetField("m_PlayerLongWaitEnd", fields).SetValue(world.Game, new WorldTime(20));
             ui.DrawnStrings.Clear();

@@ -38,7 +38,6 @@ static class RestDeferredDebtScenario
             Check.Call(world.Game, "AdvancePlay", new[] { typeof(District), flags }, world.Map.District, active);
             Check.Equal(11, Session.Get.WorldTime.TurnCounter, "player turn advances normally");
             Check.Equal(0, distant.LocalTime.TurnCounter, "far debt remains after the live turn");
-            Check.Call(world.Game, "FinishRestSimulationIfNeeded");
             Check.Equal(0, distant.LocalTime.TurnCounter, "returning control does not block on far debt");
 
             string path = Path.Combine(Path.GetTempPath(), "rest-debt-" + Guid.NewGuid().ToString("N"));

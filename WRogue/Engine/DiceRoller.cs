@@ -23,8 +23,7 @@ namespace djack.RogueSurvivor.Engine
         internal static Guid NewGuid()
         {
             DiceRoller roller = s_OverrideTarget;
-            if (roller == null && Session.Get.GamePreset != null &&
-                Session.Get.GamePreset.ParallelDistantSimulationDuringRest)
+            if (roller == null)
                 roller = Session.Get.IdentityDiceRoller;
             if (roller == null) return Guid.NewGuid();
             byte[] bytes = new byte[16];

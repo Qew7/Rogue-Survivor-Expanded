@@ -12,6 +12,7 @@ namespace djack.RogueSurvivor.Engine
         public bool NpcPersonalitiesEnabled;
         [System.Runtime.Serialization.OptionalField]
         public bool DisableDistantSimulationDuringRest;
+        // Kept for old serialized presets; background simulation now has one switch.
         [System.Runtime.Serialization.OptionalField]
         public bool FinishDistantSimulationAfterRest;
         [System.Runtime.Serialization.OptionalField]

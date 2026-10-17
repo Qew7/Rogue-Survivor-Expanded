@@ -5,7 +5,6 @@ using System.Drawing;
 using System.Threading;
 using System.Windows.Forms;
 using System.IO;
-using System.Diagnostics;
 using System.Threading.Tasks;
 
 using djack.RogueSurvivor.Data;
@@ -239,190 +238,6 @@ namespace djack.RogueSurvivor.Engine
             AdvancePlay(d, ComputeSimFlagsForTurn(d.EntryMap.LocalTime.TurnCounter));
         }
 
-        int RemainingRestTurns()
-        {
-            if (m_Player.IsSleeping)
-            {
-                int regen = m_Rules.ActorSleepRegen(m_Player, m_Rules.IsOnCouch(m_Player));
-                return regen > 0 ? Math.Max(0,
-                    (m_Rules.ActorMaxSleep(m_Player) - m_Player.SleepPoints + regen - 1) / regen) : 0;
-            }
-            return m_IsPlayerLongWait && !m_IsPlayerLongWaitForcedStop ?
-                Math.Max(0, m_PlayerLongWaitEnd.TurnCounter - m_Session.WorldTime.TurnCounter) : 0;
-        }
-
-        void SimulateDistantDistrictsThrough(int turn, int remainingRestTurns = 0)
-        {
-            World world = m_Session.World;
-            int total = 0, districtsDue = 0;
-            for (int x = 0; x < world.Size; x++)
-                for (int y = 0; y < world.Size; y++)
-                {
-                    District district = world[x, y];
-                    if (district != null && district != m_Session.CurrentMap.District)
-                    {
-                        int due = Math.Max(0, turn - district.EntryMap.LocalTime.TurnCounter);
-                        total += due;
-                        if (due > 0) districtsDue++;
-                    }
-                }
-            if (total == 0)
-            {
-                m_RestHasDeferredSimulation = false;
-                return;
-            }
-            // Budget the new district turns plus a share of older debt; simulate oldest turns first.
-            bool finishAfterRest = m_Session.GamePreset.FinishDistantSimulationAfterRest;
-            int budget = remainingRestTurns > 0 ? Math.Min(total, districtsDue +
-                (total - districtsDue + remainingRestTurns) / (remainingRestTurns + 1)) :
-                finishAfterRest ? total : districtsDue;
-            if (m_Session.GamePreset.ParallelDistantSimulationDuringRest)
-            {
-                SimulateDistantDistrictsByColor(world, turn, total, budget, finishAfterRest);
-                return;
-            }
-            int done = 0;
-            Stopwatch elapsed = Stopwatch.StartNew();
-            bool showedProgress = false;
-            if (m_RestProgressLastDraw == 0) m_RestProgressLastDraw = Stopwatch.GetTimestamp();
-            while (done < budget)
-            {
-                District next = null;
-                for (int x = 0; x < world.Size; x++)
-                    for (int y = 0; y < world.Size; y++)
-                    {
-                        District district = world[x, y];
-                        if (district == null || district == m_Session.CurrentMap.District ||
-                            district.EntryMap.LocalTime.TurnCounter >= turn) continue;
-                        if (next == null || district.EntryMap.LocalTime.TurnCounter < next.EntryMap.LocalTime.TurnCounter)
-                            next = district;
-                    }
-                if (next == null) break;
-                long now = Stopwatch.GetTimestamp();
-                if (now - m_RestProgressLastDraw >= Stopwatch.Frequency / 4)
-                {
-                    string eta = done == 0 ? "estimating" :
-                        String.Format("~{0}s left", Math.Ceiling(elapsed.Elapsed.TotalSeconds * (budget - done) / done));
-                    m_RestSimulationProgress = String.Format("Simulating city: {0}/{1} district turns, {2}", done, budget, eta);
-                    RedrawPlayScreen();
-                    m_RestProgressLastDraw = now;
-                    showedProgress = true;
-                }
-                SimulateDistrict(next);
-                done++;
-                if (!m_IsGameRunning || m_HasLoadedGame || m_Player == null || m_Player.IsDead) break;
-                if (m_IsPlayerLongWaitForcedStop ||
-                    !m_Player.IsSleeping && !m_IsPlayerLongWait && !m_PlayerWaitedThisTurn)
-                {
-                    if (!finishAfterRest) break;
-                    budget = total;
-                }
-            }
-            m_RestHasDeferredSimulation = done < total;
-            m_RestSimulationProgress = null;
-            if (showedProgress && m_IsGameRunning && !m_HasLoadedGame && m_Player != null && !m_Player.IsDead)
-                RedrawPlayScreen();
-        }
-
-        void SimulateDistantDistrictsByColor(World world, int turn, int total, int budget, bool finishAfterRest)
-        {
-            int done = 0;
-            Stopwatch elapsed = Stopwatch.StartNew();
-            bool showedProgress = false;
-            int workers = ParallelRestWorkers > 0 ? ParallelRestWorkers : Math.Min(4, Environment.ProcessorCount);
-            var options = new ParallelOptions { MaxDegreeOfParallelism = Math.Max(1, workers) };
-            if (m_RestProgressLastDraw == 0) m_RestProgressLastDraw = Stopwatch.GetTimestamp();
-            bool stopped = false;
-            while (done < budget && !stopped)
-            {
-                int oldest = Int32.MaxValue;
-                for (int x = 0; x < world.Size; x++) for (int y = 0; y < world.Size; y++)
-                {
-                    District district = world[x, y];
-                    if (district != null && district != m_Session.CurrentMap.District &&
-                        district.EntryMap.LocalTime.TurnCounter < turn)
-                        oldest = Math.Min(oldest, district.EntryMap.LocalTime.TurnCounter);
-                }
-                if (oldest == Int32.MaxValue) break;
-                for (int color = 0; color < 2; color++)
-                {
-                    if (done >= budget) break;
-                    var batch = new List<District>();
-                    for (int x = 0; x < world.Size; x++) for (int y = 0; y < world.Size; y++)
-                    {
-                        District district = world[x, y];
-                        if (district != null && district != m_Session.CurrentMap.District &&
-                            district.EntryMap.LocalTime.TurnCounter == oldest && ((x + y) & 1) == color)
-                            batch.Add(district);
-                    }
-                    if (batch.Count == 0) continue;
-                    if (batch.Count > budget - done)
-                        batch.RemoveRange(budget - done, batch.Count - (budget - done));
-                    // Programs for this batch are fixed before its maps and NPCs change.
-                    var slots = new HashSet<int>();
-                    foreach (District district in batch)
-                        foreach (Map map in district.Maps)
-                        {
-                            slots.Add(map.LocalTime.TurnCounter / WorldTime.TURNS_PER_HOUR);
-                            slots.Add((map.LocalTime.TurnCounter + 1) / WorldTime.TURNS_PER_HOUR);
-                        }
-                    foreach (int slot in slots)
-                        for (int station = 0; station < 4; station++) GetRadioProgram(station, slot);
-
-                    const int eventIdsPerDistrictTurn = 65536;
-                    long[] eventIds = new long[batch.Count];
-                    for (int i = 0; i < batch.Count; i++)
-                        eventIds[i] = m_Session.ReservePersonalityEventIds(eventIdsPerDistrictTurn);
-                    // Initialize lazy global stores before any worker can write to them.
-                    ResidentRecords records = m_Session.ResidentRecords;
-                    NpcStoryDirector director = m_Session.NpcDirector;
-                    List<List<int>> waves = RestSimulationWaves(batch, director,
-                        m_Session.CurrentMap.District);
-                    foreach (List<int> wave in waves)
-                    {
-                        Parallel.ForEach(wave, options, i =>
-                    {
-                        bool previous = s_ParallelRestWorker;
-                        s_ParallelRestWorker = true;
-                        try
-                        {
-                            m_Session.WithPersonalityEventIds(eventIds[i], eventIdsPerDistrictTurn,
-                                () => SimulateDistrict(batch[i]));
-                        }
-                        finally
-                        {
-                            s_ParallelRestWorker = previous;
-                        }
-                    });
-                    }
-                    done += batch.Count;
-                    long now = Stopwatch.GetTimestamp();
-                    if (now - m_RestProgressLastDraw >= Stopwatch.Frequency / 4)
-                    {
-                        string eta = done == 0 ? "estimating" :
-                            String.Format("~{0}s left", Math.Ceiling(elapsed.Elapsed.TotalSeconds * Math.Max(0, budget - done) / done));
-                        m_RestSimulationProgress = String.Format("Simulating city: {0}/{1} district turns, {2}", done, budget, eta);
-                        RedrawPlayScreen();
-                        m_RestProgressLastDraw = now;
-                        showedProgress = true;
-                    }
-                    if (!m_IsGameRunning || m_HasLoadedGame || m_Player == null || m_Player.IsDead)
-                    { stopped = true; break; }
-                    if (m_IsPlayerLongWaitForcedStop ||
-                        !m_Player.IsSleeping && !m_IsPlayerLongWait && !m_PlayerWaitedThisTurn)
-                    {
-                        if (!finishAfterRest) { budget = done; break; }
-                        budget = total;
-                    }
-                }
-                m_Session.NpcDirector.CompactFinished();
-            }
-            m_RestHasDeferredSimulation = done < total;
-            m_RestSimulationProgress = null;
-            if (showedProgress && m_IsGameRunning && !m_HasLoadedGame && m_Player != null && !m_Player.IsDead)
-                RedrawPlayScreen();
-        }
-
         static List<List<int>> RestSimulationWaves(List<District> batch, NpcStoryDirector director,
             District playerDistrict)
         {
@@ -492,21 +307,6 @@ namespace djack.RogueSurvivor.Engine
             return waves;
         }
 
-        void FinishRestSimulationIfNeeded()
-        {
-            if (m_Session.GamePreset == null || !m_Session.GamePreset.FinishDistantSimulationAfterRest)
-            {
-                m_RestHasDeferredSimulation = false;
-                return;
-            }
-            if (s_Options.IsSimON && !m_Session.GamePreset.DisableDistantSimulationDuringRest &&
-                (m_BackgroundDistantSimulationActive || m_RestHasDeferredSimulation))
-            {
-                StopSimThread(false);
-                SimulateDistantDistrictsThrough(m_Session.WorldTime.TurnCounter);
-            }
-        }
-
         // Called only while the live turn is paused. StopSimThread joins after one
         // district turn, so input, saving, and district changes see a stable world.
         void SimulateBackgroundDistantDistricts()
@@ -536,12 +336,10 @@ namespace djack.RogueSurvivor.Engine
                     District candidate = world[x, y];
                     if (candidate == null || candidate.EntryMap.LocalTime.TurnCounter != oldest) continue;
                     if (color < 0) color = (x + y) & 1;
-                    if (!m_Session.GamePreset.ParallelDistantSimulationDuringRest || ((x + y) & 1) == color)
+                    if (((x + y) & 1) == color)
                         batch.Add(candidate);
                 }
-                if (!m_Session.GamePreset.ParallelDistantSimulationDuringRest)
-                    batch.RemoveRange(1, batch.Count - 1);
-                else if (batch.Count > 4)
+                if (batch.Count > 4)
                     batch.RemoveRange(4, batch.Count - 4);
                 SimulateBackgroundDistantBatch(batch, current);
             }
@@ -565,8 +363,7 @@ namespace djack.RogueSurvivor.Engine
             ResidentRecords records = m_Session.ResidentRecords;
             NpcStoryDirector director = m_Session.NpcDirector;
             var options = new ParallelOptions { MaxDegreeOfParallelism =
-                m_Session.GamePreset.ParallelDistantSimulationDuringRest ?
-                    Math.Max(1, ParallelRestWorkers > 0 ? ParallelRestWorkers : Math.Min(4, Environment.ProcessorCount)) : 1 };
+                Math.Max(1, ParallelRestWorkers > 0 ? ParallelRestWorkers : Math.Min(4, Environment.ProcessorCount)) };
             foreach (List<int> wave in RestSimulationWaves(batch, director, current))
                 Parallel.ForEach(wave, options, i =>
                 {

@@ -27,7 +27,6 @@ static class WorldParallelRestExactArrivalsScenario
             ".....", ".....", "....."), world =>
         {
             GamePreset preset = GamePreset.BuiltIn(GameMode.GM_STANDARD);
-            preset.ParallelDistantSimulationDuringRest = true;
             Session.Get.GamePreset = preset;
             Actor player = NpcIntentSupport.Player(world, 2, 1);
             World city = new World(3);

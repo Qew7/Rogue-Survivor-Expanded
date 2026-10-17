@@ -13,7 +13,6 @@ static class WorldRestPacingScenario
             ".....", ".....", "....."), world =>
         {
             GamePreset preset = GamePreset.BuiltIn(GameMode.GM_STANDARD);
-            preset.FinishDistantSimulationAfterRest = true;
             Session.Get.GamePreset = preset;
             Actor player = NpcIntentSupport.Player(world, 2, 1);
             World city = new World(2);

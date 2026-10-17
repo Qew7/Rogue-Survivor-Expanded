@@ -92,15 +92,12 @@ Numeric model/content IDs and string personality IDs remain stable. Tile,
 actor and item model definitions and personality callbacks are rebuilt from
 content; the save retains their IDs and instance state.
 The optional preset field `DisableDistantSimulationDuringRest` defaults to false
-for existing presets and saves, so distant districts advance during sleep and
-waiting unless the player disables it before a new game.
-`FinishDistantSimulationAfterRest` is also optional and defaults to false. When
-disabled, unfinished district turns remain in their saved local clocks after
-rest ends; they continue during later rests or catch up on district entry.
-`ParallelDistantSimulationDuringRest` is optional: older saves without it keep
-the serialized default of false, while new built-in presets enable it. When
-enabled, districts sharing the same destination entry are ordered while other
-districts can run together. Followers choose landing cells outside every
+for existing presets and saves. It is the single background city simulation
+switch: distant districts begin catching up during sleep or waiting and continue
+during play. The older serialized fields `FinishDistantSimulationAfterRest` and
+`ParallelDistantSimulationDuringRest` remain readable but no longer affect
+simulation. The background scheduler uses up to four workers and orders
+districts sharing the same destination entry. Followers choose landing cells outside every
 interdistrict entry point. Each distant district retains its own random stream,
 so an interrupted rest or a save/load continues that district's sequence. The
 session identity stream keeps generated IDs

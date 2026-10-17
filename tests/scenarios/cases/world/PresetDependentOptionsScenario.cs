@@ -17,47 +17,26 @@ static class PresetDependentOptionsScenario
             preset.HasOptions = true;
             string[] labels = (string[])typeof(RogueGame).GetField("GamePresetLabels",
                 BindingFlags.Static | BindingFlags.NonPublic).GetValue(null);
-            int rest = Array.IndexOf(labels, "Background simulation of distant districts");
-            int finish = Array.IndexOf(labels, "Finish distant simulation after resting");
-            int parallel = Array.IndexOf(labels, "Parallel background simulation");
-            Check.Equal(true, rest >= 0 && finish == rest + 1 && parallel == finish + 1,
-                "dependent rest controls appear together");
-            Check.Equal(false, preset.FinishDistantSimulationAfterRest, "finishing rest debt defaults off");
-            Check.Equal(true, preset.ParallelDistantSimulationDuringRest,
-                "new games default to parallel distant rest simulation");
-            Check.Equal("N/A", Value(preset, rest), "rest simulation is inactive when district simulation is off");
-            Check.Equal("N/A", Value(preset, finish), "finish option is inactive when simulation is off");
-            Check.Equal("N/A", Value(preset, parallel), "parallel option is inactive when simulation is off");
-            Toggle(preset, finish);
-            Toggle(preset, parallel);
-            Toggle(preset, rest);
-            Check.Equal(false, preset.FinishDistantSimulationAfterRest,
-                "inactive finish option cannot be switched on");
+            int background = Array.IndexOf(labels, "Simulate whole city in background");
+            Check.Equal(true, background >= 0 && labels[background + 1] == "Other gameplay options",
+                "only one background city control appears in the preset");
+            Check.Equal(-1, Array.IndexOf(labels, "Finish distant simulation after resting"),
+                "blocking finish control is removed");
+            Check.Equal(-1, Array.IndexOf(labels, "Parallel background simulation"),
+                "parallel worker control is removed");
+            Check.Equal("N/A", Value(preset, background),
+                "background simulation requires district simulation");
+            Toggle(preset, background);
             Check.Equal(false, preset.DisableDistantSimulationDuringRest,
-                "inactive rest simulation option cannot be changed");
-            Check.Equal(true, preset.ParallelDistantSimulationDuringRest,
-                "inactive parallel option cannot be changed");
+                "inactive background control cannot change");
 
             options.SimulateDistricts = GameOptions.SimRatio.FULL;
             preset.Options = options;
-            Toggle(preset, finish);
-            Toggle(preset, parallel);
-            Check.Equal(false, preset.ParallelDistantSimulationDuringRest,
-                "parallel simulation can be disabled in the preset");
-            Toggle(preset, parallel);
-            Check.Equal(true, preset.FinishDistantSimulationAfterRest,
-                "finish option can be enabled after district simulation");
-            Check.Equal(true, preset.ParallelDistantSimulationDuringRest,
-                "parallel option can be enabled after district simulation");
-            Toggle(preset, rest);
-            Check.Equal("N/A", Value(preset, finish), "finish option is inactive when rest simulation is off");
-            Check.Equal("N/A", Value(preset, parallel), "parallel option is inactive when rest simulation is off");
-            Toggle(preset, finish);
-            Check.Equal(true, preset.FinishDistantSimulationAfterRest,
-                "inactive child keeps its chosen value for later");
-            Toggle(preset, rest);
-            Check.Equal("ON", Value(preset, finish), "re-enabled rest simulation restores the child value");
-            Check.Equal("ON", Value(preset, parallel), "re-enabled rest simulation restores parallel choice");
+            Check.Equal("ON", Value(preset, background), "background simulation defaults on");
+            Toggle(preset, background);
+            Check.Equal("OFF", Value(preset, background), "background simulation can be disabled");
+            Toggle(preset, background);
+            Check.Equal("ON", Value(preset, background), "background simulation can be restored");
 
             int corpseDecay = Array.IndexOf(labels, "Corpse decay speed");
             int infectionRate = Array.IndexOf(labels, "Infection rate");
@@ -93,10 +72,8 @@ static class PresetDependentOptionsScenario
                 collection.AddOrReplace(preset);
                 collection.Save(path);
                 GamePreset loaded = GamePresetCollection.Load(path).Presets[0];
-                Check.Equal(true, loaded.FinishDistantSimulationAfterRest,
-                    "finish choice survives preset save and load");
-                Check.Equal("ON", Value(loaded, finish), "loaded dependent choice is visible");
-                Check.Equal("ON", Value(loaded, parallel), "loaded parallel choice is visible");
+                Check.Equal("ON", Value(loaded, background),
+                    "single background choice survives preset save and load");
             }
             finally
             {
