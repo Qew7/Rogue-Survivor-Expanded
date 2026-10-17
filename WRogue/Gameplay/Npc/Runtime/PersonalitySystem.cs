@@ -94,7 +94,11 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 return 0;
             Actor leader = target.HasLeader ? target.Leader : target.CountFollowers > 0 ? target : null;
             Guid group = leader == null ? Guid.Empty : target.SocialGroup == null ? leader.PersonalityIdentity : target.SocialGroup.Identity;
-            return NpcRelationshipValue.Calculate(observer, target.PersonalityIdentity, group, target.Faction == null ? -1 : target.Faction.ID, false);
+            int feeling = NpcRelationshipValue.Calculate(observer, target.PersonalityIdentity, group,
+                target.Faction == null ? -1 : target.Faction.ID, false);
+            NpcKnownPerson known = observer.Personality.Knowledge.Person(target.PersonalityIdentity);
+            return known != null && known.Violation >= 80 && known.ViolationConfidence >= 80 ?
+                Math.Min(feeling, -30) : feeling;
         }
 
         public static int Bias(Actor actor, NpcPersonalityAxis axis, Item item = null, PersonalityRegistry registry = null,

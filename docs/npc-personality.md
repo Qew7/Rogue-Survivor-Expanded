@@ -60,6 +60,10 @@ The three feelings and acquired faction-specific trait biases add for a current
 target, clamped to -100..100. Dislike can
 stop trade offers and recruitment; positive feeling can make a marginal trade
 acceptable. A follower's feeling toward its leader also affects trust growth.
+An unresolved, confidently known serious violation makes effective attitude toward
+the offender at most -30, even when older positive memories remain. Recruitment
+requires both the prospective leader and follower to accept each other at that
+threshold. Clearing the violation restores the underlying remembered attitude.
 Accumulated `TrustInLeader` remains the authority for trusting the current
 leader: while it meets the existing threshold, the follower accepts that
 leader's trade offers and does not exclude them from autonomous trade solely

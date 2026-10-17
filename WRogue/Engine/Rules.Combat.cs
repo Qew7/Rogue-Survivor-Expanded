@@ -672,6 +672,11 @@ namespace djack.RogueSurvivor.Engine
                 reason = "does not trust this leader";
                 return false;
             }
+            if (Gameplay.Personality.PersonalitySystem.Attitude(actor, target) <= -30)
+            {
+                reason = "does not want this follower";
+                return false;
+            }
 
             // 2. Target is sleeping.
             if (target.IsSleeping)
