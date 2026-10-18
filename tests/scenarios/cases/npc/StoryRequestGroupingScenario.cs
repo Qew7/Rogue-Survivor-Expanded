@@ -60,7 +60,8 @@ static class StoryRequestGroupingScenario
             Check.Equal(6, radio.Facts.Length, "radio retains all requests and their outcome");
             Check.Equal(true, radio.Text.Contains("Mara asked Juan, Harry, and Gilbert for medicine"),
                 "radio groups one person's distinct requests");
-            Check.Equal(true, radio.Text.Contains("Nina asked"), "another requester remains separate");
+            Check.Equal(false, radio.Text.Contains("Nina asked"),
+                "radio leaves an unrelated request out of Mara's outcome: " + radio.Text);
             Check.Equal(true, radio.Text.Contains(" In the end, "), "known outcome closes the episode");
 
             Actor listener = NpcIntentSupport.Actor(world, "listener", 14, 1);

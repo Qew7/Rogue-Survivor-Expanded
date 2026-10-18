@@ -1,6 +1,7 @@
 using System.Linq;
 using djack.RogueSurvivor.Data;
 using djack.RogueSurvivor.Engine;
+using djack.RogueSurvivor.Engine.Actions;
 using djack.RogueSurvivor.Gameplay.Personality;
 
 static class StoryChapterRumorScenario
@@ -32,7 +33,7 @@ static class StoryChapterRumorScenario
                 "unrelated report stays separate");
             Check.Equal(true, player.Personality.HeardJournal.Last().Text.Contains(" After that, "),
                 "player hears a connected chapter rather than isolated fragments");
-            Check.Equal(false, NpcConversation.EligibleListener(teller, listener, chosen),
+            Check.Equal(false, NpcConversation.EligibleListener(world.Game, teller, listener, chosen),
                 "chapter is not repeated at unchanged confidence");
 
             world.Place(teller, 0, 1);
@@ -43,10 +44,15 @@ static class StoryChapterRumorScenario
             Session.Get.WorldTime.TurnCounter = 15;
             NpcFact latest = teller.Personality.Knowledge.Facts.Last(f => f.StoryId == "chapter");
             world.Place(teller, 5, 1);
-            NpcConversation.ShareRumor(world.Game, teller, listener, latest, false);
-            Check.Equal(12, listener.Personality.Knowledge.Facts.Count(f => f.StoryId == "chapter"),
-                "one later speech carries ten recent linked facts");
-            Check.Equal(true, listener.Personality.Knowledge.Facts.Any(f => f.EventId == latest.EventId),
+            Check.Equal(false, new ActionNpcTell(teller, world.Game, listener, latest).IsLegal(),
+                "the teller does not repeat identical reports to the first listener that day");
+            world.Place(listener, 0, 1);
+            Actor newcomer = NpcIntentSupport.Actor(world, "new listener", 4, 1);
+            Check.Equal(true, world.Try(new ActionNpcTell(teller, world.Game, newcomer, latest)),
+                "a new listener can hear the later chapter");
+            Check.Equal(10, newcomer.Personality.Knowledge.Facts.Count(f => f.StoryId == "chapter"),
+                "the new listener receives ten recent linked facts");
+            Check.Equal(true, newcomer.Personality.Knowledge.Facts.Any(f => f.EventId == latest.EventId),
                 "chapter retains its chosen latest fact");
         });
     }

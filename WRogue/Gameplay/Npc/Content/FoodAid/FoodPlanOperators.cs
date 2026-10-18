@@ -54,7 +54,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                     if (n >= NpcFactLayout.MaximumQuestions || peer.IsSleeping || peer == d.Owner ||
                         (peer.PersonalityIdentity == d.Goal.TargetId && !allowTarget) ||
                         !peer.Model.Abilities.IsIntelligent || d.Game.Rules.AreEnemies(d.Owner, peer) ||
-                        d.Owner.Personality.Knowledge.WasTold(-d.Goal.Sequence, peer.PersonalityIdentity)) continue;
+                        !d.Owner.Personality.Knowledge.CanRequest(d.Goal.Sequence, peer.PersonalityIdentity,
+                            NpcFoodActions.RequestText(d.Owner, d.Goal), d.Turn)) continue;
                     ulong at = d.At(peer.Location), asked = NpcFactLayout.Question(n++);
                     d.Travel(peer.Location, peer.PersonalityIdentity, at);
                     int cost = 15 - PersonalitySystem.Bias(d.Owner, NpcPersonalityAxis.Group) / 3 - PersonalitySystem.Bias(d.Owner, NpcPersonalityAxis.Compassion) / 5 -

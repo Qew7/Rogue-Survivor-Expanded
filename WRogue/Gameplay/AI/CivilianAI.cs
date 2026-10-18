@@ -20,11 +20,6 @@ namespace djack.RogueSurvivor.Gameplay.AI
     class CivilianAI : OrderableAI
     {
         internal static Action<long> ProfileIntentPrep;
-        static bool CanSeekTrade(Actor actor, int turn)
-        {
-            PersonalityState state = actor.Personality;
-            return state == null || turn >= state.NextTradeAttemptTurn;
-        }
         #region Constants
         const int FOLLOW_NPCLEADER_MAXDIST = 1;
         const int FOLLOW_PLAYERLEADER_MAXDIST = 1;
@@ -208,6 +203,12 @@ namespace djack.RogueSurvivor.Gameplay.AI
             }
             // end alpha10
 
+            ActorAction pursuitReport = ConflictResolutionModule.AnnouncePursuit(game, m_Actor, intentVisible);
+            if (pursuitReport != null)
+                return BehaviorFleeFromExplosives(game, FilterStacks(game, mapPercepts)) ?? pursuitReport;
+            ActorAction pursuitResponse = ConflictResolutionModule.AnnouncePursuitResponse(game, m_Actor, intentVisible);
+            if (pursuitResponse != null)
+                return BehaviorFleeFromExplosives(game, FilterStacks(game, mapPercepts)) ?? pursuitResponse;
             decisionStart = decisionProfile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
             ActorAction personalIntervention = BehaviorNpcEmergency(game, intentVisible);
             if (decisionProfile != null) decisionProfile("decision emergency", System.Diagnostics.Stopwatch.GetTimestamp() - decisionStart);
@@ -618,7 +619,9 @@ namespace djack.RogueSurvivor.Gameplay.AI
 
                 #region Trade
                 decisionStart = decisionProfile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
-                bool canSeekTrade = Directives.CanTrade && CanSeekTrade(m_Actor, map.LocalTime.TurnCounter);
+                bool canSeekTrade = Directives.CanTrade && (m_Actor.Personality == null ||
+                    map.LocalTime.TurnCounter >= m_Actor.Personality.NextTradeAttemptTurn ||
+                    game.Rules.IsActorTradeEmergency(m_Actor));
                 int tradeBias = canSeekTrade ? PersonalitySystem.Bias(m_Actor, NpcPersonalityAxis.Trade) : 0;
                 if (canSeekTrade && (tradeBias == 0 ||
                     game.Rules.RollChance(Math.Max(0, Math.Min(100, 70 + tradeBias)))) &&

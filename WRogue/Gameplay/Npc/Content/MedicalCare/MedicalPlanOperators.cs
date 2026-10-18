@@ -51,8 +51,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 if (peer == d.Owner || peer.IsSleeping || peer.Model.Abilities.IsUndead || !peer.Model.Abilities.IsIntelligent ||
                     d.Game.Rules.AreEnemies(d.Owner, peer) || peer.PersonalityIdentity == d.Goal.TargetId && d.Goal.TargetId != d.Owner.PersonalityIdentity) continue;
                 ulong at = d.At(peer.Location); if (at == 0) continue; d.Travel(peer.Location, peer.PersonalityIdentity, at);
-                if (NpcMedicineActions.CanAsk(d.Owner, peer.PersonalityIdentity, d.Turn) &&
-                    !d.Owner.Personality.Knowledge.WasTold(-d.Goal.Sequence, peer.PersonalityIdentity))
+                if (d.Owner.Personality.Knowledge.CanRequest(d.Goal.Sequence, peer.PersonalityIdentity,
+                    NpcMedicineActions.RequestText, d.Turn, medicine: true))
                     d.Add(NpcPlanAction.AskMedicine, peer.Location, peer.PersonalityIdentity, at, (ulong)NpcPlanFact.Medicine,
                         (ulong)NpcPlanFact.Medicine, 0, 17 - PersonalitySystem.Bias(d.Owner, NpcPersonalityAxis.Group) / 3 - NpcValues.KnownAttitude(d.Owner, peer.PersonalityIdentity) / 5);
                 if (d.Owner.Personality.Knowledge.Facts.Exists(f => f.Kind == "medicine_offered" && f.SubjectId == peer.PersonalityIdentity && f.OtherId == d.Owner.PersonalityIdentity && d.Turn - f.EventTurn < 60))

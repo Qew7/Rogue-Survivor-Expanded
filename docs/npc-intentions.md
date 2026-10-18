@@ -478,6 +478,15 @@ Session clears its old director.
 When several recent tellable facts share a story ID, NPCs tell up to ten as
 one chronological report. Household radios and four station-specific portable
 receivers carry the same hourly program for their station throughout the city.
+For a radio story, the bulletin centers the consequential known event and its
+closest related context; repeated requests by different people do not become a
+chain merely because they share a story ID. The complete chapter still reaches
+listeners, so later help can revise an earlier reported need. Source attribution
+and explicit causal links remain intact. After a recent radio story, the
+player's existing talk action favors a witness's eligible account of that
+story over unrelated news; the speaker still needs to know and be willing to
+tell it. This edit applies to story bulletins,
+not scheduled announcements, station interludes, or resource-location rumors.
 Survivor Network covers all stories, Military Dispatch covers military events
 and announces the district of an actual supply flight one or two days ahead,
 Local Calls covers requests and aid, and Gang Frequency covers violence and

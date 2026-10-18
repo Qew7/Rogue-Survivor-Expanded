@@ -56,8 +56,12 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             catalog.AfterEvent("shared_medicine", (g, e) => { if (e.Subject != null && e.Subject.Personality != null && e.Other != null) NpcPromises.Delivery(g, e.Subject, e.Other, "medicine", e.Id, e.StoryId); });
             catalog.OnReport("promise_kept", c => NpcReputation.Reputation(c, true, false, false));
             catalog.OnReport("promise_broken", c => NpcReputation.Reputation(c, false, true, false));
-            catalog.Event(new NpcEventDefinition("food_promised", NpcRecordCategory.Help, true, e => (e.Subject ?? "Someone") + " promised to bring food to " + (e.Other ?? "someone") + " within 180 turns.", null) { CanReply = (a, b) => a.Personality.CanRememberCommitment && b.Personality.CanRememberCommitment });
-            catalog.Event(new NpcEventDefinition("medicine_promised", NpcRecordCategory.Help, true, e => (e.Subject ?? "Someone") + " promised to bring medicine to " + (e.Other ?? "someone") + " within 180 turns.", null) { CanReply = (a, b) => a.Personality.CanRememberCommitment && b.Personality.CanRememberCommitment });
+            catalog.Event(new NpcEventDefinition("food_promised", NpcRecordCategory.Help, true, e => (e.Subject ?? "Someone") + " promised to bring food to " + (e.Other ?? "someone") + " within 180 turns.",
+                f => (f.ReportSubject ?? "Someone") + " promised to bring food to " + (f.ReportOther ?? "someone") + " within six hours")
+                { CanReply = (a, b) => a.Personality.CanRememberCommitment && b.Personality.CanRememberCommitment });
+            catalog.Event(new NpcEventDefinition("medicine_promised", NpcRecordCategory.Help, true, e => (e.Subject ?? "Someone") + " promised to bring medicine to " + (e.Other ?? "someone") + " within 180 turns.",
+                f => (f.ReportSubject ?? "Someone") + " promised to bring medicine to " + (f.ReportOther ?? "someone") + " within six hours")
+                { CanReply = (a, b) => a.Personality.CanRememberCommitment && b.Personality.CanRememberCommitment });
             catalog.Event(new NpcEventDefinition("promise_kept", NpcRecordCategory.Help, true, e => (e.Subject ?? "Someone") + " fulfilled their promise to " + (e.Other ?? "someone") + ".", f => f.ReportSubject + " kept a promise" + (f.ReportOther == null ? "" : " to " + f.ReportOther))
                 { CanWitness = (a, e) => a.Personality != null && a.Personality.Knowledge.Facts.Exists(f => f.EventId == e.CauseId && (f.Kind == "food_promised" || f.Kind == "medicine_promised")),
                   SelfReportTone = NpcSelfReportTone.Helpful, ReportConclusion = true,

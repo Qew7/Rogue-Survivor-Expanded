@@ -9,6 +9,9 @@ namespace djack.RogueSurvivor.Gameplay.Personality
 {
     static class NpcFoodActions
     {
+        public static string RequestText(Actor owner, NpcIntent goal)
+        { return goal.Generated == null || goal.Generated.SubjectId == owner.PersonalityIdentity ?
+            "Could you spare some food?" : "Could you spare food? I'm trying to help someone."; }
         public static ActorAction Take(NpcActionContext c)
         {
             Location place = c.Step == null ? c.Goal.Destination : c.Step.Place;
@@ -29,13 +32,14 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public static ActorAction Request(NpcActionContext c)
         {
             Guid person = c.Step == null ? c.Goal.TargetId : c.Step.Target;
-            return c.Action(() => c.NearPerson(person) && !c.Owner.Personality.Knowledge.WasTold(-c.Goal.Sequence, person) &&
+            string speech = RequestText(c.Owner, c.Goal);
+            return c.Action(() => c.NearPerson(person) && c.Owner.Personality.Knowledge.CanRequest(c.Goal.Sequence,
+                person, speech, c.Owner.Location.Map.LocalTime.TurnCounter) &&
                 (c.Step != null || !c.Goal.Announced && c.Game.Rules.IsActorHungry(c.Owner) && !NpcFoodSupply.HasFood(c.Game, c.Owner)), () => {
-                c.Game.DoSay(c.Owner, c.Target, c.Goal.Generated == null || c.Goal.Generated.SubjectId == c.Owner.PersonalityIdentity ?
-                    "Could you spare some food?" : "Could you spare food? I'm trying to help someone.", RogueGame.Sayflags.IS_STORY | RogueGame.Sayflags.IS_REQUEST,
+                c.Game.DoSay(c.Owner, c.Target, speech, RogueGame.Sayflags.IS_STORY | RogueGame.Sayflags.IS_REQUEST,
                     c.Goal.CauseId, c.Goal.StoryId);
                 if (c.Capability.WaitingAfterAnnouncement) { c.Goal.Announced = true; c.Goal.Status = NpcIntentStatus.Waiting; }
-                c.Owner.Personality.Knowledge.Told(-c.Goal.Sequence, person, c.Owner.Location.Map.LocalTime.TurnCounter);
+                c.Owner.Personality.Knowledge.Requested(c.Goal.Sequence, person, speech, c.Owner.Location.Map.LocalTime.TurnCounter);
                 c.Publish("requested_food", c.Target); c.Goal.NextAttempt = c.Owner.Location.Map.LocalTime.TurnCounter + 8;
             });
         }

@@ -109,6 +109,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         }
         public static bool Hear(RogueGame game, Actor listener, Actor speaker, NpcFact source)
         {
+            if (source.Kind == "food_cache" &&
+                listener.Location.Map.LocalTime.TurnCounter - source.EventTurn > WorldTime.TURNS_PER_DAY) return false;
             int confidence = ReportConfidence(listener, speaker, source);
             NpcKnowledge knowledge = listener.Personality.Knowledge;
             NpcFact previous = null;

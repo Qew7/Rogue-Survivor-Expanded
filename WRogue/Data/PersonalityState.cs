@@ -125,6 +125,7 @@ namespace djack.RogueSurvivor.Data
         public string Name;
         public int Feeling;
         public int Trust, Fear, Attachment, Grievance, Debt;
+        [System.Runtime.Serialization.OptionalField] public int NextTradeAttemptTurn;
         public void AdjustSocial(int trust = 0, int fear = 0, int attachment = 0, int grievance = 0, int debt = 0)
         {
             Trust = Clamp(Trust + trust); Fear = Clamp(Fear + fear); Attachment = Clamp(Attachment + attachment);

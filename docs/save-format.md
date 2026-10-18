@@ -202,10 +202,15 @@ model ID. Generated goal keys distinguish resources, obligations and specific
 items; their supporting event IDs are retained in `Causes`.
 
 Personality state also retains bounded NPC intentions and pending spoken
-reactions, per-template cooldowns and the intention sequence. It also stores
-an optional `NextTradeAttemptTurn`: after an AI-initiated trade is refused,
-that trader waits one in-game hour before initiating another trade. Older saves
-default it to zero; player-initiated trades do not set it. An intention stores
+reactions, per-template cooldowns and the intention sequence. Each person
+relationship optionally stores `NextTradeAttemptTurn`: after an NPC-initiated
+trade is refused, that trader waits six in-game hours before offering another
+trade to the same person. The personality's `NextTradeAttemptTurn` also pauses
+trades with other partners for half an hour. A starving NPC without edible food
+may trade early with someone carrying edible food; an NPC at or below one-quarter
+health without healing medicine may trade early with someone carrying it. Neither
+emergency bypasses the six-hour pause with the refuser. Player-initiated trades
+set neither pause. Older saves default missing pauses to zero. An intention stores
 its stable definition ID, target identity/name snapshot, last known map/position
 and attitude, cause/story IDs, initial priority, start/deadline/finish turns,
 status, retry delay/count, announcement state and outcome. Reactions store target
@@ -262,6 +267,12 @@ plan actions are appended without changing existing enum values.
 `NextMedicineRequestTurn` are optional. Existing saves begin without a request
 pause; subsequent medicine requests establish the four-hour global and one-day
 per-person limits, which survive save/load and fresh sightings.
+`NpcKnowledge` also optionally retains recent spoken requests by recipient,
+exact text and turn. A new goal cannot repeat the same request to the same
+recipient for 720 turns; another recipient or a different request remains
+available. The existing goal-sequence history still prevents the same goal
+from asking that recipient again after the daily limit expires. Old saves
+start with no recent-request history.
 
 Knowledge retains bounded facts with original event IDs/time, source IDs,
 confidence, retelling hops, named participant IDs and remembered positions;
@@ -379,6 +390,18 @@ Read Records folds repeated, identical heard-rumor text from the same recorded
 source, about the same event and story, for one resident into its first line
 with a count and the last hearing time. The individual archive entries remain
 available for save/load, search, and event statistics.
+`NpcKnowledge` optionally retains recent rumor reports by recipient, fact
+kind, event ID, spoken text, and turn. A speaker cannot repeat the same event
+or an identically worded report of that kind to the same actor for 720 turns,
+even when another event ID is assigned. Heard bystanders are recorded for
+future direct retells. Old saves start with no such history; the older event-ID history
+still blocks reports made less than a day before loading. For every fact, an
+NPC stops retelling it after 720 turns from its first `LearnedTurn`; a later
+confidence update does not reset that clock. This is a propagation limit:
+other retained facts can stay in memory up to two days from the event.
+Food-cache facts and known food places still expire after 720 turns from
+the sighting. Radio programs keep their separate previous-day news schedule
+and event-age limit; the per-NPC retelling limit applies to direct speech.
 Retained `NpcFact` entries optionally store `SubjectReportName` and
 `OtherReportName`, the observer's original spoken description of each participant.
 They also optionally store `CauseId`, copied from the significant event and

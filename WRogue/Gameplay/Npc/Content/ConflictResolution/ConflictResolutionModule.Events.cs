@@ -1,5 +1,6 @@
 using System;
 using djack.RogueSurvivor.Data;
+using djack.RogueSurvivor.Engine;
 namespace djack.RogueSurvivor.Gameplay.Personality
 {
     sealed partial class ConflictResolutionModule
@@ -15,6 +16,22 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             Event(c, "member_expelled", " expelled a companion: ", NpcRecordCategory.Encounters, NpcSelfReportTone.Harmful);
             Event(c, "retaliated", " struck back at ", NpcRecordCategory.Combat, NpcSelfReportTone.Harmful);
             Event(c, "defended_person", " intervened against ", NpcRecordCategory.Combat, NpcSelfReportTone.Helpful);
+            c.Event(new NpcEventDefinition("pursuit_announced", NpcRecordCategory.Combat | NpcRecordCategory.Intentions, true,
+                e => (e.Subject ?? "A police officer") + " announced an active pursuit.",
+                f => (f.ReportSubject ?? "A police officer") + " announced a pursuit of " + (f.ReportOther ?? "someone"),
+                NpcEventFields.Subject | NpcEventFields.Resource, isPrivate: true)
+            { PrivateAudience = e => e.Subject, ReportActorRole = NpcReportActorRole.Subject,
+              DescribeSelfReport = (f, speaker) => "I'm pursuing " + (f.ReportOther ?? "someone") });
+            c.OnReport("pursuit_announced", HearPursuit);
+            c.Event(new NpcEventDefinition("pursuit_response_announced", NpcRecordCategory.Combat | NpcRecordCategory.Intentions, true,
+                e => (e.Subject ?? "Someone") + " said how they would respond to a pursuit.",
+                f => (f.ReportSubject ?? "Someone") + (f.Resource == "retaliate" ? " said they would fight back against " :
+                    " said they would hide from ") + (f.ReportOther ?? "their pursuer"),
+                NpcEventFields.Subject | NpcEventFields.Resource, isPrivate: true)
+            { PrivateAudience = e => e.Subject, ReportActorRole = NpcReportActorRole.Subject,
+              DescribeSelfReport = (f, speaker) => f.Resource == "retaliate" ?
+                  "I will fight back against " + (f.ReportOther ?? "my pursuer") :
+                  "I will hide from " + (f.ReportOther ?? "my pursuer") });
             c.Event(new NpcEventDefinition("patience_lost", NpcRecordCategory.Encounters, true,
                 e => (e.Subject ?? "Someone") + " snapped at " + (e.Other ?? "someone") + ".",
                 f => (f.ReportSubject ?? "Someone") + " snapped at " + (f.ReportOther ?? "someone"))

@@ -1,557 +1,206 @@
-# Социальные системы NPC: от события до решения
+# NPC social systems: from event to decision
 
-Это карта **всей реализованной социальной системы**: что составляет личность
-NPC, что он знает о других, как события превращаются в чувства и цели и где
-каждый слой находится в коде. Имена `Feeling`, `Attitude` и других полей
-оставлены рядом с русскими названиями, чтобы их можно было искать в исходниках.
-Речь прежде всего о разумных живых NPC при включённой настройке NPC
-personalities. Игрок может иметь записи об отношениях, но не получает NPC-шкалы
-и стартовые черты.
+This document maps the **entire implemented social system**: what makes up an NPC's personality, what they know about others, how events become feelings and goals, and where each layer lives in the code. Names such as `Feeling` and `Attitude` match the source code. This primarily concerns intelligent living NPCs with NPC personalities enabled. The player can have relationship records but does not receive NPC axes or starting traits.
 
-Это обзор взаимодействия подсистем. Полные значения черт и их ID поддерживаются
-в [справочнике черт](npc-traits-guide.md), механика памяти и отношений — в
-[npc-personality.md](npc-personality.md), цели и планирование — в
-[npc-intentions.md](npc-intentions.md), конкретные социальные эпизоды — в
-[npc-social-stories.md](npc-social-stories.md), а контракт расширения модулей —
-в [npc-content-modules.md](npc-content-modules.md). Здесь есть понятия, связи
-между ними и указатели на каноничные участки кода.
+This is an overview of how the subsystems interact. Complete trait values and IDs are maintained in the [trait guide](npc-traits-guide.md), memory and relationship mechanics in [npc-personality.md](npc-personality.md), goals and planning in [npc-intentions.md](npc-intentions.md), specific social episodes in [npc-social-stories.md](npc-social-stories.md), and the module extension contract in [npc-content-modules.md](npc-content-modules.md). This page explains the concepts, their connections, and the canonical code locations.
 
-## Общая модель
+## Overall model
 
-У игры нет одного «социального рейтинга» и одного центра, который принимает все
-решения. На каждом NPC сосуществуют несколько слоёв:
+The game has no single "social score" or decision-making center. Several layers coexist on each NPC:
 
-1. **Кто я:** черты, склонности решений, меняющиеся установки и кратковременные
-   эмоции. Они влияют на трактовку *любой* ситуации.
-2. **Что я пережил:** собственные события и воспоминания. Опыт может изменить
-   черту, навык, установку и отношение к участникам.
-3. **Что я думаю о других:** чувства к людям, группам и фракциям, доверие,
-   страх, привязанность, обида, долг и отдельное доверие лидеру.
-4. **Что я знаю:** виденных людей и места, нужды, опасности, нарушения,
-   подтверждённые или пересказанные факты с источником и уверенностью.
-5. **Что я пообещал и чего добиваюсь:** обязательства, договорённости,
-   привязанности, интересы, личные цели, планы и коллективные задания.
-6. **Что произошло на самом деле:** действие и значимое событие. Только
-   совершённое действие меняет мир и даёт другим основания для реакции.
+1. **Who I am:** traits, decision biases, changing dispositions, and short-lived emotions. They affect the interpretation of *any* situation.
+2. **What I have experienced:** personal events and memories. Experience can change a trait, skill, disposition, or relationship with participants.
+3. **What I think of others:** feelings toward people, groups, and factions; trust, fear, attachment, grievance, debt, and separate trust in a leader.
+4. **What I know:** people seen and places visited, needs, dangers, violations, and verified or retold facts with a source and confidence level.
+5. **What I have promised and pursue:** commitments, agreements, attachments, interests, personal goals, plans, and collective assignments.
+6. **What actually happened:** an action and a significant event. Only an action that was carried out changes the world and gives others grounds to react.
 
-Первое и второе не являются знаниями обо всех жителях города. Третье и
-четвёртое субъективны: два свидетеля могут по-разному оценить одного человека.
-Пятый слой конкурирует с голодом, опасностью, ресурсами и возможностью дойти до
-цели. Фракция, группа и правила боевой вражды при этом остаются фактическими
-игровыми состояниями, а не выводятся из симпатии.
+The first two layers are not knowledge about every resident in town. The third and fourth are subjective: two witnesses may judge the same person differently. The fifth competes with hunger, danger, resources, and the ability to reach the target. Faction and group membership and combat hostility rules remain factual game states; they are not inferred from affection.
 
-Настройка `NpcPersonalitiesEnabled` включает этот дополнительный слой для
-разумных живых NPC. Когда она выключена, `Bias` и `Attitude` возвращают
-нейтральное значение, генератор социальных намерений не работает, а обычные
-правила фракций, групп, выживания и боя остаются в игре. Система личности
-дополняет старые сенсоры `MemorizedSensor`, исследованные места
-`ExplorationData`, боевую вражду и существующее доверие лидеру; она не
-подменяет их единым хранилищем.
+`NpcPersonalitiesEnabled` enables this additional layer for intelligent living NPCs. When disabled, `Bias` and `Attitude` return neutral values and the social intention generator does not run; the usual faction, group, survival, and combat rules still apply. The personality system supplements the existing `MemorizedSensor`, explored places in `ExplorationData`, combat hostility, and trust in a leader. It does not replace them with a single store.
 
-## Короткий ответ
+## Short answer
 
-**Feeling (чувство)** — сохранённая оценка человека, группы или фракции в
-`RelationshipRecord`, от −100 до +100. Например, помощь может прибавить чувство
-к помощнику, нападение — уменьшить. У одного NPC есть *отдельные* записи о
-конкретном человеке, его группе и его фракции.
+**Feeling** is a stored evaluation of a person, group, or faction in a `RelationshipRecord`, ranging from −100 to +100. For example, help can raise the feeling toward the helper, while an attack can lower it. One NPC has *separate* records for a particular person, that person's group, and their faction.
 
-**Attitude (текущее отношение к человеку)** — вычисляемый результат, а не ещё
-одна сохранённая шкала. `PersonalitySystem.Attitude(наблюдатель, цель)` складывает
-чувства к человеку, **нынешней** группе и фракции цели, а также возможное
-смещение от черты, связанной с фракцией. Результат ограничен диапазоном
-−100..100. Если наблюдатель уверенно знает о серьёзном неразрешённом нарушении
-этого человека (`Violation ≥ 80`, `ViolationConfidence ≥ 80`), результат не
-может быть выше −30. Старые положительные чувства при этом сохраняются.
+**Attitude toward a person** is a computed result, not another stored scale. `PersonalitySystem.Attitude(observer, target)` combines feelings toward the person, the target's **current** group and faction, and any bias from a trait associated with that faction. The result is clamped to −100..100. If the observer knows with high confidence about a serious unresolved violation by that person (`Violation ≥ 80`, `ViolationConfidence ≥ 80`), the result cannot exceed −30. Earlier positive feelings remain stored.
 
-Таким образом, `Feeling = +40` к знакомому и `Attitude = −30` к нему же
-совместимы: знакомый всё ещё дорог NPC, но тот считает его нынешнее поведение
-неприемлемым. После действительного разрешения инцидента ограничение исчезает,
-и прежние чувства снова влияют на решения.
+Thus, `Feeling = +40` and `Attitude = −30` toward the same acquaintance can coexist: the NPC still cares about the person but considers their current behavior unacceptable. Once the incident is actually resolved, the cap disappears and earlier feelings influence decisions again.
 
-## Из чего складывается социальное поведение
+## Components of social behavior
 
-### 1. Черты и шкалы самого NPC
+### 1. The NPC's own traits and axes
 
-`TraitInstance` — сохранённая черта вроде `kind`, `honest`, `reliable` или
-`hotheaded`. У черты есть эффекты на оси `NpcPersonalityAxis`. NPC начинает с
-трёх стартовых черт и одного или двух ещё не разрешённых стартовых
-воспоминаний; другие черты можно получить через опыт. Черта может одновременно
-влиять на несколько решений. Полный перечень — в
-[справочнике черт](npc-traits-guide.md).
+`TraitInstance` is a stored trait such as `kind`, `honest`, `reliable`, or `hotheaded`. A trait has effects on `NpcPersonalityAxis` axes. An NPC starts with three starting traits and one or two unresolved starting memories; other traits can be acquired through experience. A trait may affect several decisions at once. See the [trait guide](npc-traits-guide.md) for the full list.
 
-Оси бывают двух видов:
+There are two kinds of axes:
 
-- **Склонности решения** (`Bias`): предметы, смелость, группа, закон, торговля,
-  исследование, сострадание, припасы. Их значение получают из активных черт.
-  `Law +20` повышает вес связанных с законом решений, а не задаёт шанс 20 %.
-- **Меняющиеся установки** (`Disposition`): ценность человеческой жизни
-  (`HumanLife`), круг заботы (`CareCircle`), доверие сообщениям (`MessageTrust`),
-  тревога о дефиците (`Scarcity`) и терпение (`Patience`). Эффективное значение
-  складывается из основы фракции, эффектов черт, **накопленного опыта** после
-  разрешения воспоминаний и временного влияния голода, усталости или рассудка.
-  Оно ограничено диапазоном −100..100. Сама сохранённая прибавка от опыта —
-  только один из этих компонентов.
+- **Decision biases** (`Bias`): items, courage, groups, law, trade, exploration, compassion, and supplies. Their values come from active traits. `Law +20` increases the weight of decisions related to law; it does not set a 20% chance.
+- **Changing dispositions** (`Disposition`): the value of human life (`HumanLife`), breadth of concern (`CareCircle`), trust in messages (`MessageTrust`), concern about scarcity (`Scarcity`), and patience (`Patience`). The effective value combines a faction baseline, trait effects, **accumulated experience** from resolved memories, and temporary effects of hunger, fatigue, or sanity. It is clamped to −100..100. The stored experience increment is only one component.
 
-Эти оси характеризуют **наблюдателя**. Они отвечают на вопросы «как я отношусь
-к насилию?», «склонен ли я верить рассказу?», «готов ли терпеть отказ?». Они не
-являются оценкой конкретного знакомого. Текущая `Frustration` — ещё одно
-кратковременное состояние: отказы и конфликты её поднимают, время и удачное
-урегулирование снижают; терпение определяет, насколько легко NPC сорвётся.
+These axes describe the **observer**. They answer questions such as "How do I feel about violence?", "Am I inclined to believe a report?", and "Will I tolerate a refusal?" They do not evaluate a particular acquaintance. Current `Frustration` is another short-lived state: refusals and conflicts raise it, while time and successful settlements reduce it. Patience determines how easily the NPC loses their temper.
 
-Восемь склонностей используются как общие веса разных решений. `Item` влияет
-на оценку находок, `Courage` — на реакцию на опасность и конфронтацию, `Group`
-— на совместные действия и лидерство, `Law` — на реакцию на нарушения, `Trade`
-— на обмен, `Explore` — на перемещение и исследование, `Compassion` — на помощь,
-`Supplies` — на поиск и сбережение ресурсов. Это не восемь взаимоисключающих
-типов личности: один человек может одновременно быть смелым, бережливым и
-отзывчивым. `PersonalitySystem.Bias` складывает эффекты действующих черт для
-одной склонности, включая условные эффекты для конкретного предмета.
+The eight biases serve as general weights for different decisions. `Item` affects the evaluation of finds; `Courage` affects responses to danger and confrontation; `Group` affects joint actions and leadership; `Law` affects responses to violations; `Trade` affects exchange; `Explore` affects movement and exploration; `Compassion` affects helping; and `Supplies` affects finding and conserving resources. These are not eight mutually exclusive personality types: someone can be brave, thrifty, and helpful at the same time. `PersonalitySystem.Bias` sums the effects of active traits for one bias, including conditional effects for a particular item.
 
-Пять установок имеют собственную накопленную историю:
+The five dispositions have their own accumulated histories:
 
-- `HumanLife` — ценность человеческой жизни: защита, месть, медицинская помощь
-  и эмоциональная реакция на убийство. На неё проецируются также сострадание и
-  закон; тяжёлое падение рассудка временно снижает её.
-- `CareCircle` — насколько широко распространяется забота за пределы близких.
-  Влияет на помощь чужому человеку; голод и недосып временно сужают её. В неё
-  частично входят эффекты `Group` и `Compassion`.
-- `MessageTrust` — готовность считать сообщения достоверными. Участвует в
-  вычислении уверенности в слухах и реакции на опровергнутые заявления.
-  Недостаток рассудка временно снижает её.
-- `Scarcity` — тревога о нехватке ресурсов. Уменьшает готовность отдать еду и
-  повышает ценность запаса. Голод поднимает её, но пригодная еда в инвентаре
-  смягчает этот временный эффект.
-- `Patience` — терпение в споре, при отказе, угрозе, предупреждении или
-  извинении. Голод, недосып и низкий рассудок временно снижают её. Например,
-  `patient` добавляет терпения, а `hotheaded` сильно уменьшает его.
+- `HumanLife` is the value placed on human life. It affects protection, revenge, medical help, and emotional responses to killing. Compassion and law also feed into it; a severe loss of sanity temporarily lowers it.
+- `CareCircle` measures how far concern extends beyond close associates. It affects helping a stranger; hunger and lack of sleep temporarily narrow it. Effects from `Group` and `Compassion` contribute to it in part.
+- `MessageTrust` measures willingness to consider reports credible. It helps determine confidence in rumors and responses to disproven claims. Low sanity temporarily lowers it.
+- `Scarcity` is concern about insufficient resources. It reduces willingness to give away food and raises the value of stockpiles. Hunger raises it, but edible food in the inventory softens this temporary effect.
+- `Patience` applies during arguments, refusals, threats, warnings, and apologies. Hunger, lack of sleep, and low sanity temporarily lower it. For example, `patient` adds patience, while `hotheaded` greatly reduces it.
 
-Эффективную установку вычисляет `PersonalitySystem.Disposition`; она **не
-тождественна** сохранённому `ExperienceValue`. При наблюдении значимого события
-`NpcImmediateEmotion` может отдельно изменить восстановимый рассудок прямо
-сейчас. Позднее разрешение воспоминания может сдвинуть накопленный опыт. Это
-разные реакции с разным временем жизни.
+`PersonalitySystem.Disposition` computes the effective disposition; it is **not identical** to the stored `ExperienceValue`. On observing a significant event, `NpcImmediateEmotion` can separately change recoverable sanity right away. Later resolution of a memory can shift accumulated experience. These are different responses with different lifetimes.
 
-#### Какие черты существуют
+#### Available traits
 
-В стандартном каталоге сейчас **116 черт**: 50 стартовых и 66 приобретаемых.
-Черта имеет постоянный строковый ID, имя, эффекты на оси, возможное условие
-получения, конфликты и иногда особое поведение. Например, `kind` прибавляет
-сострадание и групповую склонность; `honest` повышает закон и торговлю;
-`deceptive` может ложно заявить о разрешении взять припасы; `likes_items`
-относится к конкретной модели предмета. Противоположные стартовые черты вроде
-`kind`/`cruel`, `lawful`/`rebellious` и `sociable`/`solitary` не выдаются вместе.
+The standard catalog currently has **116 traits**: 50 starting and 66 acquired. A trait has a stable string ID, a name, effects on axes, an optional acquisition condition, conflicts, and sometimes special behavior. For example, `kind` adds compassion and group bias; `honest` raises law and trade; `deceptive` can falsely claim permission to take supplies; and `likes_items` applies to a particular item model. Opposing starting traits such as `kind`/`cruel`, `lawful`/`rebellious`, and `sociable`/`solitary` are not assigned together.
 
-Приобретаемые черты разделены **по источнику опыта**, а не по отдельным
-механизмам применения:
+Acquired traits are grouped **by source of experience**, not by separate application mechanisms:
 
-- **24 личных исхода:** выживание, насилие, помощь, предательство, обещания и
-  другие переживания. Например, `selfless`, `mistrustful`, `protector`,
-  `reliable`, `disillusioned`.
-- **9 встреч с уникальными персонажами:** от `bear_resolve` после встречи с
-  Big Bear до `sewer_dread`.
-- **18 отношений с фракциями:** семейства `friend_*` и `wary_*`, приобретаемые
-  после помощи, нападения или убийства при подходящей исходной черте. Они дают
-  и обычные эффекты на склонности, и смещение отношения к членам конкретной
-  фракции. Не у каждой фракции есть оба варианта; конфликтующие варианты одной
-  фракции несовместимы.
-- **15 мировых переживаний:** например, `refugee_solidarity`,
-  `army_confidence`, `roadside_vigilance`, `convoy_hope`, `betrayal_scar`.
-  Требуют соответствующей наблюдаемой встречи или мирового события и могут
-  изменить отношение к фракции.
+- **24 personal outcomes:** survival, violence, help, betrayal, promises, and other experiences. Examples include `selfless`, `mistrustful`, `protector`, `reliable`, and `disillusioned`.
+- **9 encounters with unique characters:** from `bear_resolve` after meeting Big Bear to `sewer_dread`.
+- **18 faction relationships:** the `friend_*` and `wary_*` families, acquired after helping, attacking, or killing when the starting trait qualifies. They provide ordinary bias effects and a shift in attitude toward members of a particular faction. Not every faction has both variants; conflicting variants for one faction are incompatible.
+- **15 world experiences:** for example, `refugee_solidarity`, `army_confidence`, `roadside_vigilance`, `convoy_hope`, and `betrayal_scar`. They require the corresponding observed encounter or world event and can change attitude toward a faction.
 
-Точное имя, ID, численные эффекты и условие каждой из 116 черт приведены в
-[каталоге черт](npc-traits-guide.md). Он служит единственным полным справочником
-значений и ID; этот документ объясняет, как их читает движок. Новая черта не обязана иметь
-собственную ветку в AI: обычный путь — зарегистрировать её эффекты на общие
-оси. Для особого поведения модуль может добавить интерес, источник цели,
-реакцию на событие или оператор.
+The exact name, ID, numerical effects, and condition for each of the 116 traits are listed in the [trait catalog](npc-traits-guide.md). It is the single complete reference for values and IDs; this document explains how the engine uses them. A new trait does not need its own AI branch: the usual approach is to register its effects on shared axes. For special behavior, a module can add an interest, goal source, event response, or operator.
 
-### 2. Отношения с конкретными людьми и коллективами
+### 2. Relationships with particular people and collectives
 
-`PersonalityState` хранит отдельные `RelationshipRecord` по устойчивым ID людей,
-групп и фракций. В каждой записи есть `Feeling`; у персональной записи также
-есть `Trust`, `Fear`, `Attachment`, `Grievance` и `Debt` (0..100): доверие,
-страх, привязанность, обида и долг. Это разные величины. Например, можно
-испытывать привязанность и одновременно держать обиду. Смена лидера не стирает
-историю группы; одинаковые имена людей не объединяют записи.
+`PersonalityState` stores separate `RelationshipRecord` entries keyed by stable IDs for people, groups, and factions. Every record has `Feeling`; a personal record also has `Trust`, `Fear`, `Attachment`, `Grievance`, and `Debt` (0..100). These are distinct values. An NPC can feel attached to someone while also holding a grievance. Changing the leader does not erase the group's history; identical names do not merge people's records.
 
-Память о помощи или нападении меняет `Feeling` к участнику; эффект на его
-группу и фракцию слабее. Слух, принятый с достаточным доверием, может изменить
-мнение о названном человеке или фракции **без личного воспоминания о событии**.
-Черта, привязанная к фракции, добавляет смещение при расчёте отношения к её
-члену.
+A memory of help or an attack changes `Feeling` toward the participant; its effect on the participant's group and faction is weaker. A rumor accepted with sufficient trust can change an opinion about the named person or faction **without a personal memory of the event**. A faction-linked trait adds a bias when calculating attitude toward a member of that faction.
 
-Для контекста целей есть похожий, но другой расчёт:
+Goal context uses a similar but different calculation:
 
 `NpcMotivation.Feeling = clamp(person.Feeling + group.Feeling + faction.Feeling + factionTraitBias + (Trust − Fear − Grievance) / 4)`.
 
-Здесь `Feeling` — **поле мотивации**, рассчитанное по сохранённым чувствам и
-социальным показателям, а не поле `Feeling` одной записи. Значение не включает
-ограничение за `Violation`. `NpcValues.KnownAttitude` сейчас использует тот же
-социальный расчёт и потому, несмотря на имя, не тождественно
-`PersonalitySystem.Attitude`.
+Here `Feeling` is a **motivation field** calculated from stored feelings and social values, not the `Feeling` field of one record. It does not include the `Violation` cap. `NpcValues.KnownAttitude` currently uses the same social calculation and, despite its name, is therefore not identical to `PersonalitySystem.Attitude`.
 
-`TrustInLeader` — ещё отдельная игровая величина доверия **текущему лидеру**.
-Она влияет, например, на сделки с ним и не равна `RelationshipRecord.Trust`.
-При исключении из группы членство и это доверие меняются отдельно от
-накопленной истории чувств.
+`TrustInLeader` is yet another game value: trust in the **current leader**. It affects, for example, trading with that leader and is not the same as `RelationshipRecord.Trust`. On expulsion from a group, membership and this trust change separately from the accumulated history of feelings.
 
-### 3. Наблюдение, память, знание и слухи
+### 3. Observation, memory, knowledge, and rumors
 
-Это четыре связанных, но разных вещи:
+These are four related but distinct things:
 
-- **Значимое событие** (`SignificantEvent`) появляется после реального
-  действия: подарка, нападения, кражи, обещания, ответа на предупреждение и
-  т. п. У события есть участники, место, время и причинные ID.
-- **Личная запись о пережитом** (`ObservedEvent`) появляется у участника или
-  очевидца согласно правилам видимости. Подходящее событие запускает
-  `MemoryInstance`: воспоминание сразу влияет на отношения и остаётся в их
-  истории. Обычно через два игровых дня оно разрешается и может изменить
-  черту, навык или накопленный опыт по установке. Это не то же самое, что
-  узнать новость из разговора.
-- **Знание** (`NpcKnowledge`) хранит факты (`NpcFact`), известных людей,
-  места и выходы. Запись об известном человеке (`NpcKnownPerson`) содержит
-  последний известный контекст: место, нужду в еде или медицине, опасность,
-  подозреваемое нарушение, уверенность, причину, известное членство. Это
-  представление NPC о мире; оно может быть неполным или устаревшим.
-- **Слух** — пересказ сохранённого факта. Источник меняется на `Told`, число
-  пересказов растёт, уверенность слушателя вычисляется из уверенности
-  рассказчика, доверия и обиды к нему, склонности к группе и `MessageTrust`.
-  Прямое наблюдение надёжнее слабого пересказа. Услышанное может менять
-  репутацию и порождать цели, но не выдаёт слушателю память очевидца.
+- A **significant event** (`SignificantEvent`) follows a real action: a gift, attack, theft, promise, response to a warning, and so on. It has participants, a place, a time, and causal IDs.
+- A **personal record of an experience** (`ObservedEvent`) is created for a participant or eyewitness according to visibility rules. A qualifying event triggers a `MemoryInstance`: the memory immediately affects relationships and stays in their history. It normally resolves after two game days and may change a trait, skill, or accumulated disposition experience. This differs from hearing news in a conversation.
+- **Knowledge** (`NpcKnowledge`) stores facts (`NpcFact`), known people, places, and exits. A known person's record (`NpcKnownPerson`) contains the last known context: location, need for food or medicine, danger, suspected violation, confidence, cause, and known membership. It is the NPC's view of the world and may be incomplete or outdated.
+- A **rumor** is a retelling of a stored fact. Its source becomes `Told`, its retelling count rises, and the listener's confidence is computed from the speaker's confidence, trust and grievance toward the speaker, group bias, and `MessageTrust`. Direct observation is more reliable than a weak retelling. What is heard may change reputation and produce goals, but it does not give the listener an eyewitness memory.
 
-`Hostile` у известного человека отражает вражду по игровым правилам боя
-(`AreEnemies`). Оно не означает «не нравится». NPC может быть боевым не-врагом,
-но не желать с ним жить в группе. И наоборот, факт нарушения имеет свою
-уверенность и не превращается в боевую вражду автоматически.
+`Hostile` on a known person reflects hostility under the game's combat rules (`AreEnemies`). It does not mean "disliked." An NPC may not be a combat enemy yet still be unwelcome in a group. Conversely, knowledge of a violation has its own confidence and does not automatically create combat hostility.
 
-### 4. Обязательства, договорённости и привязанности
+### 4. Commitments, agreements, and attachments
 
-Кроме черт, шкал и памяти, у NPC сохраняются конкретные социальные состояния:
+Besides traits, axes, and memories, NPCs retain specific social states:
 
-- **Обещание** (`NpcCommitment`) связывает обещавшего, получателя, ресурс,
-  остаток и срок. Настоящая передача ресурса исполняет его; освобождение от
-  обещания завершает без нарушения. Просрочка даёт получателю частную оценку
-  `promise_broken`, запись в Read Records и факт, который он может пересказать.
-  Автоматической рассылки слуха всем вокруг нет.
-- **Договор об услуге**, разрешение на припасы, спор и привязанность к человеку,
-  предмету или дому живут отдельно от общей симпатии. Они могут сделать
-  конкретную цель актуальной даже при смешанных чувствах.
-- **Группа и фракция** имеют фактическое членство и задания. Личные чувства к
-  коллективу — ещё один слой; они не меняют членство сами по себе.
+- A **promise** (`NpcCommitment`) connects the promisor, recipient, resource, remaining amount, and deadline. Actual transfer of the resource fulfills it; release from the promise ends it without a breach. Missing the deadline gives the recipient a private `promise_broken` assessment, an entry in Read Records, and a fact they can retell. Rumors are not automatically broadcast to everyone nearby.
+- A **service agreement**, permission to take supplies, dispute, and attachment to a person, item, or home exist separately from general affection. They can make a specific goal relevant despite mixed feelings.
+- **Groups and factions** have actual membership and assignments. Personal feelings toward a collective are another layer and do not change membership on their own.
 
-Есть черта `reliable` («надёжный»): она может появиться после исполненного
-обещания, требует `honest` и добавляет склонности к закону и состраданию.
-Недоверие к получателю само по себе сейчас не снимает действующее обещание.
-При этом, как и другая цель, исполнение может задержаться из-за выживания,
-невозможного маршрута, отсутствия ресурсов или боевой вражды.
+The `reliable` trait can be acquired after fulfilling a promise, requires `honest`, and adds law and compassion biases. Distrust of the recipient alone does not currently cancel an active promise. As with any other goal, fulfillment can be delayed by survival needs, an impossible route, insufficient resources, or combat hostility.
 
-### 5. Цели, планы и действия
+### 5. Goals, plans, and actions
 
-`NpcGoalGenerator` сопоставляет нужды и **известные** обстоятельства с
-ценностями NPC: питание, помощь, безопасность, справедливость, принадлежность,
-исполнение обещаний и другими. У предложенной цели есть недостаток состояния,
-важность и уверенность в фактах; её полезность вычисляется как
-`deficit × importance × confidence / 10000`; для самостоятельного запуска
-нужно не меньше 20. Существующие категории значимых состояний: `Nutrition`,
-`Care`, `Reciprocity`, `Safety`, `Justice`, `Belonging`, `Autonomy`, `Recovery`,
-`MedicalCare`, `Commitment`, `Restitution`, `Possession`, `ProtectHome`; модули
-могут регистрировать дополнительные строковые значения. Фракционная политика
-добавляет свои приоритеты заботы, безопасности, ресурсов и укрытия. Затем
-планировщик ищет допустимые действия, а AI проверяет их при исполнении.
-Предложение цели ещё не означает, что NPC немедленно совершит действие.
+`NpcGoalGenerator` matches needs and **known** circumstances against NPC values: nutrition, care, safety, justice, belonging, keeping promises, and others. A proposed goal has a state deficit, importance, and confidence in its facts. Its utility is calculated as `deficit × importance × confidence / 10000`; it needs at least 20 to start independently. Existing categories of significant states are `Nutrition`, `Care`, `Reciprocity`, `Safety`, `Justice`, `Belonging`, `Autonomy`, `Recovery`, `MedicalCare`, `Commitment`, `Restitution`, `Possession`, and `ProtectHome`; modules can register additional string values. Faction policy adds its own priorities for care, safety, resources, and shelter. The planner then finds legal actions, and the AI rechecks them when executing them. Proposing a goal does not mean the NPC will act immediately.
 
-Существуют также личные намерения и длительные интересы, групповые и
-фракционные задания. Они используют черты, отношения, знания и физические
-условия, но могут иметь **свои** правила допуска. Поэтому социальная реакция
-не сводится к одному глобальному числу.
+There are also personal intentions and long-term interests, as well as group and faction assignments. They use traits, relationships, knowledge, and physical conditions, but may have **their own** eligibility rules. A social response therefore cannot be reduced to one global number.
 
-## Жизненный цикл одного события
+## Lifecycle of an event
 
-1. Игровое действие сначала проходит обычную проверку правил и **реально
-   выполняется**. Например, предмет переходит из одного инвентаря в другой,
-   меняется членство в группе или происходит удар. Успешный обработчик сообщает
-   `SignificantEvent` через `RogueGame.ReportPersonalityEvent` либо через
-   `NpcEvents.Publish` из модуля. Попытка, обдумывание действия и расчёт плана
-   не дают исхода как свершившегося факта.
-2. `PersonalitySystem.Report` проверяет контракт события в активном каталоге,
-   назначает ID и определяет прямых участников и видящих его жителей. Для
-   частного события (`isPrivate`) аудитория ограничена владельцем оценки.
-   Участник или очевидец получает `ObservedEvent` с участниками, временем,
-   `CauseId` и `StoryId`. Одновременно запись попадает в его сохранённую
-   историю `ResidentRecords`.
-3. Для каждого наблюдателя `NpcEventPipeline` сперва обновляет знание о
-   видимых участниках, вызывает подписчиков `Knowledge`, сохраняет факт, если
-   событие объявлено пересказываемым, затем вызывает подписчиков
-   `Relationships` и обновляет свидетельства действующих воспоминаний. Совпавшие
-   `MemoryTrigger` создают личные `MemoryInstance`; чувство к участникам
-   меняется уже при создании. После этого фаза `Goals` обновляет предложения
-   целей, а `Responses`/`Replies` могут подготовить ответ.
-4. Ответ — тоже действие. `NpcReaction` хранит короткое ожидающее высказывание
-   или выпад, но событие ответа публикуется, когда NPC действительно говорит
-   или действует. Поэтому предупреждение, согласие и фактическое исправление
-   поступка можно различать и связывать причинными ID.
-5. После всех наблюдателей обновляется общий эпизод и выполняются
-   `AfterEvent`-подписчики. Например, передача еды публикует `shared_food`,
-   а модуль обещаний проверяет, закрыла ли эта передача действующее обещание.
-6. На отдельном ходе карты наступившие воспоминания разрешаются. Через два
-   игровых дня выбирается доступный исход из категорий «получить черту»,
-   «улучшить навык», «убрать противоречащую черту» и «изменить опыт установки».
-   Ни событие, ни черта не гарантируют конкретный исход. Разрешённое
-   воспоминание покидает очередь ожидания, но остаётся в соответствующей
-   истории отношений с итогом и временем.
+1. A game action first passes the normal rule checks and is **actually performed**. For example, an item moves between inventories, group membership changes, or a blow lands. The successful handler reports a `SignificantEvent` through `RogueGame.ReportPersonalityEvent` or through `NpcEvents.Publish` from a module. An attempt, consideration of an action, or calculation of a plan does not count as an accomplished outcome.
+2. `PersonalitySystem.Report` checks the event contract in the active catalog, assigns an ID, and identifies direct participants and residents who can see it. For a private event (`isPrivate`), the audience is limited to the owner of the assessment. A participant or eyewitness gets an `ObservedEvent` with participants, time, `CauseId`, and `StoryId`. An entry also goes into their saved `ResidentRecords` history.
+3. For each observer, `NpcEventPipeline` first updates knowledge of visible participants, calls `Knowledge` subscribers, saves a fact if the event is declared retellable, then calls `Relationships` subscribers and updates evidence for active memories. Matching `MemoryTrigger` definitions create personal `MemoryInstance` entries; feelings toward participants change at creation time. The `Goals` phase then updates goal proposals, while `Responses`/`Replies` may prepare a response.
+4. A response is also an action. `NpcReaction` holds a short pending statement or outburst, but the response event is published when the NPC actually speaks or acts. Thus a warning, agreement, and actual correction of an act can be distinguished and linked by causal IDs.
+5. Once all observers have been processed, the shared episode is updated and `AfterEvent` subscribers run. For example, a food transfer publishes `shared_food`, and the promises module checks whether that transfer fulfilled an active promise.
+6. Due memories resolve on a separate map turn. After two game days, an available outcome is selected from "gain a trait," "improve a skill," "remove a conflicting trait," and "change disposition experience." Neither the event nor the trait guarantees a particular outcome. A resolved memory leaves the pending queue but remains in the corresponding relationship history with its outcome and time.
 
-### Когда событие становится слухом
+### When an event becomes a rumor
 
-Пересказ возможен только для события с `RetainFact` либо для отдельного
-допустимого вывода, сохранённого как `NpcFact`. Факт имеет ID события,
-источник (`Participant`, `Witness`, `Told`, `Inferred`), место, время события и
-узнавания, уверенность, число пересказов и известные имена участников.
-`NpcConversation` отбирает свежий факт, проверяет готовность рассказчика
-сообщать о **собственном** полезном или вредном поступке и слушателя, затем
-произносит фразу. Разговор могут услышать близкие бодрствующие жители даже
-через препятствие, если хватает дальности слуха. Часть публичных просьб
-распространяется так же без отдельного разговора.
+Only an event with `RetainFact`, or a separate eligible inference stored as an `NpcFact`, can be retold. A fact has an event ID, source (`Participant`, `Witness`, `Told`, or `Inferred`), place, event and discovery times, confidence, retelling count, and known names of participants. `NpcConversation` selects a recent fact, checks the speaker's willingness to report their **own** helpful or harmful action and the listener, then speaks a line. Nearby awake residents may hear the conversation even through an obstacle if it is within hearing range. Some public requests spread the same way without a separate conversation.
 
-`NpcKnowledgeSystem.Hear` понижает или повышает уверенность слушателя с учётом
-отношения к **рассказчику**, `MessageTrust` и исходной уверенности. Более
-слабый повтор не заменяет более сильное прежнее свидетельство. Подписчики
-`OnReport` могут изменить репутацию названного человека или фракции
-соразмерно **прибавке уверенности**, чтобы один и тот же слух не штрафовал
-бесконечно. Пересказ о человеке не равен личному знакомству с его текущим
-местоположением: он может быть старым, а участник может быть описан только как
-«полицейский» или «байкер». Если имя не известно, оценка может относиться к
-фракции, а не к конкретному незнакомцу.
+`NpcKnowledgeSystem.Hear` adjusts the listener's confidence based on their relationship with the **speaker**, `MessageTrust`, and the original confidence. A weaker repetition does not replace stronger existing evidence. `OnReport` subscribers may change the reputation of a named person or faction in proportion to the **increase in confidence**, so the same rumor cannot apply an unlimited penalty. Hearing about someone is not the same as knowing their current location personally: the report may be old, and a participant may be described only as a "police officer" or "biker." If the name is unknown, the assessment may apply to the faction rather than to a particular stranger.
 
-Знание намеренно ограничено: до 48 фактов, 32 известных людей и 16 известных
-мест; факты и места старше двух игровых дней могут удаляться. Журнал последних
-личных событий также ограничен 32 записями. Это не стирает уже приписанную
-конкретному человеку, группе или фракции историю воспоминаний после их
-разрешения. Поэтому отсутствие старого факта в очереди слухов и сохранённое
-плохое чувство к человеку не противоречат друг другу.
+Knowledge is deliberately bounded: up to 48 facts, 32 known people, and 16 known places; facts and places older than two game days may be removed. The recent personal event log is also limited to 32 entries. This does not erase the history of memories already attributed to a particular person, group, or faction after their resolution. An old fact missing from the rumor queue can therefore coexist with a lasting negative feeling toward someone.
 
-### Почему записи и знания различаются
+### Why records and knowledge differ
 
-`ResidentRecords` сохраняет индивидуальную хронологию для **Read Records**,
-включая причины начала целей, фактические исходы и услышанную речь. Это
-внешний просмотр сейва, а не общая память NPC. Участник может знать об
-обещании, свидетель — помнить его произнесение, третий житель — получить
-только слух, четвёртый — ничего не знать. Игрок во время игры видит свои
-отношения через Shift+I и только реально услышанные реплики через J.
+`ResidentRecords` saves an individual chronology for **Read Records**, including why goals began, their actual outcomes, and speech heard. This is an external view of the save, not shared NPC memory. A participant may know about a promise, a witness may remember it being spoken, a third resident may hear only a rumor, and a fourth may know nothing. During play, the player sees their relationships through Shift+I and only lines actually heard through J.
 
-## Какие действия используют социальные данные
+## Actions that use social data
 
-- **Приглашение, уход и исключение.** Правила допуска и реальные действия
-  групп проверяют членство, лидерство, вражду и `Attitude` обеих сторон.
-  Гражданский лидер сортирует подходящих видимых кандидатов по отношению,
-  затем по расстоянию. Недоверие к лидеру и опасность могут мотивировать
-  самостоятельный уход. Смена лидера сохраняет ID группы у преемника.
-- **Обмен.** Гражданский AI может не начинать сделку при `Attitude ≤ −30`;
-  доверие действующему лидеру имеет отдельное исключение. Реальная сделка
-  меняет предметы и может создать отношение или воспоминание. Оценка товаров,
-  наличия интересных предметов и законности сделки остаётся частью торговых
-  правил, а не одной шкалы симпатии.
-- **Помощь с едой и медициной.** Источники целей смотрят на известную нужду,
-  уверенность, привязанность, сострадание, установку заботы, ценность жизни и
-  собственные ресурсы. Они исключают боевых врагов (`Hostile`), но личная
-  помощь не наследует автоматически порог приглашения. Доставка должна
-  действительно передать или применить предмет.
-- **Обещания и договоры услуг.** Произнесённое обещание создаёт сохранённое
-  обязательство с получателем, ресурсом и сроком. Оно конкурирует с другими
-  целями и закрывается результатом, а не хорошим намерением. Предложение
-  лечения, согласие и выполнение также имеют отдельные состояния.
-- **Нарушения, спор и примирение.** Уверенное известное нарушение может
-  породить предупреждение, требование возмещения или исключение. Нарушитель
-  отвечает сообразно собственным склонностям и состоянию; предупреждающий
-  оценивает ответ сообразно своим. Обида, доверие, фрустрация и срок реакции
-  меняются независимо. Извинение может смягчить отношение без возврата в
-  группу; угроза и боевое нападение остаются разными событиями.
-- **Поиск, защита и совместные задания.** Знание о пропавшем спутнике,
-  опасности, доме, запасах или раненом создаёт личные цели и устойчивые
-  интересы. Групповой или фракционный координатор предлагает видимому
-  подходящему исполнителю общее задание; исполнитель получает свою цель.
-  Фракционное задание не добавляет члена в группу. Задание на припасы,
-  получатель которого вышел из группы, теряет смысл и завершается.
-- **Разговоры и радио.** Готовность делиться своими действиями может зависеть
-  от черт и склонностей. Речь передаёт факт, но не превращает слушателя в
-  очевидца. Радионовость может отдельно повлиять на рассудок слушателя через
-  установки и его отношение к участникам.
+- **Invitation, departure, and expulsion.** Eligibility rules and actual group actions check membership, leadership, hostility, and both sides' `Attitude`. A civilian leader sorts eligible visible candidates first by attitude, then by distance. Distrust of the leader and danger may motivate an independent departure. On a leadership change, the successor keeps the group's ID.
+- **Trade.** Civilian AI may decline to initiate a trade at `Attitude ≤ −30`; trust in the current leader has a separate exception. An actual trade moves items and may create a relationship effect or memory. Item valuation, availability of interesting items, and legality remain part of trade rules, rather than a single affection scale.
+- **Food and medical help.** Goal sources consider known need, confidence, attachment, compassion, disposition toward care, value of life, and the helper's own resources. They exclude combat enemies (`Hostile`), but personal help does not automatically inherit the invitation threshold. Delivery must actually transfer or use the item.
+- **Promises and service agreements.** A spoken promise creates a stored commitment with a recipient, resource, and deadline. It competes with other goals and closes on an outcome, not a good intention. Offering treatment, accepting it, and carrying it out also have separate states.
+- **Violations, disputes, and reconciliation.** A known violation held with confidence can lead to a warning, demand for restitution, or expulsion. The offender responds according to their own biases and state; the person giving the warning evaluates the response according to theirs. Grievance, trust, frustration, and response deadline change independently. An apology can soften the relationship without restoring group membership; a threat and a combat attack remain separate events.
+- **Search, protection, and joint assignments.** Knowledge of a missing companion, danger, a home, supplies, or an injured person creates personal goals and persistent interests. A group or faction coordinator offers a shared assignment to a visible, eligible actor, who receives their own goal. A faction assignment does not add someone to a group. A supply assignment whose recipient has left the group loses its purpose and ends.
+- **Conversation and radio.** Willingness to share one's own actions may depend on traits and biases. Speech conveys a fact but does not make the listener an eyewitness. Radio news can separately affect the listener's sanity through dispositions and attitude toward the participants.
 
-В каждом пункте сначала действуют физические и правовые ограничения игры,
-затем допустимые социальные способы конкурируют с голодом, опасностью и
-другими планами. Положительный вес цели не обещает, что действие произойдёт:
-цель может уступить более важной, маршрут может исчезнуть, а адресат — уйти.
+In each case, the game's physical and legal constraints apply first. Eligible social approaches then compete with hunger, danger, and other plans. A positive goal weight does not guarantee an action: a more important goal may win, a route may disappear, or the recipient may leave.
 
-## Как всё соединяется
+## How it fits together
 
 ```mermaid
 flowchart LR
-    A[Фактический результат] --> B[Значимое событие]
-    B --> C[Участник или очевидец]
-    C --> D[Личное воспоминание]
-    D --> E[Чувство к людям и коллективам]
-    D --> F[Черта, навык или опыт позже]
-    C --> G[Сохранённый факт]
-    G --> H[Разговор или радио]
-    H --> I[Знание слушателя с уверенностью]
-    I --> J[Репутация и известная ситуация]
-    E --> K[Оценка цели или ответа]
+    A[Actual outcome] --> B[Significant event]
+    B --> C[Participant or eyewitness]
+    C --> D[Personal memory]
+    D --> E[Feelings toward people and collectives]
+    D --> F[Trait, skill, or experience later]
+    C --> G[Stored fact]
+    G --> H[Conversation or radio]
+    H --> I[Listener knowledge with confidence]
+    I --> J[Reputation and known situation]
+    E --> K[Goal or response evaluation]
     F --> K
     J --> K
-    L[Черты, установки, нужды и членство] --> K
-    K --> M[План и допустимое действие]
+    L[Traits, dispositions, needs, and membership] --> K
+    K --> M[Plan and eligible action]
     M --> A
 ```
 
-Read Records показывает сохранённую ретроспективную историю NPC, включая
-события, цели и их исходы. Это **инструмент просмотра истории вне игрового
-знания персонажей**: запись в архиве не означает, что все жители о ней знают.
-Во время игры NPC видит только своё наблюдение и полученные сведения.
+Read Records shows an NPC's saved retrospective history, including events, goals, and their outcomes. It is a **history viewer outside the characters' in-game knowledge**: an archive entry does not mean every resident knows about it. During play, an NPC has only their own observations and information received from others.
 
-## Пример: два полицейских поссорились
+## Example: two police officers fall out
 
-Допустим, Джеральд хорошо помнит помощь Ллойда и его личное `Feeling`
-положительно. Затем Джеральд узнаёт о серьёзной краже Ллойда с высокой
-уверенностью. В `NpcKnownPerson` Ллойда появляется `Violation = 100`, поэтому
-расчётный `Attitude` Джеральда к нему становится не выше −30. Если Ллойд состоит
-в группе Джеральда, у лидера появляется основание для исключения; тот же порог
-не позволяет тут же пригласить его обратно.
+Suppose Gerald remembers Lloyd's help well and has a positive personal `Feeling` toward him. Gerald then learns of a serious theft by Lloyd with high confidence. Lloyd's `NpcKnownPerson` gets `Violation = 100`, so Gerald's computed `Attitude` toward him is capped at −30. If Lloyd belongs to Gerald's group, the leader has grounds to expel him; the same threshold prevents an immediate invitation back.
 
-Предупреждение само по себе не разрешает нарушение. Ллойд отвечает согласно
-своим склонностям к закону и состраданию, терпению и текущей фрустрации.
-Принятие границы Джеральд оценивает **своими** состраданием, законом, терпением,
-доверием сообщениям и обидой. Только принятый ответ, относящийся к текущему
-инциденту, может снять ограничение `Violation`. Старое положительное чувство
-после этого опять учитывается, но членство не восстанавливается автоматически:
-нужны обычные условия и отдельное приглашение. Извинение может уменьшить
-обиду и прибавить доверие без отмены нарушения.
+A warning alone does not resolve the violation. Lloyd responds according to his own law and compassion biases, patience, and current frustration. Gerald evaluates whether Lloyd accepts the boundary using **his own** compassion, law, patience, message trust, and grievance. Only an accepted response tied to the current incident can lift the `Violation` cap. The old positive feeling then counts again, but membership is not restored automatically: normal conditions and a separate invitation are required. An apology can reduce grievance and raise trust without clearing the violation.
 
-Важная техническая тонкость: обычная цель помочь с едой использует
-`NpcMotivation.Feeling`, а не `Attitude`, и проверяет `Hostile` как боевую
-вражду. Поэтому положительные старые воспоминания могут всё ещё делать помощь
-интересной даже после отказа в совместной жизни. Медицинская помощь также
-учитывает ценность жизни. Это разные решения с разной ценой; они не обязаны
-иметь один порог. Обычное **групповое** задание принести еду человеку с таким
-нарушением уже не предлагается, но срочная групповая медицина возможна.
-Если получатель вышел из группы, групповое задание прекращается.
+One technical subtlety matters here: the ordinary goal to help with food uses `NpcMotivation.Feeling`, not `Attitude`, and checks `Hostile` for combat hostility. Positive older memories can therefore still make helping attractive even after the NPC refuses to live together. Medical help also considers the value of life. These are different decisions with different costs and need not share a threshold. An ordinary **group** assignment to bring food to someone with such a violation is no longer offered, but urgent group medical help remains possible. If the recipient leaves the group, the group assignment ends.
 
-## Каноничные места в коде
+## Canonical code locations
 
-### Сохранённое состояние
+### Saved state
 
-- [`Actor.cs`](../WRogue/Data/Actor.cs) содержит `PersonalityState`, устойчивый
-  `PersonalityIdentity`, существующее `TrustInLeader` и ссылку на лидера.
-  [`SocialGroup.cs`](../WRogue/Data/SocialGroup.cs) содержит **действительное**
-  членство, неизменяемый ID группы, лидера, состав и текущий групповой план.
-- [`PersonalityState.cs`](../WRogue/Data/PersonalityState.cs) задаёт enum всех
-  осей, экземпляр черты, наблюдённое событие, воспоминание, отношения к
-  человеку/группе/фракции, опыт установок, фрустрацию и очередь памяти.
-- [`NpcKnowledge.cs`](../WRogue/Data/NpcKnowledge.cs) хранит факты с источником
-  и уверенностью, известных людей, места, выходы и границы этих списков.
-  `NpcKnownPerson.Violation` — известная конкретному наблюдателю оценка
-  нарушения; это не поле самого нарушителя.
-- [`NpcSocialState.cs`](../WRogue/Data/NpcSocialState.cs) содержит обещания,
-  споры, разрешения на припасы, договоры услуг, привязанности и известное
-  правило группы. [`NpcIntent.cs`](../WRogue/Data/NpcIntent.cs),
-  [`NpcGoals.cs`](../WRogue/Data/NpcGoals.cs) и
-  [`NpcInterest.cs`](../WRogue/Data/NpcInterest.cs) — цели, реакции, их
-  оценённые значения и устойчивые интересы. Общие эпизоды и планы хранятся
-  отдельно в `NpcStories.cs` и `SocialGroup.cs`.
-- [`ResidentRecords.cs`](../WRogue/Data/ResidentRecords.cs) и связанные
-  частичные классы содержат сохранённый архив историй жителей. Это не источник
-  знаний для NPC. Формат и совместимость сейвов описаны в
-  [save-format.md](save-format.md).
+- [`Actor.cs`](../WRogue/Data/Actor.cs) contains `PersonalityState`, stable `PersonalityIdentity`, existing `TrustInLeader`, and the leader reference. [`SocialGroup.cs`](../WRogue/Data/SocialGroup.cs) contains **actual** membership, the group's immutable ID, leader, members, and current group plan.
+- [`PersonalityState.cs`](../WRogue/Data/PersonalityState.cs) defines the enum for all axes, trait instances, observed events, memories, relationships with people/groups/factions, disposition experience, frustration, and the memory queue.
+- [`NpcKnowledge.cs`](../WRogue/Data/NpcKnowledge.cs) stores facts with source and confidence, known people, places, exits, and the limits of these lists. `NpcKnownPerson.Violation` is a particular observer's known assessment of a violation; it is not a field on the offender.
+- [`NpcSocialState.cs`](../WRogue/Data/NpcSocialState.cs) contains promises, disputes, supply permissions, service agreements, attachments, and the known group rule. [`NpcIntent.cs`](../WRogue/Data/NpcIntent.cs), [`NpcGoals.cs`](../WRogue/Data/NpcGoals.cs), and [`NpcInterest.cs`](../WRogue/Data/NpcInterest.cs) contain goals, reactions, their evaluated values, and persistent interests. Shared episodes and plans are stored separately in `NpcStories.cs` and `SocialGroup.cs`.
+- [`ResidentRecords.cs`](../WRogue/Data/ResidentRecords.cs) and related partial classes contain the saved archive of residents' histories. It is not a source of NPC knowledge. Save format and compatibility are described in [save-format.md](save-format.md).
 
-### Определения правил
+### Rule definitions
 
-- [`PersonalityContent.cs`](../WRogue/Gameplay/Npc/Content/PersonalityContent.cs)
-  регистрирует базовые черты и воспоминания; [`PersonalityWorldContent.cs`](../WRogue/Gameplay/Npc/Content/PersonalityWorldContent.cs)
-  — встречи, фракции и мировые переживания. Особые черты, воспоминания,
-  события, ценности, способности и ответы находятся в профильных
-  `Content/<feature>/` модулях. Например, обещания — в
-  [`PromisesModule.cs`](../WRogue/Gameplay/Npc/Content/Promises/PromisesModule.cs),
-  нарушения и предупреждения — в
-  [`JusticeModule.cs`](../WRogue/Gameplay/Npc/Content/Justice/JusticeModule.cs).
-- [`NpcContentDefaults.cs`](../WRogue/Gameplay/Npc/Content/NpcContentDefaults.cs)
-  собирает стандартные модули. [`NpcCatalogBuilder.cs`](../WRogue/Gameplay/Npc/Contracts/NpcCatalogBuilder.cs)
-  регистрирует и проверяет контракты;
-  [`NpcContentCatalog.cs`](../WRogue/Gameplay/Npc/Runtime/NpcContentCatalog.cs)
-  — каталог активной игры. Правила модуля определяются при композиции, но
-  сами объекты определений и callback-функции не записываются в сейв.
-- [`Axes/`](../WRogue/Gameplay/Npc/Axes/) задаёт основу фракции, проекцию черт,
-  временный контекст и некоторые немедленные эмоции для пяти установок.
-  [`CoreEventsModule.cs`](../WRogue/Gameplay/Npc/Content/CoreEvents/CoreEventsModule.cs)
-  регистрирует фракционные основы.
+- [`PersonalityContent.cs`](../WRogue/Gameplay/Npc/Content/PersonalityContent.cs) registers basic traits and memories; [`PersonalityWorldContent.cs`](../WRogue/Gameplay/Npc/Content/PersonalityWorldContent.cs) registers encounters, factions, and world experiences. Specialized traits, memories, events, values, abilities, and responses live in focused `Content/<feature>/` modules. For example, promises are in [`PromisesModule.cs`](../WRogue/Gameplay/Npc/Content/Promises/PromisesModule.cs), and violations and warnings are in [`JusticeModule.cs`](../WRogue/Gameplay/Npc/Content/Justice/JusticeModule.cs).
+- [`NpcContentDefaults.cs`](../WRogue/Gameplay/Npc/Content/NpcContentDefaults.cs) assembles the standard modules. [`NpcCatalogBuilder.cs`](../WRogue/Gameplay/Npc/Contracts/NpcCatalogBuilder.cs) registers and validates contracts; [`NpcContentCatalog.cs`](../WRogue/Gameplay/Npc/Runtime/NpcContentCatalog.cs) is the active game's catalog. Module rules are defined during composition, but definition objects and callback functions are not saved.
+- [`Axes/`](../WRogue/Gameplay/Npc/Axes/) defines faction baselines, trait projections, temporary context, and some immediate emotions for the five dispositions. [`CoreEventsModule.cs`](../WRogue/Gameplay/Npc/Content/CoreEvents/CoreEventsModule.cs) registers faction baselines.
 
-### Выполнение правил
+### Rule execution
 
-- [`PersonalitySystem.cs`](../WRogue/Gameplay/Npc/Runtime/PersonalitySystem.cs)
-  инициализирует NPC, вычисляет `Bias`, `Disposition`, `Attitude`, принимает
-  события и разрешает воспоминания. Создание состояния вызывается из
-  [`ActorModel.cs`](../WRogue/Data/ActorModel.cs).
-- [`NpcEventDefinition.cs`](../WRogue/Gameplay/Npc/Events/NpcEventDefinition.cs)
-  описывает полезную нагрузку, аудиторию, сохранение факта, текст архива и
-  необязательные реакции на личное наблюдение события и сообщение о нём по радио.
-  [`NpcObservation.cs`](../WRogue/Gameplay/Npc/Events/NpcObservation.cs)
-  определяет порядок фаз наблюдения. Физические источники событий расположены
-  в `RogueGame.Actions.*`, `RogueGame.Combat.cs`, `RogueGame.Events.cs` и в
-  действиях профильных NPC-модулей.
-- [`NpcMemoryProcessor.cs`](../WRogue/Gameplay/Npc/Memories/NpcMemoryProcessor.cs)
-  создаёт память и сразу связывает её с историями отношений.
-  [`NpcImmediateEmotion.cs`](../WRogue/Gameplay/Npc/Runtime/NpcImmediateEmotion.cs)
-  отвечает за краткий эмоциональный эффект, в том числе от радио.
-- [`NpcRelationshipValue.cs`](../WRogue/Gameplay/Npc/Relationships/NpcRelationshipValue.cs)
-  суммирует личные и коллективные чувства;
-  [`NpcReputation.cs`](../WRogue/Gameplay/Npc/Relationships/NpcReputation.cs)
-  обрабатывает репутацию по услышанному;
-  [`NpcReplies.cs`](../WRogue/Gameplay/Npc/Relationships/NpcReplies.cs)
-  готовит ответы и срывы.
-- [`NpcKnowledgeSystem.cs`](../WRogue/Gameplay/Npc/Knowledge/NpcKnowledgeSystem.cs)
-  поддерживает видимые сведения и принимает сообщения;
-  [`NpcConversation.cs`](../WRogue/Gameplay/Npc/Conversation/NpcConversation.cs)
-  выбирает и распространяет слухи. Профильные модули дополнительно
-  обрабатывают `Knowledge`, `Relationships` и `OnReport` для своих событий.
-- [`NpcGoalContext.cs`](../WRogue/Gameplay/Npc/Goals/NpcGoalContext.cs)
-  собирает доступное знание и `NpcMotivation`;
-  [`NpcValues.cs`](../WRogue/Gameplay/Npc/Goals/NpcValues.cs)
-  вычисляет важность и полезность;
-  [`NpcGoalGenerator.State.cs`](../WRogue/Gameplay/Npc/Goals/NpcGoalGenerator.State.cs)
-  запускает источники предложений;
-  [`NpcGoalLifecycle.cs`](../WRogue/Gameplay/Npc/Goals/NpcGoalLifecycle.cs)
-  поддерживает, выбирает и завершает цели. Планирование и повторная проверка
-  действий — в [`Planning/`](../WRogue/Gameplay/Npc/Planning/).
-- [`CivilianAI.cs`](../WRogue/Gameplay/AI/CivilianAI.cs) совмещает эти цели с
-  обычным контроллером гражданского NPC, сенсорами, торговлей и приглашением.
-  [`NpcStorySystem.cs`](../WRogue/Gameplay/Npc/Runtime/NpcStorySystem.cs) и
-  [`NpcStorySystem.Groups.cs`](../WRogue/Gameplay/Npc/Coordination/NpcStorySystem.Groups.cs)
-  координируют истории, преемственность и групповые/фракционные предложения.
-  Конкретное правило всё равно находится в модуле, например
-  [`GroupsModule.cs`](../WRogue/Gameplay/Npc/Content/Groups/GroupsModule.cs).
-- [`RecordsReader.cs`](../WRogue/Engine/RecordsReader.cs) читает сохранённую
-  хронологию **без восстановления игрового мира**. Он отображает факты и
-  причинные связи, а не принимает решения за NPC.
+- [`PersonalitySystem.cs`](../WRogue/Gameplay/Npc/Runtime/PersonalitySystem.cs) initializes NPCs, computes `Bias`, `Disposition`, and `Attitude`, receives events, and resolves memories. State creation is invoked from [`ActorModel.cs`](../WRogue/Data/ActorModel.cs).
+- [`NpcEventDefinition.cs`](../WRogue/Gameplay/Npc/Events/NpcEventDefinition.cs) describes the payload, audience, fact retention, archive text, and optional responses to personal observation of an event and radio reports about it. [`NpcObservation.cs`](../WRogue/Gameplay/Npc/Events/NpcObservation.cs) defines observation phase order. Physical event sources are in `RogueGame.Actions.*`, `RogueGame.Combat.cs`, `RogueGame.Events.cs`, and the actions of focused NPC modules.
+- [`NpcMemoryProcessor.cs`](../WRogue/Gameplay/Npc/Memories/NpcMemoryProcessor.cs) creates memories and immediately connects them to relationship histories. [`NpcImmediateEmotion.cs`](../WRogue/Gameplay/Npc/Runtime/NpcImmediateEmotion.cs) handles short-lived emotional effects, including those from radio.
+- [`NpcRelationshipValue.cs`](../WRogue/Gameplay/Npc/Relationships/NpcRelationshipValue.cs) combines personal and collective feelings; [`NpcReputation.cs`](../WRogue/Gameplay/Npc/Relationships/NpcReputation.cs) handles reputation based on what was heard; [`NpcReplies.cs`](../WRogue/Gameplay/Npc/Relationships/NpcReplies.cs) prepares replies and outbursts.
+- [`NpcKnowledgeSystem.cs`](../WRogue/Gameplay/Npc/Knowledge/NpcKnowledgeSystem.cs) maintains visible information and receives reports; [`NpcConversation.cs`](../WRogue/Gameplay/Npc/Conversation/NpcConversation.cs) selects and spreads rumors. Focused modules also handle `Knowledge`, `Relationships`, and `OnReport` for their events.
+- [`NpcGoalContext.cs`](../WRogue/Gameplay/Npc/Goals/NpcGoalContext.cs) gathers available knowledge and `NpcMotivation`; [`NpcValues.cs`](../WRogue/Gameplay/Npc/Goals/NpcValues.cs) computes importance and utility; [`NpcGoalGenerator.State.cs`](../WRogue/Gameplay/Npc/Goals/NpcGoalGenerator.State.cs) runs proposal sources; [`NpcGoalLifecycle.cs`](../WRogue/Gameplay/Npc/Goals/NpcGoalLifecycle.cs) maintains, selects, and completes goals. Planning and action rechecks are in [`Planning/`](../WRogue/Gameplay/Npc/Planning/).
+- [`CivilianAI.cs`](../WRogue/Gameplay/AI/CivilianAI.cs) combines these goals with the usual civilian NPC controller, sensors, trading, and invitations. [`NpcStorySystem.cs`](../WRogue/Gameplay/Npc/Runtime/NpcStorySystem.cs) and [`NpcStorySystem.Groups.cs`](../WRogue/Gameplay/Npc/Coordination/NpcStorySystem.Groups.cs) coordinate stories, succession, and group/faction proposals. The specific rule still lives in a module, such as [`GroupsModule.cs`](../WRogue/Gameplay/Npc/Content/Groups/GroupsModule.cs).
+- [`RecordsReader.cs`](../WRogue/Engine/RecordsReader.cs) reads the saved chronology **without restoring the game world**. It displays facts and causal links; it does not make decisions for NPCs.
 
-### Как находить правило и добавлять новое
+### Finding a rule and adding a new one
 
-Если непонятно, почему NPC совершил действие, сначала найдите *выполненное*
-событие в Read Records и его `CauseId`; затем профильный модуль по ID события,
-его подписки `On(...)`/`OnReport(...)`, источник цели `Evaluate(...)` и
-условия соответствующей способности или действия. Сравните три разные вещи:
-сохранённое отношение в `RelationshipRecord`, текущий `NpcKnownPerson` и
-вычисляемый вес цели. Полезно проверить настройки NPC personalities, линию
-видимости, источник и уверенность факта, действительное членство, предметы и
-маршрут. Отсутствие записи у одного NPC не доказывает отсутствия мирового
-события: он мог не участвовать и не видеть его.
+If it is unclear why an NPC acted, first find the *executed* event in Read Records and its `CauseId`; then find the focused module by event ID, its `On(...)`/`OnReport(...)` subscriptions, the `Evaluate(...)` goal source, and the conditions of the corresponding ability or action. Compare three distinct things: the stored relationship in `RelationshipRecord`, the current `NpcKnownPerson`, and the computed goal weight. It also helps to check the NPC personalities setting, line of sight, the fact's source and confidence, actual membership, items, and route. A missing record for one NPC does not prove that the world event never happened: the NPC may neither have participated nor seen it.
 
-Новое социальное правило обычно помещается в существующий профильный модуль:
-определение события с устойчивым строковым ID и контрактом, реакция нужной
-фазы, при необходимости память/черта, значение цели, способность и реальное
-действие. Модуль подключается один раз в `NpcContentDefaults`. Сохранённые
-строковые ID, номера осей и пространства имён нельзя произвольно менять:
-сейвы на них опираются. Проверка такого правила — именованный сценарий,
-исполняющий действие и следующий за ним результат; подробный порядок в
-[npc-content-modules.md](npc-content-modules.md) и
-[gameplay-scenarios.md](gameplay-scenarios.md).
+A new social rule usually belongs in an existing focused module: an event definition with a stable string ID and contract, a reaction in the appropriate phase, a memory or trait if needed, a goal value, an ability, and an actual action. The module is connected once in `NpcContentDefaults`. Saved string IDs, axis numbers, and namespaces cannot be changed arbitrarily because saves depend on them. Verify the rule with a named scenario that executes the action and asserts its outcome. The detailed procedure is in [npc-content-modules.md](npc-content-modules.md) and [gameplay-scenarios.md](gameplay-scenarios.md).
 
-Дополнительные документы: [подробная механика черт и памяти](npc-personality.md),
-[цели и намерения](npc-intentions.md), [социальные истории](npc-social-stories.md).
+Further reading: [trait and memory mechanics](npc-personality.md), [goals and intentions](npc-intentions.md), and [social stories](npc-social-stories.md).

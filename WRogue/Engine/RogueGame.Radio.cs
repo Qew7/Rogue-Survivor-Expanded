@@ -64,7 +64,7 @@ namespace djack.RogueSurvivor.Engine
                         foreach (NpcFact fact in facts)
                         {
                             if (fact.Place.Map == null || fact.EventTurn >= midnight || fact.LearnedTurn >= midnight ||
-                                now - fact.EventTurn > 2 * WorldTime.TURNS_PER_DAY ||
+                                now - fact.EventTurn > NpcKnowledge.FactMaxAge(fact) ||
                                 fact.Confidence < 40 || fact.Hops >= 3) continue;
                             if (available == null) available = new List<NpcFact>();
                             available.Add(fact);
@@ -80,7 +80,7 @@ namespace djack.RogueSurvivor.Engine
 
         static readonly string[] RadioStationNames = { "Survivor Network", "Military Dispatch", "Local Calls", "Gang Frequency" };
         static readonly string[] RadioStoryLeads = { "From local survivors: ", "Situation report: ",
-            "A caller says: ", "Word on the street: " };
+            "A caller relays: ", "Word on the street: " };
         static readonly string[] RadioUpdateLeads = { "Follow-up from survivors: ", "Dispatch update: ",
             "The caller adds: ", "New word on the street: " };
         static readonly string[] RadioShelterNames = { "shelter", "hideout", "safehouse", "refuge", "home", "camp",
@@ -308,7 +308,8 @@ namespace djack.RogueSurvivor.Engine
                     NpcFact fact = facts[f];
                     int age = now - fact.EventTurn;
                     if (fact.Source != NpcKnowledgeSource.Told || fact.Place.Map == null ||
-                        age > 2 * WorldTime.TURNS_PER_DAY || fact.Confidence < 40 || fact.Hops >= 3) continue;
+                        age > NpcKnowledge.FactMaxAge(fact) ||
+                        fact.Confidence < 40 || fact.Hops >= 3) continue;
                     if (lastKind == null || fact.Kind != lastKind)
                     {
                         lastKind = fact.Kind;
@@ -349,11 +350,12 @@ namespace djack.RogueSurvivor.Engine
                 }
             }
             if (headline == null) { program.Text = RadioBark(station, slot); return program; }
-            List<NpcFact> chapter = NpcConversation.Chapter(this, source, null, headline, now, selected.Facts);
+            List<NpcFact> chapter = NpcConversation.Chapter(this, source, null, headline, now, selected.Facts, radio: true);
+            List<NpcFact> visibleChapter = RadioStoryBeats(chapter);
             List<string> lines = new List<string>();
             List<NpcFact> reported = new List<NpcFact>();
             HashSet<string> reports = new HashSet<string>(StringComparer.Ordinal);
-            foreach (NpcFact fact in chapter)
+            foreach (NpcFact fact in visibleChapter)
             {
                 string line = NpcConversation.ReportSentence(this, source, fact, true);
                 if (!reports.Add(line)) continue;
@@ -397,9 +399,12 @@ namespace djack.RogueSurvivor.Engine
                 if (previous != null)
                     recap = "Earlier reports said that " + NpcRecordDescriptions.Report(NpcContent, previous) + ". ";
             }
+            string body = NpcConversation.StoryText(NpcContent, source, reported, lines, true);
+            const string secondhandLead = "A secondhand report says that ";
+            if (station == 2 && body.StartsWith(secondhandLead, StringComparison.Ordinal))
+                body = body.Substring(secondhandLead.Length);
             program.Text = reported.Count == 0 ? RadioUpdateLeads[station] + "No new details on that story." :
-                (familiarStory ? RadioUpdateLeads[station] : RadioStoryLeads[station]) + recap +
-                NpcConversation.StoryText(NpcContent, source, reported, lines, true);
+                (familiarStory ? RadioUpdateLeads[station] : RadioStoryLeads[station]) + recap + body;
             NpcStory activeStory = String.IsNullOrEmpty(headline.StoryId) ? null : m_Session.NpcDirector.Find(headline.StoryId);
             NpcFact latest = chapter[chapter.Count - 1];
             if (activeStory != null && !activeStory.Finished && latest.Place.Map.District != null)
@@ -409,8 +414,83 @@ namespace djack.RogueSurvivor.Engine
             }
             program.Source = source;
             program.Facts = chapter.ToArray();
-            program.EventId = headline.EventId;
+            program.EventId = visibleChapter[visibleChapter.Count - 1].EventId;
             return program;
+        }
+
+        static int SharedRadioParticipants(NpcFact a, NpcFact b)
+        {
+            int shared = 0;
+            if (a.SubjectId != Guid.Empty && (a.SubjectId == b.SubjectId || a.SubjectId == b.OtherId)) shared++;
+            if (a.OtherId != Guid.Empty && a.OtherId != a.SubjectId &&
+                (a.OtherId == b.SubjectId || a.OtherId == b.OtherId)) shared++;
+            return shared;
+        }
+
+        // A story ID can include several people's attempts at the same action.
+        // Keep the reported facts intact, but narrate the change and its closest known context.
+        List<NpcFact> RadioStoryBeats(List<NpcFact> chapter)
+        {
+            if (chapter.Count < 2 || String.IsNullOrEmpty(chapter[0].StoryId)) return chapter;
+            NpcFact focus = chapter[0];
+            int best = Int32.MinValue;
+            for (int i = 0; i < chapter.Count; i++)
+            {
+                NpcFact fact = chapter[i];
+                NpcEventDefinition definition = NpcContent.Event(fact.Kind);
+                int score = i + (definition == null ? 0 : 2 * definition.ReportPriority +
+                    (definition.ReportConclusion ? 40 : 0) + (definition.RadioSanity == null ? 0 : 8));
+                for (int j = 0; j < i; j++)
+                {
+                    NpcFact earlier = chapter[j];
+                    if (fact.CauseId == earlier.EventId && fact.Kind != earlier.Kind) score += 12;
+                    if (fact.Kind != earlier.Kind && SharedRadioParticipants(fact, earlier) > 0) score += 8;
+                    if (definition != null && definition.ReportDisputesKinds != null &&
+                        fact.EventId == earlier.EventId &&
+                        Array.IndexOf(definition.ReportDisputesKinds, earlier.Kind) >= 0) score += 24;
+                }
+                if (score >= best) { focus = fact; best = score; }
+            }
+
+            var closestRoutine = new Dictionary<string, NpcFact>(StringComparer.Ordinal);
+            foreach (NpcFact fact in chapter)
+            {
+                NpcEventDefinition definition = NpcContent.Event(fact.Kind);
+                if (fact == focus || definition == null || definition.SummarizeReports == null ||
+                    fact.Kind == focus.Kind || fact.EventTurn > focus.EventTurn ||
+                    fact.EventTurn == focus.EventTurn && fact.EventId > focus.EventId ||
+                    SharedRadioParticipants(fact, focus) == 0) continue;
+                NpcFact previous;
+                if (!closestRoutine.TryGetValue(fact.Kind, out previous) ||
+                    SharedRadioParticipants(fact, focus) > SharedRadioParticipants(previous, focus) ||
+                    SharedRadioParticipants(fact, focus) == SharedRadioParticipants(previous, focus) &&
+                    fact.EventTurn > previous.EventTurn)
+                    closestRoutine[fact.Kind] = fact;
+            }
+
+            var visible = new List<NpcFact>();
+            foreach (NpcFact fact in chapter)
+            {
+                if (fact.EventTurn > focus.EventTurn ||
+                    fact.EventTurn == focus.EventTurn && fact.EventId > focus.EventId) continue;
+                NpcEventDefinition definition = NpcContent.Event(fact.Kind);
+                if (fact != focus && definition != null && definition.SummarizeReports != null)
+                {
+                    NpcFact anchor = fact.Kind == focus.Kind ? focus :
+                        closestRoutine.ContainsKey(fact.Kind) ? closestRoutine[fact.Kind] : null;
+                    if (anchor == null || fact.SubjectId != anchor.SubjectId ||
+                        fact.SubjectId == Guid.Empty && fact != anchor) continue;
+                }
+                if (fact == focus || fact.CauseId > 0 && fact.CauseId == focus.EventId ||
+                    focus.CauseId > 0 && focus.CauseId == fact.EventId ||
+                    fact.EventId == focus.EventId && fact.Kind != focus.Kind ||
+                    SharedRadioParticipants(fact, focus) > 0 ||
+                    fact.SubjectId == Guid.Empty && fact.OtherId == Guid.Empty &&
+                    focus.SubjectId == Guid.Empty && focus.OtherId == Guid.Empty &&
+                    (definition == null || definition.SummarizeReports == null))
+                    visible.Add(fact);
+            }
+            return visible;
         }
 
         string RadioBark(int station, int slot)
@@ -449,6 +529,7 @@ namespace djack.RogueSurvivor.Engine
                 case 2: return kind == "shared_food" || kind.StartsWith("requested_", StringComparison.Ordinal) ||
                     kind.Contains("medicine") || kind.Contains("shelter") || kind.Contains("food");
                 case 3: return kind.Contains("raid") || kind == "attack" || kind == "murder" ||
+                    kind == "pursuit_announced" || kind == "pursuit_response_announced" ||
                     kind.Contains("theft") || kind.StartsWith("stolen_goods_", StringComparison.Ordinal) ||
                     kind == "supplies_lost" || kind == "base_robbed";
                 default: return false;

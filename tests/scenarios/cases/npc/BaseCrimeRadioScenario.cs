@@ -87,12 +87,10 @@ static class BaseCrimeRadioScenario
 
             Actor newListener = NpcIntentSupport.Actor(world, "new listener", 11, 0);
             world.Place(witness, 10, 0);
-            Check.Equal(true, world.Try(new ActionNpcTell(witness, world.Game, newListener, loss)),
-                "witness can tell the linked base incident directly");
-            Check.Equal(true, newListener.Personality.Knowledge.Facts.Exists(f => f.EventId == anonymous.EventId) &&
-                newListener.Personality.Knowledge.Facts.Exists(f => f.EventId == loss.EventId) &&
-                newListener.Personality.Knowledge.Facts.Exists(f => f.EventId == named.EventId),
-                "direct conversation delivers the robbery, damage, and identified continuation together");
+            Check.Equal(false, world.Try(new ActionNpcTell(witness, world.Game, newListener, loss)),
+                "witness no longer retells yesterday's incident directly");
+            Check.Equal(false, newListener.Personality.Knowledge.Facts.Exists(f => f.EventId == loss.EventId),
+                "the expired report does not reach a new listener");
             world.Place(witness, 0, 1);
             world.Map.LocalTime.TurnCounter = Session.Get.WorldTime.TurnCounter;
             world.Game.KillActor(killer, member, "scenario", false);

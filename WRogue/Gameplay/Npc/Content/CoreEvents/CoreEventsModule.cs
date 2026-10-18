@@ -21,6 +21,19 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             catalog.Event(new NpcEventDefinition("attack", NpcRecordCategory.Combat, true, e => (e.Other ?? "someone") + " attacked " + (e.Subject ?? "Someone") + ".", null)
                 { ReportActorRole = NpcReportActorRole.Other, SelfReportTone = NpcSelfReportTone.Harmful,
                   RadioSanity = NpcImmediateEmotion.RadioCloseLoss });
+            catalog.Event(new NpcEventDefinition("police_alert", NpcRecordCategory.Combat, true,
+                e => "Police warned that " + (e.Other ?? "someone") + " is armed and dangerous.",
+                f => "police warned that " + (f.ReportOther ?? "someone") + " is armed and dangerous; shoot on sight",
+                isPrivate: true) { PrivateAudience = e => e.Subject, ReportActorRole = NpcReportActorRole.Other });
+            catalog.OnReport("police_alert", c => {
+                NpcFact fact = c.Fact;
+                NpcKnownPerson suspect = fact.NamesOther ? c.Listener.Personality.Knowledge.Person(fact.OtherId) : null;
+                if (suspect == null || fact.Place.Map == null || fact.EventTurn < suspect.SeenTurn ||
+                    fact.EventTurn == suspect.SeenTurn && fact.Confidence <= suspect.Confidence) return;
+                suspect.Place = fact.Place; suspect.SeenTurn = fact.EventTurn;
+                suspect.Confidence = fact.Confidence; suspect.Source = NpcKnowledgeSource.Told;
+                c.Listener.Personality.Knowledge.Revision++;
+            });
             catalog.Event(new NpcEventDefinition("murder", NpcRecordCategory.Combat, true,
                 e => (e.Other ?? "someone") + " murdered " + (e.Subject ?? "Someone") + ".",
                 f => (f.ReportOther ?? "someone") + " murdered " + (f.ReportSubject ?? "someone") +

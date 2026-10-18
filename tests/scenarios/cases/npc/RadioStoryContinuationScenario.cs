@@ -58,7 +58,7 @@ static class RadioStoryContinuationScenario
             source.Personality.Knowledge.Facts.Add(Fact(source, 12, "army_supplies", "dispatch", "Cy", 732));
             source.Personality.Knowledge.Facts.Add(Fact(source, 13, "requested_medicine", "call", "Di", 733));
             source.Personality.Knowledge.Facts.Add(Fact(source, 14, "attack", "street", "Eli", 734));
-            string[] leads = { null, "Situation report: ", "A caller says: ", "Word on the street: " };
+            string[] leads = { null, "Situation report: ", "A caller relays: ", "Word on the street: " };
             for (int station = 1; station < 4; station++)
             {
                 RadioProgram program = null;

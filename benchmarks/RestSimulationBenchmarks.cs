@@ -67,6 +67,10 @@ static partial class RestSimulationBenchmarks
 
     public static void RunMemory(int turns, bool collect)
     {
+        var toldRumorsField = typeof(NpcKnowledge).GetField("toldRumors",
+            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+        var askedRequestsField = typeof(NpcKnowledge).GetField("askedRequests",
+            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
         Stopwatch interval = Stopwatch.StartNew();
         int previousGen2 = GC.CollectionCount(2);
         RunOne(false, 5, 70, GameOptions.SimRatio.FULL, turns: turns, botPlayer: true,
@@ -74,7 +78,7 @@ static partial class RestSimulationBenchmarks
             {
                 if (turn % 100 != 0 && turn != turns) return;
                 double intervalMs = interval.Elapsed.TotalMilliseconds;
-                int facts = 0, events = 0;
+                int facts = 0, events = 0, toldRumors = 0, maxToldRumors = 0, askedRequests = 0;
                 int entries = 0;
                 foreach (var record in session.ResidentRecords.Residents) entries += record.EntryCount;
                 for (int x = 0; x < session.World.Size; x++)
@@ -83,8 +87,17 @@ static partial class RestSimulationBenchmarks
                             foreach (Actor actor in map.Actors)
                                 if (actor.Personality != null)
                                 {
-                                    facts += actor.Personality.Knowledge.Facts.Count;
+                                    NpcKnowledge knowledge = actor.Personality.Knowledge;
+                                    facts += knowledge.Facts.Count;
                                     events += actor.Personality.Events.Count;
+                                    var told = (System.Collections.ICollection)toldRumorsField.GetValue(knowledge);
+                                    var asked = (System.Collections.ICollection)askedRequestsField.GetValue(knowledge);
+                                    if (told != null)
+                                    {
+                                        toldRumors += told.Count;
+                                        maxToldRumors = Math.Max(maxToldRumors, told.Count);
+                                    }
+                                    if (asked != null) askedRequests += asked.Count;
                                 }
                 double beforeCollect = GC.GetTotalMemory(false) / 1048576.0;
                 double gcMs = 0;
@@ -103,6 +116,8 @@ static partial class RestSimulationBenchmarks
                     GC.GetTotalMemory(false) / 1048576.0, process.WorkingSet64 / 1048576.0,
                     GC.CollectionCount(2) - previousGen2, gcMs, facts, events,
                     session.ResidentRecords.Residents.Count, entries);
+                Console.WriteLine("REST KNOWLEDGE told rumors {0}, max/NPC {1}, asked requests {2}",
+                    toldRumors, maxToldRumors, askedRequests);
                 if (turn == turns)
                 {
                     var kinds = new System.Collections.Generic.Dictionary<string, int>();

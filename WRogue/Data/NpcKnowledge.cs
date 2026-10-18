@@ -79,6 +79,22 @@ namespace djack.RogueSurvivor.Data
         public NpcKnownExit(Location from, Location to) { From = from; To = to; }
     }
     [Serializable]
+    sealed class NpcToldRumor
+    {
+        public Guid Recipient;
+        public string Kind;
+        public long EventId;
+        public string ReportText;
+        public int Turn;
+    }
+    [Serializable]
+    sealed class NpcAskedRequest
+    {
+        public Guid Recipient;
+        public string Text;
+        public int Turn;
+    }
+    [Serializable]
     sealed class NpcKnowledge
     {
         public readonly List<NpcFact> Facts = new List<NpcFact>();
@@ -86,6 +102,8 @@ namespace djack.RogueSurvivor.Data
         public readonly List<NpcKnownPlace> Places = new List<NpcKnownPlace>();
         public readonly List<NpcKnownExit> Exits = new List<NpcKnownExit>();
         readonly Dictionary<string, int> told = new Dictionary<string, int>();
+        [System.Runtime.Serialization.OptionalField] List<NpcToldRumor> toldRumors;
+        [System.Runtime.Serialization.OptionalField] List<NpcAskedRequest> askedRequests;
         public int NextTalkTurn, NextPlanTurn, Revision;
         [System.Runtime.Serialization.OptionalField] public int NextMedicineRequestTurn;
         public bool Learn(NpcFact fact)
@@ -95,6 +113,7 @@ namespace djack.RogueSurvivor.Data
                 NpcFact old = Facts[i];
                 if (old.EventId != fact.EventId || old.Kind != fact.Kind) continue;
                 if (old.Confidence >= fact.Confidence) return false;
+                fact.LearnedTurn = Math.Min(fact.LearnedTurn, old.LearnedTurn);
                 Facts.RemoveAt(i);
                 break;
             }
@@ -158,6 +177,69 @@ namespace djack.RogueSurvivor.Data
             People.Add(person); Trim(People, 32); Revision++; return true;
         }
         public bool WasTold(long eventId, Guid recipient) { return told.ContainsKey(eventId + ":" + recipient); }
+        public bool WasToldRecently(long eventId, Guid recipient, int turn)
+        {
+            int last;
+            return eventId != 0 && told.TryGetValue(eventId + ":" + recipient, out last) &&
+                turn - last < WorldTime.TURNS_PER_DAY;
+        }
+        public static int FactMaxAge(NpcFact fact)
+        { return fact.Kind == "food_cache" ? WorldTime.TURNS_PER_DAY : 2 * WorldTime.TURNS_PER_DAY; }
+        public bool HasRecentRumor(Guid recipient, string kind, int turn)
+        {
+            if (toldRumors == null) return false;
+            for (int i = toldRumors.Count - 1; i >= 0; i--)
+            {
+                NpcToldRumor entry = toldRumors[i];
+                if (entry.Recipient == recipient && entry.Kind == kind &&
+                    turn - entry.Turn < WorldTime.TURNS_PER_DAY) return true;
+            }
+            return false;
+        }
+        public bool WasToldRumor(NpcFact fact, Guid recipient, string reportText, int turn)
+        {
+            if (toldRumors == null) return false;
+            for (int i = toldRumors.Count - 1; i >= 0; i--)
+            {
+                NpcToldRumor entry = toldRumors[i];
+                if (entry.Recipient == recipient && entry.Kind == fact.Kind &&
+                    (fact.EventId != 0 && entry.EventId == fact.EventId || entry.ReportText == reportText) &&
+                    turn - entry.Turn < WorldTime.TURNS_PER_DAY) return true;
+            }
+            return false;
+        }
+        public void ToldRumor(NpcFact fact, Guid recipient, string reportText, int turn)
+        {
+            if (toldRumors == null) toldRumors = new List<NpcToldRumor>();
+            toldRumors.RemoveAll(entry => turn - entry.Turn >= WorldTime.TURNS_PER_DAY ||
+                entry.Recipient == recipient && entry.Kind == fact.Kind &&
+                (fact.EventId != 0 && entry.EventId == fact.EventId || entry.ReportText == reportText));
+            toldRumors.Add(new NpcToldRumor { Recipient = recipient, Kind = fact.Kind,
+                EventId = fact.EventId, ReportText = reportText, Turn = turn });
+        }
+        public bool CanRequest(long goalSequence, Guid recipient, string text, int turn, bool medicine = false)
+        {
+            if (goalSequence > 0 && WasTold(-goalSequence, recipient) ||
+                askedRequests != null && askedRequests.Exists(entry =>
+                    entry.Recipient == recipient && entry.Text == text &&
+                    turn - entry.Turn < WorldTime.TURNS_PER_DAY)) return false;
+            if (!medicine) return true;
+            NpcKnownPerson person = Person(recipient);
+            return turn >= NextMedicineRequestTurn &&
+                (person == null || turn >= person.NextMedicineRequestTurn);
+        }
+        public void Requested(long goalSequence, Guid recipient, string text, int turn, bool medicine = false)
+        {
+            if (goalSequence > 0) Told(-goalSequence, recipient, turn);
+            if (askedRequests == null) askedRequests = new List<NpcAskedRequest>();
+            askedRequests.RemoveAll(entry => turn - entry.Turn >= WorldTime.TURNS_PER_DAY ||
+                entry.Recipient == recipient && entry.Text == text);
+            askedRequests.Add(new NpcAskedRequest { Recipient = recipient, Text = text, Turn = turn });
+            if (!medicine) return;
+            NextMedicineRequestTurn = turn + 4 * WorldTime.TURNS_PER_HOUR;
+            NpcKnownPerson person = Person(recipient);
+            if (person != null) person.NextMedicineRequestTurn = turn + WorldTime.TURNS_PER_DAY;
+        }
         public void Told(long eventId, Guid recipient, int turn)
         {
             if (told.Count >= 64)
@@ -170,8 +252,10 @@ namespace djack.RogueSurvivor.Data
         }
         public void Expire(int turn)
         {
-            Facts.RemoveAll(f => turn - f.EventTurn > 2 * WorldTime.TURNS_PER_DAY);
-            Places.RemoveAll(p => turn - p.SeenTurn > 2 * WorldTime.TURNS_PER_DAY);
+            Facts.RemoveAll(f => turn - f.EventTurn > FactMaxAge(f));
+            Places.RemoveAll(p => turn - p.SeenTurn > (p.Kind == "food" ? WorldTime.TURNS_PER_DAY : 2 * WorldTime.TURNS_PER_DAY));
+            if (toldRumors != null) toldRumors.RemoveAll(entry => turn - entry.Turn >= WorldTime.TURNS_PER_DAY);
+            if (askedRequests != null) askedRequests.RemoveAll(entry => turn - entry.Turn >= WorldTime.TURNS_PER_DAY);
         }
         static void Trim<T>(List<T> list, int max) { if (list.Count > max) list.RemoveAt(0); }
     }

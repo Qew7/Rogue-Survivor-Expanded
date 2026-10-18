@@ -80,7 +80,15 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         void RegisterEvents(NpcCatalogBuilder catalog)
         {
             catalog.OnReport("helped", c => NpcReputation.Help(c, true));
-            catalog.OnReport("shared_food", c => NpcReputation.Help(c));
+            catalog.OnReport("shared_food", c => {
+                NpcReputation.Help(c);
+                NpcFact fact = c.Fact;
+                NpcKnownPerson recipient = fact.NamesOther ? c.Listener.Personality.Knowledge.Person(fact.OtherId) : null;
+                if (recipient != null && (fact.EventTurn > recipient.FoodNeedTurn ||
+                    fact.EventTurn == recipient.FoodNeedTurn && fact.Confidence >= recipient.FoodConfidence))
+                { recipient.FoodNeed = 0; recipient.FoodNeedTurn = fact.EventTurn;
+                    recipient.FoodConfidence = fact.Confidence; c.Listener.Personality.Knowledge.Revision++; }
+            });
             catalog.Event(new NpcEventDefinition("helped", NpcRecordCategory.Help, true, e => (e.Other ?? "someone") + " helped " + (e.Subject ?? "Someone") + ".", null)
                 { ReportActorRole = NpcReportActorRole.Other, SelfReportTone = NpcSelfReportTone.Helpful,
                   ImmediateSanity = NpcImmediateEmotion.CareCircle });

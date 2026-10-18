@@ -269,7 +269,9 @@ namespace djack.RogueSurvivor.Engine
             if (!initiator.IsPlayer && initiator.Personality != null)
             {
                 int turn = refuser.Location.Map.LocalTime.TurnCounter;
-                initiator.Personality.NextTradeAttemptTurn = turn + WorldTime.TURNS_PER_HOUR;
+                initiator.Personality.NextTradeAttemptTurn = turn + WorldTime.TURNS_PER_HOUR / 2;
+                initiator.Personality.Opinion(refuser.PersonalityIdentity, refuser.UnmodifiedName)
+                    .NextTradeAttemptTurn = turn + 6 * WorldTime.TURNS_PER_HOUR;
             }
             ReportPersonalityEvent("trade_refused", refuser, initiator, refuser.Location.Map,
                 refuser.Location.Position, storyId: storyId);

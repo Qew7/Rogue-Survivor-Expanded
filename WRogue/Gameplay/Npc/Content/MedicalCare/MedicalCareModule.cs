@@ -70,7 +70,15 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         }
         void RegisterEvents(NpcCatalogBuilder catalog)
         {
-            catalog.OnReport("shared_medicine", c => NpcReputation.Help(c));
+            catalog.OnReport("shared_medicine", c => {
+                NpcReputation.Help(c);
+                NpcFact fact = c.Fact;
+                NpcKnownPerson recipient = fact.NamesOther ? c.Listener.Personality.Knowledge.Person(fact.OtherId) : null;
+                if (recipient != null && (fact.EventTurn > recipient.MedicalTurn ||
+                    fact.EventTurn == recipient.MedicalTurn && fact.Confidence >= recipient.MedicalConfidence))
+                { recipient.MedicalNeed = 0; recipient.MedicalTurn = fact.EventTurn;
+                    recipient.MedicalConfidence = fact.Confidence; c.Listener.Personality.Knowledge.Revision++; }
+            });
             catalog.OnReport("requested_medicine", c => {
                 NpcFact fact = c.Fact;
                 NpcKnownPerson person = fact.NamesSubject ? c.Listener.Personality.Knowledge.Person(fact.SubjectId) : null;

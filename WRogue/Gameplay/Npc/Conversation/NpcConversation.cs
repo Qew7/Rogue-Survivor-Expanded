@@ -105,11 +105,28 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         {
             if (speaker.Personality == null || !Session.Get.GamePreset.NpcPersonalitiesEnabled) return null;
             int turn = speaker.Location.Map.LocalTime.TurnCounter;
+            var recentRadioStories = new HashSet<string>(StringComparer.Ordinal);
+            if (listener != null && listener.IsPlayer && listener.Personality != null)
+            {
+                var radioTurns = new HashSet<int>();
+                for (int i = listener.Personality.HeardJournal.Count - 1; i >= 0; i--)
+                {
+                    HeardJournalEntry heard = listener.Personality.HeardJournal[i];
+                    if (heard.Kind == "radio" && turn >= heard.Turn &&
+                        turn - heard.Turn <= 6 * WorldTime.TURNS_PER_HOUR)
+                        radioTurns.Add(heard.Turn);
+                }
+                foreach (NpcFact known in listener.Personality.Knowledge.Facts)
+                    if (radioTurns.Contains(known.LearnedTurn) && !String.IsNullOrEmpty(known.StoryId))
+                        recentRadioStories.Add(known.StoryId);
+            }
             NpcFact chosen = null; int best = Int32.MinValue;
             foreach (NpcFact fact in speaker.Personality.Knowledge.Facts)
-                if (EligibleFact(game, speaker, fact, turn) && EligibleListener(speaker, listener, fact))
+                if (EligibleFact(game, speaker, fact, turn) && EligibleListener(game, speaker, listener, fact))
                 {
                     int score = fact.EventTurn + SelfReportPreference(game, speaker, fact);
+                    if (fact.StoryId != null && recentRadioStories.Contains(fact.StoryId))
+                        score += 2 * WorldTime.TURNS_PER_DAY;
                     if (score > best) { chosen = fact; best = score; }
                 }
             return chosen;
@@ -131,23 +148,29 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 OwnAction(speaker, fact, definition) ? WorldTime.TURNS_PER_HOUR : 0;
         }
 
-        public static bool EligibleFact(RogueGame game, Actor speaker, NpcFact fact, int turn)
+        public static bool EligibleFact(RogueGame game, Actor speaker, NpcFact fact, int turn, bool radio = false)
         { return fact != null && fact.Place.Map != null && fact.Confidence >= 40 && fact.Hops < 3 &&
-            turn - fact.EventTurn <= 2 * WorldTime.TURNS_PER_DAY && CanTell(game, speaker, fact); }
+            turn - fact.EventTurn <= NpcKnowledge.FactMaxAge(fact) &&
+            (radio || turn - fact.LearnedTurn <= WorldTime.TURNS_PER_DAY) && CanTell(game, speaker, fact); }
 
-        public static bool EligibleListener(Actor speaker, Actor listener, NpcFact fact)
+        public static bool EligibleListener(RogueGame game, Actor speaker, Actor listener, NpcFact fact)
         { return listener != null && listener != speaker && listener.PersonalityIdentity != fact.SourceId &&
-            !speaker.Personality.Knowledge.WasTold(fact.EventId, listener.PersonalityIdentity) &&
+            !speaker.Personality.Knowledge.WasToldRecently(fact.EventId, listener.PersonalityIdentity,
+                speaker.Location.Map.LocalTime.TurnCounter) &&
+            (!speaker.Personality.Knowledge.HasRecentRumor(listener.PersonalityIdentity, fact.Kind,
+                speaker.Location.Map.LocalTime.TurnCounter) ||
+                !speaker.Personality.Knowledge.WasToldRumor(fact, listener.PersonalityIdentity,
+                    ReportSentence(game, speaker, fact), speaker.Location.Map.LocalTime.TurnCounter)) &&
             (listener.Personality == null || !listener.Personality.Knowledge.Facts.Exists(known =>
                 known.EventId == fact.EventId && known.Kind == fact.Kind &&
                 known.Confidence >= NpcKnowledgeSystem.ReportConfidence(listener, speaker, fact))); }
 
         public static void ShareRumor(RogueGame game, Actor speaker, Actor listener, NpcFact fact, bool free)
         {
-            if (!CanTell(game, speaker, fact)) return;
+            int turn = speaker.Location.Map.LocalTime.TurnCounter;
+            if (!EligibleFact(game, speaker, fact, turn) || !EligibleListener(game, speaker, listener, fact)) return;
             Action<string, long> profile = RogueGame.ProfileSimulationPhase;
             long started = profile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
-            int turn = speaker.Location.Map.LocalTime.TurnCounter;
             List<NpcFact> chapter = Chapter(game, speaker, listener, fact);
             List<string> lines = new List<string>();
             List<NpcFact> reported = new List<NpcFact>();
@@ -173,13 +196,16 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             bool[] learned = new bool[hearers.Count];
             foreach (NpcFact part in chapter)
             {
+                string report = ReportSentence(game, speaker, part);
                 for (int i = 0; i < hearers.Count; i++)
                 {
                     Actor hearer = hearers[i];
                     if (NpcKnowledgeSystem.Hear(game, hearer, speaker, part)) learned[i] = true;
                     speaker.Personality.Knowledge.Told(part.EventId, hearer.PersonalityIdentity, turn);
+                    speaker.Personality.Knowledge.ToldRumor(part, hearer.PersonalityIdentity, report, turn);
                 }
                 speaker.Personality.Knowledge.Told(part.EventId, listener.PersonalityIdentity, turn);
+                speaker.Personality.Knowledge.ToldRumor(part, listener.PersonalityIdentity, report, turn);
             }
             for (int i = 0; i < hearers.Count; i++)
                 if (!hearers[i].IsPlayer && (learned[i] || hearers[i] == listener))
@@ -191,15 +217,15 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         }
 
         public static List<NpcFact> Chapter(RogueGame game, Actor speaker, Actor listener, NpcFact fact, int turn = -1,
-            IList<NpcFact> sourceFacts = null)
+            IList<NpcFact> sourceFacts = null, bool radio = false)
         {
             if (turn < 0) turn = speaker.Location.Map.LocalTime.TurnCounter;
             List<NpcFact> chapter = new List<NpcFact> { fact };
             if (!String.IsNullOrEmpty(fact.StoryId))
                 foreach (NpcFact related in sourceFacts ?? (IList<NpcFact>)speaker.Personality.Knowledge.Facts)
                     if (related != fact && related.StoryId == fact.StoryId &&
-                        EligibleFact(game, speaker, related, turn) &&
-                        (listener == null || EligibleListener(speaker, listener, related)))
+                        EligibleFact(game, speaker, related, turn, radio) &&
+                        (listener == null || EligibleListener(game, speaker, listener, related)))
                         chapter.Add(related);
             chapter.Sort((a, b) => a.EventTurn != b.EventTurn ? a.EventTurn.CompareTo(b.EventTurn) : a.EventId.CompareTo(b.EventId));
             while (chapter.Count > 10) chapter.RemoveAt(chapter[0] == fact ? 1 : 0);

@@ -36,7 +36,7 @@ namespace djack.RogueSurvivor.Gameplay.AI
                 if (!social && preference == 0) continue;
                 foreach (Actor person in visible)
                 {
-                    if (!NpcConversation.EligibleListener(m_Actor, person, fact)) continue;
+                    if (!NpcConversation.EligibleListener(game, m_Actor, person, fact)) continue;
                     RelationshipRecord opinion = m_Actor.Personality.Person(person.PersonalityIdentity);
                     if (opinion != null && (opinion.Trust < opinion.Fear || opinion.Feeling < -20)) continue;
                     if (ActionNpcTell.CanAddress(game, m_Actor, person, fact))
