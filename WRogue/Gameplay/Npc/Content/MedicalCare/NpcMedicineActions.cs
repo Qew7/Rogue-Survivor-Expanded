@@ -8,6 +8,9 @@ namespace djack.RogueSurvivor.Gameplay.Personality
 {
     static class NpcMedicineActions
     {
+        public const string RequestText = "Could you spare medicine? I'm trying to get treatment.";
+        public static bool CanAsk(Actor owner, Guid recipient, int turn)
+        { return owner.Personality.Knowledge.CanRequest(0, recipient, RequestText, turn, medicine: true); }
         public static ActorAction Take(NpcActionContext c)
         { return c.Action(() => {
             ItemMedicine medicine = NpcPlanExecution.Medicine(c.Game, c.Owner, c.Step.Place); string reason;
@@ -28,11 +31,14 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             if (!c.Goal.Finished) { c.Goal.Plan.Invalidate(); c.Goal.Plan.NextPlanningTurn = c.Owner.Location.Map.LocalTime.TurnCounter; }
         }); }
         public static ActorAction Ask(NpcActionContext c)
-        { return c.Action(() => c.NearPerson(c.Step.Target) && !c.Owner.Personality.Knowledge.WasTold(-c.Goal.Sequence, c.Step.Target) &&
+        { return c.Action(() => c.NearPerson(c.Step.Target) &&
+            c.Owner.Personality.Knowledge.CanRequest(c.Goal.Sequence, c.Step.Target, RequestText,
+                c.Owner.Location.Map.LocalTime.TurnCounter, medicine: true) &&
             NpcPlanExecution.Medicine(c.Game, c.Owner, c.Owner.Location, true) == null, () => {
-            c.Game.DoSay(c.Owner, c.Target, "Could you spare medicine? I'm trying to get treatment.", RogueGame.Sayflags.IS_STORY | RogueGame.Sayflags.IS_REQUEST,
+            c.Game.DoSay(c.Owner, c.Target, RequestText, RogueGame.Sayflags.IS_STORY | RogueGame.Sayflags.IS_REQUEST,
                 c.Goal.CauseId, c.Goal.StoryId);
-            c.Owner.Personality.Knowledge.Told(-c.Goal.Sequence, c.Step.Target, c.Owner.Location.Map.LocalTime.TurnCounter);
+            int turn = c.Owner.Location.Map.LocalTime.TurnCounter;
+            c.Owner.Personality.Knowledge.Requested(c.Goal.Sequence, c.Step.Target, RequestText, turn, medicine: true);
             c.Publish("requested_medicine", c.Target); c.Goal.Plan.Invalidate(); c.Goal.NextAttempt = c.Owner.Location.Map.LocalTime.TurnCounter + 8;
         }); }
         public static ActorAction Give(NpcActionContext c) { return Aid(c, false); }

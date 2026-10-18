@@ -19,7 +19,7 @@ static class PersonalitySkillCapScenario
                 world.Game.SkillUpgrade(witness, Skills.IDs.STRONG_PSYCHE);
             world.Map.LocalTime.TurnCounter = witness.Personality.Memories[0].ResolveTurn;
 
-            PersonalitySystem.ResolveDue(world.Game, world.Map);
+            PersonalityScenarioResolution.PreferFirstOutcome(world.Game, world.Map);
             Check.Equal(Skills.MaxSkillLevel(Skills.IDs.STRONG_PSYCHE),
                 witness.Sheet.SkillTable.GetSkillLevel((int)Skills.IDs.STRONG_PSYCHE),
                 "primary skill reward never exceeds its cap");

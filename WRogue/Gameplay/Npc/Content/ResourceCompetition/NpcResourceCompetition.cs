@@ -18,8 +18,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 owner.Personality.RememberDispute(dispute);
                 if (owner == source.Other && NpcIntentSystem.Enabled(owner))
                 {
-                    int willing = PersonalitySystem.Bias(owner, DecisionKind.Compassion) + PersonalitySystem.Bias(owner, DecisionKind.Trade) / 2 -
-                        PersonalitySystem.Bias(owner, DecisionKind.Supplies) / 2 + NpcValues.KnownAttitude(owner, source.Subject.PersonalityIdentity) / 4;
+                    int willing = PersonalitySystem.Bias(owner, NpcPersonalityAxis.Compassion) + PersonalitySystem.Bias(owner, NpcPersonalityAxis.Trade) / 2 -
+                        PersonalitySystem.Bias(owner, NpcPersonalityAxis.Supplies) / 2 + NpcValues.KnownAttitude(owner, source.Subject.PersonalityIdentity) / 4;
                     if (owner.SocialGroup != null) willing -= owner.SocialGroup.LeaderId == owner.PersonalityIdentity ?
                         owner.SocialGroup.SupplyRule : owner.Personality.KnownSupplyRule(owner.SocialGroup.Identity);
                     NpcResourceDefinition resource = game.NpcContent.Resource(source.Resource);
@@ -53,9 +53,10 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         {
             if (!owner.Personality.HasDisputes) return false;
             int turn = owner.Location.Map.LocalTime.TurnCounter;
-            return owner.Personality.Disputes.Exists(d => d.Place == place && turn - d.Turn < 180 &&
+            int wait = Math.Max(30, 180 + 2 * PersonalitySystem.Disposition(owner, NpcPersonalityAxis.Patience));
+            return owner.Personality.Disputes.Exists(d => d.Place == place && turn - d.Turn < wait &&
                 (d.Response == null || d.Response == "resource_refused" &&
-                PersonalitySystem.Bias(owner, DecisionKind.Law) + PersonalitySystem.Bias(owner, DecisionKind.Courage) / 2 >= 0));
+                PersonalitySystem.Bias(owner, NpcPersonalityAxis.Law) + PersonalitySystem.Bias(owner, NpcPersonalityAxis.Courage) / 2 >= 0));
         }
         public static void Taken(RogueGame game, Actor owner, NpcIntent goal, Location place, string resource)
         {

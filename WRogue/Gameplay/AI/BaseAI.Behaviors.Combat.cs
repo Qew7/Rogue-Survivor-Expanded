@@ -969,7 +969,7 @@ namespace djack.RogueSurvivor.Gameplay.AI
 
             // sanity checks.
             if (!m_Actor.Model.Abilities.IsLawEnforcer &&
-                PersonalitySystem.Bias(m_Actor, DecisionKind.Law) < 25)
+                PersonalitySystem.Bias(m_Actor, NpcPersonalityAxis.Law) < 25)
                 return null;
             if (percepts == null)
                 return null;

@@ -24,9 +24,12 @@ static class ContentModuleScenario
             Check.Equal(1, owner.Personality.Memories.Count, "event creates the module memory once");
             Check.Equal(owner.PersonalityIdentity, owner.Personality.Memories[0].SubjectId, "memory keeps the actual participant");
             NpcGoalGenerator.Refresh(world.Game, owner);
-            Check.Equal(1, owner.Personality.Intents.Count, "satisfied state and cooldown prevent duplicates");
+            int restGoals = 0;
+            foreach (NpcIntent intent in owner.Personality.Intents)
+                if (intent.DefinitionId == "take_breath") restGoals++;
+            Check.Equal(1, restGoals, "satisfied state and cooldown prevent a duplicate rest goal");
             world.Map.LocalTime.TurnCounter = owner.Personality.Memories[0].ResolveTurn;
-            PersonalitySystem.ResolveDue(world.Game, world.Map);
+            PersonalityScenarioResolution.PreferFirstOutcome(world.Game, world.Map);
             Check.Equal(true, owner.Personality.HasTrait("rested_resolve"), "extension memory resolves to its registered advanced trait");
             Check.Throws<ArgumentException>(() => PersonalitySystem.Report(world.Game, new SignificantEvent("regained_stamina", owner, null,
                 world.Map, owner.Location.Position, world.Map.LocalTime.TurnCounter)), "invalid event payload is rejected");

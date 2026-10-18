@@ -8,6 +8,7 @@ namespace djack.RogueSurvivor.Engine
         KeyEventArgs PeekKey();
         Point MousePosition();
         MouseButtons? PeekMouseButtons();
+        int PeekMouseWheelDelta();
     }
 
     sealed class UiPlayerInputSource : IPlayerInputSource
@@ -17,6 +18,7 @@ namespace djack.RogueSurvivor.Engine
         public KeyEventArgs PeekKey() { return m_UI.UI_PeekKey(); }
         public Point MousePosition() { return m_UI.UI_GetMousePosition(); }
         public MouseButtons? PeekMouseButtons() { return m_UI.UI_PeekMouseButtons(); }
+        public int PeekMouseWheelDelta() { return m_UI.UI_PeekMouseWheelDelta(); }
     }
 
     struct PlayerInputEvent
@@ -24,6 +26,7 @@ namespace djack.RogueSurvivor.Engine
         public KeyEventArgs Key;
         public Point MousePosition;
         public MouseButtons? MouseButtons;
+        public int MouseWheelDelta;
     }
 
     sealed class PlayerInputReader
@@ -45,8 +48,10 @@ namespace djack.RogueSurvivor.Engine
 
                 Point position = m_Source.MousePosition();
                 MouseButtons? buttons = m_Source.PeekMouseButtons();
-                if (position != previous || buttons != null)
-                    return new PlayerInputEvent { MousePosition = position, MouseButtons = buttons };
+                int wheel = m_Source.PeekMouseWheelDelta();
+                if (position != previous || buttons != null || wheel != 0)
+                    return new PlayerInputEvent { MousePosition = position, MouseButtons = buttons,
+                        MouseWheelDelta = wheel };
             }
         }
     }

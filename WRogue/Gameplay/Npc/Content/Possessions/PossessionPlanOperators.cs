@@ -18,7 +18,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 if (place.Kind != kind || place.Units == 0 || d.Turn - place.SeenTurn > 180 || NpcResourceCompetition.RespectRefusal(d.Owner, place.Place)) continue;
                 ulong at = d.At(place.Place); if (at == 0) continue; d.Travel(place.Place, Guid.Empty, at);
                 d.Add(NpcPlanAction.PickupValuedItem, place.Place, Guid.Empty, at, (ulong)NpcPlanFact.ValuedItem,
-                    (ulong)NpcPlanFact.ValuedItem, 0, 5 + place.Risk * Math.Max(0, 5 + PersonalitySystem.Bias(d.Owner, DecisionKind.Law) / 3));
+                    (ulong)NpcPlanFact.ValuedItem, 0, 5 + place.Risk * Math.Max(0, 5 + PersonalitySystem.Bias(d.Owner, NpcPersonalityAxis.Law) / 3));
             }
         }
     }

@@ -46,7 +46,7 @@ static class PersonalityNamedRaidsScenario
                 Check.Equal(0, leader.Personality.Memories.Count, "leader does not fear their own raid");
                 Check.Equal(0, follower.Personality.Memories.Count, "fellow gang member does not fear their own raid");
                 world.Map.LocalTime.TurnCounter = witness.Personality.Memories[0].ResolveTurn;
-                PersonalitySystem.ResolveDue(world.Game, world.Map);
+                PersonalityScenarioResolution.PreferFirstOutcome(world.Game, world.Map);
                 Check.Equal(1, witness.Personality.Group(leader.PersonalityIdentity).Memories.Count,
                     "group remembers the raid after its memory resolves");
                 world.Map.RemoveActor(witness);

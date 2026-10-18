@@ -613,6 +613,11 @@ namespace djack.RogueSurvivor.Gameplay
                 EquipmentPart = DollPart.LEFT_HAND,
                 FlavorDescription = traData.FLAVOR
             };
+            string[] stationNames = { "survivor radio", "military radio", "local radio", "gang radio" };
+            for (int station = 0; station < stationNames.Length; station++)
+                this[(IDs)((int)IDs.RADIO_SURVIVORS + station)] = new ItemTrackerModel(stationNames[station], stationNames[station] + "s",
+                    GameImages.ITEM_POLICE_RADIO, 0, 2 * WorldTime.TURNS_PER_DAY, false)
+                { RadioStation = station, FlavorDescription = "Use to turn it on or off and hear its station." };
             #endregion
 
             #region Spray Paint

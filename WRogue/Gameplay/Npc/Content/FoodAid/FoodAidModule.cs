@@ -13,12 +13,14 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             catalog.OperatorSource(new NpcOperatorSource("food.deliver", c => (ulong)NpcPlanFact.Delivered, FoodPlanOperators.Delivery,
                 c => (ulong)NpcPlanFact.SpareFood, d => d.Resource == null || d.Resource == "food"));
             catalog.GoalSource(this);
-            catalog.Value(new NpcValueDefinition("Care", "Provide needed food", NpcGoalValue.Care, m => 10 + m.Compassion + Math.Min(0, m.Trade) + m.Feeling / 4 + m.Attachment / 4 + Math.Max(0, m.Group) / 10, true));
+            catalog.Value(new NpcValueDefinition("Care", "Provide needed food", NpcGoalValue.Care,
+                m => 10 + m.Compassion + Math.Min(0, m.Trade) + m.Feeling / 4 + m.Attachment / 4 + Math.Max(0, m.Group) / 10 +
+                    (m.Close ? 0 : m.CareCircle / 2) - m.Scarcity / 2, true));
             catalog.Value(new NpcValueDefinition("Reciprocity", "Reduce a personal debt", NpcGoalValue.Reciprocity, m => 25 + m.Compassion + m.Trade + m.Feeling / 2, true)
                 { AfterDelivery = c => c.Owner.Personality.Person(c.Target.PersonalityIdentity) != null && c.Owner.Personality.Person(c.Target.PersonalityIdentity).Debt > c.Goal.Generated.Desired });
             var repay = new NpcIntentDefinition("repay_aid", "Repay remembered aid",
             NpcIntentMethod.ShareFood, 25, 20, 2 * WorldTime.TURNS_PER_DAY, WorldTime.TURNS_PER_DAY, 1,
-            new NpcIntentWeight(DecisionKind.Compassion, 1), new NpcIntentWeight(DecisionKind.Trade, 1));
+            new NpcIntentWeight(NpcPersonalityAxis.Compassion, 1), new NpcIntentWeight(NpcPersonalityAxis.Trade, 1));
 
             repay.Result = (c, g) => (ulong)(NpcPlanFact.Delivered);
             repay.PauseWhenHungry = true;
@@ -28,7 +30,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             catalog.Capability(repay);
             var help = new NpcIntentDefinition(AnswerFoodRequestId, "Answer a food request",
             NpcIntentMethod.ShareFood, 25, 20, 60, 60, 1,
-            new NpcIntentWeight(DecisionKind.Compassion, 1), new NpcIntentWeight(DecisionKind.Trade, 1));
+            new NpcIntentWeight(NpcPersonalityAxis.Compassion, 1), new NpcIntentWeight(NpcPersonalityAxis.Trade, 1));
 
             help.Result = (c, g) => (ulong)(NpcPlanFact.Delivered);
             help.PauseWhenHungry = true;
@@ -41,21 +43,28 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         {
             Actor owner = context.Owner; NpcKnownPerson self = context.Self;
             IList<NpcKnownPerson> people = context.People; int turn = context.Turn;
+            Action<string, long> profile = RogueGame.ProfileSimulationPhase;
             foreach (NpcKnownPerson person in people)
             {
                 if (person.Id == self.Id || person.Dead) continue;
                 RelationshipRecord opinion = owner.Personality.Person(person.Id);
                 if (!person.Hostile && (turn - person.FoodNeedTurn <= 60 || context.Pending(NpcGoalValue.Care, person.Id)))
+                {
+                    long started = profile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
                     offers.Add(person, NpcGoalValue.Care, context.Catalog.Capability(AnswerFoodRequestId), 100 - person.FoodNeed, 100,
                         turn - person.FoodNeedTurn <= 60 ? person.FoodNeed : 0, person.FoodConfidence, person.NeedCause, person.NeedStory);
+                    if (profile != null) profile("food care offer", System.Diagnostics.Stopwatch.GetTimestamp() - started);
+                }
                 if (!person.Hostile && opinion != null && (turn >= person.ReciprocityTurn || context.Pending(NpcGoalValue.Reciprocity, person.Id)) &&
                     (opinion.Debt > 0 || context.Pending(NpcGoalValue.Reciprocity, person.Id)))
                 {
                     NpcIntent existing = owner.Personality.IntentList.Find(i => !i.Finished && i.Generated != null &&
                         i.Generated.Value == NpcGoalValue.Reciprocity && i.Generated.SubjectId == person.Id);
                     int desired = existing == null ? Math.Max(0, opinion.Debt - 10) : existing.Generated.Desired;
+                    long started = profile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
                     offers.Add(person, NpcGoalValue.Reciprocity, context.Catalog.Capability("repay_aid"), opinion.Debt, desired,
                         Math.Min(100, Math.Max(0, opinion.Debt - desired) * 10), 100, person.SocialCause);
+                    if (profile != null) profile("food repay offer", System.Diagnostics.Stopwatch.GetTimestamp() - started);
                 }
             }
         }
@@ -63,7 +72,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         {
             RegisterEvents(catalog);
             catalog.Operator(new NpcOperatorDefinition("food.give", NpcPlanAction.GiveFood, c => NpcFoodActions.Give(new NpcActionContext(c)), archiveText: step => "give food"));
-            catalog.Memory(new MemoryDefinition("refused_aid", "A request for aid was declined", 2, 6,
+            catalog.Memory(new MemoryDefinition("refused_aid", "A request for aid was declined", 2, 2,
                 new[] { new MemoryTrigger("request_refused", (a, e) => a == e.Other) },
                 new MemoryOutcome(null, "mistrustful", null), new MemoryOutcome(null, null, Skills.IDs.CHARISMATIC))
                 .Relate(MemoryRelationRole.Subject, -10), false);
@@ -71,9 +80,21 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         void RegisterEvents(NpcCatalogBuilder catalog)
         {
             catalog.OnReport("helped", c => NpcReputation.Help(c, true));
-            catalog.OnReport("shared_food", c => NpcReputation.Help(c));
-            catalog.Event(new NpcEventDefinition("helped", NpcRecordCategory.Help, true, e => (e.Other ?? "someone") + " helped " + (e.Subject ?? "Someone") + ".", null) { ReportActorRole = NpcReportActorRole.Other, SelfReportTone = NpcSelfReportTone.Helpful });
-            catalog.Event(new NpcEventDefinition("shared_food", NpcRecordCategory.Help, true, e => (e.Subject ?? "Someone") + " shared food with " + (e.Other ?? "someone") + ".", null) { StoryStage = (g, s, e) => NpcEpisodeProgress.FoodDelivery(g, s, e), SelfReportTone = NpcSelfReportTone.Helpful });
+            catalog.OnReport("shared_food", c => {
+                NpcReputation.Help(c);
+                NpcFact fact = c.Fact;
+                NpcKnownPerson recipient = fact.NamesOther ? c.Listener.Personality.Knowledge.Person(fact.OtherId) : null;
+                if (recipient != null && (fact.EventTurn > recipient.FoodNeedTurn ||
+                    fact.EventTurn == recipient.FoodNeedTurn && fact.Confidence >= recipient.FoodConfidence))
+                { recipient.FoodNeed = 0; recipient.FoodNeedTurn = fact.EventTurn;
+                    recipient.FoodConfidence = fact.Confidence; c.Listener.Personality.Knowledge.Revision++; }
+            });
+            catalog.Event(new NpcEventDefinition("helped", NpcRecordCategory.Help, true, e => (e.Other ?? "someone") + " helped " + (e.Subject ?? "Someone") + ".", null)
+                { ReportActorRole = NpcReportActorRole.Other, SelfReportTone = NpcSelfReportTone.Helpful,
+                  ImmediateSanity = NpcImmediateEmotion.CareCircle });
+            catalog.Event(new NpcEventDefinition("shared_food", NpcRecordCategory.Help, true, e => (e.Subject ?? "Someone") + " shared food with " + (e.Other ?? "someone") + ".", null)
+                { StoryStage = (g, s, e) => NpcEpisodeProgress.FoodDelivery(g, s, e), SelfReportTone = NpcSelfReportTone.Helpful,
+                  RadioSanity = NpcImmediateEmotion.RadioGoodNews });
             catalog.Event(new NpcEventDefinition("request_refused", NpcRecordCategory.Help, false, e => (e.Subject ?? "Someone") + " declined " + (e.Other ?? "someone") + "'s request.", null));
             catalog.Event(new NpcEventDefinition("aid_acknowledged", NpcRecordCategory.Help, false, e => (e.Subject ?? "Someone") + " acknowledged aid from " + (e.Other ?? "someone") + ".", null));
             catalog.On("helped", NpcObservationPhase.Knowledge, OnKnowledge);
@@ -140,8 +161,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                             NpcIntentStatus.Completed, "received needed supplies");
                 if (state.Reactions.Count < 4)
                 {
-                    string text = PersonalitySystem.Bias(owner, DecisionKind.Compassion) < 0 ? "About time." :
-                        PersonalitySystem.Bias(owner, DecisionKind.Group) < 0 ? "Thanks." :
+                    string text = PersonalitySystem.Bias(owner, NpcPersonalityAxis.Compassion) < 0 ? "About time." :
+                        PersonalitySystem.Bias(owner, NpcPersonalityAxis.Group) < 0 ? "Thanks." :
                         "Thank you, " + source.Other.UnmodifiedName + ". I needed that.";
                     state.Reactions.Add(new NpcReaction(source.Other, text, source.Id, source.Turn, storyId: source.StoryId));
                 }

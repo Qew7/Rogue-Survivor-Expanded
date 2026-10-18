@@ -7,6 +7,7 @@ namespace djack.RogueSurvivor.Engine.Actions
     {
         readonly Actor listener;
         readonly NpcIntent intent;
+        string RequestText { get { return "Have you seen " + intent.TargetName + "?"; } }
         public ActionNpcAskLocation(Actor actor, RogueGame game, Actor listener, NpcIntent intent) : base(actor, game)
         { this.listener = listener; this.intent = intent; }
         public override bool IsLegal()
@@ -16,14 +17,15 @@ namespace djack.RogueSurvivor.Engine.Actions
             m_Game.NpcContent.Capability(intent.DefinitionId).Score(m_Actor, intent, m_Game.NpcContent) >= m_Game.NpcContent.Capability(intent.DefinitionId).ThresholdFor(intent) &&
             listener != null && !listener.IsPlayer && !listener.IsSleeping && listener.Personality != null && listener.PersonalityIdentity != intent.TargetId &&
             NpcIntentSystem.CanSee(m_Game, m_Actor, listener) && m_Game.Rules.GridDistance(m_Actor.Location.Position, listener.Location.Position) <= 4 &&
-            !m_Game.Rules.AreEnemies(m_Actor, listener) && !m_Actor.Personality.Knowledge.WasTold(-intent.Sequence, listener.PersonalityIdentity); }
+            !m_Game.Rules.AreEnemies(m_Actor, listener) && m_Actor.Personality.Knowledge.CanRequest(intent.Sequence,
+                listener.PersonalityIdentity, RequestText, m_Actor.Location.Map.LocalTime.TurnCounter); }
         public override void Perform()
         {
             if (!IsLegal()) return;
-            m_Game.DoSay(m_Actor, listener, "Have you seen " + intent.TargetName + "?", RogueGame.Sayflags.IS_STORY | RogueGame.Sayflags.IS_REQUEST,
+            m_Game.DoSay(m_Actor, listener, RequestText, RogueGame.Sayflags.IS_STORY | RogueGame.Sayflags.IS_REQUEST,
                 intent.CauseId, intent.StoryId);
             SignificantEvent source = NpcEvents.Publish(m_Game, "asked_location", m_Actor, listener, intent.CauseId, intent.StoryId);
-            m_Actor.Personality.Knowledge.Told(-intent.Sequence, listener.PersonalityIdentity, source.Turn);
+            m_Actor.Personality.Knowledge.Requested(intent.Sequence, listener.PersonalityIdentity, RequestText, source.Turn);
             NpcKnownPerson known = listener.Personality.Knowledge.Person(intent.TargetId);
             if (listener.Personality.Reactions.Count < 4)
             {

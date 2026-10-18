@@ -25,6 +25,8 @@ namespace djack.RogueSurvivor.Engine
     {
         void NextMapTurn(Map map, SimFlags sim)
         {
+            Action<string, long> profile = ProfileSimulationPhase;
+            long started = profile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
             bool isLoDetail = (sim & SimFlags.LODETAIL_TURN) != 0;
 
             ////////////////////////////////////////
@@ -259,11 +261,16 @@ namespace djack.RogueSurvivor.Engine
                                         m_MusicManager.Stop();
                                         m_MusicManager.PlayLooping(GameMusics.SLEEP, MusicPriority.PRIORITY_EVENT);
                                     }
-                                    // message.
-                                    AddMessage(new Message("...zzZZZzzZ...", map.LocalTime.TurnCounter, Color.DarkCyan));
-                                    RedrawPlayScreen();
-                                    // give some time to sim thread.
-                                    if (s_Options.SimThread)
+                                    // Keep the sleep display responsive without rendering every simulated turn.
+                                    long now = System.Diagnostics.Stopwatch.GetTimestamp();
+                                    if (now - m_RestProgressLastDraw >= System.Diagnostics.Stopwatch.Frequency / 4)
+                                    {
+                                        AddMessage(new Message("...zzZZZzzZ...", map.LocalTime.TurnCounter, Color.DarkCyan));
+                                        RedrawPlayScreen();
+                                        m_RestProgressLastDraw = now;
+                                    }
+                                    // Yield only while a simulation worker exists.
+                                    if (m_SimWorker != null)
                                         Thread.Sleep(10);
                                 }
                                 else if (m_Rules.RollChance(MESSAGE_NPC_SLEEP_SNORE_CHANCE) && IsVisibleToPlayer(actor))
@@ -398,7 +405,7 @@ namespace djack.RogueSurvivor.Engine
 
                     // tracker?
                     ItemTracker tracker = leftItem as ItemTracker;
-                    if (tracker != null)
+                    if (tracker != null && !(tracker is ItemRadio))
                     {
                         if (tracker.Batteries > 0)
                         {
@@ -563,6 +570,7 @@ namespace djack.RogueSurvivor.Engine
             }   // skipped in lodetail turns.
 
             AdvanceMapTimers(map);
+            AdvanceRadios(map);
             Gameplay.Personality.PersonalitySystem.ObserveEncounters(this, map);
 
             // -- Advance local time.
@@ -572,7 +580,8 @@ namespace djack.RogueSurvivor.Engine
             ++map.LocalTime.TurnCounter;
             Gameplay.Personality.NpcIntentSystem.AdvanceClock(this, map);
             bool isLocalDay = !map.LocalTime.IsNight;
-            if (previousDay != map.LocalTime.Day)
+            if (previousDay != map.LocalTime.Day ||
+                m_Session.GamePreset.NpcPersonalitiesEnabled && map.NextMemoryResolutionTurn <= map.LocalTime.TurnCounter)
                 Gameplay.Personality.PersonalitySystem.ResolveDue(this, map);
             #endregion
 
@@ -587,6 +596,7 @@ namespace djack.RogueSurvivor.Engine
                 HandleUndeadNPCsUpgrade(map);
             }
             #endregion
+            if (profile != null) profile("map turn", System.Diagnostics.Stopwatch.GetTimestamp() - started);
         }
 
     }

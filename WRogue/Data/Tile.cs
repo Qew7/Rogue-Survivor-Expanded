@@ -23,6 +23,9 @@ namespace djack.RogueSurvivor.Data
         int m_ModelID;
         Flags m_Flags;
         List<string> m_Decorations = null;
+        internal int SavedModelID { get { return m_ModelID; } }
+        internal int SavedFlags { get { return (int)m_Flags; } }
+        internal List<string> SavedDecorations { get { return m_Decorations; } }
         #endregion
 
         #region Properties
@@ -71,6 +74,12 @@ namespace djack.RogueSurvivor.Data
                 throw new ArgumentNullException("model");
 
             m_ModelID = model.ID;
+        }
+
+        internal Tile(int modelID, int flags)
+        {
+            m_ModelID = modelID;
+            m_Flags = (Flags)flags;
         }
         #endregion
 

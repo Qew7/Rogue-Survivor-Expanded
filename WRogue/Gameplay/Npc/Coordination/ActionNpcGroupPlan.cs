@@ -18,6 +18,8 @@ namespace djack.RogueSurvivor.Engine.Actions
             (Definition.Scope == NpcCollectiveScope.Group || listener.Faction != null && m_Actor.Faction != null && listener.Faction.ID == m_Actor.Faction.ID) &&
             Definition.CanCommunicate(m_Actor, listener, plan) &&
             NpcIntentSystem.CanSee(m_Game, m_Actor, listener) && m_Game.Rules.GridDistance(m_Actor.Location.Position, listener.Location.Position) <= 4 &&
+            m_Actor.Personality.Knowledge.CanRequest(0, listener.PersonalityIdentity,
+                Definition.Message(m_Actor, plan), m_Actor.Location.Map.LocalTime.TurnCounter) &&
             !m_Game.Rules.AreEnemies(m_Actor, listener) && Session.Get.NpcDirector.CanOpen(m_Actor.Location.Map,
                 m_Actor.Location.Map.LocalTime.TurnCounter, ScopeKey(), plan.Destination, plan.CollectorId); }
         string ScopeKey() { return Definition.Scope == NpcCollectiveScope.Group ? "group:" + m_Actor.SocialGroup.Identity :
@@ -35,8 +37,11 @@ namespace djack.RogueSurvivor.Engine.Actions
             plan.StoryId = id;
             if (group != null) { group.PlanSequence++; group.Plan = plan; group.NextPlanTurn = m_Actor.Location.Map.LocalTime.TurnCounter + 180; }
             else { m_Actor.Personality.FactionPlan = plan; m_Actor.Personality.NextFactionPlanTurn = m_Actor.Location.Map.LocalTime.TurnCounter + 180; }
-            m_Game.DoSay(m_Actor, listener, Definition.Message(m_Actor, plan), RogueGame.Sayflags.IS_STORY | RogueGame.Sayflags.IS_REQUEST,
+            string speech = Definition.Message(m_Actor, plan);
+            m_Game.DoSay(m_Actor, listener, speech, RogueGame.Sayflags.IS_STORY | RogueGame.Sayflags.IS_REQUEST,
                 plan.CauseId, id);
+            m_Actor.Personality.Knowledge.Requested(0, listener.PersonalityIdentity, speech,
+                m_Actor.Location.Map.LocalTime.TurnCounter);
             if (Definition.CoordinatorCapability != null)
             {
                 NpcIntent goal = NpcStorySystem.StartKnown(m_Game.NpcContent, m_Actor,

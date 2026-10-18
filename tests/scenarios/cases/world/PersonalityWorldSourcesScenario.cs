@@ -13,6 +13,8 @@ static class PersonalityWorldSourcesScenario
             ".........", ".........", ".........", "........."), world =>
         {
             Session.Get.GamePreset = GamePreset.BuiltIn(GameMode.GM_STANDARD);
+            // Refugees may choose the sewer route; this compact arena stands in for both maps.
+            world.Map.District.SewersMap = world.Map;
             typeof(Session).GetField("m_Event_Raids", System.Reflection.BindingFlags.Instance |
                 System.Reflection.BindingFlags.NonPublic).SetValue(Session.Get, new int[(int)RaidType._COUNT, 1, 1]);
             Actor player = new Actor(world.Game.GameActors.MaleCivilian,

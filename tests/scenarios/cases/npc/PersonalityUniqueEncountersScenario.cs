@@ -60,7 +60,7 @@ static class PersonalityUniqueEncountersScenario
                 Guid id = unique.PersonalityIdentity;
                 Check.Equal(true, witness.Personality.Person(id) != null, "encounter belongs to this unique's identity");
                 world.Map.LocalTime.TurnCounter = witness.Personality.Memories[0].ResolveTurn;
-                PersonalitySystem.ResolveDue(world.Game, world.Map);
+                PersonalityScenarioResolution.PreferFirstOutcome(world.Game, world.Map);
                 Check.Equal(true, witness.Personality.HasTrait(entry[3]), "encounter awards its special trait");
                 int events = witness.Personality.Events.Count;
                 PersonalitySystem.ObserveEncounters(world.Game, world.Map);

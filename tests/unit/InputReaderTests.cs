@@ -11,6 +11,7 @@ static class InputReaderTests
         public readonly Queue<KeyEventArgs> Keys = new Queue<KeyEventArgs>();
         public readonly Queue<Point> Positions = new Queue<Point>();
         public readonly Queue<MouseButtons?> Buttons = new Queue<MouseButtons?>();
+        public readonly Queue<int> Wheels = new Queue<int>();
         public int KeyReads;
         public KeyEventArgs PeekKey()
         {
@@ -19,6 +20,7 @@ static class InputReaderTests
         }
         public Point MousePosition() { return Positions.Dequeue(); }
         public MouseButtons? PeekMouseButtons() { return Buttons.Count == 0 ? null : Buttons.Dequeue(); }
+        public int PeekMouseWheelDelta() { return Wheels.Count == 0 ? 0 : Wheels.Dequeue(); }
     }
 
     public static void Run()
@@ -43,6 +45,13 @@ static class InputReaderTests
         click.Buttons.Enqueue(MouseButtons.Left);
         PlayerInputEvent pressed = new PlayerInputReader(click).Read(null);
         Check.Equal(MouseButtons.Left, pressed.MouseButtons, "click delivered without movement");
+
+        FakeSource wheel = new FakeSource();
+        wheel.Positions.Enqueue(new Point(4, 4));
+        wheel.Positions.Enqueue(new Point(4, 4));
+        wheel.Wheels.Enqueue(120);
+        PlayerInputEvent scrolled = new PlayerInputReader(wheel).Read(null);
+        Check.Equal(120, scrolled.MouseWheelDelta, "wheel delivered without movement");
 
         FakeSource repeated = new FakeSource();
         repeated.Keys.Enqueue(new KeyEventArgs(Keys.M));

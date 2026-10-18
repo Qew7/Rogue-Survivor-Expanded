@@ -27,7 +27,7 @@ static class ShelterCareDeadlineScenario
             world.Map.LocalTime.TurnCounter = 1; NpcIntentSupport.Turn(world, patient);
             Check.Equal(NpcServiceStatus.Accepted, patient.Personality.ServiceAgreements[0].Status, "patient accepted a real offer");
             world.Map.LocalTime.TurnCounter = 181;
-            NpcServices.Expire(world.Game.NpcContent, patient); NpcServices.Expire(world.Game.NpcContent, provider);
+            NpcServices.Expire(world.Game, patient); NpcServices.Expire(world.Game, provider);
             Check.Equal(NpcServiceStatus.Failed, patient.Personality.ServiceAgreements[0].Status,
                 "uncompleted accepted agreement expires");
             Check.Equal(true, patient.Personality.Person(provider.PersonalityIdentity).Grievance > 0,

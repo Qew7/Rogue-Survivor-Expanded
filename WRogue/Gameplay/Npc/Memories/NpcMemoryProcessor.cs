@@ -30,10 +30,10 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public static void Add(Actor actor, MemoryDefinition definition, int turn, string subject, DiceRoller dice,
             bool relatedToSubject = false, Guid subjectId = default(Guid), NpcMemoryRelations relations = null, int impact = 0)
         {
-            int days = dice == null ? definition.MinDays : dice.Roll(definition.MinDays, definition.MaxDays + 1);
-            MemoryInstance memory = new MemoryInstance(definition.Id, turn, turn + days * WorldTime.TURNS_PER_DAY,
+            MemoryInstance memory = new MemoryInstance(definition.Id, turn, turn + 2 * WorldTime.TURNS_PER_DAY,
                 subject, relatedToSubject, subjectId, relations == null ? Guid.Empty : relations.Person);
             if (!actor.Personality.AddMemory(memory)) return;
+            if (actor.Location.Map != null) actor.Location.Map.ConsiderMemoryResolution(actor);
             if (relations != null)
             {
                 if (relations.Person != Guid.Empty) actor.Personality.RememberPerson(relations.Person, relations.PersonName, memory, impact);

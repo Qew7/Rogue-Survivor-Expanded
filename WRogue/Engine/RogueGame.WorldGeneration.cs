@@ -183,8 +183,8 @@ namespace djack.RogueSurvivor.Engine
                                 if (CheckIfExitIsGood(map, ptMapFrom, toMap, ptMapTo) &&
                                     CheckIfExitIsGood(toMap, ptFromMapFrom, map, ptFromMapTo))
                                 {
-                                    GenerateExit(map, ptMapFrom, toMap, ptMapTo);
-                                    GenerateExit(toMap, ptFromMapFrom, map, ptFromMapTo);
+                                    GenerateExit(map, ptMapFrom, toMap, ptMapTo, true);
+                                    GenerateExit(toMap, ptFromMapFrom, map, ptFromMapTo, true);
                                 }
                             }
                         }
@@ -208,8 +208,8 @@ namespace djack.RogueSurvivor.Engine
                                 if (CheckIfExitIsGood(map, ptMapFrom, toMap, ptMapTo) &&
                                     CheckIfExitIsGood(toMap, ptFromMapFrom, map, ptFromMapTo))
                                 {
-                                    GenerateExit(map, ptMapFrom, toMap, ptMapTo);
-                                    GenerateExit(toMap, ptFromMapFrom, map, ptFromMapTo);
+                                    GenerateExit(map, ptMapFrom, toMap, ptMapTo, true);
+                                    GenerateExit(toMap, ptFromMapFrom, map, ptFromMapTo, true);
                                 }
                             }
                         }
@@ -381,10 +381,10 @@ namespace djack.RogueSurvivor.Engine
             return true;
         }
 
-        void GenerateExit(Map fromMap, Point from, Map toMap, Point to)
+        void GenerateExit(Map fromMap, Point from, Map toMap, Point to, bool allowAI = false)
         {
             // add exit.
-            fromMap.SetExitAt(from, new Exit(toMap, to));
+            fromMap.SetExitAt(from, new Exit(toMap, to) { IsAnAIExit = allowAI });
         }
 
         #region Uniques

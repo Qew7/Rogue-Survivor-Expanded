@@ -47,7 +47,7 @@ static class PersonalityEventsScenario
                 neutral.Personality.Memories[0].ResolveTurn);
             due = System.Math.Max(due, evolving.Personality.Memories[0].ResolveTurn);
             world.Map.LocalTime.TurnCounter = due;
-            PersonalitySystem.ResolveDue(world.Game, world.Map);
+            PersonalityScenarioResolution.PreferFirstOutcome(world.Game, world.Map);
             Check.Equal(true, witness.Personality.HasTrait("zealot"),
                 "lawful witness resolves murder into advanced justice trait");
             Check.Equal(0, witness.Personality.Memories.Count, "resolved memory removed");

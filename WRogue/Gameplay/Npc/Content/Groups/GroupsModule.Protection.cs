@@ -27,7 +27,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         }
         static NpcCollectiveOffer ProtectionOffer(NpcCollectiveContext c)
         {
-            int priority = PersonalitySystem.Bias(c.Leader, DecisionKind.Group) + c.Policy.Security;
+            int priority = PersonalitySystem.Bias(c.Leader, NpcPersonalityAxis.Group) + c.Policy.Security;
             if (priority < 15) return null;
             foreach (NpcFact fact in c.Knowledge.Facts)
             {

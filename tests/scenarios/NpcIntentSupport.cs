@@ -16,7 +16,23 @@ static class NpcIntentSupport
         actor.FoodPoints = world.Game.Rules.ActorMaxFood(actor);
         actor.SleepPoints = world.Game.Rules.ActorMaxSleep(actor);
         actor.StaminaPoints = world.Game.Rules.ActorMaxSTA(actor);
+        SetGoalRefreshSlot(actor, 0);
         world.Place(actor, x, y); return actor;
+    }
+    public static void SetGoalRefreshSlot(Actor actor, int slot)
+    {
+        byte[] bytes = actor.PersonalityIdentity.ToByteArray();
+        byte first = bytes[0];
+        for (int i = 0; i < 256; i++)
+        {
+            bytes[0] = (byte)(first + i);
+            Guid id = new Guid(bytes);
+            if ((uint)id.GetHashCode() % 10u != slot) continue;
+            typeof(Actor).GetField("m_PersonalityIdentity", BindingFlags.Instance | BindingFlags.NonPublic)
+                .SetValue(actor, id);
+            return;
+        }
+        throw new Exception("could not assign a goal refresh slot");
     }
     public static Actor Player(ScenarioWorld world, int x, int y)
     {

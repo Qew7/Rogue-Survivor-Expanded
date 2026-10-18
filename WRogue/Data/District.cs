@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Drawing;
+using djack.RogueSurvivor.Engine;
 
 namespace djack.RogueSurvivor.Data
 {
@@ -29,6 +30,7 @@ namespace djack.RogueSurvivor.Data
         Map m_EntryMap;
         Map m_SewersMap;
         Map m_SubwayMap;
+        [System.Runtime.Serialization.OptionalField] DiceRoller m_SimulationDiceRoller;
         #endregion
 
         #region Properties
@@ -135,6 +137,17 @@ namespace djack.RogueSurvivor.Data
         {
             m_WorldPosition = worldPos;
             m_Kind = kind;
+        }
+
+        internal DiceRoller SimulationDiceRoller(int worldSeed)
+        {
+            if (m_SimulationDiceRoller == null)
+            {
+                int seed = unchecked(worldSeed ^ ((m_WorldPosition.X + 1) * 73856093) ^
+                    ((m_WorldPosition.Y + 1) * 19349663));
+                m_SimulationDiceRoller = new DiceRoller(seed);
+            }
+            return m_SimulationDiceRoller;
         }
         #endregion
 

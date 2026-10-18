@@ -38,13 +38,13 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         {
             RegisterEvents(catalog);
             catalog.Trait(new TraitDefinition("reliable", "Reliable", true, false, "honest",
-                new TraitEffect(DecisionKind.Law, 12), new TraitEffect(DecisionKind.Compassion, 8)));
+                new TraitEffect(NpcPersonalityAxis.Law, 12), new TraitEffect(NpcPersonalityAxis.Compassion, 8)));
             catalog.Trait(new TraitDefinition("disillusioned", "Disillusioned", true, false, "trusting",
-                new TraitEffect(DecisionKind.Group, -12), new TraitEffect(DecisionKind.Trade, -8)));
+                new TraitEffect(NpcPersonalityAxis.Group, -12), new TraitEffect(NpcPersonalityAxis.Trade, -8)));
             NpcMemoryContent.Received(catalog, "promise_received", "Received a promise of assistance", "food_promised", 2, null);
             NpcMemoryContent.Received(catalog, "medicine_promise_received", "Received a promise of medicine", "medicine_promised", 2, null);
             NpcMemoryContent.Received(catalog, "promise_kept", "Someone kept their promise", "promise_kept", 12, null);
-            catalog.Memory(new MemoryDefinition("kept_my_word", "Fulfilled my promise", 2, 5,
+            catalog.Memory(new MemoryDefinition("kept_my_word", "Fulfilled my promise", 2, 2,
                 new[] { new MemoryTrigger("promise_kept", (a, e) => a == e.Subject) },
                 new MemoryOutcome(null, "reliable", null), new MemoryOutcome(null, null, Skills.IDs.CHARISMATIC)).Relate(MemoryRelationRole.Other, 2), false);
             NpcMemoryContent.Received(catalog, "promise_broken", "A promise was not fulfilled by its deadline", "promise_broken", -15, "disillusioned");
@@ -56,9 +56,16 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             catalog.AfterEvent("shared_medicine", (g, e) => { if (e.Subject != null && e.Subject.Personality != null && e.Other != null) NpcPromises.Delivery(g, e.Subject, e.Other, "medicine", e.Id, e.StoryId); });
             catalog.OnReport("promise_kept", c => NpcReputation.Reputation(c, true, false, false));
             catalog.OnReport("promise_broken", c => NpcReputation.Reputation(c, false, true, false));
-            catalog.Event(new NpcEventDefinition("food_promised", NpcRecordCategory.Help, true, e => (e.Subject ?? "Someone") + " promised to bring food to " + (e.Other ?? "someone") + " within 180 turns.", null) { CanReply = (a, b) => a.Personality.CanRememberCommitment && b.Personality.CanRememberCommitment });
-            catalog.Event(new NpcEventDefinition("medicine_promised", NpcRecordCategory.Help, true, e => (e.Subject ?? "Someone") + " promised to bring medicine to " + (e.Other ?? "someone") + " within 180 turns.", null) { CanReply = (a, b) => a.Personality.CanRememberCommitment && b.Personality.CanRememberCommitment });
-            catalog.Event(new NpcEventDefinition("promise_kept", NpcRecordCategory.Help, true, e => (e.Subject ?? "Someone") + " fulfilled their promise to " + (e.Other ?? "someone") + ".", f => f.ReportSubject + " kept a promise" + (f.ReportOther == null ? "" : " to " + f.ReportOther)) { CanWitness = (a, e) => a.Personality != null && a.Personality.Knowledge.Facts.Exists(f => f.EventId == e.CauseId && (f.Kind == "food_promised" || f.Kind == "medicine_promised")), SelfReportTone = NpcSelfReportTone.Helpful });
+            catalog.Event(new NpcEventDefinition("food_promised", NpcRecordCategory.Help, true, e => (e.Subject ?? "Someone") + " promised to bring food to " + (e.Other ?? "someone") + " within 180 turns.",
+                f => (f.ReportSubject ?? "Someone") + " promised to bring food to " + (f.ReportOther ?? "someone") + " within six hours")
+                { CanReply = (a, b) => a.Personality.CanRememberCommitment && b.Personality.CanRememberCommitment });
+            catalog.Event(new NpcEventDefinition("medicine_promised", NpcRecordCategory.Help, true, e => (e.Subject ?? "Someone") + " promised to bring medicine to " + (e.Other ?? "someone") + " within 180 turns.",
+                f => (f.ReportSubject ?? "Someone") + " promised to bring medicine to " + (f.ReportOther ?? "someone") + " within six hours")
+                { CanReply = (a, b) => a.Personality.CanRememberCommitment && b.Personality.CanRememberCommitment });
+            catalog.Event(new NpcEventDefinition("promise_kept", NpcRecordCategory.Help, true, e => (e.Subject ?? "Someone") + " fulfilled their promise to " + (e.Other ?? "someone") + ".", f => f.ReportSubject + " kept a promise" + (f.ReportOther == null ? "" : " to " + f.ReportOther))
+                { CanWitness = (a, e) => a.Personality != null && a.Personality.Knowledge.Facts.Exists(f => f.EventId == e.CauseId && (f.Kind == "food_promised" || f.Kind == "medicine_promised")),
+                  SelfReportTone = NpcSelfReportTone.Helpful, ReportConclusion = true,
+                  RadioSanity = NpcImmediateEmotion.RadioGoodNews });
             catalog.Event(new NpcEventDefinition("promise_broken", NpcRecordCategory.Help, false, e => (e.Other ?? "someone") + " concluded that " + (e.Subject ?? "Someone") + "'s promise was overdue.", f => f.ReportSubject + " did not meet a promise's deadline", isPrivate: true) { PrivateAudience = e => e.Other });
             catalog.Event(new NpcEventDefinition("promise_released", NpcRecordCategory.Help, false, e => (e.Subject ?? "Someone") + " explicitly released " + (e.Other ?? "someone") + " from a promise.", null));
             catalog.On("requested_food", NpcObservationPhase.Responses, o => NpcPromises.PrepareReply(o.Game, o.Owner, o.Source));
@@ -101,7 +108,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                             NpcIntentSystem.Finish(game.NpcContent, owner, intent, NpcIntentStatus.Abandoned,
                                 "recipient explicitly released the promise");
                     }
-            if ((source.Kind == "shared_food" || source.Kind == "shared_medicine") && source.Other == owner && PersonalitySystem.Bias(owner, DecisionKind.Compassion) > 0)
+            if ((source.Kind == "shared_food" || source.Kind == "shared_medicine") && source.Other == owner && PersonalitySystem.Bias(owner, NpcPersonalityAxis.Compassion) > 0)
                 NpcPromises.ReleaseUnneeded(game, owner, source);
         }
     }

@@ -40,7 +40,7 @@ static class PersonalityRepeatedKillOverflowScenario
             foreach (MemoryInstance memory in killer.Personality.Memories)
                 if (memory.Id == "killed_person") due = System.Math.Max(due, memory.ResolveTurn);
             world.Map.LocalTime.TurnCounter = due;
-            PersonalitySystem.ResolveDue(world.Game, world.Map);
+            PersonalityScenarioResolution.PreferFirstOutcome(world.Game, world.Map);
             Check.Equal(true, killer.Personality.HasTrait("maniac"),
                 "the first killing remembers the later killing after journal eviction");
         });

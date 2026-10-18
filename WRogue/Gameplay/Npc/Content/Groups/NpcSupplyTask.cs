@@ -29,6 +29,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             foreach (NpcKnownPerson beneficiary in c.Knowledge.People)
             {
                 if (beneficiary.Dead || beneficiary.Hostile || !(scope == NpcCollectiveScope.Group ? c.Group != null && c.Group.Members.Contains(beneficiary.Id) : beneficiary.FactionId == c.Leader.Faction.ID && beneficiary.Id != c.Leader.PersonalityIdentity) || !needed(beneficiary, c.Turn)) continue;
+                if (scope == NpcCollectiveScope.Group && resource == "food" && beneficiary.Violation >= 80 && beneficiary.ViolationConfidence >= 80) continue;
                 Actor collector = null; int score = Int32.MinValue;
                 NpcIntentDefinition definition = c.Game.NpcContent.Capability(capability);
                 foreach (Actor member in c.Visible)

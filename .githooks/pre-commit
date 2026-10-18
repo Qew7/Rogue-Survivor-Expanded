@@ -1,0 +1,6 @@
+#!/bin/sh
+set -eu
+
+repo=$(git rev-parse --show-toplevel)
+cd "$repo"
+sh benchmarks/record-rest-commit.sh

@@ -52,10 +52,11 @@ namespace djack.RogueSurvivor.Data
         public readonly int Deadline;
         public readonly NpcKnownPerson ReportedPerson;
         [System.Runtime.Serialization.OptionalField] public bool Overheard;
+        [System.Runtime.Serialization.OptionalField] public bool AttackTarget;
         public Location ResourcePlace;
         public string Resource;
-        public NpcReaction(Actor target, string text, long causeId, int turn, string kind = "aid_acknowledged", string storyId = null, NpcKnownPerson report = null, bool overheard = false)
-        { TargetId = target.PersonalityIdentity; Text = text; CauseId = causeId; Deadline = turn + 30; Kind = kind; StoryId = storyId; ReportedPerson = report; Overheard = overheard; }
+        public NpcReaction(Actor target, string text, long causeId, int turn, string kind = "aid_acknowledged", string storyId = null, NpcKnownPerson report = null, bool overheard = false, bool attackTarget = false)
+        { TargetId = target.PersonalityIdentity; Text = text; CauseId = causeId; Deadline = turn + 30; Kind = kind; StoryId = storyId; ReportedPerson = report; Overheard = overheard; AttackTarget = attackTarget; }
     }
 
     sealed partial class PersonalityState

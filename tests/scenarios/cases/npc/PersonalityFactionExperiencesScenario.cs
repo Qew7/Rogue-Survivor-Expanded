@@ -52,7 +52,7 @@ static class PersonalityFactionExperiencesScenario
                     int before = PersonalitySystem.Attitude(observer, stranger);
                     foreach (MemoryInstance memory in observer.Personality.Memories)
                         world.Map.LocalTime.TurnCounter = Math.Max(world.Map.LocalTime.TurnCounter, memory.ResolveTurn);
-                    PersonalitySystem.ResolveDue(world.Game, world.Map);
+                    PersonalityScenarioResolution.PreferFirstOutcome(world.Game, world.Map);
                     Check.Equal(true, observer.Personality.HasTrait((help ? "friend_" : "wary_") + faction.Key),
                         faction.Name + ": appropriate base trait permits the special outcome");
                     Check.Equal(before + (help ? 15 : -20), PersonalitySystem.Attitude(observer, stranger),

@@ -38,6 +38,7 @@ namespace djack.RogueSurvivor.Engine
             {
                 session.ResidentRecords.Refresh(session);
             }
+            session.ResidentRecords.CompactKeys();
             // Keep history even if personalities are disabled; the viewer still rejects that preset.
             WriteCompressed(stream, session.ResidentRecords, false);
             long end = stream.Position;
@@ -58,6 +59,7 @@ namespace djack.RogueSurvivor.Engine
             {
                 ResidentRecords records = ObjectGraphStore.Read(compressed) as ResidentRecords;
                 if (records == null || section.Remaining != 0) throw new InvalidDataException("Invalid resident archive.");
+                records.CompactText();
                 return records;
             }
         }

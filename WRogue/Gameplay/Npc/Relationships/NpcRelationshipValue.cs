@@ -9,9 +9,17 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public static int Calculate(Actor owner, Guid personId, Guid groupId, int factionId, bool social, PersonalityRegistry registry = null,
             string excludeTrait = null)
         {
+            RelationshipRecord person;
+            return Calculate(owner, personId, groupId, factionId, out person, social, registry, excludeTrait);
+        }
+        internal static int Calculate(Actor owner, Guid personId, Guid groupId, int factionId, out RelationshipRecord person,
+            bool social, PersonalityRegistry registry = null, string excludeTrait = null)
+        {
+            person = null;
             if (owner == null || owner.Personality == null) return 0;
             registry = registry ?? PersonalitySystem.Registry;
-            RelationshipRecord person = owner.Personality.Person(personId), group = owner.Personality.Group(groupId), faction = owner.Personality.Faction(factionId);
+            person = owner.Personality.Person(personId);
+            RelationshipRecord group = owner.Personality.Group(groupId), faction = owner.Personality.Faction(factionId);
             int feeling = person == null ? 0 : person.Feeling;
             if (social && person != null) feeling += (person.Trust - person.Fear - person.Grievance) / 4;
             feeling += (group == null ? 0 : group.Feeling) + (faction == null ? 0 : faction.Feeling);

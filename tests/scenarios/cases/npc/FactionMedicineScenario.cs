@@ -14,7 +14,9 @@ static class FactionMedicineScenario
         actor.Controller = new CivilianAI(); actor.Personality = new PersonalityState();
         foreach (string trait in traits) actor.Personality.AddTrait(new TraitInstance(trait));
         actor.FoodPoints = world.Game.Rules.ActorMaxFood(actor); actor.SleepPoints = world.Game.Rules.ActorMaxSleep(actor);
-        actor.StaminaPoints = world.Game.Rules.ActorMaxSTA(actor); world.Place(actor, x, 1); return actor;
+        actor.StaminaPoints = world.Game.Rules.ActorMaxSTA(actor);
+        NpcIntentSupport.SetGoalRefreshSlot(actor, 0);
+        world.Place(actor, x, 1); return actor;
     }
     public static void Register()
     {

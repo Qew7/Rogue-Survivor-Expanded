@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using djack.RogueSurvivor.Data;
 using djack.RogueSurvivor.Engine;
 using djack.RogueSurvivor.Engine.Items;
+using djack.RogueSurvivor.Gameplay.Personality.Axes;
 
 namespace djack.RogueSurvivor.Gameplay.Personality
 {
@@ -93,16 +94,20 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 return 0;
             Actor leader = target.HasLeader ? target.Leader : target.CountFollowers > 0 ? target : null;
             Guid group = leader == null ? Guid.Empty : target.SocialGroup == null ? leader.PersonalityIdentity : target.SocialGroup.Identity;
-            return NpcRelationshipValue.Calculate(observer, target.PersonalityIdentity, group, target.Faction == null ? -1 : target.Faction.ID, false);
+            int feeling = NpcRelationshipValue.Calculate(observer, target.PersonalityIdentity, group,
+                target.Faction == null ? -1 : target.Faction.ID, false);
+            NpcKnownPerson known = observer.Personality.Knowledge.Person(target.PersonalityIdentity);
+            return known != null && known.Violation >= 80 && known.ViolationConfidence >= 80 ?
+                Math.Min(feeling, -30) : feeling;
         }
 
-        public static int Bias(Actor actor, DecisionKind decision, Item item = null, PersonalityRegistry registry = null,
+        public static int Bias(Actor actor, NpcPersonalityAxis axis, Item item = null, PersonalityRegistry registry = null,
             string excludeTrait = null)
         {
             if (actor == null || actor.Personality == null || !Session.Get.GamePreset.NpcPersonalitiesEnabled)
                 return 0;
             int total = 0;
-            foreach (TraitInstance instance in actor.Personality.Traits)
+            foreach (TraitInstance instance in actor.Personality.TraitList)
             {
                 if (instance.Id == excludeTrait) continue;
                 TraitDefinition definition = (registry ?? s_Registry).Trait(instance.Id);
@@ -110,10 +115,116 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 if (definition.ItemParameter && (item == null || item.Model.ID != instance.ItemModelId))
                     continue;
                 foreach (TraitEffect effect in definition.Effects)
-                    if (effect.Decision == decision && (effect.Applies == null || effect.Applies(actor, item)))
+                    if (effect.Axis == axis && (effect.Applies == null || effect.Applies(actor, item)))
                         total += effect.Amount;
             }
             return Math.Max(-100, Math.Min(100, total));
+        }
+
+        public static int Disposition(Actor actor, NpcPersonalityAxis axis, NpcContentCatalog catalog = null,
+            string excludeTrait = null)
+        {
+            if (!NpcPersonalityAxes.IsDisposition(axis)) throw new ArgumentOutOfRangeException("axis");
+            if (actor == null || actor.IsPlayer || actor.Personality == null || !Session.Get.GamePreset.NpcPersonalitiesEnabled)
+                return 0;
+            catalog = catalog ?? Registry.Content;
+            NpcFactionPolicy faction = catalog.FactionPolicy(actor.Faction == null ? -1 : actor.Faction.ID);
+            int baseline;
+            switch (axis)
+            {
+                case NpcPersonalityAxis.HumanLife: baseline = HumanLifeAxis.Faction(faction) + HumanLifeAxis.Context(actor); break;
+                case NpcPersonalityAxis.CareCircle: baseline = CareCircleAxis.Faction(faction) + CareCircleAxis.Context(actor); break;
+                case NpcPersonalityAxis.MessageTrust: baseline = MessageTrustAxis.Faction(faction) + MessageTrustAxis.Context(actor); break;
+                case NpcPersonalityAxis.Scarcity: baseline = ScarcityAxis.Faction(faction) + ScarcityAxis.Context(actor); break;
+                default: baseline = PatienceAxis.Faction(faction) + PatienceAxis.Context(actor); break;
+            }
+            foreach (TraitInstance trait in actor.Personality.TraitList)
+            {
+                if (trait.Id == excludeTrait) continue;
+                TraitDefinition definition = catalog.Personalities.Trait(trait.Id);
+                if (definition != null && !definition.ItemParameter) baseline += TraitDisposition(definition, axis);
+            }
+            return Math.Max(-100, Math.Min(100, baseline + actor.Personality.ExperienceValue(axis)));
+        }
+
+        static int TraitDisposition(TraitDefinition trait, NpcPersonalityAxis axis)
+        {
+            int value = 0;
+            foreach (TraitEffect effect in trait.Effects)
+            {
+                if (effect.Applies != null) continue;
+                switch (axis)
+                {
+                    case NpcPersonalityAxis.HumanLife: value += HumanLifeAxis.Trait(effect); break;
+                    case NpcPersonalityAxis.CareCircle: value += CareCircleAxis.Trait(effect); break;
+                    case NpcPersonalityAxis.MessageTrust: value += MessageTrustAxis.Trait(effect); break;
+                    case NpcPersonalityAxis.Scarcity: value += ScarcityAxis.Trait(effect); break;
+                    case NpcPersonalityAxis.Patience: value += PatienceAxis.Trait(effect); break;
+                }
+            }
+            return value;
+        }
+
+        internal static void GoalDispositions(Actor actor, NpcContentCatalog catalog,
+            out int humanLife, out int careCircle, out int messageTrust, out int scarcity, out int patience)
+        {
+            humanLife = careCircle = messageTrust = scarcity = patience = 0;
+            if (actor == null || actor.IsPlayer || actor.Personality == null || !Session.Get.GamePreset.NpcPersonalitiesEnabled) return;
+            NpcFactionPolicy faction = catalog.FactionPolicy(actor.Faction == null ? -1 : actor.Faction.ID);
+            humanLife = HumanLifeAxis.Faction(faction) + HumanLifeAxis.Context(actor);
+            careCircle = CareCircleAxis.Faction(faction) + CareCircleAxis.Context(actor);
+            messageTrust = MessageTrustAxis.Faction(faction) + MessageTrustAxis.Context(actor);
+            scarcity = ScarcityAxis.Faction(faction) + ScarcityAxis.Context(actor);
+            patience = PatienceAxis.Faction(faction) + PatienceAxis.Context(actor);
+            foreach (TraitInstance trait in actor.Personality.TraitList)
+            {
+                TraitDefinition definition = catalog.Personalities.Trait(trait.Id);
+                if (definition == null || definition.ItemParameter) continue;
+                foreach (TraitEffect effect in definition.Effects)
+                {
+                    if (effect.Applies != null) continue;
+                    humanLife += HumanLifeAxis.Trait(effect);
+                    careCircle += CareCircleAxis.Trait(effect);
+                    messageTrust += MessageTrustAxis.Trait(effect);
+                    scarcity += ScarcityAxis.Trait(effect);
+                    patience += PatienceAxis.Trait(effect);
+                }
+            }
+            humanLife = Math.Max(-100, Math.Min(100, humanLife + actor.Personality.ExperienceValue(NpcPersonalityAxis.HumanLife)));
+            careCircle = Math.Max(-100, Math.Min(100, careCircle + actor.Personality.ExperienceValue(NpcPersonalityAxis.CareCircle)));
+            messageTrust = Math.Max(-100, Math.Min(100, messageTrust + actor.Personality.ExperienceValue(NpcPersonalityAxis.MessageTrust)));
+            scarcity = Math.Max(-100, Math.Min(100, scarcity + actor.Personality.ExperienceValue(NpcPersonalityAxis.Scarcity)));
+            patience = Math.Max(-100, Math.Min(100, patience + actor.Personality.ExperienceValue(NpcPersonalityAxis.Patience)));
+        }
+
+        internal static void GoalBiases(Actor actor, PersonalityRegistry registry,
+            out int group, out int compassion, out int trade, out int courage, out int law, out int supplies)
+        {
+            group = compassion = trade = courage = law = supplies = 0;
+            if (actor == null || actor.Personality == null || !Session.Get.GamePreset.NpcPersonalitiesEnabled) return;
+            foreach (TraitInstance instance in actor.Personality.TraitList)
+            {
+                TraitDefinition definition = registry.Trait(instance.Id);
+                if (definition == null || definition.ItemParameter) continue;
+                foreach (TraitEffect effect in definition.Effects)
+                {
+                    switch (effect.Axis)
+                    {
+                        case NpcPersonalityAxis.Group: if (effect.Applies == null || effect.Applies(actor, null)) group += effect.Amount; break;
+                        case NpcPersonalityAxis.Compassion: if (effect.Applies == null || effect.Applies(actor, null)) compassion += effect.Amount; break;
+                        case NpcPersonalityAxis.Trade: if (effect.Applies == null || effect.Applies(actor, null)) trade += effect.Amount; break;
+                        case NpcPersonalityAxis.Courage: if (effect.Applies == null || effect.Applies(actor, null)) courage += effect.Amount; break;
+                        case NpcPersonalityAxis.Law: if (effect.Applies == null || effect.Applies(actor, null)) law += effect.Amount; break;
+                        case NpcPersonalityAxis.Supplies: if (effect.Applies == null || effect.Applies(actor, null)) supplies += effect.Amount; break;
+                    }
+                }
+            }
+            group = Math.Max(-100, Math.Min(100, group));
+            compassion = Math.Max(-100, Math.Min(100, compassion));
+            trade = Math.Max(-100, Math.Min(100, trade));
+            courage = Math.Max(-100, Math.Min(100, courage));
+            law = Math.Max(-100, Math.Min(100, law));
+            supplies = Math.Max(-100, Math.Min(100, supplies));
         }
 
         public static bool HasTrait(Actor actor, string id)
@@ -126,12 +237,18 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         {
             if (game == null || lifeEvent == null || lifeEvent.Map == null ||
                 !Session.Get.GamePreset.NpcPersonalitiesEnabled) return;
+            Action<string, long> profile = RogueGame.ProfileSimulationPhase;
+            long started = profile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
             NpcEventDefinition eventDefinition = game.NpcContent.Event(lifeEvent.Kind);
             if (eventDefinition != null) eventDefinition.Validate(lifeEvent);
             if (lifeEvent.Id == 0) lifeEvent.Id = Session.Get.NextPersonalityEventId();
             // Make a snapshot: resolving a death may remove actors from this map.
             Actor privateOwner = eventDefinition == null || !eventDefinition.Private ? null : eventDefinition.PrivateAudience == null ? lifeEvent.Subject : eventDefinition.PrivateAudience(lifeEvent);
-            if (eventDefinition != null && eventDefinition.Private && privateOwner == null) return;
+            if (eventDefinition != null && eventDefinition.Private && privateOwner == null)
+            {
+                if (profile != null) profile("event report", System.Diagnostics.Stopwatch.GetTimestamp() - started);
+                return;
+            }
             IEnumerable<MemoryDefinition> memoryDefinitions = game.NpcContent.Personalities.ForEvent(lifeEvent.Kind);
             List<Actor> actors = privateOwner == null ? new List<Actor>(lifeEvent.Map.Actors) : new List<Actor> { privateOwner };
             Guid subjectId = lifeEvent.Subject == null ? Guid.Empty : lifeEvent.Subject.PersonalityIdentity;
@@ -180,6 +297,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                     lifeEvent.Id, lifeEvent.CauseId, lifeEvent.StoryId);
                 NpcRecordDescriptions.Annotate(observation, eventDefinition, game.NpcContent);
                 if (!observer.Personality.Remember(observation)) continue;
+                NpcImmediateEmotion.Observe(game, observer, lifeEvent, eventDefinition);
                 var eventObservation = new NpcObservation(game, observer, lifeEvent, direct);
                 if (direct && lifeEvent.StoryId != null)
                     foreach (NpcIntent goal in observer.Personality.Intents)
@@ -208,11 +326,13 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             if (eventDefinition != null) eventDefinition.Completed(game, lifeEvent);
             NpcConversation.BroadcastReport(game, lifeEvent, eventDefinition);
             NpcConversation.OfferPlayerReply(game, lifeEvent, eventDefinition);
+            if (profile != null) profile("event report", System.Diagnostics.Stopwatch.GetTimestamp() - started);
         }
 
         public static void ResolveDue(RogueGame game, Map map)
         {
             if (game == null || map == null || !Session.Get.GamePreset.NpcPersonalitiesEnabled) return;
+            map.ResetMemoryResolutionTurn();
             foreach (Actor actor in map.Actors)
             {
                 if (actor.Personality == null || actor.IsDead || actor.Model.Abilities.IsUndead ||
@@ -222,34 +342,65 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 List<MemoryInstance> pending = new List<MemoryInstance>(actor.Personality.Memories);
                 foreach (MemoryInstance memory in pending)
                 {
-                    if (map.LocalTime.TurnCounter < memory.ResolveTurn) continue;
+                    if (map.LocalTime.TurnCounter < Math.Min(memory.ResolveTurn,
+                        memory.StartTurn + 2 * WorldTime.TURNS_PER_DAY)) continue;
                     MemoryDefinition definition = game.NpcContent.Personalities.Memory(memory.Id);
                     if (definition != null && !actor.IsPlayer)
-                        foreach (MemoryOutcome outcome in definition.Outcomes)
-                        {
-                            if (outcome.Applies != null && !outcome.Applies(actor, memory)) continue;
-                            if (outcome.TraitId != null)
-                            {
-                                TraitDefinition trait = game.NpcContent.Personalities.Trait(outcome.TraitId);
-                                if (trait == null || !trait.Eligible(actor)) continue;
-                                actor.Personality.AddTrait(new TraitInstance(trait.Id));
-                                memory.OutcomeId = "trait:" + trait.Id;
-                                break;
-                            }
-                            if (outcome.SkillId.HasValue && actor.Sheet.SkillTable.GetSkillLevel((int)outcome.SkillId.Value) <
-                                Skills.MaxSkillLevel(outcome.SkillId.Value))
-                            {
-                                game.SkillUpgrade(actor, outcome.SkillId.Value);
-                                memory.OutcomeId = "skill:" + outcome.SkillId.Value;
-                                break;
-                            }
-                        }
+                        ResolveMemoryOutcome(game, actor, memory, definition);
                     if (memory.OutcomeId == null) memory.OutcomeId = "none";
                     memory.ResolvedTurn = map.LocalTime.TurnCounter;
                     Session.Get.ResidentRecords.MemoryResolved(actor, memory, game.NpcContent.Personalities);
                     actor.Personality.RemoveMemory(memory);
                 }
+                map.ConsiderMemoryResolution(actor);
             }
+        }
+
+        static void ResolveMemoryOutcome(RogueGame game, Actor actor, MemoryInstance memory, MemoryDefinition definition)
+        {
+            PersonalityRegistry registry = game.NpcContent.Personalities;
+            TraitDefinition gain = null, remove = null;
+            Skills.IDs? skill = null;
+            foreach (MemoryOutcome outcome in definition.Outcomes)
+            {
+                if (outcome.Applies != null && !outcome.Applies(actor, memory)) continue;
+                if (gain == null && outcome.TraitId != null)
+                {
+                    TraitDefinition candidate = registry.Trait(outcome.TraitId);
+                    if (candidate != null && candidate.Eligible(actor)) gain = candidate;
+                }
+                if (!skill.HasValue && outcome.SkillId.HasValue &&
+                    actor.Sheet.SkillTable.GetSkillLevel((int)outcome.SkillId.Value) < Skills.MaxSkillLevel(outcome.SkillId.Value))
+                    skill = outcome.SkillId.Value;
+            }
+            if (definition.DispositionAxis.HasValue && definition.DispositionChange != 0)
+                foreach (TraitInstance instance in actor.Personality.TraitList)
+                {
+                    TraitDefinition candidate = registry.Trait(instance.Id);
+                    if (candidate == null || TraitDisposition(candidate, definition.DispositionAxis.Value) * definition.DispositionChange >= 0)
+                        continue;
+                    bool required = false;
+                    foreach (TraitInstance other in actor.Personality.TraitList)
+                    {
+                        TraitDefinition dependent = registry.Trait(other.Id);
+                        if (dependent != null && dependent.RequiresTrait == instance.Id) { required = true; break; }
+                    }
+                    if (!required) { remove = candidate; break; }
+                }
+            bool shift = definition.DispositionAxis.HasValue && definition.DispositionChange != 0 &&
+                actor.Personality.ExperienceValue(definition.DispositionAxis.Value) !=
+                    Math.Max(-100, Math.Min(100, actor.Personality.ExperienceValue(definition.DispositionAxis.Value) + definition.DispositionChange));
+            int choices = (gain == null ? 0 : 1) + (skill.HasValue ? 1 : 0) + (remove == null ? 0 : 1) + (shift ? 1 : 0);
+            if (choices == 0) return;
+            int choice = game.Session.GameDiceRoller.Roll(0, choices);
+            if (gain != null && choice-- == 0)
+            { actor.Personality.AddTrait(new TraitInstance(gain.Id)); memory.OutcomeId = "trait:" + gain.Id; return; }
+            if (skill.HasValue && choice-- == 0)
+            { game.SkillUpgrade(actor, skill.Value); memory.OutcomeId = "skill:" + skill.Value; return; }
+            if (remove != null && choice-- == 0)
+            { actor.Personality.RemoveTrait(remove.Id); memory.OutcomeId = "removed_trait:" + remove.Id; return; }
+            if (shift && actor.Personality.ChangeExperience(definition.DispositionAxis.Value, definition.DispositionChange))
+                memory.OutcomeId = "disposition:" + definition.DispositionAxis.Value + ":" + definition.DispositionChange;
         }
 
         public static void ObserveEncounters(RogueGame game, Map map)

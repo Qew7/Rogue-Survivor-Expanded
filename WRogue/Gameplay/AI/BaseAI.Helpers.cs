@@ -180,6 +180,12 @@ namespace djack.RogueSurvivor.Gameplay.AI
 
         #region Choice making
         protected ChoiceEval<_T_> Choose<_T_>(RogueGame game, List<_T_> listOfChoices,
+            Func<_T_, float> evalChoiceFn, Func<float, float, bool> isBetterEvalThanFn)
+        {
+            return Choose(game, listOfChoices, null, evalChoiceFn, isBetterEvalThanFn);
+        }
+
+        protected ChoiceEval<_T_> Choose<_T_>(RogueGame game, List<_T_> listOfChoices,
             Func<_T_, bool> isChoiceValidFn,
             Func<_T_, float> evalChoiceFn,
             Func<float, float, bool> isBetterEvalThanFn)
@@ -199,7 +205,7 @@ namespace djack.RogueSurvivor.Gameplay.AI
             List<_T_> candidates = new List<_T_>();
             for (int i = 0; i < listOfChoices.Count; i++)
             {
-                if (!isChoiceValidFn(listOfChoices[i]))
+                if (isChoiceValidFn != null && !isChoiceValidFn(listOfChoices[i]))
                     continue;
 
                 float value_i = evalChoiceFn(listOfChoices[i]);

@@ -73,20 +73,31 @@ namespace djack.RogueSurvivor.Engine
                 DoSay(cop, aggressor, String.Format("TO DISTRICT PATROLS : {0} MUST DIE!", aggressor.TheName), Sayflags.IS_FREE_ACTION | Sayflags.IS_DANGER);
 
             // make enemy of all cops in the district.
-            MakeEnemyOfTargetFactionInDistrict(aggressor, cop,
-                (a) =>
+            MakeEnemyOfTargetFactionInDistrict(aggressor, cop, null);
+            if (wasAlreadyEnemy || !m_Session.GamePreset.NpcPersonalitiesEnabled) return;
+            if (cop.Personality == null) cop.Personality = new PersonalityState();
+            var alert = new Gameplay.Personality.SignificantEvent("police_alert", cop, aggressor,
+                aggressor.Location.Map, aggressor.Location.Position, aggressor.Location.Map.LocalTime.TurnCounter);
+            Gameplay.Personality.PersonalitySystem.Report(this, alert);
+            NpcFact fact = cop.Personality.Knowledge.Facts.Find(f => f.EventId == alert.Id && f.Kind == "police_alert");
+            if (fact == null) return;
+            fact.OtherReportName = aggressor.UnmodifiedName;
+            string report = Gameplay.Personality.NpcConversation.ReportSentence(this, cop, fact, true);
+            foreach (Map map in cop.Location.Map.District.Maps)
+                foreach (Actor listener in map.Actors)
                 {
-                    if (a.IsPlayer && a != cop && !a.IsSleeping && !m_Rules.AreEnemies(a, aggressor))
+                    if (listener == cop || listener.IsDead || listener.IsSleeping || listener.Inventory == null ||
+                        !listener.Inventory.HasItemMatching(it => it.Model == GameItems.POLICE_RADIO &&
+                            (it as ItemTracker).Batteries > 0)) continue;
+                    if (listener.Personality == null) listener.Personality = new PersonalityState();
+                    if (!Gameplay.Personality.NpcKnowledgeSystem.Hear(this, listener, cop, fact)) continue;
+                    if (listener.IsPlayer)
                     {
-                        int turn = m_Session.WorldTime.TurnCounter;
-                        ClearMessages();
-                        AddMessage(new Message("You get a message from your police radio.", turn, Color.White));
-                        AddMessage(new Message(String.Format("{0} is armed and dangerous. Shoot on sight!", aggressor.TheName), turn, Color.White));
-                        AddMessage(new Message(String.Format("Current location : {0}@{1},{2}", aggressor.Location.Map.Name, aggressor.Location.Position.X, aggressor.Location.Position.Y), turn, Color.White));
-                        if (!a.IsBotPlayer)
-                            AddMessagePressEnter();
+                        listener.Personality.HearSpeech(new HeardJournalEntry(map.LocalTime.TurnCounter,
+                            "heard_rumor", "police dispatch", report, alert.Id));
+                        AddMessage(new Message("Police dispatch: " + report, m_Session.WorldTime.TurnCounter, Color.White));
                     }
-                });
+                }
         }
 
         // FIXME factorize common code with OnMakeEnemyOfCop
@@ -173,11 +184,14 @@ namespace djack.RogueSurvivor.Engine
         }
 #endif
 
-        public void DoMeleeAttack(Actor attacker, Actor defender, NpcIntent npcGoal = null)
+        public void DoMeleeAttack(Actor attacker, Actor defender, NpcIntent npcGoal = null,
+            long causeId = 0, string storyId = null)
         {
             // An unexpected attack is significant; routine blows in an ongoing fight are not.
             if (!m_Rules.AreEnemies(attacker, defender))
-                ReportPersonalityEvent("attack", defender, attacker, defender.Location.Map, defender.Location.Position, causeId: npcGoal == null ? 0 : npcGoal.CauseId, storyId: npcGoal == null ? null : npcGoal.StoryId);
+                ReportPersonalityEvent("attack", defender, attacker, defender.Location.Map, defender.Location.Position,
+                    causeId: npcGoal == null ? causeId : npcGoal.CauseId,
+                    storyId: npcGoal == null ? storyId : npcGoal.StoryId);
             // set activiy & target.
             attacker.Activity = Activity.FIGHTING;
             attacker.TargetActor = defender;
@@ -301,11 +315,8 @@ namespace djack.RogueSurvivor.Engine
                         {
                             if (attacker.Model.Abilities.CanZombifyKilled && !defender.Model.Abilities.IsUndead && m_Rules.RollChance(s_Options.ZombificationChance))
                             {
-                                if (defender.IsPlayer)
-                                {
-                                    // remove player corpse.
-                                    defender.Location.Map.TryRemoveCorpseOf(defender);
-                                }
+                                // The risen actor replaces the victim's corpse, including for NPCs.
+                                defender.Location.Map.TryRemoveCorpseOf(defender);
                                 // add new zombie.
                                 Zombify(attacker, defender, false);
 

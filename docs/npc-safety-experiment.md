@@ -1,5 +1,10 @@
 # NPC retreat, food and sleep experiment
 
+The counts below are historical measurements from the stated builds and dates,
+not a current-build guarantee. Rerun the command below for current behavior.
+This is a benchmark report; the [social-system overview](npc-social-systems.md)
+describes the active NPC personality and relationship model.
+
 Run the complete headless experiment with one command:
 
 ```sh
@@ -22,7 +27,7 @@ it is a performance signal, not an isolated cost for the escape planner.
 
 ## Needs and escape routes on October 3, 2026
 
-On the current build, the organized civilian faced one zombie and a visible exit
+In the October 3, 2026 measured build, the organized civilian faced one zombie and a visible exit
 three steps around a turn. Each condition below used the same 100 seeds and
 30-turn limit; only the starting need changed.
 

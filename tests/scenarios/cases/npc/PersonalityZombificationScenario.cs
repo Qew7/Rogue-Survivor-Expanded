@@ -60,7 +60,7 @@ static class PersonalityZombificationScenario
             foreach (MemoryInstance memory in leader.Personality.Memories)
                 due = System.Math.Max(due, memory.ResolveTurn);
             world.Map.LocalTime.TurnCounter = due;
-            PersonalitySystem.ResolveDue(world.Game, world.Map);
+            PersonalityScenarioResolution.PreferFirstOutcome(world.Game, world.Map);
             Check.Equal(true, leader.Personality.HasTrait("panic_attacks"),
                 "fearful leader resolves the zombification into panic attacks");
         });

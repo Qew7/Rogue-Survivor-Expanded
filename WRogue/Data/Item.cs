@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using djack.RogueSurvivor.Engine;
 
 namespace djack.RogueSurvivor.Data
 {
@@ -15,7 +16,13 @@ namespace djack.RogueSurvivor.Data
         // Lets an actor reclaim an item it just left on somebody else's base.
         Actor m_LastDroppedBy;
         Guid m_StoryIdentity;
-        public Guid StoryIdentity { get { if (m_StoryIdentity == Guid.Empty) m_StoryIdentity = Guid.NewGuid(); return m_StoryIdentity; } }
+        public Guid StoryIdentity { get { if (m_StoryIdentity == Guid.Empty) m_StoryIdentity = DiceRoller.NewGuid(); return m_StoryIdentity; } }
+        [System.Runtime.Serialization.OptionalField] Guid m_StolenFromGroupId;
+        [System.Runtime.Serialization.OptionalField] Guid m_StolenFromLeaderId;
+        [System.Runtime.Serialization.OptionalField] string m_StolenFromName;
+        [System.Runtime.Serialization.OptionalField] string m_TheftStoryId;
+        [System.Runtime.Serialization.OptionalField] long m_TheftEventId;
+        [System.Runtime.Serialization.OptionalField] bool m_StolenGoodsFound;
         #endregion
 
         #region Properties
@@ -101,6 +108,40 @@ namespace djack.RogueSurvivor.Data
             set;
         }
         public Actor LastDroppedBy { get { return m_LastDroppedBy; } set { m_LastDroppedBy = value; } }
+        public bool IsStolen { get { return m_StolenFromLeaderId != Guid.Empty; } }
+        public Guid StolenFromGroupId { get { return m_StolenFromGroupId; } }
+        public Guid StolenFromLeaderId { get { return m_StolenFromLeaderId; } }
+        public string StolenFromName { get { return m_StolenFromName; } }
+        public string TheftStoryId { get { return m_TheftStoryId; } }
+        public long TheftEventId { get { return m_TheftEventId; } }
+        public bool StolenGoodsFound { get { return m_StolenGoodsFound; } }
+        public void MarkStolenGoodsFound() { if (IsStolen) m_StolenGoodsFound = true; }
+        public void MarkStolen(Guid groupId, Guid leaderId, string leaderName, string storyId, long eventId)
+        {
+            if (IsStolen) return;
+            m_StolenFromGroupId = groupId; m_StolenFromLeaderId = leaderId;
+            m_StolenFromName = leaderName; m_TheftStoryId = storyId; m_TheftEventId = eventId;
+        }
+        public void ClearTheft()
+        {
+            m_StolenFromGroupId = Guid.Empty; m_StolenFromLeaderId = Guid.Empty;
+            m_StolenFromName = null; m_TheftStoryId = null; m_TheftEventId = 0;
+            m_StolenGoodsFound = false;
+        }
+        public void RememberTheftEvent(long eventId) { if (IsStolen && m_TheftEventId == 0) m_TheftEventId = eventId; }
+        public void CopyTheftFrom(Item source)
+        {
+            m_StolenFromGroupId = source.m_StolenFromGroupId; m_StolenFromLeaderId = source.m_StolenFromLeaderId;
+            m_StolenFromName = source.m_StolenFromName; m_TheftStoryId = source.m_TheftStoryId;
+            m_TheftEventId = source.m_TheftEventId;
+            m_StolenGoodsFound = source.m_StolenGoodsFound;
+        }
+        public bool SameTheftAs(Item other)
+        {
+            return m_StolenFromLeaderId == other.m_StolenFromLeaderId &&
+                m_StolenFromGroupId == other.m_StolenFromGroupId && m_TheftStoryId == other.m_TheftStoryId &&
+                m_TheftEventId == other.m_TheftEventId && m_StolenGoodsFound == other.m_StolenGoodsFound;
+        }
         #endregion
 
         #region Init

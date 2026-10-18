@@ -70,6 +70,7 @@ namespace djack.RogueSurvivor.Gameplay.AI.Sensors
 
             // compute percepts.
             List<Percept> list = new List<Percept>();
+            Map map = actor.Location.Map;
 
             #region Actors
             if ((m_Filters & SensingFilter.ACTORS) != 0)
@@ -108,22 +109,41 @@ namespace djack.RogueSurvivor.Gameplay.AI.Sensors
             #endregion
 
             #region Items
-            if ((m_Filters & SensingFilter.ITEMS) != 0)
+            if ((m_Filters & SensingFilter.ITEMS) != 0 && actor.Location.Map.CountGroundInventories != 0)
             {
-                foreach (Point p in m_FOV)
+                if (map.CountGroundInventories == 1)
+                {
+                    foreach (Inventory inv in map.GroundInventories)
+                    {
+                        Point? position = map.GetGroundInventoryPosition(inv);
+                        if (position.HasValue && !inv.IsEmpty && m_FOV.Contains(position.Value))
+                            list.Add(new Percept(inv, map.LocalTime.TurnCounter,
+                                new Location(map, position.Value)));
+                    }
+                }
+                else foreach (Point p in m_FOV)
                 {
                     Inventory inv = actor.Location.Map.GetItemsAt(p);
-                    if (inv == null || inv.IsEmpty)
-                        continue;
-                    list.Add(new Percept(inv, actor.Location.Map.LocalTime.TurnCounter, new Location(actor.Location.Map, p)));
+                    if (inv != null && !inv.IsEmpty)
+                        list.Add(new Percept(inv, actor.Location.Map.LocalTime.TurnCounter, new Location(actor.Location.Map, p)));
                 }
             }
             #endregion
 
             #region Corpses
-            if ((m_Filters & SensingFilter.CORPSES) != 0)
+            if ((m_Filters & SensingFilter.CORPSES) != 0 && actor.Location.Map.CountCorpses != 0)
             {
-                foreach (Point p in m_FOV)
+                if (map.CountCorpses == 1)
+                {
+                    foreach (Corpse corpse in map.Corpses)
+                    {
+                        Point p = corpse.Position;
+                        if (m_FOV.Contains(p))
+                            list.Add(new Percept(map.GetCorpsesAt(p), map.LocalTime.TurnCounter,
+                                new Location(map, p)));
+                    }
+                }
+                else foreach (Point p in m_FOV)
                 {
                     List<Corpse> corpses = actor.Location.Map.GetCorpsesAt(p.X, p.Y);
                     if (corpses != null)
@@ -135,6 +155,7 @@ namespace djack.RogueSurvivor.Gameplay.AI.Sensors
             // done.
             return list;
         }
+
         #endregion
     }
 }

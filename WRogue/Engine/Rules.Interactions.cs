@@ -15,6 +15,15 @@ namespace djack.RogueSurvivor.Engine
     partial class Rules
     {
         #region Switching Map Objects
+        public bool IsSwitchableFor(Actor actor, RadioReceiver radio, out string reason)
+        {
+            if (actor == null || radio == null || radio.Location.Map != actor.Location.Map ||
+                !actor.Model.Abilities.CanUseMapObjects || actor.IsSleeping ||
+                !IsAdjacent(actor.Location, radio.Location))
+            { reason = "cannot operate radio"; return false; }
+            reason = ""; return true;
+        }
+
         public bool IsSwitchableFor(Actor actor, PowerGenerator powGen, out string reason)
         {
             if (actor == null)
@@ -95,6 +104,21 @@ namespace djack.RogueSurvivor.Engine
                 return false;
             }
 
+            if (!actor.IsPlayer && GridDistance(actor.Location.Position, exitPoint) > 1)
+            {
+                reason = "exit is not adjacent";
+                return false;
+            }
+
+            Exit exit = actor.Location.Map.GetExitAt(exitPoint);
+            if (!actor.IsPlayer && exit.ToMap.District != actor.Location.Map.District &&
+                (exit.ToMap.LocalTime.TurnCounter < actor.Location.Map.LocalTime.TurnCounter ||
+                 exit.ToMap.LocalTime.TurnCounter > actor.Location.Map.LocalTime.TurnCounter + 1))
+            {
+                reason = "destination district is at another time";
+                return false;
+            }
+
             // 2. AI: can't use AI exits.
             // alpha10.1 handle bots
             if ((!actor.IsPlayer || actor.IsBotPlayer) && !actor.Model.Abilities.AI_CanUseAIExits)
@@ -165,6 +189,28 @@ namespace djack.RogueSurvivor.Engine
             return CanActorInitiateTradeWith(speaker, target, out reason);
         }
 
+        public bool IsActorTradeEmergency(Actor speaker, Actor target = null)
+        {
+            bool needsFood = IsActorStarving(speaker);
+            bool needsMedicine = speaker.HitPoints > 0 && speaker.HitPoints * 4 <= ActorMaxHPs(speaker);
+            if (!needsFood && !needsMedicine) return false;
+            int turn = speaker.Location.Map.LocalTime.TurnCounter;
+            if (speaker.Inventory != null)
+                foreach (Item item in speaker.Inventory.Items)
+                {
+                    if (needsFood && item is ItemFood && item.Quantity > 0 && !IsFoodSpoiled((ItemFood)item, turn)) needsFood = false;
+                    if (needsMedicine && item is ItemMedicine && ((ItemMedicine)item).Healing > 0) needsMedicine = false;
+                }
+            if (!needsFood && !needsMedicine) return false;
+            if (target == null) return true;
+            if (target.Inventory == null) return false;
+            foreach (Item item in target.Inventory.Items)
+                if (!item.IsEquipped && item.Quantity > 0 &&
+                    (needsFood && item is ItemFood && !IsFoodSpoiled((ItemFood)item, turn) ||
+                     needsMedicine && item is ItemMedicine && ((ItemMedicine)item).Healing > 0)) return true;
+            return false;
+        }
+
         public bool CanActorInitiateTradeWith(Actor speaker, Actor target, out string reason)
         {
             if (speaker == null)
@@ -185,6 +231,22 @@ namespace djack.RogueSurvivor.Engine
             {
                 reason = "target is player";
                 return false;
+            }
+
+            if (!speaker.IsPlayer && speaker.Personality != null)
+            {
+                RelationshipRecord opinion = speaker.Personality.Person(target.PersonalityIdentity);
+                if (opinion != null && speaker.Location.Map.LocalTime.TurnCounter < opinion.NextTradeAttemptTurn)
+                {
+                    reason = "recently refused this trader";
+                    return false;
+                }
+                if (speaker.Location.Map.LocalTime.TurnCounter < speaker.Personality.NextTradeAttemptTurn &&
+                    !IsActorTradeEmergency(speaker, target))
+                {
+                    reason = "recently refused a trade";
+                    return false;
+                }
             }
 
             // 2. Actors are not traders and not leader->follower relationship.

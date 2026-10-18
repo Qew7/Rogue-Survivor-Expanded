@@ -162,7 +162,10 @@ namespace djack.RogueSurvivor.Gameplay.AI
 
         protected override ActorAction SelectAction(RogueGame game, List<Percept> percepts)
         {
+            Action<string, long> decisionProfile = RogueGame.ProfileSimulationPhase;
+            long decisionStart = decisionProfile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
             List<Percept> mapPercepts = FilterSameMap(game, percepts);
+            if (decisionProfile != null) decisionProfile("decision map filter", System.Diagnostics.Stopwatch.GetTimestamp() - decisionStart);
             Action<long> profileIntentPrep = ProfileIntentPrep;
             long intentStart = profileIntentPrep == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
             List<Actor> intentVisible = PrepareNpcIntents(game, mapPercepts, m_LOSSensor.FOV);
@@ -191,18 +194,30 @@ namespace djack.RogueSurvivor.Gameplay.AI
             m_Actor.IsRunning = false;
 
             // 0. Equip best item
+            decisionStart = decisionProfile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
             ActorAction bestEquip = IsReturningXpdLoot ? null : BehaviorEquipBestItems(game, true, true);
+            if (decisionProfile != null) decisionProfile("decision equip", System.Diagnostics.Stopwatch.GetTimestamp() - decisionStart);
             if (bestEquip != null)
             {
                 return bestEquip;
             }
             // end alpha10
 
+            ActorAction pursuitReport = ConflictResolutionModule.AnnouncePursuit(game, m_Actor, intentVisible);
+            if (pursuitReport != null)
+                return BehaviorFleeFromExplosives(game, FilterStacks(game, mapPercepts)) ?? pursuitReport;
+            ActorAction pursuitResponse = ConflictResolutionModule.AnnouncePursuitResponse(game, m_Actor, intentVisible);
+            if (pursuitResponse != null)
+                return BehaviorFleeFromExplosives(game, FilterStacks(game, mapPercepts)) ?? pursuitResponse;
+            decisionStart = decisionProfile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
             ActorAction personalIntervention = BehaviorNpcEmergency(game, intentVisible);
+            if (decisionProfile != null) decisionProfile("decision emergency", System.Diagnostics.Stopwatch.GetTimestamp() - decisionStart);
             if (personalIntervention != null) return BehaviorFleeFromExplosives(game, FilterStacks(game, mapPercepts)) ?? personalIntervention;
 
             // 1. Follow order
+            decisionStart = decisionProfile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
             ActorAction departure = BehaviorNpcDeparture(game, intentVisible);
+            if (decisionProfile != null) decisionProfile("decision departure", System.Diagnostics.Stopwatch.GetTimestamp() - decisionStart);
             if (departure != null)
                 return BehaviorFleeFromExplosives(game, FilterStacks(game, mapPercepts)) ?? departure;
             #region
@@ -511,7 +526,9 @@ namespace djack.RogueSurvivor.Gameplay.AI
             // 10 drop useless light/tracker/spray
             if (!hasEnemies)
             {
+                decisionStart = decisionProfile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
                 ActorAction intentAction = BehaviorNpcIntents(game, intentVisible);
+                if (decisionProfile != null) decisionProfile("decision intent action", System.Diagnostics.Stopwatch.GetTimestamp() - decisionStart);
                 if (intentAction != null) return intentAction;
             }
             #region
@@ -582,49 +599,58 @@ namespace djack.RogueSurvivor.Gameplay.AI
             #region
             if (!hasEnemies && this.Directives.CanTakeItems)
             {
+                decisionStart = decisionProfile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
                 ActorAction expedition = TryStartAutonomousScavenge(game, mapPercepts, m_Exploration);
+                if (decisionProfile != null) decisionProfile("decision scavenge", System.Diagnostics.Stopwatch.GetTimestamp() - decisionStart);
                 if (expedition != null) return expedition;
 
                 Map map = m_Actor.Location.Map;
 
                 #region Get items
                 // alpha10 new common behaviour code, also used by GangAI
+                decisionStart = decisionProfile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
                 ActorAction getItemAction = BehaviorGoGetInterestingItems(game, mapPercepts,
                     false, false, CANT_GET_ITEM_EMOTE, true, ref m_LastItemsSaw);
+                if (decisionProfile != null) decisionProfile("decision items", System.Diagnostics.Stopwatch.GetTimestamp() - decisionStart);
 
                 if (getItemAction != null)
                     return getItemAction;
                 #endregion
 
                 #region Trade
-                int tradeBias = PersonalitySystem.Bias(m_Actor, DecisionKind.Trade);
-                if (Directives.CanTrade && (tradeBias == 0 ||
-                    game.Rules.RollChance(Math.Max(0, Math.Min(100, 70 + tradeBias)))))
+                decisionStart = decisionProfile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
+                bool canSeekTrade = Directives.CanTrade && (m_Actor.Personality == null ||
+                    map.LocalTime.TurnCounter >= m_Actor.Personality.NextTradeAttemptTurn ||
+                    game.Rules.IsActorTradeEmergency(m_Actor));
+                int tradeBias = canSeekTrade ? PersonalitySystem.Bias(m_Actor, NpcPersonalityAxis.Trade) : 0;
+                if (canSeekTrade && (tradeBias == 0 ||
+                    game.Rules.RollChance(Math.Max(0, Math.Min(100, 70 + tradeBias)))) &&
+                    m_Actor.Inventory != null && !m_Actor.Inventory.IsEmpty)
                 {
                     // get actors we want to trade with.
-                    List<Percept> tradingActors = FilterOut(game, FilterNonEnemies(game, mapPercepts),
+                    List<Percept> tradingActors = Filter(game, mapPercepts,
                         (p) =>
                         {
-                            if (p.Turn != map.LocalTime.TurnCounter) return true;
                             Actor other = p.Percepted as Actor;
+                            if (other == null || other == m_Actor || game.Rules.AreEnemies(m_Actor, other)) return false;
+                            if (p.Turn != map.LocalTime.TurnCounter) return false;
                             // dont bother player or someone we can't trade with or already did trade.
-                            if (other.IsPlayer) return true;
+                            if (other.IsPlayer) return false;
                             if (PersonalitySystem.Attitude(m_Actor, other) <= -30 &&
                                 !(other == m_Actor.Leader && game.Rules.IsActorTrustingLeader(m_Actor)))
-                                return true;
-                            if (!game.Rules.CanActorInitiateTradeWith(m_Actor, other)) return true;
-                            if (IsActorTabooTrade(other)) return true;
+                                return false;
+                            if (!game.Rules.CanActorInitiateTradeWith(m_Actor, other)) return false;
+                            if (IsActorTabooTrade(other)) return false;
                             // alpha10 dont bother someone who is fighting or fleeing
                             if (other.Activity == Activity.CHASING || other.Activity == Activity.FIGHTING || other.Activity == Activity.FLEEING || other.Activity == Activity.FLEEING_FROM_EXPLOSIVE)
-                                return true;
+                                return false;
                             // dont bother if no interesting items.
-                            if (!HasAnyInterestingItem(game, other.Inventory, ItemSource.ANOTHER_ACTOR)) return true;
-                            if (!((other.Controller as BaseAI).HasAnyInterestingItem(game, m_Actor.Inventory, ItemSource.ANOTHER_ACTOR))) return true;
+                            if (!HasAnyInterestingItem(game, other.Inventory, ItemSource.ANOTHER_ACTOR)) return false;
+                            if (!((other.Controller as BaseAI).HasAnyInterestingItem(game, m_Actor.Inventory, ItemSource.ANOTHER_ACTOR))) return false;
                             // alpha10 reject if unreachable by baseai simple behaviours
                             if (!CanReachSimple(game, other.Location.Position, Tools.RouteFinder.SpecialActions.DOORS | Tools.RouteFinder.SpecialActions.JUMP))
-                                return true;
-                            // don't reject.
-                            return false;
+                                return false;
+                            return true;
                         });
                     // trade with nearest.
                     if (tradingActors != null)
@@ -639,6 +665,7 @@ namespace djack.RogueSurvivor.Gameplay.AI
                                 MarkActorAsRecentTrade(tradeTarget);
                                 // say, so we make sure we spend a turn and won't loop.
                                 game.DoSay(m_Actor, tradeTarget, String.Format("Hey {0}, let's make a deal!", tradeTarget.Name), RogueGame.Sayflags.NONE);
+                                if (decisionProfile != null) decisionProfile("decision trade", System.Diagnostics.Stopwatch.GetTimestamp() - decisionStart);
                                 return tradeAction;
                             }
                         }
@@ -653,11 +680,13 @@ namespace djack.RogueSurvivor.Gameplay.AI
 
                                 m_Actor.Activity = Activity.FOLLOWING;
                                 m_Actor.TargetActor = tradeTarget;
+                                if (decisionProfile != null) decisionProfile("decision trade", System.Diagnostics.Stopwatch.GetTimestamp() - decisionStart);
                                 return bump;
                             }
                         }
                     }
                 }
+                if (decisionProfile != null) decisionProfile("decision trade", System.Diagnostics.Stopwatch.GetTimestamp() - decisionStart);
                 #endregion
             }
             #endregion
@@ -813,17 +842,27 @@ namespace djack.RogueSurvivor.Gameplay.AI
                 bool canLead = !checkOurLeader && m_Actor.CountFollowers < game.Rules.ActorMaxFollowers(m_Actor);
                 if (canLead)
                 {
-                    Percept nearestFriend = FilterNearest(game, FilterNonEnemies(game, mapPercepts));
-                    if (nearestFriend != null)
+                    List<Percept> candidates = FilterNonEnemies(game, mapPercepts);
+                    if (candidates != null)
                     {
-                        // alpha10 only if unreachable by baseai simple behaviours
-                        if (CanReachSimple(game, nearestFriend.Location.Position, Tools.RouteFinder.SpecialActions.DOORS | Tools.RouteFinder.SpecialActions.JUMP))
+                        candidates.RemoveAll(p => !game.Rules.CanActorTakeLead(m_Actor, (Actor)p.Percepted));
+                        candidates.Sort((a, b) =>
                         {
-                            ActorAction leadAction = BehaviorLeadActor(game, nearestFriend);
+                            int relation = PersonalitySystem.Attitude(m_Actor, (Actor)b.Percepted).CompareTo(
+                                PersonalitySystem.Attitude(m_Actor, (Actor)a.Percepted));
+                            if (relation != 0) return relation;
+                            int distance = game.Rules.StdDistance(m_Actor.Location.Position, a.Location.Position).CompareTo(
+                                game.Rules.StdDistance(m_Actor.Location.Position, b.Location.Position));
+                            return distance != 0 ? distance : ((Actor)a.Percepted).PersonalityIdentity.CompareTo(((Actor)b.Percepted).PersonalityIdentity);
+                        });
+                        foreach (Percept candidate in candidates)
+                        {
+                            if (!CanReachSimple(game, candidate.Location.Position, Tools.RouteFinder.SpecialActions.DOORS | Tools.RouteFinder.SpecialActions.JUMP)) continue;
+                            ActorAction leadAction = BehaviorLeadActor(game, candidate);
                             if (leadAction != null)
                             {
                                 m_Actor.Activity = Activity.IDLE;
-                                m_Actor.TargetActor = nearestFriend.Percepted as Actor;
+                                m_Actor.TargetActor = candidate.Percepted as Actor;
                                 return leadAction;
                             }
                         }
@@ -867,7 +906,7 @@ namespace djack.RogueSurvivor.Gameplay.AI
             #endregion
 
             // 22 go revive corpse.
-            ActorAction revive = PersonalitySystem.Bias(m_Actor, DecisionKind.Compassion) <= -20 ? null :
+            ActorAction revive = PersonalitySystem.Bias(m_Actor, NpcPersonalityAxis.Compassion) <= -20 ? null :
                 BehaviorGoReviveCorpse(game, FilterCorpses(game, mapPercepts));
             if (revive != null)
             {
@@ -878,7 +917,7 @@ namespace djack.RogueSurvivor.Gameplay.AI
             // 23 use exit.
             #region
             if (game.Rules.RollChance(Math.Max(0, Math.Min(100,
-                USE_EXIT_CHANCE + PersonalitySystem.Bias(m_Actor, DecisionKind.Explore)))))
+                USE_EXIT_CHANCE + PersonalitySystem.Bias(m_Actor, NpcPersonalityAxis.Explore)))))
             {
                 ActorAction useExit = BehaviorUseExit(game, UseExitFlags.DONT_BACKTRACK);
                 if (useExit != null)
@@ -956,9 +995,9 @@ namespace djack.RogueSurvivor.Gameplay.AI
 
             // 28 (law enforcer) watch for murderers.
             #region
-            if ((m_Actor.Model.Abilities.IsLawEnforcer || PersonalitySystem.Bias(m_Actor, DecisionKind.Law) >= 25) &&
+            if ((m_Actor.Model.Abilities.IsLawEnforcer || PersonalitySystem.Bias(m_Actor, NpcPersonalityAxis.Law) >= 25) &&
                 mapPercepts != null && game.Rules.RollChance(Math.Max(0, Math.Min(100,
-                    LAW_ENFORCE_CHANCE + PersonalitySystem.Bias(m_Actor, DecisionKind.Law)))))
+                    LAW_ENFORCE_CHANCE + PersonalitySystem.Bias(m_Actor, NpcPersonalityAxis.Law)))))
             {
                 Actor target;
                 ActorAction lawAction = BehaviorEnforceLaw(game, mapPercepts, out target);
@@ -1009,7 +1048,13 @@ namespace djack.RogueSurvivor.Gameplay.AI
 #endif
             // END DEBUG BOT
 
+            decisionStart = decisionProfile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
+            ActorAction crossDistrict = BehaviorCrossDistrict(game);
+            if (decisionProfile != null) decisionProfile("decision crossing", System.Diagnostics.Stopwatch.GetTimestamp() - decisionStart);
+            if (crossDistrict != null) return crossDistrict;
+            decisionStart = decisionProfile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
             ActorAction exploreAction = BehaviorExplore(game, m_Exploration);
+            if (decisionProfile != null) decisionProfile("decision explore", System.Diagnostics.Stopwatch.GetTimestamp() - decisionStart);
             if (exploreAction != null)
             {
                 // VERBOSE BOT
@@ -1034,10 +1079,46 @@ namespace djack.RogueSurvivor.Gameplay.AI
             // END VERBOSE BOT
 
             m_Actor.Activity = Activity.IDLE;
-            return BehaviorWander(game, m_Exploration);
+            decisionStart = decisionProfile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
+            ActorAction wander = BehaviorWander(game, m_Exploration);
+            if (decisionProfile != null) decisionProfile("decision wander", System.Diagnostics.Stopwatch.GetTimestamp() - decisionStart);
+            return wander;
             #endregion
 
             #endregion
+        }
+
+        ActorAction BehaviorCrossDistrict(RogueGame game)
+        {
+            Map map = m_Actor.Location.Map;
+            World world = Session.Get.World;
+            if (m_Actor.HasLeader || !m_Actor.Model.Abilities.AI_CanUseAIExits ||
+                map.District == null || map != map.District.EntryMap || map.CountExits == 0 ||
+                world == null || world.Size < 2)
+                return null;
+            uint routeSeed = (uint)(m_Actor.PersonalityIdentity.GetHashCode() ^ (map.LocalTime.Day * 1601));
+            if (routeSeed % 5u != 0) return null;
+            int destination = (int)((routeSeed / 5u) % (uint)(world.Size * world.Size));
+            Point goal = new Point(destination % world.Size, destination / world.Size);
+            Point here = map.District.WorldPosition;
+            int remaining = Math.Abs(goal.X - here.X) + Math.Abs(goal.Y - here.Y);
+            if (remaining == 0) return null;
+            Point? nearest = null;
+            int distance = Int32.MaxValue;
+            foreach (KeyValuePair<Point, Exit> entry in map.ExitEntries)
+            {
+                Exit exit = entry.Value;
+                if (!exit.IsAnAIExit || exit.ToMap == null || exit.ToMap.District == null ||
+                    exit.ToMap.District == map.District ||
+                    exit.ToMap.LocalTime.TurnCounter < map.LocalTime.TurnCounter ||
+                    exit.ToMap.LocalTime.TurnCounter > map.LocalTime.TurnCounter + 1 ||
+                    exit.ToMap.GetActorAt(exit.ToPosition) != null) continue;
+                Point next = exit.ToMap.District.WorldPosition;
+                if (Math.Abs(goal.X - next.X) + Math.Abs(goal.Y - next.Y) >= remaining) continue;
+                int d = game.Rules.GridDistance(m_Actor.Location.Position, entry.Key);
+                if (d < distance) { nearest = entry.Key; distance = d; }
+            }
+            return nearest.HasValue ? BehaviorIntelligentBumpToward(game, nearest.Value, false, false) : null;
         }
         #endregion
     }

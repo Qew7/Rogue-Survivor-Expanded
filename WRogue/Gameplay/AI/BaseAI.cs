@@ -125,13 +125,18 @@ namespace djack.RogueSurvivor.Gameplay.AI
             /////////////////////////
 
             // 2. Update sensors.
+            Action<string, long> profile = RogueGame.ProfileSimulationPhase;
+            long started = profile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
             List<Percept> percepts = UpdateSensors(game);
+            if (profile != null) profile("sense", System.Diagnostics.Stopwatch.GetTimestamp() - started);
 
             // 3. Issue action.
             if (m_prevLocation.Map == null)
                 m_prevLocation = m_Actor.Location;
             m_Actor.TargetActor = null;
+            started = profile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
             ActorAction bestAction = SelectAction(game, percepts);
+            if (profile != null) profile("decide", System.Diagnostics.Stopwatch.GetTimestamp() - started);
             m_prevLocation = m_Actor.Location;
             if (bestAction == null)
             {

@@ -23,8 +23,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 ulong at = d.At(place.Place); if (at == 0) continue;
                 d.Travel(place.Place, Guid.Empty, at);
                 d.Add(NpcPlanAction.PickupMedicine, place.Place, Guid.Empty, at, (ulong)NpcPlanFact.Medicine,
-                    (ulong)NpcPlanFact.Medicine, 0, 8 - PersonalitySystem.Bias(d.Owner, DecisionKind.Explore) / 4 +
-                    place.Risk * Math.Max(0, 6 + PersonalitySystem.Bias(d.Owner, DecisionKind.Law) / 3));
+                    (ulong)NpcPlanFact.Medicine, 0, 8 - PersonalitySystem.Bias(d.Owner, NpcPersonalityAxis.Explore) / 4 +
+                    place.Risk * Math.Max(0, 6 + PersonalitySystem.Bias(d.Owner, NpcPersonalityAxis.Law) / 3));
             }
             Contacts(d);
         }
@@ -38,10 +38,10 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             ulong at = d.At(d.Goal.LastKnown); d.Travel(d.Goal.LastKnown, d.Goal.TargetId, at);
             ulong result = (d.Desired & (ulong)NpcPlanFact.Helped).Empty ? (ulong)NpcPlanFact.Delivered : (ulong)NpcPlanFact.Helped;
             d.Add(NpcPlanAction.GiveMedicine, d.Goal.LastKnown, d.Goal.TargetId, at | (ulong)NpcPlanFact.Medicine, result,
-                result, (ulong)NpcPlanFact.Medicine, 5 + PersonalitySystem.Bias(d.Owner, DecisionKind.Supplies) / 5 - PersonalitySystem.Bias(d.Owner, DecisionKind.Trade) / 5);
+                result, (ulong)NpcPlanFact.Medicine, 5 + PersonalitySystem.Bias(d.Owner, NpcPersonalityAxis.Supplies) / 5 - PersonalitySystem.Bias(d.Owner, NpcPersonalityAxis.Trade) / 5);
             if (result == (ulong)NpcPlanFact.Helped)
                 d.Add(NpcPlanAction.TreatPerson, d.Goal.LastKnown, d.Goal.TargetId, at | (ulong)NpcPlanFact.Medicine, result,
-                    result, (ulong)NpcPlanFact.Medicine, 7 - PersonalitySystem.Bias(d.Owner, DecisionKind.Compassion) / 3 + PersonalitySystem.Bias(d.Owner, DecisionKind.Courage) / 10);
+                    result, (ulong)NpcPlanFact.Medicine, 7 - PersonalitySystem.Bias(d.Owner, NpcPersonalityAxis.Compassion) / 3 + PersonalitySystem.Bias(d.Owner, NpcPersonalityAxis.Courage) / 10);
         }
         static void Contacts(NpcPlanDomain d)
         {
@@ -51,12 +51,13 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 if (peer == d.Owner || peer.IsSleeping || peer.Model.Abilities.IsUndead || !peer.Model.Abilities.IsIntelligent ||
                     d.Game.Rules.AreEnemies(d.Owner, peer) || peer.PersonalityIdentity == d.Goal.TargetId && d.Goal.TargetId != d.Owner.PersonalityIdentity) continue;
                 ulong at = d.At(peer.Location); if (at == 0) continue; d.Travel(peer.Location, peer.PersonalityIdentity, at);
-                if (!d.Owner.Personality.Knowledge.WasTold(-d.Goal.Sequence, peer.PersonalityIdentity))
+                if (d.Owner.Personality.Knowledge.CanRequest(d.Goal.Sequence, peer.PersonalityIdentity,
+                    NpcMedicineActions.RequestText, d.Turn, medicine: true))
                     d.Add(NpcPlanAction.AskMedicine, peer.Location, peer.PersonalityIdentity, at, (ulong)NpcPlanFact.Medicine,
-                        (ulong)NpcPlanFact.Medicine, 0, 17 - PersonalitySystem.Bias(d.Owner, DecisionKind.Group) / 3 - NpcValues.KnownAttitude(d.Owner, peer.PersonalityIdentity) / 5);
+                        (ulong)NpcPlanFact.Medicine, 0, 17 - PersonalitySystem.Bias(d.Owner, NpcPersonalityAxis.Group) / 3 - NpcValues.KnownAttitude(d.Owner, peer.PersonalityIdentity) / 5);
                 if (d.Owner.Personality.Knowledge.Facts.Exists(f => f.Kind == "medicine_offered" && f.SubjectId == peer.PersonalityIdentity && f.OtherId == d.Owner.PersonalityIdentity && d.Turn - f.EventTurn < 60))
                     d.Add(NpcPlanAction.BarterMedicine, peer.Location, peer.PersonalityIdentity, at, (ulong)NpcPlanFact.Medicine,
-                        (ulong)NpcPlanFact.Medicine, 0, 12 - PersonalitySystem.Bias(d.Owner, DecisionKind.Trade) / 3);
+                        (ulong)NpcPlanFact.Medicine, 0, 12 - PersonalitySystem.Bias(d.Owner, NpcPersonalityAxis.Trade) / 3);
             }
         }
     }

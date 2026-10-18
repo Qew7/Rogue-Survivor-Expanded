@@ -41,8 +41,8 @@ static class SupplyLossRumorScenario
             NpcFact heard = listener.Personality.Knowledge.Facts.Find(f => f.EventId == fact.EventId);
             Check.Equal(NpcKnowledgeSource.Told, heard.Source, "listener learns hearsay");
             Check.Equal("a biker", heard.ReportOther, "hearsay keeps the witness's description");
-            Check.Equal(true, player.Personality.HeardJournal[0].Text.Contains("a biker took 2 units of food from Peter Steel's storage"),
-                "player hears the people and actual supply loss");
+            Check.Equal(true, player.Personality.HeardJournal[0].Text.Contains("Peter Steel's base lost 2 units of food from storage"),
+                "unidentified thief stays anonymous while the actual supply loss is reported");
         });
     }
 }

@@ -64,12 +64,15 @@ namespace djack.RogueSurvivor.Engine
         // for the player should try to mimick most of trade results obtained by player negociating trade but not mandatory.
         public void DoTrade(Actor speaker, Actor target)
         {
+            Actor initiator = speaker;
             // clean up activities
             speaker.Activity = Activity.IDLE;
             target.Activity = Activity.IDLE;
 
             bool isVisible = IsVisibleToPlayer(speaker) || IsVisibleToPlayer(target);
             if (isVisible) AddMessage(MakeMessage(speaker, string.Format("wants to make a quick trade with {0}.", target.Name)));
+            string tradeStory = "trade:" + speaker.PersonalityIdentity.ToString("N") + ":" +
+                target.PersonalityIdentity.ToString("N") + ":" + target.Location.Map.LocalTime.TurnCounter;
 
             // the basic idea is to pick an item the speaker wants from target,
             // and offer an item the speaker is willing to get rid of.
@@ -82,6 +85,7 @@ namespace djack.RogueSurvivor.Engine
             if ((!targetAI.Directives.CanTrade) && (speaker != target.Leader))
             {
                 if (isVisible) AddMessage(MakeMessage(target, "is not willing to trade."));
+                ReportTradeRefusal(target, initiator, tradeStory);
                 return;
             }
 
@@ -254,9 +258,23 @@ namespace djack.RogueSurvivor.Engine
             else
             {
                 if (isVisible) AddMessage(MakeMessage(target, string.Format("{0}.", Conjugate(target, VERB_REFUSE_THE_DEAL))));
+                ReportTradeRefusal(target, initiator, tradeStory);
                 if (target.IsPlayer || speaker.IsPlayer)
                     RedrawPlayScreen();
             }
+        }
+
+        void ReportTradeRefusal(Actor refuser, Actor initiator, string storyId)
+        {
+            if (!initiator.IsPlayer && initiator.Personality != null)
+            {
+                int turn = refuser.Location.Map.LocalTime.TurnCounter;
+                initiator.Personality.NextTradeAttemptTurn = turn + WorldTime.TURNS_PER_HOUR / 2;
+                initiator.Personality.Opinion(refuser.PersonalityIdentity, refuser.UnmodifiedName)
+                    .NextTradeAttemptTurn = turn + 6 * WorldTime.TURNS_PER_HOUR;
+            }
+            ReportPersonalityEvent("trade_refused", refuser, initiator, refuser.Location.Map,
+                refuser.Location.Position, storyId: storyId);
         }
 
         /// <summary>
@@ -279,6 +297,8 @@ namespace djack.RogueSurvivor.Engine
             a.Inventory.AddAll(itB);
             b.Inventory.AddAll(itA);
             ReportPersonalityEvent("traded", a, b, a.Location.Map, a.Location.Position);
+            ReportStolenGoods(a, b, itB, "stolen_goods_passed");
+            ReportStolenGoods(b, a, itA, "stolen_goods_passed");
         }
 
         [Flags]
@@ -306,6 +326,10 @@ namespace djack.RogueSurvivor.Engine
         }
 
         public void DoSay(Actor speaker, Actor target, string text, Sayflags flags, long causeId = 0, string storyId = null)
+        { DoSay(speaker, target, text, flags, causeId, storyId, false); }
+
+        internal long DoSay(Actor speaker, Actor target, string text, Sayflags flags, long causeId,
+            string storyId, bool deferNpcArchive)
         {
             Color sayColor = ((flags & Sayflags.IS_DANGER) != 0) ? SAYOREMOTE_DANGER_COLOR : SAYOREMOTE_NORMAL_COLOR;
 
@@ -341,36 +365,47 @@ namespace djack.RogueSurvivor.Engine
                 AddMessageIfAudibleForPlayer(speaker.Location,
                     new Message("You overhear: \"" + text + "\"", m_Session.WorldTime.TurnCounter, sayColor));
 
+            long speechId = 0;
             if ((flags & Sayflags.IS_STORY) != 0 && Session.Get.GamePreset.NpcPersonalitiesEnabled)
             {
-                long speechId = Session.Get.NextPersonalityEventId();
-                int turn = speaker.Location.Map.LocalTime.TurnCounter;
+                speechId = Session.Get.NextPersonalityEventId();
                 foreach (Actor listener in speaker.Location.Map.Actors)
                 {
                     if (listener == speaker || listener.IsDead || listener.IsSleeping || listener.Model.Abilities.IsUndead ||
                         !listener.Model.Abilities.IsIntelligent ||
                         m_Rules.StdDistance(listener.Location.Position, speaker.Location.Position) > listener.AudioRange) continue;
-                    bool identified = listener == target || (m_Rules.GridDistance(listener.Location.Position, speaker.Location.Position) <=
-                        m_Rules.ActorFOV(listener, speaker.Location.Map.LocalTime, m_Session.World.Weather) &&
-                        LOS.CanTraceViewLine(listener.Location, speaker.Location.Position));
+                    if (deferNpcArchive && !listener.IsPlayer) continue;
                     string kind = (flags & Sayflags.IS_RUMOR) != 0 ? "heard_rumor" :
                         (flags & Sayflags.IS_REQUEST) != 0 ? "heard_request" : "heard_reply";
-                    if (listener.IsPlayer)
-                    {
-                        if (listener.Personality == null) listener.Personality = new PersonalityState();
-                        listener.Personality.HearSpeech(new HeardJournalEntry(turn, kind,
-                            identified ? speaker.UnmodifiedName : "someone", text, causeId));
-                    }
-                    ResidentRecord record = Session.Get.ResidentRecords.Register(listener);
-                    if (record == null) continue;
-                    var observed = new ObservedEvent(kind, turn, identified ? speaker.UnmodifiedName : null, null,
-                        listener == target, subjectId: identified ? speaker.PersonalityIdentity : Guid.Empty,
-                        eventId: speechId, causeId: causeId, storyId: storyId);
-                    observed.RecordCategories = (int)Gameplay.Personality.NpcRecordCategory.Encounters;
-                    record.Add("heard_speech:" + speechId, turn,
-                        "Heard " + (identified ? speaker.UnmodifiedName : "someone") + " say: \"" + text + "\".", observed);
+                    RecordHeardSpeech(speaker, target, listener, text, kind, speechId, causeId, storyId);
                 }
             }
+            return speechId;
+        }
+
+        internal void RecordHeardSpeech(Actor speaker, Actor target, Actor listener, string text, string kind,
+            long speechId, long causeId, string storyId)
+        {
+            if (speechId == 0) return;
+            int turn = speaker.Location.Map.LocalTime.TurnCounter;
+            bool identified = listener == target || (m_Rules.GridDistance(listener.Location.Position, speaker.Location.Position) <=
+                m_Rules.ActorFOV(listener, speaker.Location.Map.LocalTime, m_Session.World.Weather) &&
+                LOS.CanTraceViewLine(listener.Location, speaker.Location.Position));
+            if (listener.IsPlayer)
+            {
+                if (listener.Personality == null) listener.Personality = new PersonalityState();
+                listener.Personality.HearSpeech(new HeardJournalEntry(turn, kind,
+                    identified ? speaker.UnmodifiedName : "someone", text, causeId));
+            }
+            ResidentRecord record = Session.Get.ResidentRecords.Register(listener);
+            if (record == null) return;
+            var observed = new ObservedEvent(kind, turn, identified ? speaker.UnmodifiedName : null, null,
+                listener == target, subjectId: identified ? speaker.PersonalityIdentity : Guid.Empty,
+                eventId: speechId, causeId: causeId, storyId: storyId);
+            observed.RecordCategories = (int)Gameplay.Personality.NpcRecordCategory.Encounters;
+            // Speech IDs are unique and each listener is visited once; no saved dedup key is needed.
+            record.Add(null, turn,
+                "Heard " + (identified ? speaker.UnmodifiedName : "someone") + " say: \"" + text + "\".", observed);
         }
 
         /// <summary>
@@ -434,6 +469,24 @@ namespace djack.RogueSurvivor.Engine
             Map map = actor.Location.Map;
             Inventory ground = map.GetItemsAt(position);
             XpdBase baseClaim = ground != null && ground.Contains(it) ? map.XpdBaseAt(position) : null;
+            bool alreadyStolen = it.IsStolen;
+            bool provisionalTheft = false;
+            if (noticeTheft && baseClaim != null && !baseClaim.Owns(actor) && it.LastDroppedBy != actor && !alreadyStolen)
+            {
+                string resource = it is ItemFood ? "food" : it is ItemMedicine ? "medicine" : "item";
+                int permitted = actor.Personality == null || !m_Session.GamePreset.NpcPersonalitiesEnabled ? 0 :
+                    actor.Personality.AvailablePermission(baseClaim.GroupLeader.PersonalityIdentity,
+                        new Location(map, position), resource, map.LocalTime.TurnCounter);
+                if (permitted < it.Quantity)
+                {
+                    if (storyId == null) storyId = "base-theft:" + baseClaim.GroupLeader.PersonalityIdentity.ToString("N") + ":" + map.LocalTime.TurnCounter;
+                    Actor owner = baseClaim.GroupLeader;
+                    SocialGroup group = owner.SocialGroup;
+                    it.MarkStolen(group == null ? owner.PersonalityIdentity : group.Identity,
+                        owner.PersonalityIdentity, owner.UnmodifiedName, storyId, 0);
+                    provisionalTheft = true;
+                }
+            }
 
             // spend APs.
             SpendActorActionPoints(actor, Rules.BASE_ACTION_COST);
@@ -450,6 +503,7 @@ namespace djack.RogueSurvivor.Engine
             int quantityAdded;
             int quantityBefore = it.Quantity;
             actor.Inventory.AddAsMuchAsPossible(it, out quantityAdded);
+            if (quantityAdded < quantityBefore && provisionalTheft) it.ClearTheft();
             // if added all, remove from map.
             if (quantityAdded == quantityBefore)
             {
@@ -460,7 +514,17 @@ namespace djack.RogueSurvivor.Engine
 
             if (quantityAdded > 0 && noticeTheft && baseClaim != null &&
                 !baseClaim.Owns(actor) && it.LastDroppedBy != actor)
-                NoticeXpdBaseTheft(actor, baseClaim, position, it, causeId, storyId, quantityAdded);
+            {
+                long theftId = NoticeXpdBaseTheft(actor, baseClaim, position, it, causeId, storyId, quantityAdded);
+                if (provisionalTheft)
+                {
+                    if (theftId == 0) it.ClearTheft();
+                    else it.RememberTheftEvent(theftId);
+                }
+            }
+
+            if (quantityAdded > 0 && alreadyStolen && noticeTheft)
+                ReportStolenGoods(actor, null, it, "stolen_goods_found", position);
 
             // message
             if (IsVisibleToPlayer(actor) || IsVisibleToPlayer(new Location(map, position)))
@@ -473,7 +537,7 @@ namespace djack.RogueSurvivor.Engine
                 DoEquipItem(actor, it);
         }
 
-        void NoticeXpdBaseTheft(Actor thief, XpdBase baseClaim, Point position, Item item, long causeId = 0, string storyId = null, int units = 1)
+        long NoticeXpdBaseTheft(Actor thief, XpdBase baseClaim, Point position, Item item, long causeId = 0, string storyId = null, int units = 1)
         {
             Map map = thief.Location.Map;
             string resource = item is ItemFood ? "food" : item is ItemMedicine ? "medicine" : "item";
@@ -487,24 +551,70 @@ namespace djack.RogueSurvivor.Engine
                     baseClaim.GroupLeader, map, position, map.LocalTime.TurnCounter, false, causeId: permissionCause, storyId: storyId)
                     { Units = permittedUnits, ModelId = item.Model.ID, Resource = resource });
                 units -= permittedUnits;
-                if (units == 0) return;
+                if (units == 0) return 0;
             }
-            Gameplay.Personality.PersonalitySystem.Report(this, new Gameplay.Personality.SignificantEvent("base_theft", thief, baseClaim.GroupLeader,
-                map, position, map.LocalTime.TurnCounter, false, causeId: causeId, storyId: storyId) { Units = units, ModelId = item.Model.ID, Resource = item is ItemFood ? "food" : item is ItemMedicine ? "medicine" : "item" });
-            if ((baseClaim.FoodRoom.HasValue && baseClaim.FoodRoom.Value.Contains(position) && item is ItemFood) ||
+            if (storyId == null)
+                storyId = "base-theft:" + baseClaim.GroupLeader.PersonalityIdentity.ToString("N") + ":" +
+                    map.LocalTime.TurnCounter;
+            var theft = new Gameplay.Personality.SignificantEvent("base_theft", thief, baseClaim.GroupLeader,
+                map, position, map.LocalTime.TurnCounter, false, causeId: causeId, storyId: storyId)
+                { Units = units, ModelId = item.Model.ID, Resource = resource };
+            Gameplay.Personality.PersonalitySystem.Report(this, theft);
+            bool stored = (baseClaim.FoodRoom.HasValue && baseClaim.FoodRoom.Value.Contains(position) && item is ItemFood) ||
                 (baseClaim.WeaponRoom.HasValue && baseClaim.WeaponRoom.Value.Contains(position) &&
-                    (item is ItemMeleeWeapon || item is ItemRangedWeapon || item is ItemAmmo)))
+                    (item is ItemMeleeWeapon || item is ItemRangedWeapon || item is ItemAmmo));
+            if (stored)
                 Gameplay.Personality.PersonalitySystem.Report(this, new Gameplay.Personality.SignificantEvent("supplies_lost", baseClaim.GroupLeader, thief,
                     map, position, map.LocalTime.TurnCounter, false, false, causeId, storyId) { Units = units, ModelId = item.Model.ID, Resource = item is ItemFood ? "food" : "item" });
+            bool ownerSawTheft = false;
             foreach (Actor witness in map.Actors)
             {
                 if (witness == thief || witness.IsDead || witness.IsSleeping ||
-                    !baseClaim.Owns(witness) || m_Rules.AreEnemies(thief, witness)) continue;
+                    !baseClaim.Owns(witness)) continue;
                 if (m_Rules.GridDistance(witness.Location.Position, position) >
                     m_Rules.ActorFOV(witness, map.LocalTime, m_Session.World.Weather) ||
                     !LOS.CanTraceViewLine(witness.Location, position)) continue;
-                DoMakeAggression(thief, witness);
+                if (witness.Personality != null || witness.IsPlayer) ownerSawTheft = true;
+                if (!m_Rules.AreEnemies(thief, witness)) DoMakeAggression(thief, witness);
             }
+            if (!ownerSawTheft && m_Session.GamePreset.NpcPersonalitiesEnabled)
+                map.AddUnnoticedBaseLoss(baseClaim, position, resource, units, theft.Id, storyId);
+            return theft.Id;
+        }
+
+        internal void ReportStolenGoods(Actor finder, Actor giver, Item item, string kind, Point? foundAt = null)
+        {
+            if (item == null || !item.IsStolen || finder == null || finder.Personality == null ||
+                !m_Session.GamePreset.NpcPersonalitiesEnabled) return;
+            if (kind == "stolen_goods_found" && (item.LastDroppedBy == finder || item.StolenGoodsFound)) return;
+            Guid victim = item.StolenFromLeaderId;
+            SocialGroup group = finder.SocialGroup;
+            if (finder.PersonalityIdentity != victim &&
+                (group == null || group.Identity != item.StolenFromGroupId) &&
+                finder.Personality.Person(victim) == null &&
+                finder.Personality.Knowledge.Person(victim) == null) return;
+            Map map = finder.Location.Map;
+            Point position = foundAt ?? finder.Location.Position;
+            if (kind == "stolen_goods_found" && finder.Personality.Knowledge.Facts.Exists(f =>
+                f.Kind == kind && f.ItemId == item.StoryIdentity && f.Place == new Location(map, position))) return;
+            var found = new Gameplay.Personality.SignificantEvent(kind, giver ?? finder, null,
+                map, position, map.LocalTime.TurnCounter, false, giver == null,
+                item.TheftEventId, item.TheftStoryId)
+                { ClaimantId = victim, ClaimantGroupId = item.StolenFromGroupId,
+                  ClaimantName = item.StolenFromName, ItemId = item.StoryIdentity,
+                  ModelId = item.Model.ID, Resource = item.Model.SingleName, Units = Math.Max(1, item.Quantity) };
+            Gameplay.Personality.PersonalitySystem.Report(this, found);
+            if (kind == "stolen_goods_found")
+            {
+                // A pickup may have merged the ground stack into carried stacks, leaving
+                // `item` empty. Mark the actual received goods as well as the source.
+                foreach (Item carried in finder.Inventory.Items)
+                    if (carried.Model == item.Model && carried.SameTheftAs(item))
+                        carried.MarkStolenGoodsFound();
+                item.MarkStolenGoodsFound();
+            }
+            NpcFact fact = finder.Personality.Knowledge.Facts.Find(f => f.EventId == found.Id && f.Kind == kind);
+            if (fact != null) Gameplay.Personality.NpcReputation.StolenGoods(finder, fact, 100);
         }
 
         public void DoGiveItemTo(Actor actor, Actor target, Item gift)
@@ -545,6 +655,8 @@ namespace djack.RogueSurvivor.Engine
             long receivedBefore = target.Inventory == null ? 0 : target.Inventory.TotalReceived;
             DropItem(actor, gift);
             DoTakeItem(target, actor.Location.Position, gift, false);
+            if (target.Inventory != null && target.Inventory.TotalReceived > receivedBefore)
+                ReportStolenGoods(target, actor, gift, "stolen_goods_passed");
             if ((neededFood || neededMedicine) && target.Inventory != null && target.Inventory.TotalReceived > receivedBefore)
                 ReportPersonalityEvent("helped", target, actor, target.Location.Map, target.Location.Position);
             if (target.Inventory != null && target.Inventory.TotalReceived > receivedBefore && m_Session.GamePreset.NpcPersonalitiesEnabled &&
@@ -803,6 +915,8 @@ namespace djack.RogueSurvivor.Engine
                 DoUseTrapItem(actor, it as ItemTrap);
             else if (it is ItemEntertainment)
                 DoUseEntertainmentItem(actor, it as ItemEntertainment);
+            else if (it is ItemRadio)
+                DoUseRadio(actor, it as ItemRadio);
 
             // alpha10 defrag ai inventories
             if (defragInventory)

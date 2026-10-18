@@ -52,6 +52,8 @@ namespace djack.RogueSurvivor.Engine.Items
             get { return m_MaxBatteries; }
         }
 
+        public int RadioStation { get; set; } = -1;
+
         // alpha10
         public bool HasClock
         {

@@ -10,6 +10,13 @@ namespace djack.RogueSurvivor.Engine
         public string Name;
         public bool Bases;
         public bool NpcPersonalitiesEnabled;
+        [System.Runtime.Serialization.OptionalField]
+        public bool DisableDistantSimulationDuringRest;
+        // Kept for old serialized presets; background simulation now has one switch.
+        [System.Runtime.Serialization.OptionalField]
+        public bool FinishDistantSimulationAfterRest;
+        [System.Runtime.Serialization.OptionalField]
+        public bool ParallelDistantSimulationDuringRest;
         public bool ImmediateZombification;
         public bool Infection;
         public bool Corpses;
@@ -82,7 +89,8 @@ namespace djack.RogueSurvivor.Engine
                 InfectionVomitThreshold = 50,
                 InfectionBleedThreshold = 75,
                 InfectionDeathThreshold = 100,
-                InfectionEffectRatePercent = 100
+                InfectionEffectRatePercent = 100,
+                ParallelDistantSimulationDuringRest = true
             };
             return preset;
         }

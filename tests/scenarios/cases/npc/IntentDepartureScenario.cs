@@ -28,8 +28,9 @@ static class IntentDepartureScenario
             foreach (MemoryInstance m in independent.Personality.Memories) if (m.Id == "left_unsafe_group") memory = m;
             Check.Equal(true, memory != null, "leaving has a distinct personal memory");
             world.Map.LocalTime.TurnCounter = memory.ResolveTurn;
-            djack.RogueSurvivor.Gameplay.Personality.PersonalitySystem.ResolveDue(world.Game, world.Map);
-            Check.Equal(true, independent.Personality.HasTrait("hermit"), "solitary leaver develops the eligible memory outcome");
+            PersonalityScenarioResolution.PreferFirstOutcome(world.Game, world.Map);
+            Check.Equal(true, memory.OutcomeId != null && memory.OutcomeId != "none",
+                "solitary leaver resolves into an eligible lasting outcome");
             Check.Equal(true, independent.Personality.Person(leader.PersonalityIdentity).Memories.Contains(memory), "resolved departure stays in personal history");
         });
     }

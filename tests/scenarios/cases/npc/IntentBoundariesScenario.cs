@@ -45,7 +45,7 @@ static class IntentBoundariesScenario
             int due = 0;
             foreach (MemoryInstance memory in grateful.Personality.Memories) due = Math.Max(due, memory.ResolveTurn);
             world.Map.LocalTime.TurnCounter = due;
-            PersonalitySystem.ResolveDue(world.Game, world.Map);
+            PersonalityScenarioResolution.PreferFirstOutcome(world.Game, world.Map);
             PersonalitySystem.Report(world.Game, source);
             Check.Equal(before, grateful.Personality.Person(player.PersonalityIdentity).Feeling, "replaying resolved source does not award feeling again");
             Check.Equal(0, grateful.Personality.Memories.Count, "resolved source does not recreate its memory");

@@ -9,9 +9,9 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         MedicalAid, FulfilPromise, RestoreProperty, ObtainValuedItem }
     sealed class NpcIntentWeight
     {
-        public readonly DecisionKind Axis;
+        public readonly NpcPersonalityAxis Axis;
         public readonly int Numerator, Denominator;
-        public NpcIntentWeight(DecisionKind axis, int numerator, int denominator = 1)
+        public NpcIntentWeight(NpcPersonalityAxis axis, int numerator, int denominator = 1)
         { Axis = axis; Numerator = numerator; Denominator = denominator; }
     }
     sealed class NpcIntentDefinition

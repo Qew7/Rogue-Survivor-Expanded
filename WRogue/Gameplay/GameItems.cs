@@ -101,7 +101,12 @@ namespace djack.RogueSurvivor.Gameplay
             UNIQUE_SANTAMAN_SHOTGUN = 67,
             UNIQUE_HANS_VON_HANZ_PISTOL = 68,
 
-            _COUNT = 69
+            RADIO_SURVIVORS = 69,
+            RADIO_MILITARY = 70,
+            RADIO_LOCAL = 71,
+            RADIO_GANG = 72,
+
+            _COUNT = 73
         }
         #endregion
 

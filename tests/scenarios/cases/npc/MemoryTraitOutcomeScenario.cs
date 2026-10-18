@@ -20,7 +20,7 @@ static class MemoryTraitOutcomeScenario
                 if (candidate.Id == "survived_attack") memory = candidate;
             Check.Equal(true, memory != null, "attack creates a pending memory");
             world.Map.LocalTime.TurnCounter = memory.ResolveTurn;
-            PersonalitySystem.ResolveDue(world.Game, world.Map);
+            PersonalityScenarioResolution.PreferFirstOutcome(world.Game, world.Map);
             Check.Equal(true, survivor.Personality.HasTrait("battle_scarred"),
                 "attack memory can grant an earned trait without an unrelated starting prerequisite");
             Check.Equal("trait:battle_scarred", memory.OutcomeId, "trait is the actual resolution outcome");

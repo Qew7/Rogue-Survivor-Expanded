@@ -584,35 +584,38 @@ namespace djack.RogueSurvivor.Gameplay.AI
 
             Map map = m_Actor.Location.Map;
 
-            List<Percept> interestingReachableStacks = FilterOut(game, FilterStacks(game, mapPercepts),
+            List<Percept> interestingReachableStacks = Filter(game, mapPercepts,
                 (p) =>
                 {
-                    if (p.Turn != map.LocalTime.TurnCounter)
-                        return true;
-                    if (IsOccupiedByOther(map, p.Location.Position))
-                        return true;
-                    if (IsTileTaboo(p.Location.Position))
-                        return true;
                     Inventory stack = p.Percepted as Inventory;
+                    if (stack == null)
+                        return false;
+                    if (p.Turn != map.LocalTime.TurnCounter)
+                        return false;
+                    if (IsOccupiedByOther(map, p.Location.Position))
+                        return false;
+                    if (IsTileTaboo(p.Location.Position))
+                        return false;
                     bool useful = false;
-                    if (stack != null)
-                        foreach (Item item in stack.Items)
-                            if (IsInterestingItemToOwn(game, item, ItemSource.GROUND_STACK) &&
-                                !ShouldKeepStoredItem(game, p.Location.Position, item))
-                            {
-                                useful = true;
-                                break;
-                            }
+                    foreach (Item item in stack.Items)
+                        if ((!m_Actor.Inventory.IsFull || m_Actor.Inventory.CanAddAtLeastOne(item) ||
+                             item is ItemFood && !HasItemOfType(typeof(ItemFood))) &&
+                            IsInterestingItemToOwn(game, item, ItemSource.GROUND_STACK) &&
+                            !ShouldKeepStoredItem(game, p.Location.Position, item))
+                        {
+                            useful = true;
+                            break;
+                        }
                     if (!useful)
-                        return true;
+                        return false;
                     // alpha10 check reachability
                     RouteFinder.SpecialActions a = allowedActions;
                     if (IsContainerAt(p.Location))
                         a |= RouteFinder.SpecialActions.ADJ_TO_DEST_IS_GOAL;
                     if (!CanReachSimple(game, p.Location.Position, a))
-                        return true;
+                        return false;
                     // can and wants to get it
-                    return false;
+                    return true;
                 });
 
             if (interestingReachableStacks == null)

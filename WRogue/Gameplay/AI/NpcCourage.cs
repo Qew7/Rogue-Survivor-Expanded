@@ -40,7 +40,7 @@ namespace djack.RogueSurvivor.Gameplay.AI
             Assessment assessment = new Assessment();
             if (!CanFear(actor)) { assessment.Resolve = 100; return assessment; }
             int score = game.NpcContent.FactionPolicy(actor.Faction.ID).Courage +
-                PersonalitySystem.Bias(actor, DecisionKind.Courage, registry: game.NpcContent.Personalities);
+                PersonalitySystem.Bias(actor, NpcPersonalityAxis.Courage, registry: game.NpcContent.Personalities);
             int maxHp = Math.Max(1, game.Rules.ActorMaxHPs(actor));
             int maxSta = Math.Max(1, game.Rules.ActorMaxSTA(actor));
             score += 5 - 35 * Math.Max(0, maxHp - actor.HitPoints) / maxHp;

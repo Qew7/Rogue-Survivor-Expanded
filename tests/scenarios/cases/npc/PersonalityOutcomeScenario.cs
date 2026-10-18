@@ -39,7 +39,7 @@ static class PersonalityOutcomeScenario
             int due = 0;
             foreach (MemoryInstance memory in repeatKiller.Personality.Memories)
                 due = System.Math.Max(due, memory.ResolveTurn);
-            PersonalitySystem.ResolveDue(world.Game, world.Map);
+            PersonalityScenarioResolution.PreferFirstOutcome(world.Game, world.Map);
             Check.Equal(false, repeatKiller.Personality.HasTrait("maniac"),
                 "memory cannot resolve before its deadline");
 
@@ -54,7 +54,7 @@ static class PersonalityOutcomeScenario
             world.Game.KillActor(singleKiller, third, "scenario", false);
             due = System.Math.Max(due, singleKiller.Personality.Memories[0].ResolveTurn);
             world.Map.LocalTime.TurnCounter = due;
-            PersonalitySystem.ResolveDue(world.Game, world.Map);
+            PersonalityScenarioResolution.PreferFirstOutcome(world.Game, world.Map);
             Check.Equal(true, repeatKiller.Personality.HasTrait("maniac"),
                 "second witnessed killing unlocks advanced trait for cruel killer");
             Check.Equal(false, singleKiller.Personality.HasTrait("maniac"),

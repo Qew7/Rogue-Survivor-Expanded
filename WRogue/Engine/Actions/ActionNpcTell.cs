@@ -14,7 +14,7 @@ namespace djack.RogueSurvivor.Engine.Actions
         { return fact != null && target != null && !target.IsSleeping && target.Model.Abilities.IsIntelligent &&
             !target.Model.Abilities.IsUndead &&
             game.Rules.GridDistance(speaker.Location.Position, target.Location.Position) <= 4 &&
-            !game.Rules.AreEnemies(speaker, target) && NpcConversation.EligibleListener(speaker, target, fact) &&
+            !game.Rules.AreEnemies(speaker, target) && NpcConversation.EligibleListener(game, speaker, target, fact) &&
             NpcIntentSystem.CanSee(game, speaker, target); }
         public override bool IsLegal()
         { return NpcIntentSystem.Enabled(m_Actor) && !m_Actor.IsSleeping && fact != null &&

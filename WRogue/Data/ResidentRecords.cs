@@ -11,7 +11,7 @@ namespace djack.RogueSurvivor.Data
     {
         public readonly int Turn;
         public readonly int Sequence;
-        public readonly string Text;
+        public string Text;
         public readonly string Kind;
         public readonly bool Direct, GainedTrait;
         public readonly Guid SubjectId, OtherId;
@@ -19,6 +19,7 @@ namespace djack.RogueSurvivor.Data
         public readonly string StoryId;
         public readonly long[] SupportingCauses;
         [System.Runtime.Serialization.OptionalField] public int RecordCategories;
+        [System.Runtime.Serialization.OptionalField] public bool EventDedupKey;
         public ResidentEntry(int turn, string text, int sequence, string kind = "note", bool direct = false,
             Guid subjectId = default(Guid), Guid otherId = default(Guid), bool gainedTrait = false,
             long eventId = 0, long causeId = 0, string storyId = null, long[] supportingCauses = null)
@@ -34,25 +35,82 @@ namespace djack.RogueSurvivor.Data
         public readonly int SpawnTurn;
         public int DeathTurn = -1;
         readonly List<ResidentEntry> m_Entries = new List<ResidentEntry>();
-        readonly Dictionary<string, bool> m_Keys = new Dictionary<string, bool>();
+        // Older saves used this dictionary for every entry, including event IDs.
+        [System.Runtime.Serialization.OptionalField] Dictionary<string, bool> m_Keys;
+        [System.Runtime.Serialization.OptionalField] HashSet<string> m_KeySet;
+        [NonSerialized] HashSet<long> m_EventKeys;
+        [NonSerialized] bool m_SpeechKeysCompacted;
+        [NonSerialized] ResidentRecords m_Owner;
         public IList<ResidentEntry> Entries { get { return m_Entries.AsReadOnly(); } }
         public int EntryCount { get { return m_Entries.Count; } }
-        public ResidentRecord(Actor actor)
+        public ResidentRecord(Actor actor, ResidentRecords owner)
         {
+            m_Owner = owner;
             Identity = actor.PersonalityIdentity;
             Name = actor.UnmodifiedName;
             SpawnTurn = actor.SpawnTime;
         }
+        public void ShareText(ResidentRecords owner)
+        {
+            m_Owner = owner;
+            foreach (ResidentEntry entry in m_Entries)
+                entry.Text = owner.ShareText(entry.Text);
+        }
+        public void CompactKeys()
+        {
+            if (m_KeySet == null) m_KeySet = new HashSet<string>();
+            if (m_EventKeys == null)
+            {
+                m_EventKeys = new HashSet<long>();
+                foreach (ResidentEntry entry in m_Entries)
+                    if (entry.EventDedupKey) m_EventKeys.Add(entry.EventId);
+            }
+            if (m_Keys != null)
+            {
+                var observations = new Dictionary<long, ResidentEntry>();
+                foreach (ResidentEntry entry in m_Entries)
+                    if (entry.EventId != 0 && (entry.Text.StartsWith("Experienced: ", StringComparison.Ordinal) ||
+                        entry.Text.StartsWith("Witnessed: ", StringComparison.Ordinal)))
+                        observations[entry.EventId] = entry;
+                foreach (string key in m_Keys.Keys)
+                {
+                    if (key.StartsWith("heard_speech:", StringComparison.Ordinal)) continue;
+                    long eventId;
+                    ResidentEntry observation;
+                    if (key.StartsWith("event:", StringComparison.Ordinal) &&
+                        Int64.TryParse(key.Substring(6), out eventId) &&
+                        observations.TryGetValue(eventId, out observation))
+                    { observation.EventDedupKey = true; m_EventKeys.Add(eventId); continue; }
+                    m_KeySet.Add(key);
+                }
+                m_Keys = null;
+            }
+            if (!m_SpeechKeysCompacted)
+            {
+                m_KeySet.RemoveWhere(key => key.StartsWith("heard_speech:", StringComparison.Ordinal));
+                m_SpeechKeysCompacted = true;
+            }
+        }
         public void Add(string key, int turn, string text, ObservedEvent observed = null, bool gainedTrait = false, long[] supportingCauses = null)
         {
-            if (m_Keys.ContainsKey(key)) return;
-            m_Keys.Add(key, true);
-            string kind = key.Split(':')[0];
+            lock (m_Owner ?? (object)this)
+                AddCore(key, turn, text, observed, gainedTrait, supportingCauses);
+        }
+        void AddCore(string key, int turn, string text, ObservedEvent observed, bool gainedTrait, long[] supportingCauses)
+        {
+            CompactKeys();
+            bool eventKey = observed != null && observed.EventId != 0 && key != null && key.StartsWith("event:", StringComparison.Ordinal);
+            if (eventKey)
+            { if (!m_EventKeys.Add(observed.EventId)) return; }
+            else if (key != null && !m_KeySet.Add(key)) return;
+            if (m_Owner != null) text = m_Owner.ShareText(text);
+            string kind = observed == null ? key.Split(':')[0] : observed.Kind;
             var entry = new ResidentEntry(turn, text, m_Entries.Count, observed == null ? kind : observed.Kind,
                 observed != null && observed.Direct, observed == null ? Guid.Empty : observed.SubjectId,
                 observed == null ? Guid.Empty : observed.OtherId, gainedTrait,
                 observed == null ? 0 : observed.EventId, observed == null ? 0 : observed.CauseId, observed == null ? null : observed.StoryId, supportingCauses);
             if (observed != null && observed.RecordCategories != 0) entry.RecordCategories = observed.RecordCategories;
+            entry.EventDedupKey = eventKey;
             m_Entries.Add(entry);
         }
     }
@@ -62,10 +120,27 @@ namespace djack.RogueSurvivor.Data
     sealed partial class ResidentRecords
     {
         readonly Dictionary<Guid, ResidentRecord> m_Residents = new Dictionary<Guid, ResidentRecord>();
+        [NonSerialized] Dictionary<string, string> m_TextPool;
         [System.Runtime.Serialization.OptionalField] Dictionary<string, DistrictKind> m_DistrictKinds;
         public bool IsPartial;
         public int RecoveryTurn;
         public ICollection<ResidentRecord> Residents { get { return m_Residents.Values; } }
+        public void CompactKeys()
+        { foreach (ResidentRecord record in m_Residents.Values) record.CompactKeys(); }
+        public void CompactText()
+        { foreach (ResidentRecord record in m_Residents.Values) record.ShareText(this); }
+        internal string ShareText(string value)
+        {
+            if (value == null) return null;
+            lock (this)
+            {
+                if (m_TextPool == null) m_TextPool = new Dictionary<string, string>(StringComparer.Ordinal);
+                string shared;
+                if (m_TextPool.TryGetValue(value, out shared)) return shared;
+                m_TextPool.Add(value, value);
+                return value;
+            }
+        }
         public IDictionary<string, DistrictKind> DistrictKinds
         { get { return m_DistrictKinds ?? (IDictionary<string, DistrictKind>)new Dictionary<string, DistrictKind>(); } }
 
@@ -85,12 +160,16 @@ namespace djack.RogueSurvivor.Data
 
         public ResidentRecord Register(Actor actor)
         {
+            lock (this) return RegisterCore(actor);
+        }
+        ResidentRecord RegisterCore(Actor actor)
+        {
             if (actor == null || actor.IsPlayer || actor.Model == null ||
                 actor.Model.Abilities.IsUndead || !actor.Model.Abilities.IsIntelligent) return null;
             ResidentRecord record;
             if (!m_Residents.TryGetValue(actor.PersonalityIdentity, out record))
             {
-                record = new ResidentRecord(actor);
+                record = new ResidentRecord(actor, this);
                 if (actor.IsDead) record.DeathTurn = -2;
                 m_Residents.Add(record.Identity, record);
                 record.Add("spawn", actor.SpawnTime, "Entered the world" +
@@ -154,7 +233,16 @@ namespace djack.RogueSurvivor.Data
                 catch (ArgumentException) { }
                 outcome = "improved skill " + skill;
             }
-            else outcome = "no new trait or skill";
+            else if (outcome.StartsWith("removed_trait:"))
+            { TraitDefinition trait = registry == null ? null : registry.Trait(outcome.Substring(14)); outcome = "lost trait " + (trait == null ? TraitName(outcome.Substring(14)) : trait.Name); }
+            else if (outcome.StartsWith("disposition:"))
+            {
+                string[] parts = outcome.Split(':');
+                int change;
+                outcome = parts.Length == 3 && Int32.TryParse(parts[2], out change) ?
+                    (change > 0 ? "raised " : "lowered ") + parts[1] + " by " + Math.Abs(change) : "changed a disposition";
+            }
+            else outcome = "no new development";
             record.Add("resolved:" + MemoryKey(memory), memory.ResolvedTurn,
                 "Resolved memory: " + (registry == null || registry.Memory(memory.Id) == null ? MemoryName(memory.Id) : registry.Memory(memory.Id).Name) + "; " + outcome + ".", null,
                 memory.OutcomeId != null && memory.OutcomeId.StartsWith("trait:", StringComparison.Ordinal));

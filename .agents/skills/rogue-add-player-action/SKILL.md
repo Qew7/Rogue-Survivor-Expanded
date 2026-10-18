@@ -11,3 +11,5 @@ Append new serialized `PlayerCommand` enum values; add a free-key migration in `
 For browser play, avoid Ctrl+T and other reserved browser shortcuts. Migrate an old default binding to a free key while preserving the user's unrelated custom bindings. If a new command only opens saved information, keep it turn-free and test both its empty and populated screens.
 
 Add a scenario under `tests/scenarios/cases/` in the relevant gameplay topic. Execute the real action and assert AP cost, target and world changes, then try an illegal target and assert no effect. Add an input test if key translation is new. Run the scenario and `docker build --target test .`; run `bash tests/e2e.sh` for mouse, keyboard or UI flow changes.
+
+If the completed action should become an NPC rumor or radio story, also follow `rogue-story-narration`: publish a real significant event, register its report text in the action's content module, and carry the actual `StoryId`/`CauseId` when linked. A failed or merely selected action must not create a report.

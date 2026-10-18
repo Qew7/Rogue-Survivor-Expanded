@@ -23,6 +23,11 @@ namespace djack.RogueSurvivor.Engine
 {
     partial class RogueGame
     {
+        const int MESSAGE_CONTROL_WIDTH = 36;
+        const int MESSAGE_CONTROL_X = LOCATIONPANEL_X - MESSAGE_CONTROL_WIDTH;
+        const int MESSAGE_TEXT_WIDTH = MESSAGE_CONTROL_X - MESSAGES_X - 4;
+        const int MESSAGE_VISIBLE_LINES = (CANVAS_HEIGHT - MESSAGES_Y) / MESSAGES_SPACING;
+
         #region Messaging & Grammar helpers
         public void AddMessage(Message msg)
         {
@@ -230,7 +235,46 @@ namespace djack.RogueSurvivor.Engine
 
         void DrawMessages()
         {
-            m_MessageManager.Draw(m_UI, m_Session.LastTurnPlayerActed, MESSAGES_X, MESSAGES_Y);
+            m_MessageManager.Draw(m_UI, m_Session.LastTurnPlayerActed, MESSAGES_X, MESSAGES_Y,
+                MESSAGE_TEXT_WIDTH, MESSAGE_VISIBLE_LINES);
+            string[] controls = { "^", "v", "LOG" };
+            for (int i = 0; i < controls.Length; i++)
+            {
+                int top = MESSAGES_Y + i * (CANVAS_HEIGHT - MESSAGES_Y) / controls.Length;
+                int bottom = MESSAGES_Y + (i + 1) * (CANVAS_HEIGHT - MESSAGES_Y) / controls.Length;
+                m_UI.UI_DrawRect(Color.DarkGray, new Rectangle(MESSAGE_CONTROL_X, top,
+                    MESSAGE_CONTROL_WIDTH - 4, bottom - top));
+                m_UI.UI_DrawStringBold(Color.White, controls[i], MESSAGE_CONTROL_X + 4, top + 8);
+            }
+        }
+
+        bool HandleMessagePanelInput(Point mousePos, MouseButtons? buttons, int wheelDelta)
+        {
+            Point canvas = new Point((int)(mousePos.X / m_UI.UI_GetCanvasScaleX()),
+                (int)(mousePos.Y / m_UI.UI_GetCanvasScaleY()));
+            if (canvas.X < MESSAGES_X || canvas.X >= LOCATIONPANEL_X ||
+                canvas.Y < MESSAGES_Y || canvas.Y >= CANVAS_HEIGHT)
+                return false;
+
+            if (wheelDelta != 0)
+            {
+                int steps = Math.Max(1, Math.Abs(wheelDelta) / 120);
+                m_MessageManager.Scroll(m_UI, MESSAGE_TEXT_WIDTH, MESSAGE_VISIBLE_LINES,
+                    (wheelDelta > 0 ? 1 : -1) * steps * 3);
+                return true;
+            }
+            if (buttons != MouseButtons.Left)
+                return false;
+            if (canvas.X < MESSAGE_CONTROL_X)
+                HandleMessageLog();
+            else
+            {
+                int section = 3 * (canvas.Y - MESSAGES_Y) / (CANVAS_HEIGHT - MESSAGES_Y);
+                if (section == 2) HandleMessageLog();
+                else m_MessageManager.Scroll(m_UI, MESSAGE_TEXT_WIDTH, MESSAGE_VISIBLE_LINES,
+                    section == 0 ? 3 : -3);
+            }
+            return true;
         }
 
         // alpha10.1 caller handle bot : check for IsBotPlayer and dont call this

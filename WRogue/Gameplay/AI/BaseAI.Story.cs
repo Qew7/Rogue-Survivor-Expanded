@@ -24,22 +24,30 @@ namespace djack.RogueSurvivor.Gameplay.AI
         protected ActorAction BehaviorNpcRumors(RogueGame game, List<Actor> visible)
         {
             NpcKnowledge knowledge = m_Actor.Personality.Knowledge; int turn = m_Actor.Location.Map.LocalTime.TurnCounter;
-            if (turn < knowledge.NextTalkTurn || 10 + PersonalitySystem.Bias(m_Actor, DecisionKind.Group) +
-                PersonalitySystem.Bias(m_Actor, DecisionKind.Compassion) / 2 < 25) return null;
+            if (turn < knowledge.NextTalkTurn) return null;
+            bool social = 10 + PersonalitySystem.Bias(m_Actor, NpcPersonalityAxis.Group) +
+                PersonalitySystem.Bias(m_Actor, NpcPersonalityAxis.Compassion) / 2 >= 25;
+            NpcFact chosen = null; Actor listener = null; int best = Int32.MinValue;
             foreach (NpcFact fact in knowledge.Facts)
             {
                 if (fact.Kind == "missing_companion" || (fact.SubjectId == Guid.Empty && fact.Kind != "food_cache" && fact.Kind != "medicine_cache" && fact.Kind != "raid")) continue;
                 if (!NpcConversation.EligibleFact(game, m_Actor, fact, turn)) continue;
+                int preference = NpcConversation.SelfReportPreference(game, m_Actor, fact);
+                if (!social && preference == 0) continue;
                 foreach (Actor person in visible)
                 {
-                    if (!NpcConversation.EligibleListener(m_Actor, person, fact)) continue;
+                    if (!NpcConversation.EligibleListener(game, m_Actor, person, fact)) continue;
                     RelationshipRecord opinion = m_Actor.Personality.Person(person.PersonalityIdentity);
                     if (opinion != null && (opinion.Trust < opinion.Fear || opinion.Feeling < -20)) continue;
                     if (ActionNpcTell.CanAddress(game, m_Actor, person, fact))
-                        return new ActionNpcTell(m_Actor, game, person, fact);
+                    {
+                        int score = fact.EventTurn + preference;
+                        if (score > best) { chosen = fact; listener = person; best = score; }
+                        break;
+                    }
                 }
             }
-            return null;
+            return chosen == null ? null : new ActionNpcTell(m_Actor, game, listener, chosen);
         }
         protected ActorAction BehaviorNpcKnownRoute(RogueGame game, Location destination)
         {

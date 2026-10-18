@@ -1,5 +1,6 @@
 using djack.RogueSurvivor.Data;
 using djack.RogueSurvivor.Engine;
+using djack.RogueSurvivor.Engine.Items;
 using djack.RogueSurvivor.Gameplay.Personality;
 
 static class ContentWaitingPolicyScenario
@@ -11,6 +12,7 @@ static class ContentWaitingPolicyScenario
             Session.Get.GamePreset = GamePreset.BuiltIn(GameMode.GM_STANDARD); NpcIntentSupport.Player(world, 6, 2);
             world.Game.NpcContent = PersonalityContent.Create(new NpcRestContent(true)).Content;
             Actor owner = NpcIntentSupport.Actor(world, "resting", 1, 1, "restful"); owner.StaminaPoints = Rules.STAMINA_MIN_FOR_ACTIVITY;
+            owner.Inventory.AddAll(new ItemFood(world.Game.GameItems.CANNED_FOOD) { Quantity = 3 });
             NpcGoalGenerator.Refresh(world.Game, owner); NpcIntent goal = NpcIntentSupport.Intent(owner, "take_breath");
             goal.Announced = true;
             Check.Equal(null, NpcIntentSystem.Select(world.Game.NpcContent, owner), "announced wait policy blocks an unbound plan");

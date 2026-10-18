@@ -192,6 +192,11 @@
     <Compile Include="Gameplay\Npc\Conversation\NpcConversation.cs" />
     <Compile Include="Gameplay\Npc\Events\NpcObservation.cs" />
     <Compile Include="Gameplay\Npc\Events\NpcRecordDescriptions.cs" />
+    <Compile Include="Gameplay\Npc\Axes\HumanLifeAxis.cs" />
+    <Compile Include="Gameplay\Npc\Axes\CareCircleAxis.cs" />
+    <Compile Include="Gameplay\Npc\Axes\MessageTrustAxis.cs" />
+    <Compile Include="Gameplay\Npc\Axes\ScarcityAxis.cs" />
+    <Compile Include="Gameplay\Npc\Axes\PatienceAxis.cs" />
     <Compile Include="Gameplay\Npc\Goals\NpcGoalContext.cs" />
     <Compile Include="Gameplay\Npc\Goals\NpcGoalGenerator.State.cs" />
     <Compile Include="Gameplay\Npc\Goals\NpcGoalGenerator.cs" />
@@ -216,6 +221,7 @@
     <Compile Include="Gameplay\Npc\Runtime\NpcClockContext.cs" />
     <Compile Include="Gameplay\Npc\Runtime\NpcContentCatalog.cs" />
     <Compile Include="Gameplay\Npc\Runtime\NpcStorySystem.cs" />
+    <Compile Include="Gameplay\Npc\Runtime\NpcImmediateEmotion.cs" />
     <Compile Include="Gameplay\Npc\Runtime\PersonalitySystem.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -253,6 +259,7 @@
     <Compile Include="Data\ItemModel.cs" />
     <Compile Include="Data\Location.cs" />
     <Compile Include="Data\Map.cs" />
+    <Compile Include="Data\Map.MemoryResolution.cs" />
     <Compile Include="Data\MapObject.cs" />
     <Compile Include="Data\Skill.cs" />
     <Compile Include="Data\TimedTask.cs" />
@@ -311,6 +318,10 @@
     <Compile Include="Engine\MapObjects\Board.cs" />
     <Compile Include="Engine\MapObjects\Fortification.cs" />
     <Compile Include="Engine\MapObjects\PowerGenerator.cs" />
+    <Compile Include="Engine\MapObjects\RadioReceiver.cs" />
+    <Compile Include="Engine\Items\ItemRadio.cs" />
+    <Compile Include="Engine\Actions\ActionSwitchRadio.cs" />
+    <Compile Include="Engine\RogueGame.Radio.cs" />
     <Compile Include="Engine\NullSoundManager.cs" />
     <Compile Include="Engine\Scoring.cs" />
     <Compile Include="Engine\Session.cs" />
@@ -362,6 +373,7 @@
     <Compile Include="Engine\LOS.cs" />
     <Compile Include="Engine\MapGenerator.cs" />
     <Compile Include="Engine\MessageManager.cs" />
+    <Compile Include="Engine\TextLayout.cs" />
     <Compile Include="Engine\RogueGame.cs" />
     <Compile Include="Engine\ModCatalog.cs" />
     <Compile Include="Engine\ModSaveValidator.cs" />
@@ -1546,6 +1558,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Resources\Images\MapObjects\power_generator_on.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Images\MapObjects\radio.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Resources\Images\MapObjects\shop_shelf.png">

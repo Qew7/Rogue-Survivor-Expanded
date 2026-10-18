@@ -4,6 +4,16 @@ NPC mechanics live under `WRogue/Gameplay/Npc/`. Runtime services evaluate
 registered contracts; feature modules own their content and policies. The
 namespace remains `djack.RogueSurvivor.Gameplay.Personality` because saved
 worlds identify existing types by their full name.
+This is the extension contract for developers; the
+[social-system overview](npc-social-systems.md) explains the concepts and
+points to the canonical state and runtime paths.
+An event's `ImmediateSanity` callback belongs on its `NpcEventDefinition` in
+the owning module. It runs once for each observer who actually records the
+event, before knowledge and relationship reactions. Modules can reuse the
+`NpcImmediateEmotion` axis helpers or supply a specific callback; an event
+without one has no immediate sanity effect.
+`RadioSanity` on the same event definition owns its radio-hearing reaction;
+the radio runtime only dispatches to that callback.
 
 ## Ownership and flow
 
@@ -44,6 +54,11 @@ directory. Keep registration together; split larger action/perception helpers
 by responsibility. Add the module once in `Content/NpcContentDefaults.cs`.
 New definitions do not require adding branches to the generator, planner,
 event dispatcher or records reader.
+For a reportable action, set `ReportActorRole` to its actual actor and
+`SelfReportTone` to helpful or harmful when traits should affect willingness
+to tell it. Spoken reports use first person for direct participants; provide
+`DescribeSelfReport` only when the actor is not the grammatical subject of the
+ordinary report. Radio continues to use the ordinary attributed report.
 Keep a stable capability ID beside its owning module's registration and reuse
 that constant when another module must inspect the ID. Goal admission,
 selection, motivation and terminal records require the game's active
@@ -61,7 +76,7 @@ civilian controller selects it in `npc/content-module`.
 
 | API | Content owned by the module |
 | --- | --- |
-| `Trait`, `Memory` | Decision-axis effects, prerequisites, triggers, evidence and ordered outcomes |
+| `Trait`, `Memory` | Decision-axis effects, prerequisites, triggers, evidence, eligible outcomes and disposition shifts |
 | `Value` | Stable desired-state ID, trait/opinion-based importance, identity suffix and satisfaction/cooldown policies |
 | `GoalSource` | `Evaluate(context, offers)`: current/desired state, subject, deficit, confidence and causes |
 | `Capability` | Duration, acceptance/interruption policies, desired facts, optional direct action and speech |
@@ -72,7 +87,7 @@ civilian controller selects it in `npc/content-module`.
 | `Interest` | Long lived, bounded personal priorities refreshed from the owner's known state |
 | `Collective` | Group or faction proposal, eligible listener, speech and independent acceptance |
 | `Resource`, `FactionPolicy` | Resource needs and faction preferences for supply, shelter, care and security |
-| `Event` | Payload contract, audience, archive categories/prose, retained knowledge and story progress |
+| `Event` | Payload contract, audience, archive categories/prose, retained knowledge, story progress and optional sanity reactions |
 | `Perception`, `OnReport` | Feature belief updates from visible state or a communicated fact |
 | `On`, `AfterEvent`, `Clock` | Observation-phase responses, completion hooks and expiry/maintenance |
 | `Revision` | Version of behavior parameters used to invalidate saved plans |
@@ -134,12 +149,13 @@ when possible so one transfer does not create two consequences.
 The fixed observation order is:
 
 1. Validate payload and determine direct participants/visible witnesses.
-2. Project known participants; run `Knowledge`, retain the configured fact,
+2. Apply an optional immediate sanity reaction to each new observer record.
+3. Project known participants; run `Knowledge`, retain the configured fact,
    then run `Relationships` subscribers.
-3. Update memory evidence and create matching memories through the shared
+4. Update memory evidence and create matching memories through the shared
    memory processor.
-4. Run `Goals`, refresh goal offers, then run `Responses` and `Replies`.
-5. After all observers, update the story and run `AfterEvent` callbacks.
+5. Run `Goals`, refresh goal offers, then run `Responses` and `Replies`.
+6. After all observers, update the story and run `AfterEvent` callbacks.
 
 Register subscribers by event ID and phase; their registration may precede
 the event definition. Cross-feature coordination uses these subscriptions
@@ -215,7 +231,7 @@ applicable. Register new production files in `WRogue/RogueSurvivor.csproj`.
 
 The extension contract is exercised by `npc/content-module`,
 `npc/content-module-persistence`, `npc/content-catalog-validation`, `npc/content-catalog-rebind` and
-`npc/private-content-event`, plus `npc/content-waiting-policy` for announced
+`npc/private-content-event`, `npc/immediate-emotion-extension`, plus `npc/content-waiting-policy` for announced
 goals with extended desired states. Existing scenarios check ordinary content and
 `storage/save-budget` enforces save/load/disk limits on the large fixture.
 Run named cases while developing, then `docker build --target test .`;

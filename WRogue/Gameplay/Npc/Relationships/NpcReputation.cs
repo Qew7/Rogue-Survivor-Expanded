@@ -1,6 +1,7 @@
 using System;
 using djack.RogueSurvivor.Data;
 using djack.RogueSurvivor.Engine;
+using djack.RogueSurvivor.Gameplay.Personality.Axes;
 
 namespace djack.RogueSurvivor.Gameplay.Personality
 {
@@ -22,6 +23,30 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             opinion.AdjustSocial(trust: strength, grievance: -strength);
             opinion.Feeling = Math.Min(100, opinion.Feeling + strength);
         }
+        internal static void StolenGoods(Actor listener, NpcFact fact, int improvement)
+        {
+            if (improvement <= 0 || !fact.NamesOther || listener.Personality == null) return;
+            RelationshipRecord victim = listener.Personality.Person(fact.OtherId);
+            bool ownGroup = listener.PersonalityIdentity == fact.OtherId ||
+                listener.SocialGroup != null && listener.SocialGroup.Identity == fact.ClaimantGroupId;
+            if (!ownGroup && victim == null) return;
+            int law = PersonalitySystem.Bias(listener, NpcPersonalityAxis.Law);
+            int compassion = PersonalitySystem.Bias(listener, NpcPersonalityAxis.Compassion);
+            if (fact.Kind == "stolen_goods_found")
+            {
+                if (victim != null && compassion > 0) victim.AdjustSocial(attachment: Math.Max(1, improvement / 40));
+                return;
+            }
+            if (!fact.NamesSubject || fact.SubjectId == listener.PersonalityIdentity) return;
+            int loyalty = ownGroup ? 30 : victim == null ? 0 : victim.Feeling / 2 + victim.Attachment / 2;
+            int judgment = law + compassion / 2 + loyalty;
+            if (judgment == 0) return;
+            int change = Math.Max(1, improvement / 20) * (judgment > 0 ? -1 : 1);
+            RelationshipRecord holder = listener.Personality.Opinion(fact.SubjectId, fact.ReportSubject);
+            holder.Feeling = Math.Max(-100, Math.Min(100, holder.Feeling + change));
+            holder.AdjustSocial(trust: change > 0 ? change : -Math.Min(holder.Trust, -change),
+                grievance: change < 0 ? -change : 0);
+        }
 
         // Severity: 0 is help, 1 is a broken promise, 2 is misconduct, 3 is violence.
         static void React(NpcReportContext c, bool other, bool positive, int severity)
@@ -34,10 +59,10 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             if (id == Guid.Empty || id == listener.PersonalityIdentity || c.Improvement <= 0 ||
                 String.IsNullOrEmpty(reportedName)) return;
 
-            int compassion = PersonalitySystem.Bias(listener, DecisionKind.Compassion);
-            int law = PersonalitySystem.Bias(listener, DecisionKind.Law);
-            int trade = PersonalitySystem.Bias(listener, DecisionKind.Trade);
-            int courage = PersonalitySystem.Bias(listener, DecisionKind.Courage);
+            int compassion = PersonalitySystem.Bias(listener, NpcPersonalityAxis.Compassion);
+            int law = PersonalitySystem.Bias(listener, NpcPersonalityAxis.Law);
+            int trade = PersonalitySystem.Bias(listener, NpcPersonalityAxis.Trade);
+            int courage = PersonalitySystem.Bias(listener, NpcPersonalityAxis.Courage);
             int response = positive ? 100 + compassion * 2 + trade / 2 :
                 severity == 1 ? 100 + law + compassion / 2 : 100 + law * 2 + compassion / 2;
             response = Math.Max(25, Math.Min(180, response));
@@ -74,14 +99,17 @@ namespace djack.RogueSurvivor.Gameplay.Personality
     }
     static class NpcTestimony
     {
-        public static void Refute(NpcContentCatalog catalog, Actor listener, Actor speaker, NpcFact claim)
+        public static void Refute(RogueGame game, Actor listener, Actor speaker, NpcFact claim)
         {
+            NpcContentCatalog catalog = game.NpcContent;
             if (listener.Personality.Knowledge.Facts.Exists(f => f.EventId == claim.EventId && f.Kind == "false_testimony_exposed")) return;
             if (!claim.NamesSubject) return;
             int turn = listener.Location.Map.LocalTime.TurnCounter;
             Guid claimant = claim.SubjectId;
             string claimantName = claim.SubjectName;
             listener.Personality.Opinion(claimant, claimantName).AdjustSocial(trust: -15, grievance: 10);
+            NpcImmediateEmotion.Apply(game, listener,
+                MessageTrustAxis.RefutedClaimSanity(PersonalitySystem.Disposition(listener, NpcPersonalityAxis.MessageTrust, catalog)));
             long id = Session.Get.NextPersonalityEventId();
             var observed = new ObservedEvent("false_testimony_exposed", turn, claimantName, listener.UnmodifiedName,
                 true, subjectId: claimant, otherId: listener.PersonalityIdentity, eventId: id, causeId: claim.EventId);
@@ -91,7 +119,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             listener.Personality.Knowledge.Learn(new NpcFact { EventId = claim.EventId, Kind = "false_testimony_exposed",
                 SubjectId = claimant, SubjectName = claimantName, EventTurn = turn, LearnedTurn = turn,
                 Source = NpcKnowledgeSource.Inferred, SourceId = listener.PersonalityIdentity, Confidence = 100,
-                Place = listener.Location, NoSubjectLocation = true });
+                Place = listener.Location, StoryId = claim.StoryId, NoSubjectLocation = true });
             MemoryDefinition definition = catalog.Personalities.Memory("false_testimony_exposed");
             if (definition != null) NpcMemoryProcessor.Add(listener, definition, turn, claimantName, null,
                 subjectId: claimant, relations: speaker.PersonalityIdentity == claimant ?

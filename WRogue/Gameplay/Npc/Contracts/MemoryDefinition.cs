@@ -43,6 +43,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         public readonly MemoryTrigger[] Triggers;
         public readonly string[] EvidenceKinds;
         public readonly MemoryOutcome[] Outcomes;
+        public NpcPersonalityAxis? DispositionAxis { get; private set; }
+        public int DispositionChange { get; private set; }
         public MemoryRelationRole PersonRole { get; private set; }
         public MemoryRelationRole GroupRole { get; private set; }
         public int FeelingChange { get; private set; }
@@ -89,5 +91,10 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         { RelationFactionId = id; FactionFeelingChange = amount; return this; }
         public MemoryDefinition FirstEncounter()
         { OncePerPerson = true; return this; }
+        public MemoryDefinition ChangeDisposition(NpcPersonalityAxis axis, int amount)
+        {
+            if (!NpcPersonalityAxes.IsDisposition(axis)) throw new ArgumentOutOfRangeException("axis");
+            DispositionAxis = axis; DispositionChange = amount; return this;
+        }
     }
 }

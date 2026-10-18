@@ -42,7 +42,7 @@ static class PersonalitySaveScenario
                 Check.Equal("likes_items", restored.Personality.Traits[0].Id, "trait identity survives");
                 Check.Equal(magazineId, restored.Personality.Traits[0].ItemModelId,
                     "parameterized item preference survives");
-                Check.Equal(35, PersonalitySystem.Bias(restored, DecisionKind.Item,
+                Check.Equal(35, PersonalitySystem.Bias(restored, NpcPersonalityAxis.Item,
                     new ItemEntertainment(world.Game.GameItems.MAGAZINE)),
                     "restored preference still affects item decisions");
                 Check.Equal(1, restored.Personality.Memories.Count, "pending memory survives");
@@ -74,7 +74,7 @@ static class PersonalitySaveScenario
 
                 Session.Restore(loaded);
                 restoredMap.LocalTime.TurnCounter = 4321;
-                PersonalitySystem.ResolveDue(world.Game, restoredMap);
+                PersonalityScenarioResolution.PreferFirstOutcome(world.Game, restoredMap);
                 Check.Equal(0, restored.Personality.Memories.Count,
                     "pending memory resolves after the saved game is restored");
                 Check.Equal(1, restored.Sheet.SkillTable.GetSkillLevel(
