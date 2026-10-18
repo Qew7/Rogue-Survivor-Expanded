@@ -1,6 +1,6 @@
 # Rogue Survivor Expanded
 
-An expanded version of roguedjack's Rogue Survivor, based on [Tranquill6's source](https://github.com/Tranquill6) (Alpha 10.1). Current Expanded version: **0.4.1**.
+An expanded version of roguedjack's Rogue Survivor, based on [Tranquill6's source](https://github.com/Tranquill6) (Alpha 10.1). Current Expanded version: **0.5.0**.
 
 ## Play
 
