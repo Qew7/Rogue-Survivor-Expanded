@@ -23,6 +23,12 @@ Open [localhost:6080](http://localhost:6080), click the game window, and press E
 - Base thefts and raids become rumors when witnessed or discovered later. Stolen items retain their victim group's identity through trades, drops and deaths.
 - Claimable bases, storage rooms, and follower scavenging.
 
+J - journal
+Shift+I - relationships with NPC's
+M - mouse mode
+
+Read Records menu - read about NPC's lives in your savefile
+
 ## Reference
 
 - [All NPC personality traits and their effects](docs/npc-traits-guide.md)
