@@ -24,7 +24,9 @@ Open [localhost:6080](http://localhost:6080), click the game window, and press E
 - Claimable bases, storage rooms, and follower scavenging.
 
 J - journal
+
 Shift+I - relationships with NPC's
+
 M - mouse mode
 
 Read Records menu - read about NPC's lives in your savefile
