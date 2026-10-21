@@ -19,6 +19,7 @@ static class XpdFollowerTheftScenario
                 world.Game.GameFactions.TheCivilians, "owner", false, false, 0);
             Actor follower = new Actor(world.Game.GameActors.MaleCivilian,
                 world.Game.GameFactions.TheCivilians, "guard", false, false, 0);
+            follower.Personality = new PersonalityState();
             world.Map.PlaceActorAt(leader, new Point(5, 1));
             world.Map.PlaceActorAt(follower, new Point(2, 1));
             leader.AddFollower(follower);
@@ -28,8 +29,11 @@ static class XpdFollowerTheftScenario
             world.Map.DropItemAt(food, new Point(1, 1));
             Check.Equal(true, world.Try(new ActionTakeItem(thief, world.Game,
                 new Point(1, 1), food)), "follower watches theft");
-            Check.Equal(true, world.Game.Rules.AreEnemies(thief, follower),
-                "follower identifies thief without leader seeing");
+            Check.Equal(true, follower.Personality.Knowledge.Facts.Exists(f =>
+                f.Kind == "base_theft" && f.SubjectId == thief.PersonalityIdentity),
+                "follower witnesses the thief without the leader seeing");
+            Check.Equal(false, world.Game.Rules.AreEnemies(thief, follower),
+                "identification alone does not force combat hostility");
         });
     }
 }

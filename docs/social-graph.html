@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Социальный атлас · Rogue Survivor</title>
+<style>
+  :root{color-scheme:dark;--bg:#0c121b;--panel:#151e2a;--panel2:#1b2735;--line:#304255;--text:#f0eee7;--muted:#a5b4bf;--gold:#e7bb73;--cyan:#86d6d4;--pink:#e9a5a7;--green:#a5d9b6;--radius:20px}
+  *{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 82% -8%,#243b47 0,transparent 42%),radial-gradient(circle at 8% 7%,#292333 0,transparent 36%),var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
+  button,input,select{font:inherit}button{cursor:pointer}button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--gold);outline-offset:3px}a{color:var(--cyan)}
+  .shell{max-width:1600px;margin:auto;padding:28px 30px 70px}.top{display:flex;align-items:end;justify-content:space-between;gap:26px;flex-wrap:wrap;margin-bottom:26px}.eyebrow{font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--gold);font-weight:800}.top h1{font:clamp(2.4rem,5vw,4.4rem)/.98 Georgia,serif;letter-spacing:-.045em;margin:8px 0}.intro{max-width:680px;color:var(--muted);margin:12px 0 0}.controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.tab,.load{border:1px solid var(--line);color:var(--text);background:#172431;border-radius:999px;padding:10px 18px;font-weight:700}.tab.active{background:var(--gold);border-color:var(--gold);color:#16202b}.load{background:#243c42;border-color:#3c6869}.load input{display:none}.meta{font-size:12px;color:var(--muted);margin-top:10px;text-align:right}
+  .stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}.stat{border:1px solid var(--line);background:linear-gradient(150deg,#1a2633,#121b26);border-radius:16px;padding:14px 18px}.stat b{display:block;color:var(--gold);font:30px/1.1 Georgia,serif}.stat span{font-size:12px;color:var(--muted)}
+  .layout{display:grid;grid-template-columns:270px minmax(440px,1fr) 360px;gap:15px;align-items:start}.panel{background:linear-gradient(160deg,rgba(28,40,54,.98),rgba(16,25,36,.99));border:1px solid var(--line);border-radius:var(--radius);box-shadow:0 18px 45px #0003;min-width:0}.sidebar,.detail{padding:20px;min-height:690px}.canvas{padding:17px;min-height:690px}.panelhead{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:14px}h2{font:25px/1.13 Georgia,serif;margin:0}h3{font:20px/1.2 Georgia,serif;margin:0 0 10px}.count{color:var(--gold);font-size:12px;font-weight:800}.hint{font-size:12px;color:var(--muted);margin:8px 0 15px}.field{width:100%;background:#0e1722;color:var(--text);border:1px solid var(--line);border-radius:11px;padding:11px 12px;margin-bottom:11px}.list{max-height:645px;overflow:auto;padding-right:3px}.item{display:block;width:100%;text-align:left;border:1px solid transparent;background:transparent;color:var(--text);padding:11px 12px;border-radius:12px;margin:3px 0}.item:hover,.item.active{background:#263848;border-color:#526778}.item small{display:block;color:var(--muted);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.item strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.item .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--gold);margin-right:8px}.type-event .dot{background:var(--pink)}.type-plan .dot{background:var(--gold)}.type-handler .dot,.type-reaction .dot{background:var(--cyan)}.type-memory .dot{background:var(--green)}
+  .canvashead{display:flex;justify-content:space-between;align-items:start;gap:12px;padding:6px 7px 0}.canvashead p{margin:6px 0;color:var(--muted);font-size:12px}.badge{border:1px solid #55716f;color:var(--cyan);background:#193036;border-radius:999px;padding:5px 10px;font-size:11px;white-space:nowrap}.graphframe{border:1px solid #314354;border-radius:16px;background:radial-gradient(circle at center,#223747 0,#12202c 56%,#101a25 100%);height:465px;overflow:auto;position:relative;margin-top:17px}.graphframe svg{display:block;max-width:none}.graphline{stroke:#627d8c;stroke-width:1.8;opacity:.8}.graphline.clickable{cursor:pointer;stroke-width:15;opacity:0}.graph-empty{padding:80px 28px;text-align:center;color:var(--muted)}.graph-empty strong{display:block;color:var(--text);font:26px Georgia,serif;margin-bottom:10px}.key{display:flex;gap:13px;flex-wrap:wrap;color:var(--muted);font-size:11px;padding:13px 8px}.key i{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--gold);margin-right:5px}.key i.other{background:var(--cyan)}.key i.reaction{background:var(--pink)}
+  .audit-node rect{fill:#183141;stroke:#79bcb9;stroke-width:2;rx:12}.audit-node.type-event rect,.audit-node.type-handler rect{stroke:var(--pink)}.audit-node.type-axis rect{stroke:var(--green)}.audit-node.center rect{fill:#594634;stroke:var(--gold)}.audit-node:hover rect,.audit-node:focus rect{stroke:#fff}.audit-node text{fill:var(--text);font-size:15px;font-weight:700;text-anchor:middle;pointer-events:none}.audit-node .sub{fill:#bdcdd0;font-size:11px;font-weight:400}.audit-edge{fill:none;stroke:#6b9b9d;stroke-width:2;marker-end:url(#audit-arrow)}.audit-caption{fill:var(--gold);font-size:17px;font-weight:700}.axis-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin:8px 0 16px}.axis-grid span{padding:5px 8px;background:#172633;border-radius:6px;font-size:11px}.axis-grid b{color:var(--gold);float:right}.axis-grid em{color:var(--green);font-style:normal}.axis-grid em.down{color:var(--pink)}.audit-select{margin-bottom:11px}.timeline .when{cursor:pointer}
+  [hidden]{display:none!important}.sidebar>.chip{display:block;margin:0 0 11px;max-width:100%;white-space:normal;text-align:left}
+  .links{display:flex;flex-wrap:wrap;gap:8px;padding:2px 7px 10px}.chip{border:1px solid #426073;border-radius:999px;background:#1b3040;color:var(--text);padding:7px 11px;font-size:12px}.chip:hover,.chip.active{border-color:var(--gold);color:var(--gold)}.sectionlabel{text-transform:uppercase;letter-spacing:.18em;color:var(--gold);font-size:10px;font-weight:800;margin:20px 0 9px}.info{color:var(--muted);font-size:13px;white-space:pre-line;overflow-wrap:anywhere}.timeline{max-height:560px;overflow:auto;padding-right:4px}.entry{border-left:2px solid #476275;padding:0 0 15px 13px;margin:0 0 5px}.entry[data-kind^="goal_"]{border-color:var(--gold)}.entry[data-kind="heard_rumor"]{border-color:var(--cyan)}.entry .when{font-size:10px;color:var(--gold);text-transform:uppercase;letter-spacing:.08em;font-weight:800}.entry p{margin:4px 0;color:var(--text);font-size:13px}.entry .minor{font-size:11px;color:var(--muted)}.entry button{background:none;border:0;color:var(--cyan);padding:0;text-align:left;font-size:11px}.entry.flash{background:#384934;border-radius:8px}.listrow{border-top:1px solid #314456;padding:10px 0}.listrow button{background:none;border:0;color:var(--cyan);padding:0;text-align:left;font-weight:700}.listrow small{display:block;color:var(--muted);font-size:11px}.empty{color:var(--muted);font-size:13px;padding:15px 0}.note{background:#283539;border-left:3px solid var(--gold);border-radius:7px;padding:10px 12px;color:#cdd3d0;font-size:12px;margin:12px 0}
+  @media(max-width:1200px){.layout{grid-template-columns:245px minmax(0,1fr)}.detail{grid-column:1/-1;min-height:0}.sidebar,.canvas{min-height:620px}.timeline{max-height:360px}}
+  @media(max-width:700px){.shell{padding:19px 14px 45px}.top h1{font-size:2.7rem}.controls{width:100%}.meta{text-align:left}.stats{grid-template-columns:repeat(2,1fr)}.layout{display:block}.panel{margin-bottom:12px}.sidebar,.canvas,.detail{min-height:0}.list{max-height:250px}}
+</style>
+<script src="social-graph-data.js"></script>
+<script src="social-graph-save.js"></script>
+</head>
+<body>
+<div class="shell">
+  <header class="top">
+    <div><div class="eyebrow">Rogue Survivor · архив и механика</div><h1>Социальный атлас</h1><p class="intro">Просматривайте историю NPC как сеть встреч и событий. Отдельный граф показывает цели, действия, слухи, память и зарегистрированные обработчики событий. Отложенные ответы NPC показаны в общем цикле отдельно.</p></div>
+    <div><div class="controls"><button class="tab" id="peopleTab" type="button">Люди и события</button><button class="tab active" id="systemTab" type="button">Правила системы</button><label class="load">Открыть экспорт save<input id="file" type="file" accept=".json,application/json"></label></div><div class="meta" id="source">Каталог текущей сборки</div></div>
+  </header>
+  <div class="stats" id="stats"></div>
+  <main class="layout">
+    <aside class="panel sidebar"><div class="panelhead"><h2 id="leftTitle">Разделы</h2><span class="count" id="listCount"></span></div><button class="chip" id="interesting" type="button" hidden>Самый интересный NPC</button><button class="chip" id="auditOverview" type="button">Обзор связей</button><input class="field" id="search" type="search" placeholder="Поиск по каталогу" aria-label="Поиск"><select class="field" id="typeFilter" aria-label="Тип элемента"></select><select class="field audit-select" id="auditFilter" aria-label="Виды связей"><option value="all">Все связи</option><option value="unhandled">События без особого обработчика</option><option value="rumor">Слухи без отдельного правила</option></select><div class="list" id="list"></div></aside>
+    <section class="panel canvas" aria-label="Граф"><div class="canvashead"><div><h2 id="graphTitle">Правила системы</h2><p id="graphSub">Нажмите узел или связь для подробностей</p></div><span class="badge" id="graphBadge">Каталог</span></div><div class="graphframe" id="graph"></div><div class="key"><span><i></i> выбранный узел</span><span><i class="other"></i> связанный узел</span><span><i class="reaction"></i> обработчик или событие</span></div><div class="links" id="chips"></div></section>
+    <aside class="panel detail"><div class="panelhead"><h2 id="detailTitle">Описание</h2></div><div id="detail"></div></aside>
+  </main>
+</div>
+<script>
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const labels = {flow:'Общий цикл',event:'События',plan:'Цели и планы',handler:'Обработчики событий',reaction:'Обработчики старого экспорта',operator:'Действия',source:'Источники шагов',value:'Потребности',resource:'Ресурсы',fact:'Факты плана',interest:'Долгие интересы',collective:'Коллективные планы',memory:'Память',trait:'Черты',axis:'Шкалы',skill:'Навыки',composer:'Планировщик'};
+  const axisNames=['Item','Courage','Group','Law','Trade','Explore','Compassion','Supplies','HumanLife','CareCircle','MessageTrust','Scarcity','Patience'];
+  let data = window.SOCIAL_GRAPH_DATA || {schema:1,nodes:[],edges:[],residents:[]};
+  let mode = 'system', selected = 'flow:audience', person = '', peer = '', query = '', type = 'all', audit = 'all';
+  let nodeMap = new Map(), personMap = new Map(), eventMap = new Map();
+  const E = (tag, cls, text) => {const el=document.createElement(tag); if(cls) el.className=cls; if(text!==undefined) el.textContent=String(text); return el};
+  const clear = el => {while(el.firstChild) el.removeChild(el.firstChild)};
+  const short = (text,n=24) => text.length>n ? text.slice(0,n-1)+'…' : text;
+  function rebuild(){
+    if(data.schema!==1 || !Array.isArray(data.nodes) || !Array.isArray(data.edges) || !Array.isArray(data.residents)) throw Error('Неподдерживаемый формат экспорта');
+    nodeMap=new Map(data.nodes.map(x=>[x.id,x])); personMap=new Map(data.residents.map(x=>[x.id,x])); eventMap=new Map();
+    for(const p of data.residents) for(const e of p.entries||[]) if(e.eventId>0 && e.kind!=='story_stage' && (!eventMap.has(e.eventId)||(e.direct&&!eventMap.get(e.eventId).direct))) eventMap.set(e.eventId,e);
+    if(!nodeMap.has(selected)) selected='flow:audience';
+    if(!personMap.has(person)) person=data.residents[0]?.id || '';
+    peer='';
+  }
+  function stats(){
+    const handlers=data.nodes.filter(x=>x.type==='handler'||x.type==='reaction').length;
+    const items=mode==='system' ? selected ? [['События',data.nodes.filter(x=>x.type==='event').length],['Цели',data.nodes.filter(x=>x.type==='plan').length],['Обработчики',handlers],['Сущности каталога',data.nodes.length]] : [['Без особого обработчика',data.nodes.filter(x=>auditKinds(x).includes('unhandled')).length],['Слухи без отдельного правила',data.nodes.filter(x=>auditKinds(x).includes('rumor')).length],['Обработчики',handlers],['Узлы каталога',data.nodes.length]] : [['Жители',data.residents.length],['Записи',data.residents.reduce((n,p)=>n+(p.entries||[]).length,0)],['События с ID',new Set(data.residents.flatMap(p=>(p.entries||[]).map(e=>e.eventId).filter(Boolean))).size],['Ход сохранения',data.turn||'—']];
+    clear($('stats')); for(const [name,value] of items){const box=E('div','stat');box.append(E('b','',value),E('span','',name));$('stats').append(box)}
+  }
+  function options(){
+    clear($('typeFilter')); $('auditFilter').hidden=mode==='people';if(mode==='people'){$('typeFilter').hidden=true;return} $('typeFilter').hidden=false;
+    for(const [key,name] of [['all','Все разделы'],...Object.entries(labels)]){const o=E('option','',name);o.value=key;$('typeFilter').append(o)}$('typeFilter').value=type;
+  }
+  function auditKinds(n){
+    const flags=[];
+    if(n.type==='event'){
+      const handlers=data.edges.filter(e=>e.from===n.id&&['handler','reaction'].includes(nodeMap.get(e.to)?.type));
+      if(!handlers.length)flags.push('unhandled');
+      if(data.edges.some(e=>e.from===n.id&&e.to==='flow:rumor')&&!handlers.some(e=>['слух','радиослух','Слух','Радиоэмоция'].includes(e.label)))flags.push('rumor');
+    }
+    return flags;
+  }
+  function selectNode(id){
+    const n=nodeMap.get(id);if(!n)return;
+    mode='system';selected=id;
+    if(audit!=='all'&&!auditKinds(n).includes(audit)){audit='all';$('auditFilter').value='all'}
+    if(type!=='all'&&type!==n.type)type='all';
+    if(query&&!(n.label+' '+n.id+' '+(n.detail||'')).toLocaleLowerCase().includes(query.toLocaleLowerCase())){query='';$('search').value=''}
+    render();
+  }
+  function list(){
+    const root=$('list');clear(root);$('leftTitle').textContent=mode==='people'?'Жители':({unhandled:'Без особого обработчика',rumor:'Слухи без отдельного правила'}[audit]||'Элементы каталога');
+    $('interesting').hidden=mode!=='people'||!data.residents.some(p=>Number.isInteger(p.interestScore));
+    $('auditOverview').hidden=mode!=='system';
+    const q=query.toLocaleLowerCase();
+    if(mode==='people'){
+      const residents=data.residents.filter(p=>(p.name+' '+(p.faction||'')+' '+p.id).toLocaleLowerCase().includes(q));
+      $('listCount').textContent=residents.length;
+      if(!residents.length) root.append(E('div','empty',data.residents.length?'Ничего не найдено.':'Загрузите JSON экспорта сохранения, чтобы увидеть жителей.'));
+      for(const p of residents){const b=E('button','item'+(p.id===person?' active':''));b.type='button';b.append(E('strong','',p.name),E('small','',(p.faction||'Фракция неизвестна')+' · '+(p.entries||[]).length+' записей'));b.onclick=()=>{person=p.id;peer='';render()};root.append(b)}
+    }else{
+      const nodes=data.nodes.filter(n=>(type==='all'||n.type===type) && (audit==='all'||auditKinds(n).includes(audit)) && (n.label+' '+n.id+' '+(n.detail||'')).toLocaleLowerCase().includes(q)).sort((a,b)=>a.type.localeCompare(b.type)||a.label.localeCompare(b.label));
+      $('listCount').textContent=nodes.length;
+      if(!nodes.length) root.append(E('div','empty','Ничего не найдено.'));
+      for(const n of nodes){const b=E('button','item type-'+n.type+(n.id===selected?' active':''));b.type='button';const s=E('strong');s.append(E('i','dot'),document.createTextNode(n.label));const status=auditKinds(n).map(k=>({unhandled:'без особого обработчика',rumor:'слух: общие правила'})[k]).join(' · ');b.append(s,E('small','',(labels[n.type]||n.type)+(status?' · '+status:'')));b.onclick=()=>selectNode(n.id);root.append(b)}
+    }
+  }
+  function S(tag,attrs={}){const e=document.createElementNS(svgNS,tag);for(const [k,v] of Object.entries(attrs))e.setAttribute(k,String(v));return e}
+  function graphSvg(root,width,height,label){
+    clear(root);root.style.height=(height+2)+'px';
+    const svg=S('svg',{viewBox:'0 0 '+width+' '+height,role:'img','aria-label':label});
+    svg.style.width=width+'px';svg.style.height=height+'px';
+    const defs=S('defs'),marker=S('marker',{id:'audit-arrow',markerWidth:9,markerHeight:9,refX:8,refY:4,orient:'auto'});
+    marker.append(S('path',{d:'M0 0 L8 4 L0 8 Z',fill:'#6b9b9d'}));defs.append(marker);svg.append(defs);
+    return svg;
+  }
+  function systemNode(svg,x,y,label,sub,click,center=false,warn=false,type='',width=190){
+    const g=S('g',{class:'audit-node'+(center?' center':'')+(warn?' warn':'')+(type?' type-'+type:''),tabindex:click?0:-1,role:click?'button':'img','aria-label':label+(sub?' · '+sub:'')});
+    const title=S('title');title.textContent=label+(sub?' · '+sub:'');g.append(title);
+    g.append(S('rect',{x:x-width/2,y:y-27,width,height:54}));
+    const name=S('text',{x,y:sub?y-4:y+5});name.textContent=short(label,Math.max(16,Math.floor(width/8)));g.append(name);
+    if(sub){const caption=S('text',{x,y:y+16,class:'sub'});caption.textContent=short(sub,Math.max(19,Math.floor(width/7)));g.append(caption)}
+    if(click){g.style.cursor='pointer';g.addEventListener('click',click);g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();click()}})}
+    svg.append(g);
+  }
+  function curvedEdge(svg,x1,y1,x2,y2,click){
+    const mid=(x1+x2)/2,path='M'+x1+' '+y1+' C'+mid+' '+y1+' '+mid+' '+y2+' '+x2+' '+y2;
+    svg.append(S('path',{d:path,class:'graphline'}));
+    if(click){const hit=S('path',{d:path,class:'graphline clickable',tabindex:0,role:'button','aria-label':'Показать совместные события'});hit.addEventListener('click',click);hit.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();click()}});svg.append(hit)}
+  }
+  function layout(center,neighbors,clickNode,clickEdge){
+    const root=$('graph');
+    if(!center){clear(root);root.style.height='465px';const box=E('div','graph-empty');box.append(E('strong','','Пока нет данных'),E('span','','Экспортируйте сохранение и откройте JSON выше.'));root.append(box);return}
+    const visible=neighbors.slice(0,12),width=Math.max(720,root.clientWidth-2),height=Math.max(465,95+Math.ceil(visible.length/2)*62);
+    const svg=graphSvg(root,width,height,'Граф связей жителей'),middle=width/2,cardW=Math.min(190,width*.23);
+    const leftX=22+cardW/2,rightX=width-leftX,centerY=height/2;
+    visible.forEach((item,i)=>{
+      const side=i%2===0?-1:1,index=Math.floor(i/2),count=Math.ceil((visible.length-(side===1?1:0))/2);
+      const y=centerY+(index-(count-1)/2)*62,x=side<0?leftX:rightX;
+      curvedEdge(svg,side<0?x+cardW/2:middle+95,side<0?y:centerY,side<0?middle-95:x-cardW/2,side<0?centerY:y,clickEdge?()=>clickEdge(item):null);
+      systemNode(svg,x,y,item.label,item.sub,()=>clickNode(item),false,false,'person',cardW);
+    });
+    systemNode(svg,middle,centerY,center.label,center.sub,null,true,false,'person',190);
+    const caption=S('text',{x:18,y:30,class:'audit-caption'});caption.textContent='Связи · '+visible.length+' из '+neighbors.length;svg.append(caption);
+    root.append(svg);
+    if(neighbors.length>visible.length){const note=E('div','badge','Ещё '+(neighbors.length-visible.length)+' связей в списке ниже');note.style.position='absolute';note.style.right='12px';note.style.bottom='12px';root.append(note)}
+  }
+  function systemLayout(n,links){
+    const root=$('graph'),distinct=items=>[...new Map(items.map(x=>[x.id,x])).values()];
+    const incoming=distinct(links.filter(x=>x.edge.to===n.id)).sort((a,b)=>(nodeMap.get(a.id).type==='flow')-(nodeMap.get(b.id).type==='flow'));
+    const outgoing=distinct(links.filter(x=>x.edge.from===n.id)).sort((a,b)=>(nodeMap.get(a.id).type==='flow')-(nodeMap.get(b.id).type==='flow'));
+    const width=Math.max(720,root.clientWidth-2),height=Math.max(465,105+Math.max(Math.min(incoming.length,8),Math.min(outgoing.length,8))*61);
+    const svg=graphSvg(root,width,height,'Направленный граф правил'),middle=width/2,centerY=height/2,cardW=Math.min(190,width*.23);
+    const leftX=22+cardW/2,rightX=width-leftX,flags=auditKinds(n);
+    const column=(items,x,left)=>{
+      if(!items.length){systemNode(svg,x,centerY,left?'Нет входящих связей':'Нет исходящих связей','в каталоге',null,false,false,'',cardW);return}
+      items.slice(0,8).forEach((item,i)=>{
+        const y=centerY+(i-(Math.min(items.length,8)-1)/2)*61,target=nodeMap.get(item.id);
+        if(left)svg.append(S('path',{d:'M'+(x+cardW/2)+' '+y+' C'+(x+cardW/2+35)+' '+y+' '+(middle-130)+' '+centerY+' '+(middle-95)+' '+centerY,class:'audit-edge'}));
+        else svg.append(S('path',{d:'M'+(middle+95)+' '+centerY+' C'+(middle+130)+' '+centerY+' '+(x-cardW/2-35)+' '+y+' '+(x-cardW/2)+' '+y,class:'audit-edge'}));
+        systemNode(svg,x,y,target.label,item.edge.label,()=>selectNode(item.id),false,false,target.type,cardW);
+      });
+    };
+    column(incoming,leftX,true);column(outgoing,rightX,false);
+    systemNode(svg,middle,centerY,n.label,labels[n.type]||n.type,null,true,false,n.type,190);
+    for(const [x,title,count] of [[18,'Входящие',incoming.length],[width-220,'Исходящие',outgoing.length]]){
+      const caption=S('text',{x,y:30,class:'audit-caption'});caption.textContent=title+' · '+count+(count>8?' (первые 8)':'');svg.append(caption)
+    }
+    if(flags.length){const note=S('text',{x:middle,y:height-18,class:'audit-caption','text-anchor':'middle'});note.textContent=flags.map(k=>({unhandled:'нет особого обработчика',rumor:'слух обрабатывается общими правилами'})[k]).join(' · ');svg.append(note)}
+    root.append(svg);
+  }
+  function auditOverview(){
+    const root=$('graph'),width=Math.max(720,root.clientWidth-2),height=490,svg=graphSvg(root,width,height,'Обзор связей каталога');
+    const kinds=audit==='all'?['unhandled','rumor']:[audit],titles={unhandled:'Без особого обработчика',rumor:'Слух: общие правила'};
+    if(kinds.length===2)kinds.forEach((kind,col)=>{
+      const x=width*(col+.5)/2,nodes=data.nodes.filter(n=>auditKinds(n).includes(kind)),cardW=Math.min(190,width/2-30);
+      const caption=S('text',{x,y:42,class:'audit-caption','text-anchor':'middle'});caption.textContent=titles[kind]+' · '+nodes.length;svg.append(caption);
+      nodes.slice(0,5).forEach((n,i)=>systemNode(svg,x,95+i*65,n.label,labels[n.type]||n.type,()=>selectNode(n.id),false,false,n.type,cardW));
+      if(nodes.length>5){const more=S('text',{x,y:455,class:'audit-caption','text-anchor':'middle'});more.textContent='Ещё '+(nodes.length-5)+' в списке';svg.append(more)}
+    });
+    else{
+      const kind=kinds[0],nodes=data.nodes.filter(n=>auditKinds(n).includes(kind)),caption=S('text',{x:width/2,y:40,class:'audit-caption','text-anchor':'middle'});caption.textContent=titles[kind]+' · '+nodes.length;svg.append(caption);
+      nodes.slice(0,10).forEach((n,i)=>systemNode(svg,width*(i<5?.29:.71),95+(i%5)*65,n.label,labels[n.type]||n.type,()=>selectNode(n.id),false,false,n.type,190));
+      if(nodes.length>10){const more=S('text',{x:width/2,y:455,class:'audit-caption','text-anchor':'middle'});more.textContent='Ещё '+(nodes.length-10)+' в списке слева';svg.append(more)}
+    }
+    root.append(svg);
+  }
+  function participants(entry,id){return [...new Set([entry.subject,entry.other].filter(x=>x&&x!==id))]}
+  function contacts(p){
+    const out=new Map();
+    for(const entry of p.entries||[]) for(const id of participants(entry,p.id)){
+      if(!personMap.has(id)) continue;
+      if(!out.has(id))out.set(id,[]);out.get(id).push(entry)
+    }
+    return [...out].map(([id,entries])=>({id,label:personMap.get(id).name,sub:entries.length+' записей',entries})).sort((a,b)=>b.entries.length-a.entries.length||a.label.localeCompare(b.label));
+  }
+  function possibleAxes(entry){
+    const memories=data.edges.filter(e=>e.from==='event:'+entry.kind&&nodeMap.get(e.to)?.type==='memory');
+    const effects=[];
+    for(const link of memories){
+      const memory=nodeMap.get(link.to);
+      for(const edge of data.edges.filter(e=>e.from===memory.id&&nodeMap.get(e.to)?.type==='axis'))
+        effects.push(memory.label+' → '+nodeMap.get(edge.to).label+' ('+edge.label+')');
+      for(const trait of data.edges.filter(e=>e.from===memory.id&&nodeMap.get(e.to)?.type==='trait'))
+        for(const edge of data.edges.filter(e=>e.from===trait.to&&nodeMap.get(e.to)?.type==='axis'))
+          effects.push(memory.label+' → '+nodeMap.get(trait.to).label+' → '+nodeMap.get(edge.to).label+' ('+edge.label+')');
+    }
+    return [...new Set(effects)].slice(0,3);
+  }
+  function chips(items,handler,active){clear($('chips'));for(const item of items){const b=E('button','chip'+(item.id===active?' active':''),item.text);b.type='button';b.onclick=()=>handler(item);$('chips').append(b)}}
+  function people(){
+    const p=personMap.get(person);$('graphTitle').textContent=p?p.name:'История жителей';$('graphSub').textContent=p?'Связи по записям этого NPC · клик по человеку открывает его граф':'Откройте JSON, полученный из сохранения';$('graphBadge').textContent=data.partial?'Частичный архив':'Read Records';
+    if(!p){layout(null,[]);clear($('chips'));$('detailTitle').textContent='Как начать';const d=$('detail');clear(d);d.append(E('p','info','Экспортируйте .dat или .sav командой, указанной внизу этой страницы, затем откройте JSON. Каталог правил уже доступен во вкладке «Правила системы».'));return}
+    const neighbors=contacts(p);layout({label:p.name,sub:p.faction||''},neighbors, item=>{person=item.id;peer='';render()},item=>{peer=item.id;render()});
+    chips([{id:'',text:'Все события · '+(p.entries||[]).length},...neighbors.map(x=>({id:x.id,text:x.label+' · '+x.entries.length}))],item=>{peer=item.id;render()},peer);
+    $('detailTitle').textContent=peer&&personMap.has(peer)?'События с '+personMap.get(peer).name:'Хронология';
+    const detail=$('detail');clear(detail);
+    detail.append(E('p','info',(p.faction||'Фракция неизвестна')+(p.group?' · группа '+p.group:'')+' · появился на ходу '+p.spawn+(p.death>=0?' · погиб на ходу '+p.death:'')+(Number.isInteger(p.interestScore)?' · интересность '+p.interestScore:'')));
+    detail.append(E('div','note','Линия показывает совместное появление в архиве выбранного NPC. Числовое Feeling, Trust и другие текущие оценки в Read Records не сохраняются. Свидетельство и слух не равны личному участию.'));
+    const filter=E('input','field');filter.type='search';filter.placeholder='Фильтр событий';filter.setAttribute('aria-label','Фильтр событий');detail.append(filter);
+    const snapshots=new Map();for(const e of p.entries||[])if(Array.isArray(e.axesAfter)&&e.axesAfter.length===13)snapshots.set(e.turn,e.axesAfter);
+    const snapshotTurns=[...snapshots.keys()].sort((a,b)=>a-b);
+    const axisBox=E('div');detail.append(axisBox);let selectedTurn=null;
+    const showAxes=()=>{
+      clear(axisBox);if(selectedTurn===null)return;
+      const all=p.entries||[],snap=all.find(e=>e.turn===selectedTurn&&Array.isArray(e.axesAfter)&&e.axesAfter.length===13);
+      axisBox.append(E('div','sectionlabel','Оси после хода '+selectedTurn));
+      if(!snap){axisBox.append(E('div','note','Для этого хода в архиве нет снимка осей. Старые сохранения не содержат исторических значений.'));return}
+      const prior=all.filter(e=>e.turn<selectedTurn&&Array.isArray(e.axesAfter)&&e.axesAfter.length===13).sort((a,b)=>b.turn-a.turn)[0];
+      axisBox.append(E('p','info','Состояние NPC после всего хода. Разница относится ко всему промежутку'+(prior?' с хода '+prior.turn:'; предыдущего снимка нет')+', а не только к одной записи.'));
+      const grid=E('div','axis-grid');for(let i=0;i<13;i++){const row=E('span','',axisNames[i]);const value=E('b','',snap.axesAfter[i]);if(prior){const delta=snap.axesAfter[i]-prior.axesAfter[i];if(delta){const d=E('em',delta<0?'down':'',(delta>0?'+':'')+delta);value.append(' ',d)}}row.append(value);grid.append(row)}axisBox.append(grid);
+    };
+    const timeline=E('div','timeline');detail.append(timeline);
+    const draw=()=>{
+      clear(timeline);const q=filter.value.toLocaleLowerCase();let rows=(p.entries||[]).filter(e=>(!peer||participants(e,p.id).includes(peer))&&(e.text+' '+e.kind+' '+(e.story||'')).toLocaleLowerCase().includes(q)).slice().sort((a,b)=>a.turn-b.turn||a.sequence-b.sequence);
+      if(!rows.length)timeline.append(E('div','empty','Записей для этого фильтра нет.'));
+      for(const entry of rows){const card=E('article','entry');card.dataset.kind=entry.kind;card.dataset.eventId=entry.eventId;const heading=E('div','when');const turn=E('button','','Ход '+entry.turn);turn.type='button';turn.setAttribute('aria-label','Показать оси после хода '+entry.turn);turn.onclick=()=>{selectedTurn=entry.turn;showAxes()};heading.append(turn,document.createTextNode(' · '));if(nodeMap.has('event:'+entry.kind)){const kind=E('button','',entry.kind);kind.type='button';kind.onclick=()=>selectNode('event:'+entry.kind);heading.append(kind)}else heading.append(document.createTextNode(entry.kind));card.append(heading,E('p','',entry.text));
+        const effects=possibleAxes(entry);if(effects.length)card.append(E('div','minor','Возможные поздние влияния: '+effects.join('; ')));
+        const index=snapshotTurns.indexOf(entry.turn);if(index>=0){const after=snapshots.get(entry.turn),before=index>0?snapshots.get(snapshotTurns[index-1]):null;const changes=before?axisNames.map((name,i)=>({name,delta:after[i]-before[i]})).filter(x=>x.delta):[];card.append(E('div','minor',before?'Оси к предыдущему снимку: '+(changes.length?changes.map(x=>x.name+' '+(x.delta>0?'+':'')+x.delta).join(', '):'без изменений'):'Снимок всех осей после хода доступен по нажатию на номер хода'))}
+        const context=[];if(entry.direct)context.push('участник');else if(entry.eventId)context.push('наблюдение');if(entry.story)context.push('история '+entry.story);if(context.length)card.append(E('div','minor',context.join(' · ')));
+        const causes=[entry.causeId,...(entry.supporting||[])].filter((id,i,arr)=>id>0&&arr.indexOf(id)===i);
+        for(const id of causes){const cause=eventMap.get(id);if(!cause||cause.turn>entry.turn||id===entry.eventId)continue;const b=E('button','', 'Связано с: '+short(cause.text.replace(/^(Experienced|Witnessed): /,''),80));b.type='button';b.onclick=()=>{peer='';filter.value='';draw();const target=[...timeline.children].find(x=>Number(x.dataset.eventId)===id);if(target){target.scrollIntoView({block:'center',behavior:'smooth'});target.classList.add('flash');setTimeout(()=>target.classList.remove('flash'),1600)}};card.append(b)}
+        timeline.append(card)
+      }
+    };filter.oninput=draw;draw();
+  }
+  function system(){
+    const n=nodeMap.get(selected);$('graphTitle').textContent=n?n.label:'Правила системы';$('graphSub').textContent=n?(labels[n.type]||n.type)+' · связи из зарегистрированного каталога':'Выберите элемент каталога';$('graphBadge').textContent='Каталог';
+    if(!n){const root=$('graph');if(query&&$('listCount').textContent==='0'){clear(root);root.style.height='465px';root.append(E('div','graph-empty','Нет узлов для этого поиска.'))}else auditOverview();clear($('chips'));$('graphTitle').textContent='Связи каталога';$('graphSub').textContent='Выберите узел в графе или списке слева';$('detailTitle').textContent='Как читать связи';const d=$('detail');clear(d);d.append(E('p','info','Фильтры показывают отсутствие специального правила. Событие может сохраняться в архиве или вызывать память. Слух всегда проходит через общую систему знаний. Узел обработчика указывает этап исполнения; конкретный эффект зависит от условий в коде.'));return}
+    const links=data.edges.filter(e=>e.from===n.id||e.to===n.id).map(e=>({edge:e,id:e.from===n.id?e.to:e.from})).filter(x=>nodeMap.has(x.id));
+    const unique=[...new Map(links.map(x=>[x.id,{id:x.id,label:nodeMap.get(x.id).label,sub:labels[nodeMap.get(x.id).type]||'',type:nodeMap.get(x.id).type,text:nodeMap.get(x.id).label}])).values()];
+    systemLayout(n,links);
+    chips(unique.slice(0,24),item=>selectNode(item.id),null);
+    $('detailTitle').textContent=n.label;const detail=$('detail');clear(detail);
+    detail.append(E('div','eyebrow',labels[n.type]||n.type));detail.append(E('p','info',n.detail||''));
+    const flags=auditKinds(n);if(flags.length)detail.append(E('div','note',flags.map(k=>({unhandled:'Нет специального обработчика события; оно может сохраняться в архиве или вызывать память.',rumor:'Слух обрабатывается общей системой знаний, без дополнительного правила.'})[k]).join(' ')));
+    if(n.type==='plan'||n.type==='source'||n.type==='operator')detail.append(E('div','note','Состав плана зависит от состояния мира и известных фактов. Связь с планировщиком показывает возможность участия, а не обязательный шаг каждой цели.'));
+    if(n.type==='event')detail.append(E('div','note','Обработчики ниже зарегистрированы для этого вида события. Ребро от обработчика к этапу показывает время исполнения, а не гарантированный игровой результат.'));
+    if(n.type==='handler')detail.append(E('div','note','Этот узел — обработчик события, а не отложенный ответ NPC. Его возможный эффект зависит от условий правила.'));
+    detail.append(E('div','sectionlabel','Связи · '+links.length));
+    if(!links.length)detail.append(E('div','empty','Прямых связей в каталоге нет.'));
+    for(const {edge,id} of links){const row=E('div','listrow');const b=E('button','',nodeMap.get(id).label);b.type='button';b.onclick=()=>selectNode(id);row.append(b,E('small','',(edge.from===n.id?'→ ':'← ')+edge.label+' · '+(labels[nodeMap.get(id).type]||nodeMap.get(id).type)));detail.append(row)}
+  }
+  function render(){
+    $('peopleTab').classList.toggle('active',mode==='people');$('systemTab').classList.toggle('active',mode==='system');
+    $('search').placeholder=mode==='people'?'Поиск NPC или фракции':'Поиск по каталогу';
+    stats();options();list();if(mode==='people')people();else system();
+  }
+  $('peopleTab').onclick=()=>{mode='people';query='';$('search').value='';render()};
+  $('interesting').onclick=()=>{const matches=data.residents.filter(p=>(p.name+' '+(p.faction||'')+' '+p.id).toLocaleLowerCase().includes(query.toLocaleLowerCase())&&Number.isInteger(p.interestScore));matches.sort((a,b)=>b.interestScore-a.interestScore||a.name.toLowerCase().localeCompare(b.name.toLowerCase(),'en')||a.id.localeCompare(b.id));if(matches.length){person=matches[0].id;peer='';render();$('list').querySelector('.item.active')?.scrollIntoView({block:'nearest'})}};
+  $('systemTab').onclick=()=>{mode='system';query='';$('search').value='';render()};
+  $('search').oninput=e=>{query=e.target.value;if(mode==='system'&&query){const q=query.toLocaleLowerCase(),matches=data.nodes.filter(n=>(type==='all'||n.type===type)&&(audit==='all'||auditKinds(n).includes(audit))&&(n.label+' '+n.id+' '+(n.detail||'')).toLocaleLowerCase().includes(q));if(!matches.some(n=>n.id===selected))selected=matches[0]?.id||'';render()}else list()};
+  $('typeFilter').onchange=e=>{type=e.target.value;audit='all';$('auditFilter').value='all';query='';$('search').value='';selected=type==='all'?'':data.nodes.find(n=>n.type===type)?.id||'';render()};
+  $('auditFilter').onchange=e=>{audit=e.target.value;selected='';type='all';query='';$('search').value='';render()};
+  $('auditOverview').onclick=()=>{selected='';audit='all';query='';$('search').value='';$('auditFilter').value='all';render()};
+  $('file').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{const next=JSON.parse(await file.text());if(next.schema!==1||!Array.isArray(next.nodes)||!Array.isArray(next.edges)||!Array.isArray(next.residents))throw Error('Неподдерживаемый формат');data=next;rebuild();mode=data.residents.length?'people':'system';$('source').textContent=file.name+' · '+(data.partial?'частичный архив':'полный архив');render()}catch(err){alert('Не удалось открыть экспорт: '+err.message)}};
+  window.addEventListener('resize',()=>{
+    if(mode==='people'){
+      const p=personMap.get(person);if(p)layout({label:p.name,sub:p.faction||''},contacts(p),item=>{person=item.id;peer='';render()},item=>{peer=item.id;render()});
+    }else{
+      const n=nodeMap.get(selected);
+      if(!n)auditOverview();
+      else systemLayout(n,data.edges.filter(e=>e.from===n.id||e.to===n.id).map(e=>({edge:e,id:e.from===n.id?e.to:e.from})).filter(x=>nodeMap.has(x.id)));
+    }
+  });
+  rebuild();
+  if(data.residents.length){mode='people';$('source').textContent='Сохранение загружено автоматически · '+(data.partial?'частичный архив':'полный архив')}
+  render();
+})();
+</script>
+<footer style="max-width:1600px;margin:auto;padding:0 30px 35px;color:#a5b4bf;font:12px/1.6 system-ui,sans-serif">Экспорт из корня репозитория: <code>sh tools/social-graph-export.sh save.dat social-save.json</code>. Каталог: <code>sh tools/social-graph-export.sh</code>. Подробности: <a href="social-graph.md">руководство</a>.</footer>
+</body>
+</html>

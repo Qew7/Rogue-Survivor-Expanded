@@ -31,6 +31,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 player.IsSleeping || source.Subject == null || source.Subject == player || player.Location.Map != source.Map)
                 return;
             bool overheard = player != source.Other;
+            if (overheard && definition.PlayerReply.DirectOnly) return;
             if (overheard && (!definition.AudibleReport ||
                 game.Rules.StdDistance(player.Location.Position, source.Position) > player.AudioRange)) return;
             if (player.Personality == null) player.Personality = new PersonalityState();
@@ -59,7 +60,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             game.DoSay(player, target, yes ? reply.YesText : reply.NoText, RogueGame.Sayflags.IS_STORY,
                 pending.CauseId, pending.StoryId);
             NpcEvents.Publish(game, yes ? reply.YesKind : reply.NoKind, player, target, pending.CauseId, pending.StoryId);
-            game.DoSay(target, player, yes ? "Thank you. I'll remember." : "I understand.", RogueGame.Sayflags.IS_FREE_ACTION);
+            game.DoSay(target, player, yes ? reply.YesReply : reply.NoReply, RogueGame.Sayflags.IS_FREE_ACTION);
         }
 
         public static bool CanTell(RogueGame game, Actor speaker, NpcFact fact)
@@ -78,6 +79,20 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 return speaker.Personality.HasTrait("deceptive") &&
                     fact.SubjectId == speaker.PersonalityIdentity && fact.SourceId == speaker.PersonalityIdentity;
             }
+            if (fact.Kind == "theft_accusation")
+            {
+                if (speaker.Personality.Knowledge.Facts.Exists(f =>
+                    f.EventId == fact.EventId && f.Kind == "false_testimony_exposed")) return false;
+                if (fact.OtherId == speaker.PersonalityIdentity) return false;
+                return fact.SubjectId != speaker.PersonalityIdentity ||
+                    speaker.Personality.HasTrait("deceptive") && fact.Source == NpcKnowledgeSource.Participant;
+            }
+            if (fact.Kind == "theft_accusation_denied" && fact.SubjectId == speaker.PersonalityIdentity)
+                return fact.Source == NpcKnowledgeSource.Participant;
+            if ((fact.Kind == "base_theft" || fact.Kind == "cache_theft") &&
+                speaker.Personality.Knowledge.Facts.Exists(f => f.Kind == "theft_accusation" &&
+                    f.CauseId == fact.EventId && f.SubjectId == speaker.PersonalityIdentity &&
+                    f.Source == NpcKnowledgeSource.Participant)) return false;
             Guid id = speaker.PersonalityIdentity;
             if (fact.SubjectId != id && fact.OtherId != id) return true;
             NpcEventDefinition definition = game.NpcContent.Event(fact.Kind);

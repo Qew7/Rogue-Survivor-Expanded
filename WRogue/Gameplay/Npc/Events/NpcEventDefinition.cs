@@ -56,6 +56,12 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         internal void Freeze() { frozen = true; }
         public void Apply(NpcObservationPhase phase, NpcObservation observation)
         { foreach (Action<NpcObservation> observer in observers[(int)phase]) observer(observation); }
+        internal IEnumerable<Delegate> ObservationHandlers(NpcObservationPhase phase)
+        { foreach (Action<NpcObservation> observer in observers[(int)phase]) yield return observer; }
+        internal IEnumerable<Delegate> ReportHandlers
+        { get { foreach (Action<NpcReportContext> observer in reports) yield return observer; } }
+        internal IEnumerable<Delegate> CompletionHandlers
+        { get { foreach (var observer in completions) yield return observer; } }
         public void Validate(SignificantEvent source)
         {
             if (((Required & NpcEventFields.Subject) != 0 && source.Subject == null) ||
@@ -71,8 +77,11 @@ namespace djack.RogueSurvivor.Gameplay.Personality
     // The event owns the player's two possible responses; the conversation UI only invokes this contract.
     sealed class NpcPlayerReply
     {
-        public readonly string Prompt, YesKind, NoKind, YesText, NoText;
-        public NpcPlayerReply(string prompt, string yesKind, string noKind, string yesText, string noText)
-        { Prompt = prompt; YesKind = yesKind; NoKind = noKind; YesText = yesText; NoText = noText; }
+        public readonly string Prompt, YesKind, NoKind, YesText, NoText, YesReply, NoReply;
+        public readonly bool DirectOnly;
+        public NpcPlayerReply(string prompt, string yesKind, string noKind, string yesText, string noText,
+            bool directOnly = false, string yesReply = "Thank you. I'll remember.", string noReply = "I understand.")
+        { Prompt = prompt; YesKind = yesKind; NoKind = noKind; YesText = yesText; NoText = noText;
+            DirectOnly = directOnly; YesReply = yesReply; NoReply = noReply; }
     }
 }

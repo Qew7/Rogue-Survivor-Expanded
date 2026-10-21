@@ -506,19 +506,28 @@ namespace djack.RogueSurvivor.Gameplay.Generators
 
         protected MapObject MakeObjWardrobe(string wardrobeImageID)
         {
-            return new MapObject("wardrobe", wardrobeImageID, MapObject.Break.BREAKABLE, MapObject.Fire.UNINFLAMMABLE, DoorWindow.BASE_HITPOINTS * 6)
-            {
-                IsMaterialTransparent = false,
-                IsContainer = true,
-                GivesWood = true,
-                IsMovable = true,
-                Weight = 10
-            };
+            MapObject wardrobe = Session.Get.GamePreset.CachesEnabled ?
+                (MapObject)new StorageContainer("wardrobe", wardrobeImageID, wardrobeImageID + "_open", DoorWindow.BASE_HITPOINTS * 6, 12) :
+                new MapObject("wardrobe", wardrobeImageID, MapObject.Break.BREAKABLE, MapObject.Fire.UNINFLAMMABLE, DoorWindow.BASE_HITPOINTS * 6);
+            wardrobe.IsMaterialTransparent = false;
+            wardrobe.IsContainer = true;
+            wardrobe.GivesWood = true;
+            wardrobe.IsMovable = true;
+            wardrobe.Weight = 10;
+            StorageContainer storage = wardrobe as StorageContainer;
+            if (storage != null) storage.SetState(StorageContainer.OPEN);
+            return wardrobe;
         }
 
         protected MapObject MakeObjDrawer(string drawerImageID)
         {
-            return new MapObject("drawer", drawerImageID, MapObject.Break.BREAKABLE, MapObject.Fire.UNINFLAMMABLE, DoorWindow.BASE_HITPOINTS)
+            if (!Session.Get.GamePreset.CachesEnabled)
+                return new MapObject("drawer", drawerImageID, MapObject.Break.BREAKABLE, MapObject.Fire.UNINFLAMMABLE, DoorWindow.BASE_HITPOINTS)
+                {
+                    IsMaterialTransparent = true, IsContainer = true,
+                    GivesWood = true, IsMovable = true, Weight = 6
+                };
+            StorageContainer drawer = new StorageContainer("drawer", drawerImageID, GameImages.OBJ_DRAWER_OPEN, DoorWindow.BASE_HITPOINTS, 8)
             {
                 IsMaterialTransparent = true,
                 IsContainer = true,
@@ -526,6 +535,8 @@ namespace djack.RogueSurvivor.Gameplay.Generators
                 IsMovable = true,
                 Weight = 6
             };
+            drawer.SetState(StorageContainer.OPEN);
+            return drawer;
         }
 
         protected MapObject MakeObjTable(string tableImageID)
@@ -554,24 +565,43 @@ namespace djack.RogueSurvivor.Gameplay.Generators
 
         protected MapObject MakeObjNightTable(string nightTableImageID)
         {
-            return new MapObject("night table", nightTableImageID, MapObject.Break.BREAKABLE, MapObject.Fire.UNINFLAMMABLE, DoorWindow.BASE_HITPOINTS / 3)
-            {
-                IsMaterialTransparent = true,
-                JumpLevel = 1,
-                GivesWood = true,
-                IsMovable = true,
-                Weight = 1
-            };
+            MapObject table = Session.Get.GamePreset.CachesEnabled ?
+                (MapObject)new StorageContainer("night table", nightTableImageID, nightTableImageID + "_open", DoorWindow.BASE_HITPOINTS / 3, 4) :
+                new MapObject("night table", nightTableImageID, MapObject.Break.BREAKABLE, MapObject.Fire.UNINFLAMMABLE, DoorWindow.BASE_HITPOINTS / 3);
+            table.IsMaterialTransparent = true;
+            table.JumpLevel = 1;
+            table.GivesWood = true;
+            table.IsMovable = true;
+            table.Weight = 1;
+            StorageContainer storage = table as StorageContainer;
+            if (storage != null) storage.SetState(StorageContainer.OPEN);
+            return table;
         }
 
         protected MapObject MakeObjFridge(string fridgeImageID)
         {
-            return new MapObject("fridge", fridgeImageID, MapObject.Break.BREAKABLE, MapObject.Fire.UNINFLAMMABLE, DoorWindow.BASE_HITPOINTS * 6)
+            if (!Session.Get.GamePreset.CachesEnabled)
+                return new MapObject("fridge", fridgeImageID, MapObject.Break.BREAKABLE, MapObject.Fire.UNINFLAMMABLE, DoorWindow.BASE_HITPOINTS * 6)
+                {
+                    IsContainer = true, IsMovable = true, Weight = 10
+                };
+            StorageContainer fridge = new StorageContainer("fridge", fridgeImageID, GameImages.OBJ_FRIDGE_OPEN, DoorWindow.BASE_HITPOINTS * 6, 12)
             {
                 IsContainer = true,
                 IsMovable = true,
                 Weight = 10
             };
+            fridge.SetState(StorageContainer.OPEN);
+            return fridge;
+        }
+
+        protected void AddStartingContainerItem(DiceRoller roller, Map map, Point position, MapObject obj, Item item)
+        {
+            if (item == null) return;
+            StorageContainer storage = obj as StorageContainer;
+            if (storage == null) map.DropItemAt(item, position);
+            else if (!storage.Contents.AddAll(item)) map.DropItemAt(item, position);
+            else storage.SetState(roller.RollChance(50) ? StorageContainer.OPEN : StorageContainer.CLOSED);
         }
 
         protected MapObject MakeObjJunk(string junkImageID)
@@ -975,6 +1005,11 @@ namespace djack.RogueSurvivor.Gameplay.Generators
         public Item MakeItemBook()
         {
             return new ItemEntertainment(m_Game.GameItems.BOOK);
+        }
+
+        public Item MakeItemNote()
+        {
+            return new ItemNote(m_Game.GameItems.NOTE);
         }
 
         public Item MakeItemMagazines()

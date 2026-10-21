@@ -209,6 +209,11 @@ namespace djack.RogueSurvivor.Engine
             lines.Add(String.Format("Atk : {0:D2} Dmg : {1:D2}", attack.HitValue, attack.DamageValue));
             Defence defence = m_Rules.ActorDefence(actor, actor.CurrentDefence);
             lines.Add(String.Format("Def : {0:D2}", defence.Value));
+            if (s_Options.ShowMeleeHitChances && actor != m_Player && m_Rules.AreEnemies(m_Player, actor))
+            {
+                lines.Add(String.Format("Your melee hit : {0}%", m_Rules.ComputeChancesMeleeHit(m_Player, actor)));
+                lines.Add(String.Format("Their melee hit : {0}%", m_Rules.ComputeChancesMeleeHit(actor, m_Player)));
+            }
             lines.Add(String.Format("Arm : {0}/{1}", defence.Protection_Hit, defence.Protection_Shot));
             lines.Add(" ");
 
@@ -415,9 +420,21 @@ namespace djack.RogueSurvivor.Engine
             }
 
             // 6. Items there
+            StorageContainer storage = obj as StorageContainer;
+            if (storage != null)
+            {
+                lines.Add(storage.IsOpen ? "Open." : "Closed.");
+                if (storage.IsOpen)
+                {
+                    lines.Add("In container:");
+                    if (storage.Contents.IsEmpty) lines.Add("- empty");
+                    else lines.AddRange(DescribeInventory(storage.Contents));
+                }
+            }
             Inventory inv = map.GetItemsAt(mapPos);
             if (inv != null && !inv.IsEmpty)
             {
+                lines.Add("On ground:");
                 lines.AddRange(DescribeInventory(inv));
             }
 
@@ -675,10 +692,25 @@ namespace djack.RogueSurvivor.Engine
             {
                 lines.AddRange(DescribeItemEntertainment(it as ItemEntertainment));
             }
+            else if (it is ItemNote)
+            {
+                ItemNote note = it as ItemNote;
+                if (note.IsBlank) lines.Add("Blank paper.");
+                else
+                {
+                    lines.Add(" ");
+                    AddWrappedNoteText(lines, note.Text);
+                }
+                isDefaultUse = !note.IsBlank;
+                if (note.IsBlank) inInvAdditionalDesc = "to write: <LMB> or <Ctrl-slot>";
+            }
 
             // 3. Flavor description
-            lines.Add(" ");
-            lines.Add(it.Model.FlavorDescription);
+            if (!(it is ItemNote) || (it as ItemNote).IsBlank)
+            {
+                lines.Add(" ");
+                lines.Add(it.Model.FlavorDescription);
+            }
 
             // 4. Special keys.
             // alpha10 added more special keys very few players know about!
@@ -705,6 +737,29 @@ namespace djack.RogueSurvivor.Engine
 
             // done.
             return lines.ToArray();
+        }
+
+        static void AddWrappedNoteText(List<string> lines, string text)
+        {
+            const int maxLineLength = 45;
+            foreach (string paragraph in text.Replace("\r\n", "\n").Split('\n'))
+            {
+                int start = 0;
+                if (paragraph.Length == 0) { lines.Add(""); continue; }
+                while (start < paragraph.Length)
+                {
+                    int end = Math.Min(start + maxLineLength, paragraph.Length);
+                    if (end < paragraph.Length)
+                    {
+                        int space = end;
+                        while (space > start && paragraph[space] != ' ') space--;
+                        if (space > start) end = space;
+                    }
+                    lines.Add(paragraph.Substring(start, end - start));
+                    start = end;
+                    while (start < paragraph.Length && paragraph[start] == ' ') start++;
+                }
+            }
         }
 
         string[] DescribeItemExplosive(ItemExplosive ex)

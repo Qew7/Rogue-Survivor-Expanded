@@ -39,7 +39,7 @@ namespace djack.RogueSurvivor.Gameplay.AI
             return depth;
         }
 
-        ActorAction BehaviorPlannedEscape(RogueGame game, List<Percept> enemies, HashSet<Point> visible)
+        protected ActorAction BehaviorPlannedEscape(RogueGame game, List<Percept> enemies, HashSet<Point> visible)
         {
             int depth = EscapePlanDepth(game);
             if (depth == 0 || !m_Actor.Model.Abilities.AI_CanUseAIExits) return null;

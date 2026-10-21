@@ -104,8 +104,9 @@ namespace djack.RogueSurvivor.Gameplay.Generators
                         case 3: // drawer with random item.
                             {
                                 Item it = MakeShopConstructionItem();
-                                basement.DropItemAt(it, pt);
-                                return MakeObjDrawer(GameImages.OBJ_DRAWER);
+                                MapObject drawer = MakeObjDrawer(GameImages.OBJ_DRAWER);
+                                AddStartingContainerItem(m_DiceRoller, basement, pt, drawer, it);
+                                return drawer;
                             };
                         case 4: // bed.
                             return MakeObjBed(GameImages.OBJ_BED);

@@ -42,7 +42,13 @@ namespace djack.RogueSurvivor.Engine
             }
 
             // 2. There is no items there.
-            Inventory invThere = actor.Location.Map.GetItemsAt(position);
+            StorageContainer storage = mapObj as StorageContainer;
+            if (storage != null && (!storage.IsOpen || GridDistance(actor.Location.Position, position) > 1))
+            {
+                reason = "container is closed or out of reach";
+                return false;
+            }
+            Inventory invThere = storage == null ? actor.Location.Map.GetItemsAt(position) : storage.Contents;
             if (invThere == null || invThere.IsEmpty)
             {
                 reason = "nothing to take there";
@@ -62,6 +68,16 @@ namespace djack.RogueSurvivor.Engine
             // all clear.
             reason = "";
             return true;
+        }
+
+        public bool CanActorGetStorageItem(Actor actor, StorageContainer storage, Item item, out string reason)
+        {
+            if (actor == null || storage == null || item == null ||
+                storage.Location.Map != actor.Location.Map || !storage.IsOpen ||
+                GridDistance(actor.Location.Position, storage.Location.Position) > 1 ||
+                !storage.Contents.Contains(item))
+            { reason = "storage item is unavailable"; return false; }
+            return CanActorGetItem(actor, item, out reason);
         }
 
         public bool CanActorGetItem(Actor actor, Item it)
@@ -230,9 +246,29 @@ namespace djack.RogueSurvivor.Engine
                 return false;
             }
 
+            StorageContainer storage = actor.Location.Map.GetMapObjectAt(actor.Location.Position) as StorageContainer;
+            if (storage != null && storage.IsOpen && !CanStoreClaimedItem(storage, actor, it))
+            {
+                reason = "container is full";
+                return false;
+            }
+
             // all clear.
             reason = "";
             return true;
+        }
+
+        static bool CanStoreClaimedItem(StorageContainer storage, Actor actor, Item item)
+        {
+            if (!storage.Contents.IsFull) return true;
+            if (!item.Model.IsStackable) return false;
+            int room = 0;
+            Guid claimant = item.ClaimantWhenStored(actor);
+            foreach (Item other in storage.Contents.Items)
+                if (other.Model == item.Model && !other.IsEquipped &&
+                    other.StorageClaimantId == claimant && item.SameTheftApartFromClaim(other))
+                    room += other.Model.StackingLimit - other.Quantity;
+            return room >= item.Quantity;
         }
 
         public bool CanActorUseItem(Actor actor, Item it)
@@ -347,6 +383,12 @@ namespace djack.RogueSurvivor.Engine
                 if (actor.IsSleeping || !actor.Model.Abilities.IsIntelligent || (!radio.IsOn && radio.Batteries <= 0))
                 { reason = "radio cannot be used now"; return false; }
             }
+            else if (it is ItemNote)
+            {
+                if (!Session.Get.GamePreset.NotesEnabled || !actor.Model.Abilities.IsIntelligent ||
+                    (it as ItemNote).IsBlank)
+                { reason = "note cannot be read"; return false; }
+            }
 
             // (3. Actor cant use item in his present state.)
             // todo if needed.
@@ -362,6 +404,39 @@ namespace djack.RogueSurvivor.Engine
             // all clear.
             reason = "";
             return true;
+        }
+
+        public bool CanActorWriteNote(Actor actor, ItemNote note, NoteTopic topic,
+            StorageContainer cache, out string reason, NpcFact evidence = null)
+        {
+            if (actor == null || note == null || actor.Inventory == null ||
+                !actor.Inventory.Contains(note) || !note.IsBlank || actor.IsSleeping ||
+                !actor.Model.Abilities.IsIntelligent || !Session.Get.GamePreset.NotesEnabled)
+            { reason = "blank paper is required"; return false; }
+            if (topic == NoteTopic.Location && cache == null)
+            { reason = ""; return true; }
+            if (topic == NoteTopic.CacheSupplies && cache != null && cache.IsOpen &&
+                cache.Location.Map == actor.Location.Map &&
+                GridDistance(actor.Location.Position, cache.Location.Position) <= 1 &&
+                cache.Contents.GetFirstMatching(item => !(item is ItemNote)) != null)
+            { reason = ""; return true; }
+            if (topic >= NoteTopic.Event && topic <= NoteTopic.Threat &&
+                actor.Personality != null && evidence != null &&
+                actor.Personality.Knowledge.Facts.Contains(evidence) && evidence.Place.Map != null &&
+                (topic == NoteTopic.Event ||
+                 topic == NoteTopic.Warning && (evidence.Kind == "cache_theft" ||
+                     evidence.Kind == "base_theft" || evidence.Kind == "attack") ||
+                 topic == NoteTopic.RequestReturn && evidence.Kind == "cache_loss_discovered" &&
+                     evidence.SubjectId == actor.PersonalityIdentity ||
+                 (topic == NoteTopic.Confession || topic == NoteTopic.Regret ||
+                  topic == NoteTopic.Taunt || topic == NoteTopic.Justification ||
+                  topic == NoteTopic.Plea || topic == NoteTopic.Threat) &&
+                     (evidence.Kind == "cache_theft" || evidence.Kind == "base_theft") &&
+                     evidence.SubjectId == actor.PersonalityIdentity &&
+                     evidence.Source == NpcKnowledgeSource.Participant))
+            { reason = ""; return true; }
+            reason = "no observed supplies to describe";
+            return false;
         }
 
         public bool CanActorEatFoodOnGround(Actor actor, Item it, out string reason)
@@ -833,6 +908,11 @@ namespace djack.RogueSurvivor.Engine
             //////////////////////////////////////////
             Point to = new Point(x, y);
 
+            StorageContainer storage = map.GetMapObjectAt(to) as StorageContainer;
+            if (storage != null && !storage.IsOpen &&
+                CanActorUseStorageContainer(actor, storage, true, out reason))
+                return new ActionUseStorageContainer(actor, game, storage, true);
+
             // 1. Move?
             ActionMoveStep moveAction = new ActionMoveStep(actor, game, to);
             if (moveAction.IsLegal())
@@ -903,6 +983,11 @@ namespace djack.RogueSurvivor.Engine
                     }
                 }
                 #endregion
+
+                if (storage != null && !storage.IsOpen)
+                {
+                    return null;
+                }
 
                 // 3.2 Container?
                 if (CanActorGetItemFromContainer(actor, to, out reason))

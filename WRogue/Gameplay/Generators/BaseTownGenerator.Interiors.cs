@@ -145,13 +145,10 @@ namespace djack.RogueSurvivor.Gameplay.Generators
                                         m_DiceRoller,
                                         (pt2) =>
                                         {
-                                            // item.
-                                            Item it = MakeRandomBedroomItem();
-                                            if (it != null)
-                                                map.DropItemAt(it, pt2);
-
                                             // night table.
-                                            return MakeObjNightTable(GameImages.OBJ_NIGHT_TABLE);
+                                            MapObject table = MakeObjNightTable(GameImages.OBJ_NIGHT_TABLE);
+                                            AddStartingContainerItem(m_DiceRoller, map, pt2, table, MakeRandomBedroomItem());
+                                            return table;
                                         });
 
                                     // bed.
@@ -169,16 +166,20 @@ namespace djack.RogueSurvivor.Gameplay.Generators
                                                 m_DiceRoller,
                                                 (pt) =>
                                                 {
-                                                    // item.
-                                                    Item it = MakeRandomBedroomItem();
-                                                    if (it != null)
-                                                        map.DropItemAt(it, pt);
-
                                                     // wardrobe or drawer
                                                     if (m_DiceRoller.RollChance(50))
-                                                        return MakeObjWardrobe(GameImages.OBJ_WARDROBE);
+                                                    {
+                                                        MapObject wardrobe = MakeObjWardrobe(GameImages.OBJ_WARDROBE);
+                                                        AddStartingContainerItem(m_DiceRoller, map, pt, wardrobe, MakeRandomBedroomItem());
+                                                        return wardrobe;
+                                                    }
                                                     else
-                                                        return MakeObjDrawer(GameImages.OBJ_DRAWER);
+                                                    {
+                                                        MapObject drawer = MakeObjDrawer(GameImages.OBJ_DRAWER);
+                                                        Item it = MakeRandomBedroomItem();
+                                                        AddStartingContainerItem(m_DiceRoller, map, pt, drawer, it);
+                                                        return drawer;
+                                                    }
                                                 });
                         }
                         break;
@@ -276,16 +277,16 @@ namespace djack.RogueSurvivor.Gameplay.Generators
                                             m_DiceRoller,
                                             (pt) =>
                                             {
+                                                MapObject fridge = MakeObjFridge(GameImages.OBJ_FRIDGE);
                                                 // items.
                                                 for (int ii = 0; ii < HOUSE_KITCHEN_ITEMS_IN_FRIDGE; ii++)
                                                 {
                                                     Item it = MakeRandomKitchenItem();
-                                                    if (it != null)
-                                                        map.DropItemAt(it, pt);
+                                                    AddStartingContainerItem(m_DiceRoller, map, pt, fridge, it);
                                                 }
 
                                                 // fridge
-                                                return MakeObjFridge(GameImages.OBJ_FRIDGE);
+                                                return fridge;
                                             });
                         break;
                         #endregion
@@ -587,6 +588,8 @@ namespace djack.RogueSurvivor.Gameplay.Generators
                 case 21:
                 case 22:
                 case 23:
+                    if (Session.Get.GamePreset.NotesEnabled && m_DiceRoller.RollChance(25))
+                        return MakeItemNote();
                     if (m_DiceRoller.RollChance(50))
                         return MakeItemBook();
                     else

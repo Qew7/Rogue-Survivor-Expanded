@@ -14,8 +14,12 @@ namespace djack.RogueSurvivor
         /// The main entry point for the application.
         /// </summary>
         [STAThread]
-        static void Main()
+        static void Main(string[] args)
         {
+            if (args.Length == 2 && args[0] == "--export-social-graph")
+            { SocialGraphExport.Write(null, args[1]); return; }
+            if (args.Length == 3 && args[0] == "--export-social-graph")
+            { SocialGraphExport.Write(args[1], args[2]); return; }
             Logger.CreateFile();
             Logger.WriteLine(Logger.Stage.INIT_MAIN, "starting program...");
             Logger.WriteLine(Logger.Stage.INIT_MAIN, String.Format("date : {0}.", DateTime.Now.ToString()));

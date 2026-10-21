@@ -328,6 +328,47 @@ namespace djack.RogueSurvivor.Engine
         }
         #endregion
         #region Doors
+        public bool CanActorUseStorageContainer(Actor actor, StorageContainer container, bool open, out string reason)
+        {
+            if (actor == null || container == null || container.Location.Map != actor.Location.Map ||
+                !actor.Model.Abilities.CanUseMapObjects ||
+                GridDistance(actor.Location.Position, container.Location.Position) > 1)
+            {
+                reason = "cannot reach container";
+                return false;
+            }
+            if (container.IsOpen == open)
+            {
+                reason = open ? "already open" : "already closed";
+                return false;
+            }
+            if (!open && container.Location.Map.GetActorAt(container.Location.Position) != null)
+            {
+                reason = "someone is inside";
+                return false;
+            }
+            reason = "";
+            return true;
+        }
+
+        public bool CanActorInspectStorage(Actor actor, StorageContainer container, out string reason)
+        {
+            if (actor == null || container == null || container.Location.Map != actor.Location.Map ||
+                !actor.Model.Abilities.CanUseMapObjects ||
+                GridDistance(actor.Location.Position, container.Location.Position) > 1)
+            {
+                reason = "cannot reach container";
+                return false;
+            }
+            if (!container.IsOpen)
+            {
+                reason = "container is closed";
+                return false;
+            }
+            reason = "";
+            return true;
+        }
+
         public bool IsOpenableFor(Actor actor, DoorWindow door)
         {
             string reason;

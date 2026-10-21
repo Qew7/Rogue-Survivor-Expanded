@@ -453,22 +453,15 @@ namespace djack.RogueSurvivor.Engine
         }
         #endregion
         #region Items
-        public void DoTakeFromContainer(Actor actor, Point position)
-        {
-            Map map = actor.Location.Map;
-
-            // get topmost item.
-            Item it = map.GetItemsAt(position).TopItem;
-
-            // take it.
-            DoTakeItem(actor, position, it);
-        }
-
         public void DoTakeItem(Actor actor, Point position, Item it, bool noticeTheft = true, long causeId = 0, string storyId = null)
         {
             Map map = actor.Location.Map;
             Inventory ground = map.GetItemsAt(position);
             XpdBase baseClaim = ground != null && ground.Contains(it) ? map.XpdBaseAt(position) : null;
+            NpcFact robberyDrop = ground == null || !ground.Contains(it) ? null :
+                Gameplay.Personality.RobberyModule.SurrenderedTo(actor, it, new Location(map, position));
+            if (robberyDrop != null && !actor.Inventory.CanAddAll(it)) return;
+            if (robberyDrop != null) baseClaim = null;
             bool alreadyStolen = it.IsStolen;
             bool provisionalTheft = false;
             if (noticeTheft && baseClaim != null && !baseClaim.Owns(actor) && it.LastDroppedBy != actor && !alreadyStolen)
@@ -512,6 +505,9 @@ namespace djack.RogueSurvivor.Engine
                     map.RemoveItemAt(it, position);
             }
 
+            if (quantityAdded > 0 && robberyDrop != null)
+                Gameplay.Personality.RobberyModule.RecordTake(this, actor, it, robberyDrop, quantityAdded);
+
             if (quantityAdded > 0 && noticeTheft && baseClaim != null &&
                 !baseClaim.Owns(actor) && it.LastDroppedBy != actor)
             {
@@ -523,7 +519,7 @@ namespace djack.RogueSurvivor.Engine
                 }
             }
 
-            if (quantityAdded > 0 && alreadyStolen && noticeTheft)
+            if (quantityAdded > 0 && alreadyStolen && noticeTheft && robberyDrop == null)
                 ReportStolenGoods(actor, null, it, "stolen_goods_found", position);
 
             // message
@@ -537,12 +533,12 @@ namespace djack.RogueSurvivor.Engine
                 DoEquipItem(actor, it);
         }
 
-        long NoticeXpdBaseTheft(Actor thief, XpdBase baseClaim, Point position, Item item, long causeId = 0, string storyId = null, int units = 1)
+        long NoticeXpdBaseTheft(Actor thief, XpdBase baseClaim, Point position, Item item, long causeId = 0, string storyId = null, int units = 1, bool permissionHandled = false)
         {
             Map map = thief.Location.Map;
             string resource = item is ItemFood ? "food" : item is ItemMedicine ? "medicine" : "item";
             int permittedUnits = 0;
-            long permissionCause = thief.Personality == null || !m_Session.GamePreset.NpcPersonalitiesEnabled ? 0 :
+            long permissionCause = permissionHandled || thief.Personality == null || !m_Session.GamePreset.NpcPersonalitiesEnabled ? 0 :
                 thief.Personality.UsePermission(baseClaim.GroupLeader.PersonalityIdentity, new Location(map, position), resource,
                     map.LocalTime.TurnCounter, units, out permittedUnits);
             if (permissionCause != 0)
@@ -558,7 +554,9 @@ namespace djack.RogueSurvivor.Engine
                     map.LocalTime.TurnCounter;
             var theft = new Gameplay.Personality.SignificantEvent("base_theft", thief, baseClaim.GroupLeader,
                 map, position, map.LocalTime.TurnCounter, false, causeId: causeId, storyId: storyId)
-                { Units = units, ModelId = item.Model.ID, Resource = resource };
+                { Units = units, ModelId = item.Model.ID, Resource = resource,
+                  ClaimantId = item.StorageClaimantId, ClaimantGroupId = item.StorageClaimantGroupId,
+                  ClaimantName = item.StorageClaimantName, ItemId = item.StoryIdentity };
             Gameplay.Personality.PersonalitySystem.Report(this, theft);
             bool stored = (baseClaim.FoodRoom.HasValue && baseClaim.FoodRoom.Value.Contains(position) && item is ItemFood) ||
                 (baseClaim.WeaponRoom.HasValue && baseClaim.WeaponRoom.Value.Contains(position) &&
@@ -575,7 +573,6 @@ namespace djack.RogueSurvivor.Engine
                     m_Rules.ActorFOV(witness, map.LocalTime, m_Session.World.Weather) ||
                     !LOS.CanTraceViewLine(witness.Location, position)) continue;
                 if (witness.Personality != null || witness.IsPlayer) ownerSawTheft = true;
-                if (!m_Rules.AreEnemies(thief, witness)) DoMakeAggression(thief, witness);
             }
             if (!ownerSawTheft && m_Session.GamePreset.NpcPersonalitiesEnabled)
                 map.AddUnnoticedBaseLoss(baseClaim, position, resource, units, theft.Id, storyId);
@@ -788,6 +785,8 @@ namespace djack.RogueSurvivor.Engine
 
         public void DoDropItem(Actor actor, Item it)
         {
+            string reason;
+            if (!m_Rules.CanActorDropItem(actor, it, out reason)) return;
             // spend APs.
             SpendActorActionPoints(actor, Rules.BASE_ACTION_COST);
 
@@ -876,7 +875,7 @@ namespace djack.RogueSurvivor.Engine
             it.LastDroppedBy = actor;
 
             // add to ground.
-            actor.Location.Map.DropItemAt(it, actor.Location.Position);
+            DropItemAtActor(actor, it);
 
             // make sure it is unequipped.
             it.EquippedPart = DollPart.NONE;
@@ -891,10 +890,24 @@ namespace djack.RogueSurvivor.Engine
             clone.LastDroppedBy = actor;
 
             // add to ground.
-            actor.Location.Map.DropItemAt(clone, actor.Location.Position);
+            DropItemAtActor(actor, clone);
 
             // make sure it is unequipped.
             clone.EquippedPart = DollPart.NONE;
+        }
+
+        void DropItemAtActor(Actor actor, Item item)
+        {
+            Map map = actor.Location.Map;
+            StorageContainer storage = map.GetMapObjectAt(actor.Location.Position) as StorageContainer;
+            if (storage != null && storage.IsOpen)
+            {
+                item.ClaimForStorage(actor);
+                storage.Contents.AddAll(item);
+                RememberStorageContents(actor, storage, NpcKnowledgeSource.Participant);
+            }
+            else
+                map.DropItemAt(item, actor.Location.Position);
         }
 
         public void DoUseItem(Actor actor, Item it, NpcIntent npcGoal = null)
@@ -917,10 +930,59 @@ namespace djack.RogueSurvivor.Engine
                 DoUseEntertainmentItem(actor, it as ItemEntertainment);
             else if (it is ItemRadio)
                 DoUseRadio(actor, it as ItemRadio);
+            else if (it is ItemNote)
+                DoReadNote(actor, it as ItemNote);
 
             // alpha10 defrag ai inventories
             if (defragInventory)
                 actor.Inventory.Defrag();
+        }
+
+        public void DoWriteNote(Actor actor, ItemNote note, NoteTopic topic,
+            StorageContainer cache, bool signed, NpcFact evidence = null)
+        {
+            string reason;
+            if (!m_Rules.CanActorWriteNote(actor, note, topic, cache, out reason, evidence)) return;
+            Item contents = topic == NoteTopic.CacheSupplies ?
+                cache.Contents.GetFirstMatching(item => !(item is ItemNote)) : null;
+            string resource = contents == null ? null : contents is ItemFood ? "food" :
+                contents is ItemMedicine ? "medicine" : contents.Model.SingleName;
+            Location place = evidence != null ? evidence.Place : cache == null ? actor.Location : cache.Location;
+            note.Write(actor, topic, place, cache == null ? Guid.Empty : cache.Id,
+                resource, contents == null ? 0 : contents.Quantity, signed, evidence);
+            SpendActorActionPoints(actor, Rules.BASE_ACTION_COST);
+            if (IsVisibleToPlayer(actor)) AddMessage(MakeMessage(actor, "write a note."));
+        }
+
+        void DoReadNote(Actor actor, ItemNote note)
+        {
+            SpendActorActionPoints(actor, Rules.BASE_ACTION_COST);
+            if (actor.Personality != null && actor.Personality.Knowledge.MarkNoteRead(note.Id))
+            {
+                if (note.Topic == NoteTopic.CacheSupplies)
+                {
+                    int confidence = Math.Max(10, Math.Min(90, 60 +
+                        Gameplay.Personality.PersonalitySystem.Disposition(actor,
+                            NpcPersonalityAxis.MessageTrust) / 3));
+                    if (note.SignedAuthorId != Guid.Empty)
+                    {
+                        RelationshipRecord opinion = actor.Personality.Person(note.SignedAuthorId);
+                        if (opinion != null) confidence = Math.Max(10, Math.Min(95,
+                            confidence + opinion.Trust / 10 - opinion.Grievance / 5));
+                    }
+                    actor.Personality.Knowledge.RememberCache(new NpcKnownCache {
+                        Id = note.CacheId, NoteId = note.Id, Place = note.Place,
+                        ClaimantId = note.SignedAuthorId,
+                        Resource = note.Resource, Units = note.Units, SeenTurn = note.WrittenTurn,
+                        Confidence = confidence, Source = NpcKnowledgeSource.Told });
+                }
+                else if (note.Topic == NoteTopic.Location)
+                    actor.Personality.Knowledge.RememberPlace(new NpcKnownPlace(note.Place,
+                        "note_location", note.WrittenTurn));
+                else if (note.Claim != null)
+                    Gameplay.Personality.NpcKnowledgeSystem.ReadNote(this, actor, note);
+            }
+            if (actor.IsPlayer) AddMessage(new Message(note.Text, actor.Location.Map.LocalTime.TurnCounter));
         }
 
         public void DoEatFoodFromGround(Actor actor, Item it)

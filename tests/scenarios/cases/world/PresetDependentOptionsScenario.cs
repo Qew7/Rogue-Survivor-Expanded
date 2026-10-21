@@ -18,7 +18,9 @@ static class PresetDependentOptionsScenario
             string[] labels = (string[])typeof(RogueGame).GetField("GamePresetLabels",
                 BindingFlags.Static | BindingFlags.NonPublic).GetValue(null);
             int background = Array.IndexOf(labels, "Simulate whole city in background");
-            Check.Equal(true, background >= 0 && labels[background + 1] == "Other gameplay options",
+            Check.Equal(true, background >= 0 && Array.FindAll(labels,
+                label => label == "Simulate whole city in background").Length == 1 &&
+                Array.IndexOf(labels, "Other gameplay options") > background,
                 "only one background city control appears in the preset");
             Check.Equal(-1, Array.IndexOf(labels, "Finish distant simulation after resting"),
                 "blocking finish control is removed");

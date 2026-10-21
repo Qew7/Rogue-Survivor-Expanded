@@ -318,6 +318,13 @@ namespace djack.RogueSurvivor.Gameplay.AI
             }
             #endregion
 
+            // Finish a short escape route after a corner hides the pursuer.
+            if (!hasEnemies && m_Actor.Activity == Activity.FLEEING && m_SafeTurns <= 3)
+            {
+                ActorAction finishEscape = BehaviorPlannedEscape(game, new List<Percept>(), m_LOSSensor.FOV);
+                if (finishEscape != null) return finishEscape;
+            }
+
             // 1 throw grenades at enemies.
             #region
             // if directive off, unequip.

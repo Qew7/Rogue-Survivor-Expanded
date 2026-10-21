@@ -15,7 +15,11 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             NpcIntentDefinition defense = RegisterMechanic(c, "Protection", "Defend someone I value", "defend_person", "Defended",
                 m => 25 + m.Compassion + m.Courage + m.Group / 2 + m.CommunitySecurity + m.HumanLife / 2, NpcConflictActions.Defend, true);
             NpcIntentDefinition retaliation = RegisterMechanic(c, "Retaliation", "Retaliate for remembered harm", "retaliate", "Retaliated",
-                m => m.Courage - m.Compassion - m.Law + m.Grievance / 2 - m.HumanLife - m.Patience / 2, NpcConflictActions.Retaliate, true);
+                m => m.Courage - m.Compassion - m.Law + m.Grievance / 2 + m.Scarcity / 2 -
+                    m.Fear / 2 - m.HumanLife - m.Patience / 2 +
+                    (m.Owner.FoodPoints < m.Owner.Sheet.BaseFoodPoints / 2 ? 45 : 0) +
+                    (m.Courage - m.Fear >= 30 ? 35 : 0),
+                NpcConflictActions.Retaliate, true);
             RegisterMechanic(c, "Intimidation", "Deter remembered misconduct", "intimidate", "ThreatCommunicated",
                 m => m.Courage - m.Law - m.Compassion + m.Grievance / 3 - m.HumanLife / 3 - m.Patience / 2, NpcConflictActions.Threaten);
             RegisterMechanic(c, "RepairTrust", "Attempt to repair a relationship", "apologize", "ApologyCommunicated",

@@ -118,7 +118,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 string id = generated == null ? parent : parent != null && prior != null && !prior.Finished ? parent : null;
                 id = id ?? owner.PersonalityIdentity.ToString("N") + ":" + owner.Personality.NextIntentSequence;
                 string key = generated == null ? definition.Id + ":" + owner.PersonalityIdentity + ":" + target.Id : "value:" + owner.PersonalityIdentity + ":" + generated.Key;
-                NpcStory story = director.Open(id, definition.Id, owner, cause, turn + definition.Duration, key);
+                NpcStory story = director.Open(id, definition.Id, owner, cause, turn + definition.Duration, key,
+                    urgent: definition.UrgentStory);
                 if (story == null || story.Roles.Count >= 8) return null;
                 if (definition.CompleteEpisodeOnSuccess) story.CompletionGoal = definition.Id;
                 NpcIntent intent = owner.Personality.StartGoal(definition.Id, owner, target, turn,

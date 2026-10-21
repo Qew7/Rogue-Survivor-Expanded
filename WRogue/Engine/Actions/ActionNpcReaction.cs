@@ -33,6 +33,7 @@ namespace djack.RogueSurvivor.Engine.Actions
                 PersonalitySystem.Report(m_Game, new SignificantEvent(reaction.Kind, m_Actor, target,
                     m_Actor.Location.Map, m_Actor.Location.Position, m_Actor.Location.Map.LocalTime.TurnCounter,
                     causeId: reaction.CauseId, storyId: reaction.StoryId));
+                if (reaction.Kind == "robbery_resisted") m_Game.DoMakeAggression(target, m_Actor);
                 m_Game.DoMeleeAttack(m_Actor, target, causeId: reaction.CauseId, storyId: reaction.StoryId);
                 return;
             }

@@ -99,6 +99,31 @@ namespace djack.RogueSurvivor.Gameplay.Personality
     }
     static class NpcTestimony
     {
+        public static void DenyAccusation(RogueGame game, Actor accused, NpcFact claim)
+        {
+            if (accused.Personality.Knowledge.Facts.Exists(f =>
+                f.EventId == claim.EventId && f.Kind == "theft_accusation_denied")) return;
+            int turn = accused.Location.Map.LocalTime.TurnCounter;
+            accused.Personality.Opinion(claim.SubjectId, claim.SubjectName)
+                .AdjustSocial(trust: -15, grievance: 15);
+            accused.Personality.Knowledge.Learn(new NpcFact {
+                EventId = claim.EventId, Kind = "theft_accusation_denied",
+                SubjectId = accused.PersonalityIdentity, SubjectName = accused.UnmodifiedName,
+                SubjectReportName = accused.UnmodifiedName,
+                OtherId = claim.SubjectId, OtherName = claim.SubjectName,
+                OtherReportName = claim.ReportSubject,
+                EventTurn = turn, LearnedTurn = turn, Source = NpcKnowledgeSource.Participant,
+                SourceId = accused.PersonalityIdentity, Confidence = 100,
+                Place = claim.Place, StoryId = claim.StoryId, NoSubjectLocation = true });
+            var observed = new ObservedEvent("theft_accusation_denied", turn,
+                accused.UnmodifiedName, claim.SubjectName, true,
+                subjectId: accused.PersonalityIdentity, otherId: claim.SubjectId,
+                eventId: Session.Get.NextPersonalityEventId(), causeId: claim.EventId);
+            NpcRecordDescriptions.Annotate(observed, game.NpcContent.Event("theft_accusation_denied"), game.NpcContent);
+            accused.Personality.Remember(observed);
+            Session.Get.ResidentRecords.Observe(accused, observed);
+        }
+
         public static void Refute(RogueGame game, Actor listener, Actor speaker, NpcFact claim)
         {
             NpcContentCatalog catalog = game.NpcContent;
@@ -118,6 +143,9 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             Session.Get.ResidentRecords.Observe(listener, observed);
             listener.Personality.Knowledge.Learn(new NpcFact { EventId = claim.EventId, Kind = "false_testimony_exposed",
                 SubjectId = claimant, SubjectName = claimantName, EventTurn = turn, LearnedTurn = turn,
+                OtherId = claim.Kind == "theft_accusation" ? claim.OtherId : Guid.Empty,
+                OtherName = claim.Kind == "theft_accusation" ? claim.OtherName : null,
+                OtherReportName = claim.Kind == "theft_accusation" ? claim.ReportOther : null,
                 Source = NpcKnowledgeSource.Inferred, SourceId = listener.PersonalityIdentity, Confidence = 100,
                 Place = listener.Location, StoryId = claim.StoryId, NoSubjectLocation = true });
             MemoryDefinition definition = catalog.Personalities.Memory("false_testimony_exposed");

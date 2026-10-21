@@ -9,6 +9,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
     sealed class NpcGoalContext
     {
         public readonly Actor Owner;
+        public readonly RogueGame Game;
         public readonly NpcKnownPerson Self;
         public readonly IList<NpcKnownPerson> People;
         public readonly int Turn, MaxHP, FoodUnits;
@@ -21,7 +22,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         {
             Action<string, long> profile = RogueGame.ProfileSimulationPhase;
             long started = profile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
-            Owner = owner; Catalog = catalog; Turn = owner.Location.Map.LocalTime.TurnCounter;
+            Owner = owner; Game = game; Catalog = catalog; Turn = owner.Location.Map.LocalTime.TurnCounter;
             // Sources only propose candidates; the lifecycle changes intents after evaluation.
             foreach (NpcIntent intent in owner.Personality.IntentList)
                 if (!intent.Finished && intent.Generated != null)

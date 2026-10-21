@@ -358,6 +358,8 @@ namespace djack.RogueSurvivor.Gameplay.AI
             // taboo
             if (IsItemTaboo(it))
                 return false;
+            if (itemSrc == ItemSource.GROUND_STACK && RobberyModule.AvoidAutomaticPickup(m_Actor, it))
+                return false;
 
             // consistent with BehaviorMakeRoomForFood (was already in alpha9)
             if (itemSrc != ItemSource.OWNED && m_Actor.Inventory.CountItems >= m_Actor.Inventory.MaxCapacity - 1)

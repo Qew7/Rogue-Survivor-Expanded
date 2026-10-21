@@ -105,8 +105,9 @@ namespace djack.RogueSurvivor.Gameplay
             RADIO_MILITARY = 70,
             RADIO_LOCAL = 71,
             RADIO_GANG = 72,
+            NOTE = 73,
 
-            _COUNT = 73
+            _COUNT = 74
         }
         #endregion
 
@@ -666,6 +667,7 @@ namespace djack.RogueSurvivor.Gameplay
         public ItemModel BOOK { get { return this[IDs.ENT_BOOK]; } }
         EntData DATA_ENT_MAGAZINE;
         public ItemModel MAGAZINE { get { return this[IDs.ENT_MAGAZINE]; } }
+        public ItemModel NOTE { get { return this[IDs.NOTE]; } }
         #endregion
 
         #region Special Uniques

@@ -39,7 +39,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 score -= Math.Min(2 * Rules.TRUST_TRUSTING_THRESHOLD, Math.Max(0, owner.TrustInLeader)) * 30 / Rules.TRUST_TRUSTING_THRESHOLD;
             return score;
         }
-        public bool AllowQuestions, ActDuringDanger;
+        public bool AllowQuestions, ActDuringDanger, UrgentStory;
         public bool LegacyMethod = true, Selectable = true, PauseWhenTired = true, Departure, AllowHostile, PauseWhenHungry, WaitingAfterAnnouncement, ReportAfterDelivery, CompleteEpisodeOnSuccess;
         public Func<Actor, bool> TravelArrived;
         public Func<RelationshipRecord, int> SocialPriority;

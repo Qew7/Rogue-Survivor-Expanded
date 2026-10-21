@@ -48,7 +48,7 @@ namespace djack.RogueSurvivor.Data
         readonly List<NpcMapOffer> nextMapOffer = new List<NpcMapOffer>();
         [NonSerialized] Dictionary<Map, NpcMapOffer> offerIndex;
         public NpcStory Find(string id) { lock (this) return Stories.Find(s => s.Id == id); }
-        public bool CanOpen(Map map, int turn, string key, Location resource, Guid reservedActor)
+        public bool CanOpen(Map map, int turn, string key, Location resource, Guid reservedActor, bool urgent = false)
         {
             lock (this)
             {
@@ -62,18 +62,19 @@ namespace djack.RogueSurvivor.Data
                     if (reservedActor != Guid.Empty && story.ReservedActor == reservedActor) return false;
                     if (resource.Map != null && story.Resource == resource) return false;
                 }
-                return local < (key.StartsWith("group:", StringComparison.Ordinal) || key.StartsWith("faction:", StringComparison.Ordinal) ? 5 : 4) &&
-                    (RogueGame.IsParallelRestWorker || total < 16);
+                return local < (urgent || key.StartsWith("group:", StringComparison.Ordinal) ||
+                    key.StartsWith("faction:", StringComparison.Ordinal) ? 5 : 4) &&
+                    (RogueGame.IsParallelRestWorker || total < (urgent ? 18 : 16));
             }
         }
         public NpcStory Open(string id, string template, Actor owner, long cause, int deadline,
-            string key, Location resource = default(Location), Guid reservedActor = default(Guid))
+            string key, Location resource = default(Location), Guid reservedActor = default(Guid), bool urgent = false)
         {
             lock (this)
             {
                 NpcStory old = Find(id); if (old != null) return old.Finished ? null : old;
                 int turn = owner.Location.Map.LocalTime.TurnCounter;
-                if (!CanOpen(owner.Location.Map, turn, key, resource, reservedActor)) return null;
+                if (!CanOpen(owner.Location.Map, turn, key, resource, reservedActor, urgent)) return null;
                 var story = new NpcStory { Id = id, Template = template, Stage = "seeking", CauseId = cause,
                     StartedTurn = turn, Deadline = deadline, Place = owner.Location, Resource = resource, ReservedActor = reservedActor };
                 Stories.Add(story); cooldowns[key] = turn + 180;

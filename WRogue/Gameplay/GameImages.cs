@@ -196,12 +196,16 @@ namespace djack.RogueSurvivor.Gameplay
         public const string OBJ_SHOP_SHELF = @"MapObjects\shop_shelf";
         public const string OBJ_BED = @"MapObjects\bed";
         public const string OBJ_WARDROBE = @"MapObjects\wardrobe";
+        public const string OBJ_WARDROBE_OPEN = @"MapObjects\wardrobe_open";
         public const string OBJ_TABLE = @"MapObjects\table";
         public const string OBJ_RADIO = @"MapObjects\radio";
         public const string OBJ_FRIDGE = @"MapObjects\fridge";
+        public const string OBJ_FRIDGE_OPEN = @"MapObjects\fridge_open";
         public const string OBJ_DRAWER = @"MapObjects\drawer";
+        public const string OBJ_DRAWER_OPEN = @"MapObjects\drawer_open";
         public const string OBJ_CHAIR = @"MapObjects\chair";
         public const string OBJ_NIGHT_TABLE = @"MapObjects\nighttable";
+        public const string OBJ_NIGHT_TABLE_OPEN = @"MapObjects\nighttable_open";
         public const string OBJ_CHAR_CHAIR = @"MapObjects\char_chair";
         public const string OBJ_CHAR_TABLE = @"MapObjects\char_table";
 
@@ -228,7 +232,9 @@ namespace djack.RogueSurvivor.Gameplay
         public const string OBJ_HOSPITAL_BED = @"MapObjects\hospital_bed";
         public const string OBJ_HOSPITAL_CHAIR = @"MapObjects\hospital_chair";
         public const string OBJ_HOSPITAL_NIGHT_TABLE = @"MapObjects\hospital_nighttable";
+        public const string OBJ_HOSPITAL_NIGHT_TABLE_OPEN = @"MapObjects\hospital_nighttable_open";
         public const string OBJ_HOSPITAL_WARDROBE = @"MapObjects\hospital_wardrobe";
+        public const string OBJ_HOSPITAL_WARDROBE_OPEN = @"MapObjects\hospital_wardrobe_open";
         public const string OBJ_HOSPITAL_DOOR_OPEN = @"MapObjects\hospital_door_open";
         public const string OBJ_HOSPITAL_DOOR_CLOSED = @"MapObjects\hospital_door_closed";
         public const string OBJ_HOSPITAL_DOOR_BROKEN = @"MapObjects\hospital_door_broken";
@@ -421,6 +427,7 @@ namespace djack.RogueSurvivor.Gameplay
         public const string ITEM_IRON_GOLF_CLUB = @"Items\item_iron_golfclub";
         public const string ITEM_KOLT_REVOLVER = @"Items\item_kolt_revolver";
         public const string ITEM_MAGAZINE = @"Items\item_magazine";
+        public const string ITEM_NOTE = @"Items\item_note";
         public const string ITEM_MEDIKIT = @"Items\item_medikit";
         public const string ITEM_PISTOL = @"Items\item_pistol";
         public const string ITEM_PILLS_ANTIVIRAL = @"Items\item_pills_antiviral";
@@ -686,12 +693,16 @@ namespace djack.RogueSurvivor.Gameplay
             Load(OBJ_SHOP_SHELF);
             Load(OBJ_BED);
             Load(OBJ_WARDROBE);
+            Load(OBJ_WARDROBE_OPEN);
             Load(OBJ_TABLE);
             Load(OBJ_RADIO);
             Load(OBJ_FRIDGE);
+            Load(OBJ_FRIDGE_OPEN);
             Load(OBJ_DRAWER);
+            Load(OBJ_DRAWER_OPEN);
             Load(OBJ_CHAIR);
             Load(OBJ_NIGHT_TABLE);
+            Load(OBJ_NIGHT_TABLE_OPEN);
 
             Load(OBJ_CHAR_CHAIR);
             Load(OBJ_CHAR_TABLE);
@@ -722,7 +733,9 @@ namespace djack.RogueSurvivor.Gameplay
             Load(OBJ_HOSPITAL_DOOR_CLOSED);
             Load(OBJ_HOSPITAL_DOOR_OPEN);
             Load(OBJ_HOSPITAL_NIGHT_TABLE);
+            Load(OBJ_HOSPITAL_NIGHT_TABLE_OPEN);
             Load(OBJ_HOSPITAL_WARDROBE);
+            Load(OBJ_HOSPITAL_WARDROBE_OPEN);
 
             // alpha10
             Load(OBJ_GARDEN_FENCE);
@@ -915,6 +928,7 @@ namespace djack.RogueSurvivor.Gameplay
             Load(ITEM_HANS_VON_HANZ_PISTOL);
             Load(ITEM_KOLT_REVOLVER);
             Load(ITEM_MAGAZINE);
+            Load(ITEM_NOTE);
             Load(ITEM_MEDIKIT);
             Load(ITEM_PILLS_ANTIVIRAL);
             Load(ITEM_PILLS_BLUE);

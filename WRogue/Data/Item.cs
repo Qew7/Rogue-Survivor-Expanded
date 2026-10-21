@@ -23,6 +23,9 @@ namespace djack.RogueSurvivor.Data
         [System.Runtime.Serialization.OptionalField] string m_TheftStoryId;
         [System.Runtime.Serialization.OptionalField] long m_TheftEventId;
         [System.Runtime.Serialization.OptionalField] bool m_StolenGoodsFound;
+        [System.Runtime.Serialization.OptionalField] Guid m_StorageClaimantId;
+        [System.Runtime.Serialization.OptionalField] string m_StorageClaimantName;
+        [System.Runtime.Serialization.OptionalField] Guid m_StorageClaimantGroupId;
         #endregion
 
         #region Properties
@@ -108,6 +111,29 @@ namespace djack.RogueSurvivor.Data
             set;
         }
         public Actor LastDroppedBy { get { return m_LastDroppedBy; } set { m_LastDroppedBy = value; } }
+        public Guid StorageClaimantId { get { return m_StorageClaimantId; } }
+        public string StorageClaimantName { get { return m_StorageClaimantName; } }
+        public Guid StorageClaimantGroupId { get { return m_StorageClaimantGroupId; } }
+        public Guid ClaimantWhenStored(Actor storer)
+        { return m_StorageClaimantId != Guid.Empty ? m_StorageClaimantId :
+            IsStolen ? m_StolenFromLeaderId : storer.PersonalityIdentity; }
+        public void ClaimForStorage(Actor storer)
+        {
+            if (m_StorageClaimantId != Guid.Empty) return;
+            m_StorageClaimantId = ClaimantWhenStored(storer);
+            m_StorageClaimantName = IsStolen ? m_StolenFromName : storer.UnmodifiedName;
+            m_StorageClaimantGroupId = IsStolen ? m_StolenFromGroupId :
+                storer.SocialGroup == null ? Guid.Empty : storer.SocialGroup.Identity;
+        }
+        public Item CopyQuantity(int quantity)
+        {
+            if (!Model.IsStackable || quantity <= 0 || quantity >= Quantity)
+                throw new ArgumentOutOfRangeException("quantity");
+            Item copy = (Item)MemberwiseClone();
+            copy.m_Quantity = quantity;
+            copy.m_StoryIdentity = DiceRoller.NewGuid();
+            return copy;
+        }
         public bool IsStolen { get { return m_StolenFromLeaderId != Guid.Empty; } }
         public Guid StolenFromGroupId { get { return m_StolenFromGroupId; } }
         public Guid StolenFromLeaderId { get { return m_StolenFromLeaderId; } }
@@ -131,12 +157,19 @@ namespace djack.RogueSurvivor.Data
         public void RememberTheftEvent(long eventId) { if (IsStolen && m_TheftEventId == 0) m_TheftEventId = eventId; }
         public void CopyTheftFrom(Item source)
         {
+            m_StorageClaimantId = source.m_StorageClaimantId;
+            m_StorageClaimantName = source.m_StorageClaimantName;
+            m_StorageClaimantGroupId = source.m_StorageClaimantGroupId;
             m_StolenFromGroupId = source.m_StolenFromGroupId; m_StolenFromLeaderId = source.m_StolenFromLeaderId;
             m_StolenFromName = source.m_StolenFromName; m_TheftStoryId = source.m_TheftStoryId;
             m_TheftEventId = source.m_TheftEventId;
             m_StolenGoodsFound = source.m_StolenGoodsFound;
         }
         public bool SameTheftAs(Item other)
+        {
+            return m_StorageClaimantId == other.m_StorageClaimantId && SameTheftApartFromClaim(other);
+        }
+        public bool SameTheftApartFromClaim(Item other)
         {
             return m_StolenFromLeaderId == other.m_StolenFromLeaderId &&
                 m_StolenFromGroupId == other.m_StolenFromGroupId && m_TheftStoryId == other.m_TheftStoryId &&

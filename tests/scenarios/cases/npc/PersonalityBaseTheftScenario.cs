@@ -39,8 +39,8 @@ static class PersonalityBaseTheftScenario
                 new Point(1, 1), witnessed)), "visible theft is legal");
             Check.Equal(2, owner.Personality.Memories.Count,
                 "witnessed storage theft creates theft and lost supplies memories");
-            Check.Equal(true, world.Game.Rules.AreEnemies(thief, owner),
-                "existing theft hostility still applies");
+            Check.Equal(false, world.Game.Rules.AreEnemies(thief, owner),
+                "visible theft is remembered before a separate retaliation choice");
         });
     }
 }

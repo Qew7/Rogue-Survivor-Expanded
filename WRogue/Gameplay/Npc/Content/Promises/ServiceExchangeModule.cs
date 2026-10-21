@@ -129,7 +129,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 PersonalitySystem.Attitude(patient, offer.Subject) / 4 +
                 (patient.HitPoints < observation.Game.Rules.ActorMaxHPs(patient) ? 20 : -40);
             NpcReplies.Reply(patient, offer.Subject, offer, willingness >= 0 ? "shelter_care_accepted" : "shelter_care_refused",
-                "I'll help you get to shelter.", "I won't make that trip.");
+                willingness >= 0 ? "I'll help you get to shelter." : "I won't make that trip.");
         }
         internal static bool CanAccept(Actor patient, Actor provider, long offerId = 0)
         {

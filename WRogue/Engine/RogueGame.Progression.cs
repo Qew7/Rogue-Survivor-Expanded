@@ -93,6 +93,14 @@ namespace djack.RogueSurvivor.Engine
                         groundNutrition += m_Rules.FoodItemNutrition(it as ItemFood, map.LocalTime.TurnCounter);
                 }
             }
+            foreach (MapObject obj in map.MapObjects)
+            {
+                StorageContainer storage = obj as StorageContainer;
+                if (storage == null) continue;
+                foreach (Item it in storage.Contents.Items)
+                    if (it is ItemFood)
+                        groundNutrition += m_Rules.FoodItemNutrition(it as ItemFood, map.LocalTime.TurnCounter);
+            }
             // food items carried by actors.
             int carriedNutrition = 0;
             foreach (Actor a in map.Actors)
