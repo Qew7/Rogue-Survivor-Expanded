@@ -106,6 +106,7 @@
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
     <Compile Include="Engine\RogueGame.NpcContent.cs" />
+    <Compile Include="Engine\SocialGraphExport.cs" />
     <Compile Include="Gameplay\Npc\Contracts\NpcOperatorSource.cs" />
     <Compile Include="Gameplay\Npc\Planning\NpcPlanComposition.cs" />
     <Compile Include="Engine\Actions\ActionNpcReaction.cs" />
@@ -140,6 +141,9 @@
     <Compile Include="Data\NpcPlanningState.cs" />
     <Compile Include="Gameplay\Npc\Content\Companions\CompanionPlanOperators.cs" />
     <Compile Include="Gameplay\Npc\Content\Companions\CompanionsModule.cs" />
+    <Compile Include="Gameplay\Npc\Content\Caches\CachesModule.cs" />
+    <Compile Include="Gameplay\Npc\Content\Caches\NpcNoteTemplates.cs" />
+    <Compile Include="Gameplay\Npc\Content\Caches\CacheEncounters.cs" />
     <Compile Include="Gameplay\Npc\Content\CoreEvents\CoreEventsModule.cs" />
     <Compile Include="Gameplay\Npc\Content\FoodAid\FoodAidModule.cs" />
     <Compile Include="Gameplay\Npc\Content\FoodAid\FoodPlanOperators.cs" />
@@ -147,6 +151,9 @@
     <Compile Include="Gameplay\Npc\Content\Groups\GroupsModule.Perception.cs" />
     <Compile Include="Gameplay\Npc\Content\Groups\GroupsModule.cs" />
     <Compile Include="Gameplay\Npc\Content\Justice\JusticeModule.cs" />
+    <Compile Include="Gameplay\Npc\Content\Justice\JusticeModule.FalseAccusations.cs" />
+    <Compile Include="Gameplay\Npc\Content\Justice\JusticeModule.PoliceRecovery.cs" />
+    <Compile Include="Gameplay\Npc\Content\Justice\RobberyModule.cs" />
     <Compile Include="Gameplay\Npc\Content\Knowledge\KnowledgeModule.cs" />
     <Compile Include="Gameplay\Npc\Content\MedicalCare\MedicalCareModule.Perception.cs" />
     <Compile Include="Gameplay\Npc\Content\MedicalCare\MedicalCareModule.cs" />
@@ -295,6 +302,7 @@
     <Compile Include="Engine\HiScoreTable.cs" />
     <Compile Include="Engine\IMusicManager.cs" />
     <Compile Include="Engine\Items\ItemEntertainment.cs" />
+    <Compile Include="Engine\Items\ItemNote.cs" />
     <Compile Include="Engine\Items\ItemEntertainmentModel.cs" />
     <Compile Include="Engine\Items\ItemAmmo.cs" />
     <Compile Include="Engine\Items\ItemAmmoModel.cs" />
@@ -318,6 +326,7 @@
     <Compile Include="Engine\MapObjects\Board.cs" />
     <Compile Include="Engine\MapObjects\Fortification.cs" />
     <Compile Include="Engine\MapObjects\PowerGenerator.cs" />
+    <Compile Include="Engine\MapObjects\StorageContainer.cs" />
     <Compile Include="Engine\MapObjects\RadioReceiver.cs" />
     <Compile Include="Engine\Items\ItemRadio.cs" />
     <Compile Include="Engine\Actions\ActionSwitchRadio.cs" />
@@ -342,6 +351,9 @@
     <Compile Include="Engine\Actions\ActionMeleeAttack.cs" />
     <Compile Include="Engine\Actions\ActionMoveStep.cs" />
     <Compile Include="Engine\Actions\ActionOpenDoor.cs" />
+    <Compile Include="Engine\Actions\ActionUseStorageContainer.cs" />
+    <Compile Include="Engine\Actions\ActionInspectStorage.cs" />
+    <Compile Include="Engine\Actions\ActionWriteNote.cs" />
     <Compile Include="Engine\Actions\ActionRangedAttack.cs" />
     <Compile Include="Engine\Actions\ActionSleep.cs" />
     <Compile Include="Engine\Actions\ActionSwitchPlace.cs" />
@@ -411,6 +423,7 @@
     <Compile Include="Engine\RogueGame.Actions.Movement.cs" />
     <Compile Include="Engine\RogueGame.Actions.Combat.cs" />
     <Compile Include="Engine\RogueGame.Actions.Items.cs" />
+    <Compile Include="Engine\RogueGame.Actions.Storage.cs" />
     <Compile Include="Engine\RogueGame.Actions.Objects.cs" />
     <Compile Include="Engine\RogueGame.WorldGeneration.cs" />
     <Compile Include="Engine\RogueGame.Messaging.cs" />
@@ -1368,6 +1381,9 @@
     <Content Include="Resources\Images\Items\item_magazine.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="Resources\Images\Items\item_note.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Resources\Images\Items\item_medikit.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -1494,10 +1510,16 @@
     <Content Include="Resources\Images\MapObjects\drawer.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="Resources\Images\MapObjects\drawer_open.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Resources\Images\MapObjects\fence.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Resources\Images\MapObjects\fridge.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Images\MapObjects\fridge_open.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Resources\Images\MapObjects\garden_fence.png">
@@ -1530,7 +1552,13 @@
     <Content Include="Resources\Images\MapObjects\hospital_nighttable.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="Resources\Images\MapObjects\hospital_nighttable_open.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Resources\Images\MapObjects\hospital_wardrobe.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Images\MapObjects\hospital_wardrobe_open.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Resources\Images\MapObjects\iron_bench.png">
@@ -1552,6 +1580,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Resources\Images\MapObjects\nighttable.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Images\MapObjects\nighttable_open.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Resources\Images\MapObjects\power_generator_off.png">
@@ -1576,6 +1607,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Resources\Images\MapObjects\wardrobe.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Images\MapObjects\wardrobe_open.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Resources\Images\MapObjects\window_broken.png">

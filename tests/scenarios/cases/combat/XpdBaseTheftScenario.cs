@@ -47,8 +47,8 @@ static class XpdBaseTheftScenario
             world.Map.DropItemAt(witnessed, new Point(1, 1));
             Check.Equal(true, world.Try(new ActionTakeItem(player, world.Game,
                 new Point(1, 1), witnessed)), "visible theft remains legal");
-            Check.Equal(true, world.Game.Rules.AreEnemies(player, owner),
-                "witnessed theft makes owner hostile to thief");
+            Check.Equal(false, world.Game.Rules.AreEnemies(player, owner),
+                "witnessed theft alone does not create combat hostility");
         });
     }
 }

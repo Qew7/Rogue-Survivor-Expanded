@@ -15,6 +15,11 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         readonly Dictionary<NpcPlanAction, NpcOperatorDefinition> legacyOperators = new Dictionary<NpcPlanAction, NpcOperatorDefinition>();
         readonly Dictionary<NpcIntentMethod, NpcIntentDefinition> legacyMethods = new Dictionary<NpcIntentMethod, NpcIntentDefinition>();
         readonly Dictionary<string, NpcEventDefinition> events;
+        internal IEnumerable<NpcEventDefinition> AllEvents { get { return events.Values; } }
+        internal IEnumerable<NpcIntentDefinition> AllCapabilities { get { return capabilities.Values; } }
+        internal IEnumerable<NpcValueDefinition> AllValues { get { return values.Values; } }
+        internal IEnumerable<NpcOperatorDefinition> AllOperators { get { return operators.Values; } }
+        internal IEnumerable<NpcResourceDefinition> AllResources { get { return resources.Values; } }
         public readonly IList<INpcGoalSource> GoalSources;
         public readonly IList<Action<NpcPlanDomain>> PlanSeeds;
         public readonly IList<NpcOperatorSource> OperatorSources;

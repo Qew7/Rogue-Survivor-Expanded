@@ -13,3 +13,5 @@ For browser play, avoid Ctrl+T and other reserved browser shortcuts. Migrate an 
 Add a scenario under `tests/scenarios/cases/` in the relevant gameplay topic. Execute the real action and assert AP cost, target and world changes, then try an illegal target and assert no effect. Add an input test if key translation is new. Run the scenario and `docker build --target test .`; run `bash tests/e2e.sh` for mouse, keyboard or UI flow changes.
 
 If the completed action should become an NPC rumor or radio story, also follow `rogue-story-narration`: publish a real significant event, register its report text in the action's content module, and carry the actual `StoryId`/`CauseId` when linked. A failed or merely selected action must not create a report.
+
+When the player action changes NPC relations or prompts a response, refresh the social atlas catalog with `sh tools/social-graph-export.sh` and inspect its event, action handlers, rumor handlers and player reply outcomes in `docs/social-graph.html`. See `docs/social-graph.md`; the saved NPC graph must show only the people who actually observed or heard the action.

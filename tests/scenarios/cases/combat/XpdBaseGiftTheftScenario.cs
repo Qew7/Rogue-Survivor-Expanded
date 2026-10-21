@@ -21,6 +21,7 @@ static class XpdBaseGiftTheftScenario
                 world.Game.GameFactions.TheCivilians, "recipient", false, false, 0);
             Actor owner = new Actor(world.Game.GameActors.MaleCivilian,
                 world.Game.GameFactions.TheCivilians, "witness", false, false, 0);
+            owner.Personality = new PersonalityState();
             world.Map.PlaceActorAt(player, new Point(2, 1));
             world.Map.PlaceActorAt(follower, new Point(2, 2));
             world.Map.PlaceActorAt(owner, new Point(5, 1));
@@ -46,8 +47,10 @@ static class XpdBaseGiftTheftScenario
             world.Map.DropItemAt(stolen, new Point(2, 1));
             Check.Equal(true, world.Try(new ActionTakeItem(player, world.Game,
                 new Point(2, 1), stolen)), "actual taking remains possible");
-            Check.Equal(true, world.Game.Rules.AreEnemies(player, owner),
+            Check.Equal(true, NpcIntentSupport.HasEvent(owner, "base_theft"),
                 "taking base supplies is still noticed");
+            Check.Equal(false, world.Game.Rules.AreEnemies(player, owner),
+                "witnessing theft does not force a combat response");
 
             ItemMedicine savedDrop = new ItemMedicine(world.Game.GameItems.MEDIKIT);
             Check.Equal(true, player.Inventory.AddAll(savedDrop), "item for save fits");

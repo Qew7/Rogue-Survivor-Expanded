@@ -446,6 +446,19 @@ namespace djack.RogueSurvivor.Engine
                     }
                 }
 
+                foreach (MapObject obj in map.MapObjects)
+                {
+                    StorageContainer storage = obj as StorageContainer;
+                    if (storage == null) continue;
+                    foreach (Item it in storage.Contents.Items)
+                    {
+                        ItemPrimedExplosive primed = it as ItemPrimedExplosive;
+                        if (primed == null) continue;
+                        --primed.FuseTimeLeft;
+                        if (primed.FuseTimeLeft <= 0) hasExplosivesToExplode = true;
+                    }
+                }
+
                 // on actors.
                 foreach (Actor actor in map.Actors)
                 {
@@ -512,6 +525,26 @@ namespace djack.RogueSurvivor.Engine
                         // on actors.
                         if (!hasExplodedSomething)
                         {
+                            foreach (MapObject obj in new List<MapObject>(map.MapObjects))
+                            {
+                                StorageContainer storage = obj as StorageContainer;
+                                if (storage == null) continue;
+                                foreach (Item it in storage.Contents.Items)
+                                {
+                                    ItemPrimedExplosive primed = it as ItemPrimedExplosive;
+                                    if (primed == null || primed.FuseTimeLeft > 0) continue;
+                                    storage.Contents.RemoveAllQuantity(primed);
+                                    DoBlast(obj.Location, (primed.Model as ItemExplosiveModel).BlastAttack);
+                                    hasExplodedSomething = true;
+                                    break;
+                                }
+                                if (hasExplodedSomething) break;
+                            }
+                        }
+
+                        // on actors.
+                        if (!hasExplodedSomething)
+                        {
                             foreach (Actor actor in map.Actors)
                             {
                                 Inventory inv = actor.Inventory;
@@ -572,6 +605,8 @@ namespace djack.RogueSurvivor.Engine
             AdvanceMapTimers(map);
             AdvanceRadios(map);
             Gameplay.Personality.PersonalitySystem.ObserveEncounters(this, map);
+            if (m_Session.GamePreset.NpcPersonalitiesEnabled)
+                m_Session.ResidentRecords.CaptureAxes(map, map.LocalTime.TurnCounter, NpcContent);
 
             // -- Advance local time.
             #region

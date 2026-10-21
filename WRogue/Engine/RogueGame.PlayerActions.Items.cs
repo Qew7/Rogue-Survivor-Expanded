@@ -23,6 +23,13 @@ namespace djack.RogueSurvivor.Engine
 {
     partial class RogueGame
     {
+        StorageContainer PlayerOpenStorage()
+        {
+            if (m_Player == null) return null;
+            StorageContainer storage = m_Player.Location.Map.GetMapObjectAt(m_Player.Location.Position) as StorageContainer;
+            return storage != null && storage.IsOpen ? storage : null;
+        }
+
         bool HandleMouseLook(Point mousePos)
         {
             // Ignore if out of view rect.
@@ -122,14 +129,26 @@ namespace djack.RogueSurvivor.Engine
             Inventory groundInv = m_Player.Location.Map.GetItemsAt(m_Player.Location.Position);
             Point groundSlot = MouseToInventorySlot(INVENTORYPANEL_X, GROUNDINVENTORYPANEL_Y, screen.X, screen.Y);
             itemPos = InventorySlotToScreen(INVENTORYPANEL_X, GROUNDINVENTORYPANEL_Y, groundSlot.X, groundSlot.Y);
-            if (groundInv == null)
-                return null;
             int groundItemIndex = groundSlot.X + groundSlot.Y * INVENTORY_SLOTS_PER_LINE;
-            if (groundItemIndex >= 0 && groundItemIndex < groundInv.MaxCapacity)
+            if (groundInv != null && groundItemIndex >= 0 && groundItemIndex < groundInv.MaxCapacity)
             {
                 inv = groundInv;
                 iSlot = groundItemIndex; // alpha10
                 return groundInv[groundItemIndex];
+            }
+
+            StorageContainer storage = PlayerOpenStorage();
+            if (storage != null)
+            {
+                Point slot = MouseToInventorySlot(INVENTORYPANEL_X, CORPSESPANEL_Y, screen.X, screen.Y);
+                int index = slot.X + slot.Y * INVENTORY_SLOTS_PER_LINE;
+                if (index >= 0 && index < storage.Contents.MaxCapacity)
+                {
+                    inv = storage.Contents;
+                    iSlot = index;
+                    itemPos = InventorySlotToScreen(INVENTORYPANEL_X, CORPSESPANEL_Y, slot.X, slot.Y);
+                    return storage.Contents[index];
+                }
             }
 
             return null;
@@ -139,6 +158,9 @@ namespace djack.RogueSurvivor.Engine
         {
             if (inv == m_Player.Inventory)
             {
+                ItemNote blankNote = it as ItemNote;
+                if (blankNote != null && blankNote.IsBlank)
+                    return HandlePlayerWriteNote(m_Player, blankNote);
                 // LMB in player inv = use/equip toggle
                 if (it.IsEquipped)
                 {
@@ -185,6 +207,13 @@ namespace djack.RogueSurvivor.Engine
             }
             else // ground inventory
             {
+                StorageContainer storage = PlayerOpenStorage();
+                if (storage != null && inv == storage.Contents)
+                {
+                    if (!m_Rules.CanActorGetItem(m_Player, it)) return false;
+                    DoTakeFromStorage(m_Player, storage, it);
+                    return true;
+                }
                 // LMB in ground inv = take
                 string reason;
                 if (m_Rules.CanActorGetItem(m_Player, it, out reason))
@@ -272,8 +301,9 @@ namespace djack.RogueSurvivor.Engine
             List<Corpse> corpsesList = m_Player.Location.Map.GetCorpsesAt(m_Player.Location.Position);
             if (corpsesList == null)
                 return null;
-            Point corpseSlot = MouseToInventorySlot(INVENTORYPANEL_X, CORPSESPANEL_Y, screen.X, screen.Y);
-            corpsePos = InventorySlotToScreen(INVENTORYPANEL_X, CORPSESPANEL_Y, corpseSlot.X, corpseSlot.Y);
+            int corpseY = CORPSESPANEL_Y + (PlayerOpenStorage() == null ? 0 : 64);
+            Point corpseSlot = MouseToInventorySlot(INVENTORYPANEL_X, corpseY, screen.X, screen.Y);
+            corpsePos = InventorySlotToScreen(INVENTORYPANEL_X, corpseY, corpseSlot.X, corpseSlot.Y);
             int corpseIndex = corpseSlot.X + corpseSlot.Y * INVENTORY_SLOTS_PER_LINE;
             if (corpseIndex >= 0 && corpseIndex < corpsesList.Count)
                 return corpsesList[corpseIndex];
@@ -587,6 +617,10 @@ namespace djack.RogueSurvivor.Engine
                 return false;
             }
 
+            ItemNote blankNote = it as ItemNote;
+            if (blankNote != null && blankNote.IsBlank)
+                return HandlePlayerWriteNote(player, blankNote);
+
             // ty to unequip/equip/use.
             // shameful copy of OnLMBItem.
             // shame on me.
@@ -635,6 +669,38 @@ namespace djack.RogueSurvivor.Engine
 
             // nothing done.
             return false;
+        }
+
+        bool HandlePlayerWriteNote(Actor player, ItemNote note)
+        {
+            AddMessage(new Message("Write note: 1 place, 2 observed cache, 3 anonymous place, 4 anonymous cache; ESC cancels.",
+                player.Location.Map.LocalTime.TurnCounter));
+            RedrawPlayScreen();
+            Keys key = m_UI.UI_WaitKey().KeyCode;
+            if (key == Keys.Escape) return false;
+            bool cacheTopic = key == Keys.D2 || key == Keys.NumPad2 || key == Keys.D4 || key == Keys.NumPad4;
+            bool signed = key == Keys.D1 || key == Keys.NumPad1 || key == Keys.D2 || key == Keys.NumPad2;
+            if (!cacheTopic && key != Keys.D1 && key != Keys.NumPad1 && key != Keys.D3 && key != Keys.NumPad3)
+                return false;
+            StorageContainer cache = null;
+            if (cacheTopic)
+            {
+                AddMessage(new Message("Choose the cache's direction; ESC cancels.",
+                    player.Location.Map.LocalTime.TurnCounter));
+                RedrawPlayScreen();
+                Direction direction = WaitDirectionOrCancel();
+                if (direction == null) return false;
+                cache = player.Location.Map.GetMapObjectAt(player.Location.Position + direction) as StorageContainer;
+            }
+            ActionWriteNote action = new ActionWriteNote(player, this, note,
+                cacheTopic ? NoteTopic.CacheSupplies : NoteTopic.Location, cache, signed);
+            if (!action.IsLegal())
+            {
+                AddMessage(MakeErrorMessage("Cannot write this note: " + action.FailReason));
+                return false;
+            }
+            action.Perform();
+            return true;
         }
 
         bool DoPlayerItemSlotTake(Actor player, int slot)

@@ -126,6 +126,7 @@ namespace djack.RogueSurvivor.Engine
                 "Master spawn weight", "Infection: weak at", "Infection: tired at",
                 "Infection: vomiting at", "Infection: bleeding at", "Infection: death at",
                 "Infection symptom rate", "NPC traits and memories", "Simulate whole city in background",
+                "NPC caches", "NPC notes",
                 "Other gameplay options"
             };
 
@@ -165,6 +166,8 @@ namespace djack.RogueSurvivor.Engine
             "Scale how often infection symptoms occur. 100% is the normal rate.",
             "Give living NPCs personality traits and evolving memories.",
             "Simulate nearby districts with each turn; catch up the rest in the background after sleeping or waiting.\nTurn this off to simulate only the player's district and its eight neighbors.",
+            "Let survivors use opening furniture as personal caches.",
+            "Let survivors write and read physical paper notes.",
             "Open the full gameplay options, including population, events and other rules."
         };
 
@@ -185,6 +188,7 @@ namespace djack.RogueSurvivor.Engine
                     preset.InfectionVomitThreshold + "%", preset.InfectionBleedThreshold + "%",
                     preset.InfectionDeathThreshold + "%", preset.InfectionEffectRatePercent + "%",
                     OnOff(preset.NpcPersonalitiesEnabled), OnOff(!preset.DisableDistantSimulationDuringRest),
+                    OnOff(preset.CachesEnabled), OnOff(preset.NotesEnabled),
                     "ENTER"
             };
             for (int i = 0; i < values.Length; i++)
@@ -416,6 +420,8 @@ namespace djack.RogueSurvivor.Engine
                 case 31: preset.InfectionEffectRatePercent = BoundedStep(preset.InfectionEffectRatePercent, 10 * direction, 500); break;
                 case 32: preset.NpcPersonalitiesEnabled = !preset.NpcPersonalitiesEnabled; break;
                 case 33: preset.DisableDistantSimulationDuringRest = !preset.DisableDistantSimulationDuringRest; break;
+                case 34: preset.CachesEnabled = !preset.CachesEnabled; break;
+                case 35: preset.NotesEnabled = !preset.NotesEnabled; break;
             }
         }
 

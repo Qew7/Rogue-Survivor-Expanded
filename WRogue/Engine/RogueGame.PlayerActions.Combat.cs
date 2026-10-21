@@ -70,7 +70,20 @@ namespace djack.RogueSurvivor.Engine
                     if (player.Location.Map.IsInBounds(pos))
                     {
                         MapObject mapObj = player.Location.Map.GetMapObjectAt(pos);
-                        if (mapObj != null && mapObj is DoorWindow)
+                        StorageContainer storage = mapObj as StorageContainer;
+                        if (storage != null)
+                        {
+                            string reason;
+                            if (m_Rules.CanActorUseStorageContainer(player, storage, false, out reason))
+                            {
+                                DoUseStorageContainer(player, storage, false);
+                                loop = false;
+                                actionDone = true;
+                            }
+                            else
+                                AddMessage(MakeErrorMessage(String.Format("Can't close {0} : {1}.", storage.TheName, reason)));
+                        }
+                        else if (mapObj != null && mapObj is DoorWindow)
                         {
                             DoorWindow door = mapObj as DoorWindow;
                             string reason;

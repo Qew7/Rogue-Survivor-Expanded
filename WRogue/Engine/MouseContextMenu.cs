@@ -8,7 +8,7 @@ using djack.RogueSurvivor.Engine.MapObjects;
 
 namespace djack.RogueSurvivor.Engine
 {
-    enum MouseContextActionKind { Move, Bump, CloseDoor, UseExit, LeaveMap, Wait }
+    enum MouseContextActionKind { Move, Bump, CloseDoor, UseExit, LeaveMap, Wait, StorageClose, StorageTake, StorageInspect }
 
     sealed class MouseContextAction
     {
@@ -68,6 +68,19 @@ namespace djack.RogueSurvivor.Engine
             if (door != null && new ActionCloseDoor(player, game, door).IsLegal())
                 actions.Add(new MouseContextAction(MouseContextActionKind.CloseDoor,
                     target, "Close door"));
+            StorageContainer storage = map.GetMapObjectAt(target) as StorageContainer;
+            if (storage != null && storage.IsOpen)
+            {
+                if (new ActionInspectStorage(player, game, storage).IsLegal())
+                    actions.Add(new MouseContextAction(MouseContextActionKind.StorageInspect, target,
+                        "Inspect " + storage.TheName));
+                if (new ActionGetFromContainer(player, game, target).IsLegal())
+                    actions.Add(new MouseContextAction(MouseContextActionKind.StorageTake, target,
+                        "Take from " + storage.TheName));
+                if (new ActionUseStorageContainer(player, game, storage, false).IsLegal())
+                    actions.Add(new MouseContextAction(MouseContextActionKind.StorageClose, target,
+                        "Close " + storage.TheName));
+            }
             return actions;
         }
 
@@ -93,6 +106,7 @@ namespace djack.RogueSurvivor.Engine
         {
             if (action is ActionMeleeAttack) return "Attack";
             if (action is ActionOpenDoor) return "Open door";
+            if (action is ActionUseStorageContainer) return "Open container";
             if (action is ActionBashDoor) return "Bash door";
             if (action is ActionBreak) return "Break object";
             if (action is ActionChat) return "Talk";
@@ -221,6 +235,20 @@ namespace djack.RogueSurvivor.Engine
                 ActionCloseDoor close = door == null ? null : new ActionCloseDoor(player, this, door);
                 if (close == null || !close.IsLegal()) return false;
                 close.Perform();
+                return true;
+            }
+            if (action.Kind == MouseContextActionKind.StorageClose || action.Kind == MouseContextActionKind.StorageTake ||
+                action.Kind == MouseContextActionKind.StorageInspect)
+            {
+                StorageContainer storage = map.GetMapObjectAt(action.Target) as StorageContainer;
+                if (storage == null) return false;
+                ActorAction use = action.Kind == MouseContextActionKind.StorageClose
+                    ? (ActorAction)new ActionUseStorageContainer(player, this, storage, false)
+                    : action.Kind == MouseContextActionKind.StorageInspect
+                        ? (ActorAction)new ActionInspectStorage(player, this, storage)
+                        : new ActionGetFromContainer(player, this, action.Target);
+                if (!use.IsLegal()) return false;
+                use.Perform();
                 return true;
             }
             if (action.Kind == MouseContextActionKind.Bump)

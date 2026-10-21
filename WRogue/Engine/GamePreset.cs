@@ -11,6 +11,10 @@ namespace djack.RogueSurvivor.Engine
         public bool Bases;
         public bool NpcPersonalitiesEnabled;
         [System.Runtime.Serialization.OptionalField]
+        public bool CachesEnabled;
+        [System.Runtime.Serialization.OptionalField]
+        public bool NotesEnabled;
+        [System.Runtime.Serialization.OptionalField]
         public bool DisableDistantSimulationDuringRest;
         // Kept for old serialized presets; background simulation now has one switch.
         [System.Runtime.Serialization.OptionalField]
@@ -64,6 +68,8 @@ namespace djack.RogueSurvivor.Engine
                 Name = Session.DescGameMode(mode),
                 Bases = mode == GameMode.GM_XPD,
                 NpcPersonalitiesEnabled = true,
+                CachesEnabled = true,
+                NotesEnabled = true,
                 ImmediateZombification = mode == GameMode.GM_STANDARD,
                 Infection = mode != GameMode.GM_STANDARD,
                 Corpses = mode != GameMode.GM_STANDARD,

@@ -20,6 +20,7 @@ namespace djack.RogueSurvivor.Data
         public readonly long[] SupportingCauses;
         [System.Runtime.Serialization.OptionalField] public int RecordCategories;
         [System.Runtime.Serialization.OptionalField] public bool EventDedupKey;
+        [System.Runtime.Serialization.OptionalField] public int[] AxesAfter;
         public ResidentEntry(int turn, string text, int sequence, string kind = "note", bool direct = false,
             Guid subjectId = default(Guid), Guid otherId = default(Guid), bool gainedTrait = false,
             long eventId = 0, long causeId = 0, string storyId = null, long[] supportingCauses = null)
@@ -40,6 +41,7 @@ namespace djack.RogueSurvivor.Data
         [System.Runtime.Serialization.OptionalField] HashSet<string> m_KeySet;
         [NonSerialized] HashSet<long> m_EventKeys;
         [NonSerialized] bool m_SpeechKeysCompacted;
+        [NonSerialized] int m_AxisScan;
         [NonSerialized] ResidentRecords m_Owner;
         public IList<ResidentEntry> Entries { get { return m_Entries.AsReadOnly(); } }
         public int EntryCount { get { return m_Entries.Count; } }
@@ -113,6 +115,26 @@ namespace djack.RogueSurvivor.Data
             entry.EventDedupKey = eventKey;
             m_Entries.Add(entry);
         }
+        internal void CaptureAxes(Actor actor, int turn, NpcContentCatalog catalog)
+        {
+            if (actor.Personality == null || m_AxisScan == m_Entries.Count) return;
+            int[] values = null;
+            for (int i = m_AxisScan; i < m_Entries.Count; i++)
+            {
+                ResidentEntry entry = m_Entries[i];
+                if (entry.Turn != turn || entry.AxesAfter != null) continue;
+                if (values == null)
+                {
+                    values = new int[13];
+                    for (int axis = -8; axis <= 4; axis++)
+                        values[axis + 8] = axis < 0 ? PersonalitySystem.Bias(actor, (NpcPersonalityAxis)axis,
+                            registry: catalog.Personalities) : PersonalitySystem.Disposition(actor,
+                                (NpcPersonalityAxis)axis, catalog);
+                }
+                entry.AxesAfter = values;
+            }
+            m_AxisScan = m_Entries.Count;
+        }
     }
 
     // No Actor references: the chronicle survives removal of actors and corpses.
@@ -129,6 +151,17 @@ namespace djack.RogueSurvivor.Data
         { foreach (ResidentRecord record in m_Residents.Values) record.CompactKeys(); }
         public void CompactText()
         { foreach (ResidentRecord record in m_Residents.Values) record.ShareText(this); }
+        public void CaptureAxes(Map map, int turn, NpcContentCatalog catalog)
+        {
+            if (map == null) return;
+            lock (this)
+                foreach (Actor actor in map.Actors)
+                {
+                    ResidentRecord record;
+                    if (m_Residents.TryGetValue(actor.PersonalityIdentity, out record))
+                        record.CaptureAxes(actor, turn, catalog);
+                }
+        }
         internal string ShareText(string value)
         {
             if (value == null) return null;

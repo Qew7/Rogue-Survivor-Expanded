@@ -620,7 +620,7 @@ namespace djack.RogueSurvivor.Engine
 
                 #region Sewers
                 // 1 Sewers Invasion?
-                if (CheckForEvent_SewersInvasion(district.SewersMap))
+                if (district.SewersMap != null && CheckForEvent_SewersInvasion(district.SewersMap))
                 {
                     FireEvent_SewersInvasion(district.SewersMap);
                 }

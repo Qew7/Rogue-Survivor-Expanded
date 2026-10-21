@@ -581,11 +581,9 @@ namespace djack.RogueSurvivor.Gameplay.Generators
                     m_DiceRoller,
                     (pt) =>
                     {
-                        // add food.
-                        map.DropItemAt(MakeItemCannedFood(), pt);
-
-                        // add fridge.
-                        return MakeObjFridge(GameImages.OBJ_FRIDGE);
+                        MapObject fridge = MakeObjFridge(GameImages.OBJ_FRIDGE);
+                        AddStartingContainerItem(m_DiceRoller, map, pt, fridge, MakeItemCannedFood());
+                        return fridge;
                     });
             }
 

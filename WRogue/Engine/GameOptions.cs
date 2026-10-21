@@ -52,7 +52,8 @@ namespace djack.RogueSurvivor.Engine
             GAME_RATS_UPGRADE,
             GAME_SKELETONS_UPGRADE,
             GAME_SHAMBLERS_UPGRADE,
-            GAME_AUTOSAVE_PERIOD  // alpha10.1
+            GAME_AUTOSAVE_PERIOD,  // alpha10.1
+            UI_MELEE_HIT_CHANCES
         };
         #endregion
 
@@ -134,6 +135,7 @@ namespace djack.RogueSurvivor.Engine
         bool m_ShowMinimap;
         bool m_EnabledAdvisor;
         bool m_CombatAssistant;
+        bool m_MeleeHitChances;
         SimRatio m_SimulateDistricts;
         float m_cachedSimRatioFloat;
         bool m_SimulateWhenSleeping;
@@ -214,6 +216,12 @@ namespace djack.RogueSurvivor.Engine
         {
             get { return m_CombatAssistant; }
             set { m_CombatAssistant = value; }
+        }
+
+        public bool ShowMeleeHitChances
+        {
+            get { return m_MeleeHitChances; }
+            set { m_MeleeHitChances = value; }
         }
 
         public int CitySize
@@ -534,6 +542,7 @@ namespace djack.RogueSurvivor.Engine
             m_ShowPlayerTagsOnMinimap = true;
             m_EnabledAdvisor = true;
             m_CombatAssistant = false;
+            m_MeleeHitChances = false;
             this.SimulateDistricts = DEFAULT_SIM_DISTRICTS;
             m_SimulateWhenSleeping = false;
             m_SimThread = true;
@@ -610,6 +619,7 @@ namespace djack.RogueSurvivor.Engine
                 case IDs.UI_SHOW_PLAYER_TAG_ON_MINIMAP: return "   (Gfx) Show Tags on Minimap";
                 case IDs.UI_ADVISOR: return "  (Help) Enable Advisor";
                 case IDs.UI_COMBAT_ASSISTANT: return "  (Help) Combat Assistant";
+                case IDs.UI_MELEE_HIT_CHANCES: return "  (Help) Melee Hit Chances";
                 case IDs.UI_SHOW_TARGETS: return "  (Help) Show Other Actors Targets";
                 case IDs.UI_SHOW_PLAYER_TARGETS: return "  (Help) Show Player Targets";
                 case IDs.GAME_AUTOSAVE_PERIOD: return "  (Save) AutoSave Period";  // alpha10.1
@@ -700,6 +710,8 @@ namespace djack.RogueSurvivor.Engine
                     return "Enable or disable the ingame hints system. The advisor helps you learn the game for the living side.\nIt will only tell you hints it didn't already tell you.\nAll hints are also available from the main menu.";
                 case IDs.UI_COMBAT_ASSISTANT:
                     return "When enabled draws a colored circle icon on your enemies.\nGreen = you can safely act twice before your enemy\nYellow = your enemy will act after you\nRed = your enemy will act twice after you";
+                case IDs.UI_MELEE_HIT_CHANCES:
+                    return "Show your and an enemy's current melee hit chances when you point at them.";
                 case IDs.UI_SHOW_TARGETS:
                     return "When mouse over an actor, will draw icons on actors that are targeting, are targeted or are in group with this actor.";
                 case IDs.UI_SHOW_PLAYER_TARGETS:
@@ -860,6 +872,8 @@ namespace djack.RogueSurvivor.Engine
                     return IsAnimDelayOn ? "ON " : "OFF";
                 case IDs.UI_COMBAT_ASSISTANT:
                     return IsCombatAssistantOn ? "ON    (default OFF)" : "OFF   (default OFF)";
+                case IDs.UI_MELEE_HIT_CHANCES:
+                    return ShowMeleeHitChances ? "ON    (default OFF)" : "OFF   (default OFF)";
                 case IDs.UI_MUSIC:
                     return PlayMusic ? "ON " : "OFF";
                 case IDs.UI_MUSIC_VOLUME:

@@ -55,9 +55,14 @@ namespace djack.RogueSurvivor.Gameplay.AI
                 ActionNpcReaction action = new ActionNpcReaction(m_Actor, game, reaction, target);
                 if (action.IsLegal()) return action;
             }
+            ActorAction robberyPickup = RobberyModule.NearbyAction(game, m_Actor);
+            if (robberyPickup != null) return robberyPickup;
             ActorAction groupPlan = BehaviorNpcGroupPlans(game, visible); if (groupPlan != null) return groupPlan;
-            NpcIntent intent = NpcIntentSystem.Select(game.NpcContent, m_Actor); if (intent == null) return BehaviorNpcRumors(game, visible);
-            return BehaviorNpcPlan(game, intent, visible);
+            NpcIntent intent = NpcIntentSystem.Select(game.NpcContent, m_Actor);
+            ActorAction planned = intent == null ? null : BehaviorNpcPlan(game, intent, visible);
+            if (planned != null) return planned;
+            ActorAction nearby = CachesModule.NearbyAction(game, m_Actor);
+            return nearby ?? (intent == null ? BehaviorNpcRumors(game, visible) : null);
         }
     }
 }

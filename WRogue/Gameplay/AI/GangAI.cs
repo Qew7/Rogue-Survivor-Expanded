@@ -405,7 +405,7 @@ namespace djack.RogueSurvivor.Gameplay.AI
 
             // 12 steal item from someone.
             #region
-            if (!hasCurrentEnemies)
+            if (!hasCurrentEnemies && !Session.Get.GamePreset.NpcPersonalitiesEnabled)
             {
                 Map map = m_Actor.Location.Map;
                 List<Percept> mayStealFrom = FilterActors(game, FilterCurrent(game, mapPercepts),

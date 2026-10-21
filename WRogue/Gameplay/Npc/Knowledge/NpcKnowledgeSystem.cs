@@ -25,6 +25,11 @@ namespace djack.RogueSurvivor.Gameplay.Personality
         internal static bool Visible(RogueGame game, Actor actor, Location place, int maxRange)
         { return place.Map == actor.Location.Map && game.Rules.GridDistance(actor.Location.Position, place.Position) <= maxRange &&
             LOS.CanTraceViewLine(actor.Location, place.Position); }
+        static bool ContradictsAccusation(NpcKnowledge knowledge, NpcFact claim)
+        { return knowledge.Facts.Exists(f => f.EventId == claim.CauseId &&
+            (f.Kind == "base_theft" || f.Kind == "cache_theft") &&
+            f.Source != NpcKnowledgeSource.Told && f.Confidence >= 80 &&
+            f.NamesSubject && f.SubjectId != claim.OtherId); }
         internal static void ObserveParticipants(NpcObservation observation)
         {
             Actor owner = observation.Owner; SignificantEvent source = observation.Source;
@@ -49,17 +54,24 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 (owner.PersonalityIdentity == source.ClaimantId ||
                  owner.SocialGroup != null && owner.SocialGroup.Identity == source.ClaimantGroupId ||
                  owner.Personality.Person(source.ClaimantId) != null || owner.Personality.Knowledge.Person(source.ClaimantId) != null);
+            if (!knowsClaimant && source.ClaimantId != Guid.Empty)
+                foreach (Actor claimant in source.Map.Actors)
+                    if (claimant.PersonalityIdentity == source.ClaimantId &&
+                        Visible(observation.Game, owner, claimant.Location))
+                    { knowsClaimant = true; break; }
             owner.Personality.Knowledge.Learn(new NpcFact { EventId = source.Id, CauseId = source.CauseId, Kind = source.Kind, EventTurn = source.Turn, LearnedTurn = source.Turn,
                 Source = observation.Direct ? NpcKnowledgeSource.Participant : NpcKnowledgeSource.Witness, Confidence = observation.Direct ? 100 : 90,
                 SourceId = owner.PersonalityIdentity, SubjectId = !seesSubject ? Guid.Empty : source.Subject.PersonalityIdentity,
-                OtherId = knowsClaimant ? source.ClaimantId : !seesOther ? Guid.Empty : source.Other.PersonalityIdentity, SubjectName = !seesSubject ? null : source.Subject.UnmodifiedName,
-                OtherName = knowsClaimant ? source.ClaimantName : !seesOther ? null : source.Other.UnmodifiedName,
+                OtherId = source.Other == null && knowsClaimant ? source.ClaimantId : !seesOther ? Guid.Empty : source.Other.PersonalityIdentity, SubjectName = !seesSubject ? null : source.Subject.UnmodifiedName,
+                OtherName = source.Other == null && knowsClaimant ? source.ClaimantName : !seesOther ? null : source.Other.UnmodifiedName,
                 SubjectReportName = ReportName(owner, source.Subject, seesSubject),
-                OtherReportName = knowsClaimant ? source.ClaimantName : ReportName(owner, source.Other, seesOther),
+                OtherReportName = source.Other == null && knowsClaimant ? source.ClaimantName : ReportName(owner, source.Other, seesOther),
                 SubjectFactionId = !seesSubject || source.Subject.Faction == null ? (int?)null : source.Subject.Faction.ID,
                 OtherFactionId = !seesOther || source.Other.Faction == null ? (int?)null : source.Other.Faction.ID,
                 Place = new Location(source.Map, source.Position), StoryId = source.StoryId,
                 Resource = source.Resource, ClaimantGroupId = source.ClaimantGroupId,
+                ClaimantId = knowsClaimant ? source.ClaimantId : Guid.Empty,
+                ClaimantName = knowsClaimant ? source.ClaimantName : null,
                 ItemId = source.ItemId, Units = source.Units });
         }
         public static void Perceive(RogueGame game, Actor actor, IList<Percept> percepts,
@@ -104,9 +116,55 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             }
             if (profile != null) profile("knowledge percepts", System.Diagnostics.Stopwatch.GetTimestamp() - started);
             started = profile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
+            if (currentFov != null)
+                foreach (Point point in currentFov)
+                {
+                    Engine.MapObjects.StorageContainer storage = actor.Location.Map.GetMapObjectAt(point) as Engine.MapObjects.StorageContainer;
+                    if (storage != null)
+                        game.NpcContent.Perceive(NpcPerceptionKind.Storage,
+                            new NpcPerceptionContext(game, actor, storage.Location, storage: storage));
+                }
             game.NpcContent.Perceive(NpcPerceptionKind.Surroundings, new NpcPerceptionContext(game, actor, actor.Location));
             if (profile != null) profile("knowledge surroundings", System.Diagnostics.Stopwatch.GetTimestamp() - started);
         }
+        public static bool ReadNote(RogueGame game, Actor reader, Engine.Items.ItemNote note)
+        {
+            if (reader.Personality == null || note.Claim == null) return false;
+            NpcFact source = note.Claim;
+            RelationshipRecord opinion = note.SignedAuthorId == Guid.Empty ? null :
+                reader.Personality.Person(note.SignedAuthorId);
+            int confidence = Math.Max(10, Math.Min(90, source.Confidence -
+                (note.SignedAuthorId == Guid.Empty ? 30 : 15) +
+                (opinion == null ? 0 : opinion.Trust / 10 - opinion.Grievance / 5) +
+                PersonalitySystem.Disposition(reader, NpcPersonalityAxis.MessageTrust) / 3));
+            NpcFact previous = reader.Personality.Knowledge.Facts.Find(f =>
+                f.EventId == source.EventId && f.Kind == source.Kind);
+            if (previous != null && previous.Confidence >= confidence) return false;
+            NpcFact learned = source.Retell(note.SignedAuthorId,
+                reader.Location.Map.LocalTime.TurnCounter, confidence);
+            int improvement = confidence - (previous == null ? 0 : previous.Confidence);
+            bool refuted = learned.Kind == "theft_accusation" &&
+                ContradictsAccusation(reader.Personality.Knowledge, learned);
+            if (!reader.Personality.Knowledge.Learn(learned)) return false;
+            if (refuted) NpcTestimony.Refute(game, reader, reader, learned);
+            if (learned.Kind == "theft_accusation" &&
+                learned.OtherId == reader.PersonalityIdentity && !reader.IsPlayer)
+                NpcTestimony.DenyAccusation(game, reader, learned);
+            if (learned.NamesSubject && !learned.NoSubjectLocation)
+                reader.Personality.Knowledge.LearnPerson(new NpcKnownPerson {
+                    Id = learned.SubjectId, Name = learned.ReportSubject, Place = learned.Place,
+                    SeenTurn = learned.EventTurn, Confidence = confidence,
+                    Source = NpcKnowledgeSource.Told });
+            if (learned.NamesOther && learned.Kind != "theft_accusation" &&
+                reader.Personality.Knowledge.Person(learned.OtherId) == null)
+                reader.Personality.Knowledge.LearnPerson(new NpcKnownPerson {
+                    Id = learned.OtherId, Name = learned.ReportOther, Place = learned.Place,
+                    SeenTurn = learned.EventTurn, Confidence = confidence,
+                    Source = NpcKnowledgeSource.Told });
+            game.NpcContent.Hear(new NpcReportContext(reader, learned, refuted ? 0 : improvement, game.NpcContent));
+            return true;
+        }
+
         public static bool Hear(RogueGame game, Actor listener, Actor speaker, NpcFact source)
         {
             if (source.Kind == "food_cache" &&
@@ -126,13 +184,19 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 NpcFact contrary = knowledge.Facts.Find(f => f.EventId == fact.EventId && f.Kind == "base_theft");
                 refuted = contrary != null && contrary.Source != NpcKnowledgeSource.Told && contrary.Confidence >= 80;
             }
+            if (fact.Kind == "theft_accusation")
+                refuted = ContradictsAccusation(knowledge, fact);
             int improvement = Math.Max(0, confidence - (previous == null ? 0 : previous.Confidence));
             bool learned = knowledge.Learn(fact);
             if (learned && refuted) NpcTestimony.Refute(game, listener, speaker, fact);
+            if (learned && fact.Kind == "theft_accusation" &&
+                fact.OtherId == listener.PersonalityIdentity && !listener.IsPlayer)
+                NpcTestimony.DenyAccusation(game, listener, fact);
             if (learned && fact.NamesSubject && !fact.NoSubjectLocation)
                 listener.Personality.Knowledge.LearnPerson(new NpcKnownPerson { Id = fact.SubjectId, Name = fact.ReportSubject, Place = fact.Place,
                     SeenTurn = fact.EventTurn, Confidence = confidence, Source = NpcKnowledgeSource.Told, Dead = game.NpcContent.Event(fact.Kind) != null && game.NpcContent.Event(fact.Kind).ProvesDeath && confidence >= 60 });
-            if (learned && fact.NamesOther && listener.Personality.Knowledge.Person(fact.OtherId) == null)
+            if (learned && fact.NamesOther && fact.Kind != "theft_accusation" &&
+                listener.Personality.Knowledge.Person(fact.OtherId) == null)
                 listener.Personality.Knowledge.LearnPerson(new NpcKnownPerson { Id = fact.OtherId, Name = fact.ReportOther, Place = fact.Place,
                     SeenTurn = fact.EventTurn, Confidence = confidence, Source = NpcKnowledgeSource.Told });
             if (learned) game.NpcContent.Hear(new NpcReportContext(listener, fact, refuted ? 0 : improvement, game.NpcContent));
@@ -151,6 +215,10 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 if (contrary != null && contrary.Source != NpcKnowledgeSource.Told && contrary.Confidence >= 80)
                     return 20;
                 if (contrary != null && contrary.Confidence >= confidence) return Math.Min(confidence, 30);
+            }
+            if (source.Kind == "theft_accusation")
+            {
+                if (ContradictsAccusation(listener.Personality.Knowledge, source)) return 20;
             }
             return confidence;
         }

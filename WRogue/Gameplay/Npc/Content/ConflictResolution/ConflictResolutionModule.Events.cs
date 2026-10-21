@@ -88,7 +88,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 if (o.Owner != o.Source.Other) return;
                 bool accept = PersonalitySystem.Bias(o.Owner, NpcPersonalityAxis.Courage) < 0;
                 NpcReplies.Reply(o.Owner, o.Source.Subject, o.Source, accept ? "threat_accepted" : "threat_defied",
-                    "I'll keep my distance.", "You can't scare me.");
+                    accept ? "I'll keep my distance." : "You can't scare me.");
             });
             c.On("apologized", NpcObservationPhase.Replies, o => {
                 if (o.Owner != o.Source.Other) return;
@@ -97,7 +97,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 bool accept = 20 + PersonalitySystem.Bias(o.Owner, NpcPersonalityAxis.Compassion) + PersonalitySystem.Bias(o.Owner, NpcPersonalityAxis.Law) +
                     PersonalitySystem.Disposition(o.Owner, NpcPersonalityAxis.Patience, o.Game.NpcContent) / 2 - hurt >= 0;
                 NpcReplies.Reply(o.Owner, o.Source.Subject, o.Source, accept ? "apology_accepted" : "apology_refused",
-                    "We can try again. You'll have to earn my trust.", "I'm not ready to forgive you.");
+                    accept ? "We can try again. You'll have to earn my trust." : "I'm not ready to forgive you.");
             });
             c.On("apology_accepted", NpcObservationPhase.Relationships, o => {
                 if (!o.Direct || o.Source.Subject == null || o.Source.Other == null) return;

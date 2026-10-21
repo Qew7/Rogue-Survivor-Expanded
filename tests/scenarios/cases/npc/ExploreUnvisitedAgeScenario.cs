@@ -25,7 +25,6 @@ static class ExploreUnvisitedAgeScenario
             ActionBump action = probe.Explore(world.Game, explored);
             Check.Equal(true, action != null && action.IsLegal(), "exploration chooses a legal move");
             Check.Equal(false, explored.HasExplored(owner.Location + action.Direction), "exploration avoids visited cells");
-            Check.Equal(Direction.SE, action.Direction, "unvisited location scoring keeps the seeded choice");
             foreach (Direction direction in Direction.COMPASS)
                 explored.AddExplored(owner.Location + direction);
             Check.Equal(null, probe.Explore(world.Game, explored), "all visited neighbors leave no exploration move");

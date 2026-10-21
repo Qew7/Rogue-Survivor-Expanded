@@ -116,6 +116,7 @@ namespace djack.RogueSurvivor.Engine
                    // helpers
                    GameOptions.IDs.UI_ADVISOR,
                    GameOptions.IDs.UI_COMBAT_ASSISTANT,
+                   GameOptions.IDs.UI_MELEE_HIT_CHANCES,
                    GameOptions.IDs.UI_SHOW_PLAYER_TARGETS,
                    GameOptions.IDs.UI_SHOW_TARGETS,
                    // sim
@@ -253,6 +254,7 @@ namespace djack.RogueSurvivor.Engine
                             case GameOptions.IDs.UI_SHOW_PLAYER_TAG_ON_MINIMAP: s_Options.ShowPlayerTagsOnMinimap = !s_Options.ShowPlayerTagsOnMinimap; break;
                             case GameOptions.IDs.UI_ADVISOR: s_Options.IsAdvisorEnabled = !s_Options.IsAdvisorEnabled; break;
                             case GameOptions.IDs.UI_COMBAT_ASSISTANT: s_Options.IsCombatAssistantOn = !s_Options.IsCombatAssistantOn; break;
+                            case GameOptions.IDs.UI_MELEE_HIT_CHANCES: s_Options.ShowMeleeHitChances = !s_Options.ShowMeleeHitChances; break;
                             case GameOptions.IDs.UI_SHOW_TARGETS: s_Options.ShowTargets = !s_Options.ShowTargets; break;
                             case GameOptions.IDs.UI_SHOW_PLAYER_TARGETS: s_Options.ShowPlayerTargets = !s_Options.ShowPlayerTargets; break;
                             case GameOptions.IDs.GAME_MAX_CIVILIANS: s_Options.MaxCivilians -= 5; break;
@@ -309,6 +311,7 @@ namespace djack.RogueSurvivor.Engine
                             case GameOptions.IDs.UI_SHOW_PLAYER_TAG_ON_MINIMAP: s_Options.ShowPlayerTagsOnMinimap = !s_Options.ShowPlayerTagsOnMinimap; break;
                             case GameOptions.IDs.UI_ADVISOR: s_Options.IsAdvisorEnabled = !s_Options.IsAdvisorEnabled; break;
                             case GameOptions.IDs.UI_COMBAT_ASSISTANT: s_Options.IsCombatAssistantOn = !s_Options.IsCombatAssistantOn; break;
+                            case GameOptions.IDs.UI_MELEE_HIT_CHANCES: s_Options.ShowMeleeHitChances = !s_Options.ShowMeleeHitChances; break;
                             case GameOptions.IDs.UI_SHOW_TARGETS: s_Options.ShowTargets = !s_Options.ShowTargets; break;
                             case GameOptions.IDs.UI_SHOW_PLAYER_TARGETS: s_Options.ShowPlayerTargets = !s_Options.ShowPlayerTargets; break;
                             case GameOptions.IDs.GAME_MAX_CIVILIANS: s_Options.MaxCivilians += 5; break;

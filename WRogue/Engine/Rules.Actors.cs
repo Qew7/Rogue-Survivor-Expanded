@@ -280,8 +280,8 @@ namespace djack.RogueSurvivor.Engine
                             SKILL_ZAGILE_ATK_BONUS * actor.Sheet.SkillTable.GetSkillLevel((int)Skills.IDs.Z_AGILE);
             int dmgBonus = SKILL_STRONG_DMG_BONUS * actor.Sheet.SkillTable.GetSkillLevel((int)Skills.IDs.STRONG) +
                             SKILL_ZSTRONG_DMG_BONUS * actor.Sheet.SkillTable.GetSkillLevel((int)Skills.IDs.Z_STRONG);
-            // martial arts apply only if no weapon equipped.
-            if (actor.GetEquippedWeapon() == null)
+            // Ranged weapons leave the melee attack unarmed.
+            if (actor.GetEquippedMeleeWeapon() == null)
             {
                 int ma = actor.Sheet.SkillTable.GetSkillLevel((int)Skills.IDs.MARTIAL_ARTS);
                 if (ma > 0)
@@ -407,6 +407,42 @@ namespace djack.RogueSurvivor.Engine
         }
 
         // alpha10
+        /// <summary>
+        /// Compute the chance that an attack roll beats a defence roll.
+        /// </summary>
+        public int ComputeChancesHit(int hitValue, int defValue)
+        {
+            int[] attacks = SkillRollCounts(hitValue);
+            int[] defences = SkillRollCounts(defValue);
+            long wins = 0;
+            long lowerDefences = 0;
+            for (int roll = 1; roll < attacks.Length; roll++)
+            {
+                if (roll - 1 < defences.Length)
+                    lowerDefences += defences[roll - 1];
+                wins += attacks[roll] * lowerDefences;
+            }
+            long attackRolls = hitValue <= 0 ? 1 : (long)(hitValue + 1) * (hitValue + 1);
+            long defenceRolls = defValue <= 0 ? 1 : (long)(defValue + 1) * (defValue + 1);
+            return (int)(100 * wins / (attackRolls * defenceRolls));
+        }
+
+        static int[] SkillRollCounts(int value)
+        {
+            if (value <= 0) return new[] { 1 };
+            int[] counts = new int[value + 1];
+            for (int sum = 0; sum <= 2 * value; sum++)
+                counts[sum / 2] += sum <= value ? sum + 1 : 2 * value - sum + 1;
+            return counts;
+        }
+
+        public int ComputeChancesMeleeHit(Actor actor, Actor target)
+        {
+            Attack attack = ActorMeleeAttack(actor, actor.CurrentMeleeAttack, target);
+            Defence defence = ActorDefence(target, target.CurrentDefence);
+            return ComputeChancesHit(attack.HitValue, defence.Value);
+        }
+
         /// <summary>
         /// Estimate chances to hit with a ranged attack. <br></br>
         /// Simulate a large number of rolls attack vs defence and returns % of hits.

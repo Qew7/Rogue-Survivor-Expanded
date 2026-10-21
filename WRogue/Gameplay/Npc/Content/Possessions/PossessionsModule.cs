@@ -36,7 +36,12 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                     bool owned = false; foreach (Item item in owner.Inventory.Items) if (item.Model.ID == attachment.ModelId && (attachment.ItemId == Guid.Empty || item.StoryIdentity == attachment.ItemId)) owned = true;
                     string kind = attachment.ItemId == Guid.Empty ? "item:" + attachment.ModelId : "item:" + attachment.ItemId.ToString("N");
                     bool known = owner.Personality.Knowledge.Places.Exists(p => p.Kind == kind && p.Units > 0 && turn - p.SeenTurn <= 180);
-                    if (!owned && known) offers.Add(self, NpcGoalValue.Possession, context.Catalog.Capability("recover_valued_item"),
+                    bool stored = false;
+                    if (attachment.ItemId != Guid.Empty)
+                        foreach (NpcKnownCache cache in owner.Personality.Knowledge.Caches)
+                            if (cache.OwnItemId == attachment.ItemId && cache.OwnUnits > 0 && cache.Units != 0)
+                            { stored = true; break; }
+                    if (!owned && known && !stored) offers.Add(self, NpcGoalValue.Possession, context.Catalog.Capability("recover_valued_item"),
                         0, 1, 100, 100, attachment.CauseId, resource: "item", model: attachment.ModelId, itemId: attachment.ItemId);
                 }
                 if (attachment.Kind == "place" && attachment.Place.Map != null && (attachment.MissingUnits > 0 || context.AnyPerson(p =>

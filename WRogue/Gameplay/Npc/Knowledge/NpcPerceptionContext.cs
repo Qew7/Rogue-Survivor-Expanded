@@ -1,20 +1,22 @@
 using djack.RogueSurvivor.Data;
 using djack.RogueSurvivor.Engine;
+using djack.RogueSurvivor.Engine.MapObjects;
 
 namespace djack.RogueSurvivor.Gameplay.Personality
 {
-    enum NpcPerceptionKind { Person, Items, Surroundings }
+    enum NpcPerceptionKind { Person, Items, Surroundings, Storage }
     sealed class NpcPerceptionContext
     {
         public readonly RogueGame Game;
         public readonly Actor Owner, Person;
         public readonly NpcKnownPerson KnownPerson;
         public readonly Inventory Items;
+        public readonly StorageContainer Storage;
         public readonly Location Place;
         public readonly int Turn, Risk;
         public NpcPerceptionContext(RogueGame game, Actor owner, Location place, Actor person = null, Inventory items = null, int risk = 0,
-            NpcKnownPerson knownPerson = null)
-        { Game = game; Owner = owner; Place = place; Person = person; KnownPerson = knownPerson; Items = items; Risk = risk; Turn = owner.Location.Map.LocalTime.TurnCounter; }
+            NpcKnownPerson knownPerson = null, StorageContainer storage = null)
+        { Game = game; Owner = owner; Place = place; Person = person; KnownPerson = knownPerson; Items = items; Storage = storage; Risk = risk; Turn = owner.Location.Map.LocalTime.TurnCounter; }
     }
     sealed class NpcReportContext
     {

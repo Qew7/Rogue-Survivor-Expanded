@@ -612,7 +612,8 @@ namespace djack.RogueSurvivor.Gameplay.Generators
             // chair and nighttable on either side of the bed.
             map.PlaceMapObjectAt(MakeObjChair(GameImages.OBJ_HOSPITAL_CHAIR), new Point(isFacingEast ? bedPos.X + 1 : bedPos.X - 1, bedPos.Y));
             Point tablePos = new Point(isFacingEast ? bedPos.X - 1 : bedPos.X + 1, bedPos.Y);
-            map.PlaceMapObjectAt(MakeObjNightTable(GameImages.OBJ_HOSPITAL_NIGHT_TABLE), tablePos);
+            MapObject nightTable = MakeObjNightTable(GameImages.OBJ_HOSPITAL_NIGHT_TABLE);
+            map.PlaceMapObjectAt(nightTable, tablePos);
 
             // chance of some meds/food/book on nightable.
             if (m_DiceRoller.RollChance(50))
@@ -625,8 +626,7 @@ namespace djack.RogueSurvivor.Gameplay.Generators
                     case 1: it = MakeItemGroceries(); break;
                     case 2: it = MakeItemBook(); break;
                 }
-                if (it != null)
-                    map.DropItemAt(it, tablePos);
+                AddStartingContainerItem(m_DiceRoller, map, tablePos, nightTable, it);
             }
 
             // wardrobe in the corner.

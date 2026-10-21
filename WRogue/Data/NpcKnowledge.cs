@@ -12,6 +12,8 @@ namespace djack.RogueSurvivor.Data
         public string Kind, SubjectName, OtherName, StoryId;
         [System.Runtime.Serialization.OptionalField] public string Resource;
         [System.Runtime.Serialization.OptionalField] public Guid ClaimantGroupId;
+        [System.Runtime.Serialization.OptionalField] public Guid ClaimantId;
+        [System.Runtime.Serialization.OptionalField] public string ClaimantName;
         [System.Runtime.Serialization.OptionalField] public Guid ItemId;
         // The words used by the first observer stay fixed when the fact is retold.
         [System.Runtime.Serialization.OptionalField] public string SubjectReportName;
@@ -32,7 +34,8 @@ namespace djack.RogueSurvivor.Data
             return new NpcFact { EventId = EventId, CauseId = CauseId, Kind = Kind, SubjectName = SubjectName, OtherName = OtherName,
                 SubjectReportName = SubjectReportName, OtherReportName = OtherReportName,
                 SubjectFactionId = SubjectFactionId, OtherFactionId = OtherFactionId,
-                StoryId = StoryId, Resource = Resource, ClaimantGroupId = ClaimantGroupId, ItemId = ItemId,
+                StoryId = StoryId, Resource = Resource, ClaimantGroupId = ClaimantGroupId,
+                ClaimantId = ClaimantId, ClaimantName = ClaimantName, ItemId = ItemId,
                 SubjectId = SubjectId, OtherId = OtherId, SourceId = speaker, EventTurn = EventTurn,
                 LearnedTurn = turn, Confidence = confidence, Hops = Hops + 1, Units = Units, Risk = Risk, Place = Place, Source = NpcKnowledgeSource.Told, NoSubjectLocation = NoSubjectLocation };
         }
@@ -73,6 +76,23 @@ namespace djack.RogueSurvivor.Data
         { Place = place; Kind = kind; SeenTurn = turn; Units = units; Risk = risk; }
     }
     [Serializable]
+    sealed class NpcKnownCache
+    {
+        public Guid Id, NoteId;
+        public Location Place;
+        public string Resource;
+        public int SeenTurn, Units, Confidence;
+        [System.Runtime.Serialization.OptionalField] public int OwnUnits;
+        [System.Runtime.Serialization.OptionalField] public string OwnResource;
+        [System.Runtime.Serialization.OptionalField] public Guid OwnItemId;
+        [System.Runtime.Serialization.OptionalField] public Guid ClaimantId;
+        [System.Runtime.Serialization.OptionalField] public bool HasWrittenNote;
+        [System.Runtime.Serialization.OptionalField] public int WrittenUnits;
+        [System.Runtime.Serialization.OptionalField] public string WrittenResource;
+        [System.Runtime.Serialization.OptionalField] public Location WrittenPlace;
+        public NpcKnowledgeSource Source;
+    }
+    [Serializable]
     sealed class NpcKnownExit
     {
         public Location From, To;
@@ -100,6 +120,11 @@ namespace djack.RogueSurvivor.Data
         public readonly List<NpcFact> Facts = new List<NpcFact>();
         public readonly List<NpcKnownPerson> People = new List<NpcKnownPerson>();
         public readonly List<NpcKnownPlace> Places = new List<NpcKnownPlace>();
+        [System.Runtime.Serialization.OptionalField] List<NpcKnownCache> m_Caches;
+        public IList<NpcKnownCache> Caches { get { return m_Caches ?? (m_Caches = new List<NpcKnownCache>()); } }
+        [System.Runtime.Serialization.OptionalField] List<Guid> m_ReadNotes;
+        [System.Runtime.Serialization.OptionalField] List<string> m_WrittenNotes;
+        [System.Runtime.Serialization.OptionalField] List<string> m_CacheEncounters;
         public readonly List<NpcKnownExit> Exits = new List<NpcKnownExit>();
         readonly Dictionary<string, int> told = new Dictionary<string, int>();
         [System.Runtime.Serialization.OptionalField] List<NpcToldRumor> toldRumors;
@@ -153,6 +178,72 @@ namespace djack.RogueSurvivor.Data
             if (old == null || old.Units != place.Units || old.Risk != place.Risk) Revision++;
             Places.RemoveAll(p => p.Kind == place.Kind && p.Place == place.Place);
             Places.Add(place); Trim(Places, 16);
+        }
+        public bool RememberCache(NpcKnownCache cache, bool replaceExpected = false)
+        {
+            if (cache == null || cache.Id == Guid.Empty || cache.Place.Map == null) return false;
+            if (m_Caches == null) m_Caches = new List<NpcKnownCache>();
+            NpcKnownCache old = m_Caches.Find(c => c.Id == cache.Id);
+            if (old != null)
+            {
+                bool fillsUnknown = old.Units < 0 && cache.Source == NpcKnowledgeSource.Told &&
+                    old.Place == cache.Place;
+                cache.HasWrittenNote = old.HasWrittenNote;
+                cache.WrittenUnits = old.WrittenUnits;
+                cache.WrittenResource = old.WrittenResource;
+                cache.WrittenPlace = old.WrittenPlace;
+                if (!replaceExpected)
+                { cache.OwnUnits = old.OwnUnits; cache.OwnResource = old.OwnResource;
+                  cache.OwnItemId = old.OwnItemId; }
+                if (cache.ClaimantId == Guid.Empty) cache.ClaimantId = old.ClaimantId;
+                if (old.NoteId != Guid.Empty && old.NoteId == cache.NoteId) return false;
+                if (old.Source == NpcKnowledgeSource.Witness && cache.Source == NpcKnowledgeSource.Witness &&
+                    old.Place == cache.Place && old.Resource == cache.Resource &&
+                    old.Units == cache.Units && old.OwnUnits == cache.OwnUnits &&
+                    old.OwnResource == cache.OwnResource && old.OwnItemId == cache.OwnItemId)
+                {
+                    old.SeenTurn = Math.Max(old.SeenTurn, cache.SeenTurn);
+                    return false;
+                }
+                if (!fillsUnknown && (old.SeenTurn > cache.SeenTurn ||
+                    old.SeenTurn == cache.SeenTurn && old.Confidence > cache.Confidence ||
+                    old.SeenTurn == cache.SeenTurn && old.Confidence == cache.Confidence &&
+                    old.Place == cache.Place && old.Units == cache.Units &&
+                    old.OwnUnits == cache.OwnUnits && old.OwnResource == cache.OwnResource &&
+                    old.OwnItemId == cache.OwnItemId)) return false;
+                m_Caches.Remove(old);
+            }
+            m_Caches.Add(cache);
+            Trim(m_Caches, 16);
+            Revision++;
+            return true;
+        }
+        public bool HasReadNote(Guid id)
+        { return id != Guid.Empty && m_ReadNotes != null && m_ReadNotes.Contains(id); }
+        public bool MarkNoteRead(Guid id)
+        {
+            if (id == Guid.Empty || HasReadNote(id)) return false;
+            if (m_ReadNotes == null) m_ReadNotes = new List<Guid>();
+            m_ReadNotes.Add(id);
+            Trim(m_ReadNotes, 32);
+            Revision++;
+            return true;
+        }
+        public bool HasWrittenNote(string key)
+        { return key != null && m_WrittenNotes != null && m_WrittenNotes.Contains(key); }
+        public void MarkNoteWritten(string key)
+        {
+            if (key == null || HasWrittenNote(key)) return;
+            if (m_WrittenNotes == null) m_WrittenNotes = new List<string>();
+            m_WrittenNotes.Add(key); Trim(m_WrittenNotes, 64); Revision++;
+        }
+        public bool HasHandledCacheEncounter(string key)
+        { return key != null && m_CacheEncounters != null && m_CacheEncounters.Contains(key); }
+        public void HandleCacheEncounter(string key)
+        {
+            if (key == null || HasHandledCacheEncounter(key)) return;
+            if (m_CacheEncounters == null) m_CacheEncounters = new List<string>();
+            m_CacheEncounters.Add(key); Trim(m_CacheEncounters, 64); Revision++;
         }
         public bool LearnPerson(NpcKnownPerson person)
         {

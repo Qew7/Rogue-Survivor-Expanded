@@ -11,10 +11,20 @@ static class CivilianDecisionScenario
             foreach (Actor actor in world.Map.Actors) { civilian = actor; break; }
             Check.Equal(true, civilian.Controller != null, "civilian has a real AI controller");
             int before = civilian.ActionPoints;
-            Check.Equal(true, world.NpcTurn(civilian), "civilian chose a legal action");
-            Check.Equal(true, civilian.ActionPoints < before, "civilian acted and spent AP");
+            int equippedBefore = EquippedCount(civilian);
+            var action = civilian.Controller.GetAction(world.Game);
+            Check.Equal(true, world.Try(action), "civilian chose a legal action");
+            Check.Equal(true, civilian.ActionPoints < before || EquippedCount(civilian) > equippedBefore,
+                "civilian acted or equipped an item with " + action.GetType().Name);
             Check.Same(civilian, world.Map.GetActorAt(civilian.Location.Position),
                 "civilian remains registered on map after its decision");
         });
+    }
+
+    static int EquippedCount(Actor actor)
+    {
+        int count = 0;
+        foreach (Item item in actor.Inventory.Items) if (item.IsEquipped) count++;
+        return count;
     }
 }

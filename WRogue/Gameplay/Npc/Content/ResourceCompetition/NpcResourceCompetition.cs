@@ -24,8 +24,9 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                         owner.SocialGroup.SupplyRule : owner.Personality.KnownSupplyRule(owner.SocialGroup.Identity);
                     NpcResourceDefinition resource = game.NpcContent.Resource(source.Resource);
                     bool ownNeed = resource != null && resource.OwnNeed(game, owner, source);
-                    NpcReplies.Reply(owner, source.Subject, source, willing >= 15 && !ownNeed ? "resource_yielded" : "resource_refused",
-                        "You can have those supplies. I'll find another way.", "I need those supplies too.");
+                    bool yield = willing >= 15 && !ownNeed;
+                    NpcReplies.Reply(owner, source.Subject, source, yield ? "resource_yielded" : "resource_refused",
+                        yield ? "You can have those supplies. I'll find another way." : "I need those supplies too.");
                     NpcReaction reply = owner.Personality.Reactions.FindLast(r => r.CauseId == source.Id);
                     if (reply != null) { reply.ResourcePlace = source.ResourcePlace; reply.Resource = source.Resource; }
                 }

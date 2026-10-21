@@ -6,6 +6,8 @@ No running container or existing world save is deleted by the upgrade.
 Version-4 binary settings (options, keybindings, hints, scores and preset
 collections) remain readable, so changing the world format does not reset them.
 Unmarked BinaryFormatter settings are no longer accepted.
+The optional settings field `m_MeleeHitChances` defaults to false when loading
+older options files; saving options preserves the toggle.
 
 ## Envelope and archive
 
@@ -114,6 +116,55 @@ The graph retains map ownership and exits, local/world clocks and RNG state,
 actor/item positions, corpse references, trap and base ownership, item dropper
 attribution, NPC orders, selected presets/options, and connected base sections.
 Auxiliary map indexes are not serialized and are rebuilt for gameplay.
+The independent `CachesEnabled` and `NotesEnabled` preset switches are saved.
+New drawers and fridges retain their stable identity, open state and own bounded
+inventory, so moving one carries its contents. Empty generated containers start
+open; filled ones start open or closed according to the generation random stream.
+A placed item stack retains its first storage claimant identity, name snapshot
+and group identity through removal, splitting, trap cloning and later storage;
+stacks with different claimants do not merge. Existing stolen goods provenance
+is retained separately from this storage claim.
+Physical notes retain their unique identity, immutable written text, optional
+visible signature, actual author identity, topic, written turn and the place,
+cache identity, resource and quantity known when written. Reading a note does
+not update that snapshot. NPC knowledge retains up to 16 last known caches,
+including source, confidence, known location, quantity, resource, expected
+personal units and resource, the last written cache state, and the note
+identity when learned from paper. A deliberately stashed personal attachment
+also retains the exact valued item identity, preventing an immediate false
+"lost possession" goal and allowing later retrieval when needs change. Quantity `-1`
+means a visible closed container whose contents are unknown. Personal units
+are a remembered expectation, not remote access to hidden claimant fields.
+NPC knowledge also keeps the last 32 read
+note identities, so a carried note is not read again after loading.
+An event note additionally retains its copied claim, including the source event,
+place, confidence, named participants and cause. The author's chosen wording
+is stored verbatim; loading does not render a new template. A known cache may
+retain the identity of its reported claimant. NPC knowledge keeps up to 64
+written event keys and 64 handled cache encounter keys, so loading does not
+repeat the same note or spoken response. Both lists are bounded and optional.
+Bounded known places also include visible ground and open-container
+note locations; a newly seen absence clears the corresponding pickup opportunity.
+A direct inspection can replace a stale note with an empty observation
+or report one anonymous loss if visibly different supplies are missing. An
+indistinguishable replacement does not identify a thief. Overlapping personal
+and XPD base claims produce one `base_theft` with personal claimant context.
+Retained and retold facts keep that claimant's optional identity and name
+separately from the base leader in `OtherId`.
+`items/storage-moves-with-object`,
+`items/storage-claims`, `items/paper-note`, `npc/cache-inspection`,
+`npc/reads-carried-note`, `npc/cache-visibility`,
+`npc/searches-reported-cache`, `npc/cache-stale-location`,
+`npc/cache-loss-discovered`, `npc/indistinguishable-cache-replacement`,
+`items/cache-and-base-claim`, `items/cache-inside-later-base`,
+`npc/inspects-unknown-cache`, `npc/stashes-in-foreign-base`,
+`npc/writes-cache-note`, `npc/shares-cache-note`, `npc/takes-cache-food`,
+`npc/stashes-medicine`, `npc/takes-cache-medicine`,
+`npc/collects-ground-note`, `npc/collects-storage-note`,
+`npc/cache-relocated-sighting`, `npc/stashes-valued-item`,
+`npc/cache-loss-rumor`, `npc/cache-theft-rumor`,
+`generation/storage-starting-state` and `world/cache-note-presets` cover this
+state and its boundary cases across save and load.
 `world/rest-simulates-distant-districts` saves after a distant rest turn and
 reloads the district clock, NPC, and rumor learned from another NPC.
 An XPD base optionally keeps up to 32 unseen theft losses or fatal raids with
@@ -132,6 +183,36 @@ original leader is out of sight. The optional per-item found flag prevents a
 second discovery after the goods move or a witness forgets the first report.
 The flag follows stack merges and splits; ownership provenance remains for
 later handoffs. `items/stolen-goods-discovery-once` checks this state.
+Police recovery uses these existing stable theft,
+item, claimant and group IDs; the officer's question, admission, surrender and
+delivery are retained as ordinary linked event facts and goals. Returning an
+item clears its stolen marker, while a missing item produces a recorded failed
+handover without inventing property. A thief may accept a temporary escort;
+its start, completion or expiry is identified by retained story and item facts,
+and removal from the group restores the ordinary follower state.
+`npc/police-recovery` checks the whole
+chain and save/load; `npc/police-dead-claimant` checks a surviving group member,
+`npc/police-missing-property` checks the missing-item boundary, and
+`npc/police-escort-refusal` checks a voluntary refusal.
+
+Property threats retain distinct demand, reply, drop, pickup, witness and police
+contact events using existing event IDs, item identity, causal links and story
+fields. The pickup marks the item stolen with the existing claimant and theft
+provenance. No new saved field or numeric content ID is required.
+`npc/robbery-surrender` checks the physical transfer, retold stages, police
+recovery offer and save/load provenance; the contention, eligibility, refusal, flight and
+resistance scenarios check alternative outcomes and stale demands.
+
+A deceptive thief's or eyewitness's false attribution is a separate `theft_accusation` fact,
+linked by `CauseId` to a real theft and retaining the original accuser and
+framed person's identities. It never replaces `base_theft` or `cache_theft`.
+Eyewitness corrections and the accused person's denial use distinct fact
+kinds; retelling preserves which account was a claim. The existing optional
+fact fields suffice, with no new save field. `npc/false-theft-accusation`
+checks the claim, correction, denial and save/load identity;
+`npc/false-theft-accusation-witness` checks a lying eyewitness,
+`npc/false-theft-accusation-cache` checks cache-theft wording, and
+`npc/false-theft-accusation-no-enemy` checks that no target is invented.
 
 Radio receivers retain their tuning state, and portable receivers retain their
 station, power state and batteries. The Session retains the survivor station
@@ -367,6 +448,7 @@ The archive optionally retains each district's kind by coordinate so
 world graph. Older archives without this field leave district labels uncolored.
 Deduplication keys are preserved. Histories contain no Actor references and
 survive actor/corpse removal; entries are not evicted.
+Newly recorded entries may include 13 effective NPC axis values captured at the end of their map turn (decision biases Item through Supplies, then dispositions HumanLife through Patience). This optional `AxesAfter` snapshot is absent from older archives and from entries whose actor was no longer present at the turn boundary. It describes the whole NPC state after that turn, not an effect attributable to one event.
 Entries also retain event/cause/story IDs. Private intention starts and terminal
 outcomes are typed chronicle entries with deduplication by intention sequence
 and outcome. They are available to the archive-only reader and excluded from

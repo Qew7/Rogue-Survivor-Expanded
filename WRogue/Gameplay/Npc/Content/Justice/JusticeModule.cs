@@ -33,6 +33,8 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             restitution.DirectAction = NpcFoodActions.Give;
             catalog.Capability(restitution);
             RegisterContent(catalog);
+            RegisterFalseAccusations(catalog);
+            RegisterPoliceRecovery(catalog);
         }
         public void Evaluate(NpcGoalContext context, NpcGoalOffers offers)
         {
@@ -51,6 +53,7 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                     offers.Add(person, NpcGoalValue.Restitution, context.Catalog.Capability("restore_property"),
                         person.LossUnits, 0, Math.Min(100, person.LossUnits * 40), 100, person.LossCause, resource: "food", objectPlace: person.LossPlace);
             }
+            EvaluatePoliceRecovery(context, offers);
         }
         void RegisterContent(NpcCatalogBuilder catalog)
         {
@@ -99,10 +102,21 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             catalog.OnReport("base_theft", c => {
                 if (c.Fact.NamesSubject) NpcReputation.Reputation(c, false, false, true);
             });
+            catalog.OnReport("cache_theft", c => {
+                if (c.Fact.NamesSubject) NpcReputation.Reputation(c, false, false, true);
+            });
             catalog.OnReport("stolen_goods_passed", c => NpcReputation.StolenGoods(c.Listener, c.Fact, c.Improvement));
             catalog.OnReport("stolen_goods_found", c => NpcReputation.StolenGoods(c.Listener, c.Fact, c.Improvement));
             catalog.OnReport("claimed_permission", NpcReputation.PermissionClaim);
-            catalog.OnReport("false_testimony_exposed", c => NpcReputation.Reputation(c, false, false, true));
+            catalog.OnReport("false_testimony_exposed", c => {
+                NpcReputation.Reputation(c, false, false, true);
+                if (c.Improvement > 0 && c.Fact.NamesOther)
+                {
+                    int strength = Math.Max(1, c.Improvement / 15);
+                    c.Listener.Personality.Opinion(c.Fact.OtherId, c.Fact.ReportOther)
+                        .AdjustSocial(trust: strength, grievance: -strength);
+                }
+            });
             catalog.AfterEvent("base_theft", (game, e) => {
                 if (e.Subject == null || e.Subject.Personality == null || !e.Subject.Personality.HasTrait("deceptive")) return;
                 NpcFact theft = e.Subject.Personality.Knowledge.Facts.Find(f => f.EventId == e.Id && f.Kind == "base_theft");
@@ -170,6 +184,10 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             catalog.Event(new NpcEventDefinition("restitution_refused", NpcRecordCategory.Help, true, e => (e.Subject ?? "Someone") + " refused " + (e.Other ?? "someone") + "'s demand for compensation.", null) { SelfReportTone = NpcSelfReportTone.Harmful });
             catalog.On("base_theft", NpcObservationPhase.Knowledge, OnKnowledge);
             catalog.On("base_theft", NpcObservationPhase.Relationships, OnRelationships);
+            catalog.On("cache_theft", NpcObservationPhase.Knowledge, OnKnowledge);
+            catalog.On("cache_theft", NpcObservationPhase.Relationships, OnRelationships);
+            catalog.On("robbery_taken", NpcObservationPhase.Knowledge, OnKnowledge);
+            catalog.On("robbery_taken", NpcObservationPhase.Relationships, OnRelationships);
             catalog.On("boundary_accepted", NpcObservationPhase.Relationships, OnRelationships);
             catalog.On("boundary_defied", NpcObservationPhase.Relationships, OnRelationships);
             catalog.On("confronted", NpcObservationPhase.Relationships, OnRelationships);
@@ -192,14 +210,16 @@ namespace djack.RogueSurvivor.Gameplay.Personality
             SignificantEvent source = observation.Source; bool direct = observation.Direct;
             bool seesSubject = observation.SeesSubject, seesOther = observation.SeesOther;
             PersonalityState state = owner.Personality; NpcKnowledge knowledge = state.Knowledge;
-            NpcKnownPerson subject = !seesSubject ? null : knowledge.Person(source.Subject.PersonalityIdentity);
-            NpcKnownPerson other = !seesOther ? null : knowledge.Person(source.Other.PersonalityIdentity);
+            NpcKnownPerson subject = !seesSubject || source.Subject == null ? null : knowledge.Person(source.Subject.PersonalityIdentity);
+            NpcKnownPerson other = !seesOther || source.Other == null ? null : knowledge.Person(source.Other.PersonalityIdentity);
             int confidence = direct ? 100 : 90;
-            if (source.Kind == "base_theft" && subject != null && subject.Id != owner.PersonalityIdentity)
+            if ((source.Kind == "base_theft" || source.Kind == "cache_theft" || source.Kind == "robbery_taken") &&
+                subject != null && subject.Id != owner.PersonalityIdentity)
             {
                 subject.Violation = 100; subject.ThreatTurn = source.Turn; subject.ThreatConfidence = confidence;
                 subject.ThreatCause = source.Id; knowledge.Revision++;
                 subject.ViolationTurn = source.Turn; subject.ViolationConfidence = confidence; subject.ViolationCause = source.Id;
+                if (ReadyToFightOverTheft(observation)) subject.Danger = 100;
             }
         }
         static void OnRelationships(NpcObservation observation)
@@ -218,8 +238,12 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 foreach (NpcAttachment home in owner.Personality.Attachments)
                     if (home.Kind == "place" && home.Resource == "food" && home.Person == source.Subject.PersonalityIdentity && home.MissingUnits > 0)
                     { home.MissingUnits = Math.Max(0, home.MissingUnits - Math.Max(1, source.Units)); break; }
-            if (source.Kind == "base_theft" && other != null && source.Subject == owner && source.Resource == "food")
+            if ((source.Kind == "base_theft" || source.Kind == "cache_theft" || source.Kind == "robbery_taken") &&
+                other != null && source.Subject == owner && source.Resource == "food")
             { other.LossUnits += Math.Max(1, source.Units); other.LossCause = source.Id; other.LossPlace = new Location(source.Map, source.Position); }
+            if ((source.Kind == "base_theft" || source.Kind == "cache_theft" || source.Kind == "robbery_taken") &&
+                subject != null && ReadyToFightOverTheft(observation))
+                state.Opinion(subject.Id, subject.Name).AdjustSocial(grievance: 30);
             if ((source.Kind == "boundary_accepted" || source.Kind == "boundary_defied" || source.Kind == "restitution_refused") && owner == source.Other && subject != null)
             {
                 RelationshipRecord opinion = owner.Personality.Opinion(subject.Id, subject.Name);
@@ -253,16 +277,34 @@ namespace djack.RogueSurvivor.Gameplay.Personality
                 int patience = PersonalitySystem.Disposition(owner, NpcPersonalityAxis.Patience, observation.Game.NpcContent);
                 if (!NpcReplies.Setback(observation, 25, "Don't tell me what to do!",
                     "boundary_escalated", "boundary_defied"))
-                    NpcReplies.Reply(owner, source.Subject, source, PersonalitySystem.Bias(owner, NpcPersonalityAxis.Law) +
-                        PersonalitySystem.Bias(owner, NpcPersonalityAxis.Compassion) + patience / 2 >= 0 ?
-                        "boundary_accepted" : "boundary_defied", "I understand. I'll respect that.", "You don't decide what I do.");
+                {
+                    bool accept = PersonalitySystem.Bias(owner, NpcPersonalityAxis.Law) +
+                        PersonalitySystem.Bias(owner, NpcPersonalityAxis.Compassion) + patience / 2 >= 0;
+                    NpcReplies.Reply(owner, source.Subject, source, accept ? "boundary_accepted" : "boundary_defied",
+                        accept ? "I understand. I'll respect that." : "You don't decide what I do.");
+                }
             }
             if (source.Kind == "restitution_requested" && source.Other == owner && subject != null && NpcIntentSystem.Enabled(owner))
             {
                 bool accept = PersonalitySystem.Bias(owner, NpcPersonalityAxis.Law) + PersonalitySystem.Bias(owner, NpcPersonalityAxis.Compassion) >= 10;
                 if (accept && subject.LossCause > 0) subject.LossUnits = Math.Max(subject.LossUnits, source.Units);
-                NpcReplies.Reply(owner, source.Subject, source, accept ? "boundary_accepted" : "restitution_refused", "I'll try to replace what was lost.", "I won't replace your supplies.");
+                NpcReplies.Reply(owner, source.Subject, source, accept ? "boundary_accepted" : "restitution_refused",
+                    accept ? "I'll try to replace what was lost." : "I won't replace your supplies.");
             }
+        }
+
+        static bool ReadyToFightOverTheft(NpcObservation observation)
+        {
+            Actor owner = observation.Owner;
+            SignificantEvent source = observation.Source;
+            if (!observation.SeesSubject || source.Other != owner &&
+                source.ClaimantId != owner.PersonalityIdentity) return false;
+            int courage = PersonalitySystem.Bias(owner, NpcPersonalityAxis.Courage);
+            int scarcity = PersonalitySystem.Disposition(owner, NpcPersonalityAxis.Scarcity,
+                observation.Game.NpcContent);
+            RelationshipRecord opinion = owner.Personality.Person(source.Subject.PersonalityIdentity);
+            int fear = opinion == null ? 0 : opinion.Fear;
+            return observation.Game.Rules.IsActorHungry(owner) || scarcity >= 35 || courage - fear >= 30;
         }
     }
 }

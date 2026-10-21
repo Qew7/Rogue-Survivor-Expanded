@@ -748,6 +748,11 @@ namespace djack.RogueSurvivor.Gameplay
             #endregion
 
             #region Uniques
+            this[IDs.NOTE] = new ItemModel("paper note", "paper notes", GameImages.ITEM_NOTE)
+            {
+                StackingLimit = 1,
+                FlavorDescription = "A loose sheet of paper."
+            };
             this[IDs.UNIQUE_SUBWAY_BADGE] = new ItemModel("Subway Worker Badge", "Subways Worker Badges", GameImages.ITEM_SUBWAY_BADGE)
             {
                 DontAutoEquip = true,

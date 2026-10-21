@@ -23,9 +23,81 @@ namespace djack.RogueSurvivor.Engine
 {
     partial class RogueGame
     {
+        public void DoUseStorageContainer(Actor actor, StorageContainer storage, bool open)
+        {
+            storage.SetState(open ? StorageContainer.OPEN : StorageContainer.CLOSED);
+            SpendActorActionPoints(actor, Rules.BASE_ACTION_COST);
+            if (IsVisibleToPlayer(actor) || IsVisibleToPlayer(storage))
+                AddMessage(MakeMessage(actor, open ? Conjugate(actor, VERB_OPEN) : Conjugate(actor, VERB_CLOSE), storage));
+        }
+
+        public void DoInspectStorage(Actor actor, StorageContainer storage)
+        {
+            string reason;
+            if (!m_Rules.CanActorInspectStorage(actor, storage, out reason)) return;
+            SpendActorActionPoints(actor, Rules.BASE_ACTION_COST);
+            int units;
+            string resource;
+            storage.CountSupplies(out resource, out units);
+            int missing = 0;
+            string missingResource = resource;
+            int expectedOwn = 0;
+            if (actor.Personality != null)
+            {
+                foreach (NpcKnownCache known in actor.Personality.Knowledge.Caches)
+                    if (known.Id == storage.Id)
+                    {
+                        expectedOwn = known.OwnUnits;
+                        if (known.OwnResource != null) missingResource = known.OwnResource;
+                        else if (known.Resource != null) missingResource = known.Resource;
+                        break;
+                    }
+                int visibleOwn = Math.Min(expectedOwn, storage.CountVisibleUnits(missingResource));
+                missing = expectedOwn - visibleOwn;
+                RememberStorageContents(actor, storage, NpcKnowledgeSource.Witness,
+                    visibleOwn, visibleOwn > 0 ? missingResource : null);
+                if (missing > 0)
+                    Gameplay.Personality.PersonalitySystem.Report(this,
+                        new Gameplay.Personality.SignificantEvent("cache_loss_discovered", actor, null,
+                            storage.Location.Map, storage.Location.Position,
+                            storage.Location.Map.LocalTime.TurnCounter,
+                            storyId: "cache-loss:" + storage.Id.ToString("N") + ":" + storage.Location.Map.LocalTime.TurnCounter)
+                        { ItemId = storage.Id, Units = missing, Resource = missingResource });
+            }
+            if (actor.IsPlayer)
+                AddMessage(new Message(units == 0 ? "The container is empty." :
+                    "The container holds " + units + " " + resource + ".",
+                    actor.Location.Map.LocalTime.TurnCounter));
+        }
+
+        void RememberStorageContents(Actor actor, StorageContainer storage, NpcKnowledgeSource source,
+            int? expectedOwn = null, string expectedResource = null)
+        {
+            if (actor.Personality == null) return;
+            string resource;
+            int units;
+            storage.CountSupplies(out resource, out units);
+            Guid valuedItem = Guid.Empty;
+            if (actor.Personality.HasAttachments)
+                foreach (Item item in storage.Contents.Items)
+                    if (item.StorageClaimantId == actor.PersonalityIdentity &&
+                        actor.Personality.Attachments.Exists(a => a.Kind == "item" &&
+                            a.ItemId == item.StoryIdentity))
+                    { valuedItem = item.StoryIdentity; break; }
+            actor.Personality.Knowledge.RememberCache(new NpcKnownCache {
+                Id = storage.Id, Place = storage.Location, Resource = resource,
+                Units = units, OwnUnits = expectedOwn ?? storage.CountClaimedUnits(actor.PersonalityIdentity),
+                OwnResource = expectedOwn.HasValue ? expectedResource :
+                    storage.ClaimedResource(actor.PersonalityIdentity),
+                OwnItemId = valuedItem,
+                SeenTurn = storage.Location.Map.LocalTime.TurnCounter,
+                Confidence = 100, Source = source }, true);
+        }
+
         #region Breaking stuff
         void DoDestroyObject(MapObject mapObj)
         {
+            StorageContainer storage = mapObj as StorageContainer;
             DoorWindow door = mapObj as DoorWindow;
             bool isWindow = (door != null && door.IsWindow);
 
@@ -70,6 +142,20 @@ namespace djack.RogueSurvivor.Engine
             }
             else
                 mapObj.Location.Map.RemoveMapObjectAt(mapObj.Location.Position.X, mapObj.Location.Position.Y);
+
+            if (storage != null)
+            {
+                Map map = mapObj.Location.Map;
+                Point position = mapObj.Location.Position;
+                foreach (Item item in new List<Item>(storage.Contents.Items))
+                {
+                    Inventory ground = map.GetItemsAt(position);
+                    if (ground != null && ground.IsFull && !ground.CanAddAll(item))
+                        ground.MaxCapacity++;
+                    storage.Contents.RemoveAllQuantity(item);
+                    map.DropItemAt(item, position);
+                }
+            }
 
             // loud noise.
             OnLoudNoise(mapObj.Location.Map, mapObj.Location.Position, "A loud *CRASH*");

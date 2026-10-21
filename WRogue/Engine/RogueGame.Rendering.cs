@@ -162,12 +162,16 @@ namespace djack.RogueSurvivor.Engine
                     if (m_Player.Inventory != null && m_Player.Model.Abilities.HasInventory)
                         DrawInventory(m_Player.Inventory, "Inventory", true, INVENTORY_SLOTS_PER_LINE, m_Player.Inventory.MaxCapacity, INVENTORYPANEL_X, INVENTORYPANEL_Y);
                     DrawInventory(m_Player.Location.Map.GetItemsAt(m_Player.Location.Position), "Items on ground", true, INVENTORY_SLOTS_PER_LINE, Map.GROUND_INVENTORY_SLOTS, INVENTORYPANEL_X, GROUNDINVENTORYPANEL_Y);
-                    DrawCorpsesList(m_Player.Location.Map.GetCorpsesAt(m_Player.Location.Position), "Corpses on ground", INVENTORY_SLOTS_PER_LINE, INVENTORYPANEL_X, CORPSESPANEL_Y);
+                    StorageContainer openStorage = PlayerOpenStorage();
+                    if (openStorage != null)
+                        DrawInventory(openStorage.Contents, "In " + openStorage.TheName, true,
+                            INVENTORY_SLOTS_PER_LINE, openStorage.Contents.MaxCapacity, INVENTORYPANEL_X, CORPSESPANEL_Y);
+                    DrawCorpsesList(m_Player.Location.Map.GetCorpsesAt(m_Player.Location.Position), "Corpses on ground", INVENTORY_SLOTS_PER_LINE, INVENTORYPANEL_X, CORPSESPANEL_Y + (openStorage == null ? 0 : 64));
                 }
 
                 // character skills.
                 if (m_Player != null && m_Player.Sheet.SkillTable != null && m_Player.Sheet.SkillTable.CountSkills > 0)
-                    DrawActorSkillTable(m_Player, RIGHTPANEL_TEXT_X, SKILLTABLE_Y);
+                    DrawActorSkillTable(m_Player, RIGHTPANEL_TEXT_X, SKILLTABLE_Y + (PlayerOpenStorage() == null ? 0 : 64));
 
                 // overlays
                 m_Overlays.Draw(m_UI);

@@ -4,3 +4,4 @@
 **/obj/
 *.suo
 WRogue/Config/
+docs/social-graph-save.js
